@@ -19,6 +19,8 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.25] - 2026-11-04
+
 - Comandi del tag Analytics nel formato Arguments richiesto da Google, con verifica di compatibilità e nessun invio prima del consenso.
 
 ## [0.29.24] - 2026-11-04
