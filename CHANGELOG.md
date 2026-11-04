@@ -19,6 +19,8 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.30] - 2026-11-04
+
 - Home Bar/Fanta contenuta nella larghezza del dispositivo, mantenendo lo scorrimento dei soli caroselli. Icona casa per Oggi.
 - Rimozione dei partecipanti atomica tra Bar e Fanta collegato: revoca dell’assegnazione e delle vecchie associazioni pilota, senza cancellare squadra, rosa o storico. La sincronizzazione non reinserisce i rimossi; riparazione una tantum dei riferimenti preesistenti, incluso testuser2.
 - Prima apertura del Fanta: assegnazione automatica di una squadra libera soltanto nel Bar selezionato e soltanto ai membri attivi. Un solo POST, recupero delle risposte perse e nessuna assegnazione nelle normali letture o nei timer.
