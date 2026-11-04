@@ -14,3 +14,4 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 
 
 .lineup-accuracy{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.5}.lineup-accuracy strong{color:var(--text)}
+.pitch-player-grades[hidden]{display:none}
