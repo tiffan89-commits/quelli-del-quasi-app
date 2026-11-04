@@ -39,6 +39,7 @@ test('expired consent and cross-tab withdrawal do not keep tracking enabled',()=
  const other=fixture({choice:true});other.controller.start();other.flush();other.storage.setItem(CONSENT_KEY,JSON.stringify({version:1,granted:false,at:10000000000}));other.events.get('storage')({key:CONSENT_KEY});assert.equal(other.controller.granted,false);assert.equal(other.win['ga-disable-G-TEST123'],true);
 });
 test('account links and unknown screens never leak arbitrary hash contents',()=>{
+ for(const pathname of ['/privacy','/privacy.html'])assert.equal(analyticsScreen({pathname}),'/privacy.html');for(const pathname of ['/asta-fantacalcio','/asta-fantacalcio.html'])assert.equal(analyticsScreen({pathname}),'/asta-fantacalcio.html');
  assert.equal(analyticsScreen({hash:'#action=reset&token=secret'}),'/account');assert.equal(analyticsScreen({hash:'#/fanta/my-private-username?email=foo@bar.it'}),'/fanta/altro');assert.equal(analyticsScreen({pathname:'/invito/private-code'}),'/inizio');assert.deepEqual(analyticsCampaign('?utm_source=facebook&utm_campaign=test_1&utm_medium=foo%40bar.it&email=secret'),{campaign_source:'facebook',campaign_name:'test_1'});
 });
 test('production entry points share one analytics controller instead of splitting consent and request tracking',()=>{

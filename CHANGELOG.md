@@ -19,6 +19,10 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.26] - 2026-11-04
+
+- Link pubblici con o senza estensione HTML riconosciuti dal server Windows e conteggiati nella stessa pagina Analytics, anche dopo la riscrittura degli URL da Netlify.
+
 ## [0.29.25] - 2026-11-04
 
 - Comandi del tag Analytics nel formato Arguments richiesto da Google, con verifica di compatibilità e nessun invio prima del consenso.
