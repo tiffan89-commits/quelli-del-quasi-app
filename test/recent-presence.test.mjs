@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {estimatePresence,presenceProbability,PRESENCE_MODEL} from '../public/src/fanta/presence-probability.mjs';
+import {estimatePresence,presenceProbability,roundPresenceEstimate,PRESENCE_MODEL} from '../public/src/fanta/presence-probability.mjs';
 import {refreshPresenceEstimates} from '../fanta/presence-estimates.mjs';
 import {fixtureDb} from './fanta/helpers.mjs';
 const recent=(count,extra={})=>Array.from({length:count},(_,i)=>({fixtureId:'f'+i,known:true,minutes:90,starter:true,baseVote:6,...extra}));
 const player=(rows,minutes=270)=>({clubId:'c1',stats:{minutes,teamMatches:20,recentPresence:rows}});
 test('recent starts dominate seasonal history exponentially, good own grades and decisive contributions help, official remains definitive',()=>{
  const one=estimatePresence(player(recent(1))),three=estimatePresence(player(recent(3)));
- assert.ok(three.pct>90);assert.ok(three.pct>one.pct);assert.ok(three.pct<=97);
+ assert.equal(three.pct,90);assert.ok(three.pct>one.pct);
  const normal=estimatePresence(player(recent(1))),good=estimatePresence(player(recent(1,{baseVote:6.3}))),decisive=estimatePresence(player(recent(1,{baseVote:6,decisiveAssist:true})));
  assert.ok(good.pct>normal.pct);assert.ok(decisive.pct>normal.pct);
  assert.equal(estimatePresence(player(recent(1,{baseVote:6.2}))).pct,normal.pct);
@@ -31,8 +31,14 @@ test('presence refresh uses existing own grades and verified evidence, leaves pr
   const connect=async()=>{const c=await f.connect();return {...c,query:(sql,args)=>{if(/^(UPDATE|INSERT)/.test(sql))writes.push(sql);return c.query(sql,args);}};};
   const first=await refreshPresenceEstimates({connect,season:2026,now:Date.parse('2026-11-04')});assert.ok(first.changed>0);assert.equal(first.providerCalls,0);
   const estimate=(await f.db.query(`SELECT data->'presenceEstimate' AS value FROM fanta.players WHERE id='p1-1'`)).rows[0].value;
-  assert.equal(estimate.pct,97);assert.equal(estimate.evidence.starterStreak,3);assert.ok(estimate.evidence.goodForm>1);
+  assert.equal(estimate.pct,90);assert.equal(estimate.evidence.starterStreak,3);assert.ok(estimate.evidence.goodForm>1);
   const dnp=(await f.db.query(`SELECT data->'presenceEstimate' AS value FROM fanta.players WHERE id='p1-2'`)).rows[0].value;assert.equal(dnp.pct,0);
   writes.length=0;const repeat=await refreshPresenceEstimates({connect,season:2026,now:Date.parse('2026-11-05')});assert.equal(repeat.changed,0);assert.equal(writes.length,0);assert.equal(await protectedRows(),before);
  }finally{await f.close();}
+});
+test('estimates always round upwards to five-point steps, capped at 90; official remains 100 or zero',()=>{
+ for(const [raw,result] of [[0,0],[.1,5],[20,20],[20.1,25],[21,25],[24.9,25],[25,25],[86,90],[90,90],[97,90],[100,90]])assert.equal(roundPresenceEstimate(raw),result);
+ assert.equal(roundPresenceEstimate(null),null);assert.equal(roundPresenceEstimate(NaN),null);
+ for(const pct of [0,21,97,100])assert.deepEqual(presenceProbability({play:{pct,source:'minutes-estimate'}}),{pct:roundPresenceEstimate(pct),source:'minutes-estimate'});
+ assert.deepEqual(presenceProbability({play:{pct:100,source:'official'}}),{pct:100,source:'official'});
 });

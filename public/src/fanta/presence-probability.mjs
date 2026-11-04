@@ -1,8 +1,10 @@
 // Official lineups win. Estimates are stored once by the backend, never learnt
 // from a previous forecast or from API-Football's rating instead of our base vote.
-export const PRESENCE_MODEL='recent-form-v2';
+export const PRESENCE_MODEL='recent-form-v3';
 const numeric=x=>x!==null&&x!==undefined&&x!==''&&Number.isFinite(Number(x))?Number(x):null;
 const clamp=x=>Math.max(0,Math.min(1,x));
+// Estimated presence is deliberately distinct from official selection (100/0).
+export const roundPresenceEstimate=value=>numeric(value)===null?null:Math.min(90,Math.ceil(Math.max(0,Number(value))/5)*5);
 export function currentPresenceEstimate(p){const e=p.presenceEstimate;return e?.model===PRESENCE_MODEL&&(!p.clubId||e.clubId===p.clubId)&&numeric(e.pct)!==null&&e.pct>=0&&e.pct<=100?e:null;}
 export function estimatePresence(p){
  if(/injured|suspended|unavailable|infortun|squalific|indispon/i.test(p.status?.type||''))return null;
@@ -18,22 +20,22 @@ export function estimatePresence(p){
  }
  for(const r of recent){if(r.known!==true||r.starter!==true)break;starts++;}
  for(const r of recent){if(r.known!==true||numeric(r.minutes)!==0)break;misses++;}
- if(!count)return prior===null?null:{pct:Math.min(97,Math.round(prior*100)),evidence:{recentMatches:0,starterStreak:0,missedStreak:0,seasonShare:prior}};
+ if(!count)return prior===null?null:{pct:roundPresenceEstimate(prior*100),evidence:{recentMatches:0,starterStreak:0,missedStreak:0,seasonShare:prior}};
  const recentShare=minuteShare/denominator,form=quality/denominator,recentWeight=.6+.3*(1-Math.exp(-(count-1)));
  let chance=(1-recentWeight)*(prior??recentShare)+recentWeight*recentShare;
  // Exponential saturation: recent consecutive starts quickly displace an old
  // bench-player prior, while remaining an estimate rather than a guaranteed XI.
  chance=1-(1-chance)*Math.exp(-.28*starts-.35*form);
  if(misses)chance*=Math.exp(-.3*misses);
- return {pct:Math.min(97,Math.max(0,Math.round(chance*100))),evidence:{recentMatches:count,starterStreak:starts,missedStreak:misses,seasonShare:prior,recentShare,recentWeight,goodForm:form}};
+ return {pct:roundPresenceEstimate(chance*100),evidence:{recentMatches:count,starterStreak:starts,missedStreak:misses,seasonShare:prior,recentShare,recentWeight,goodForm:form}};
 }
 export function presenceProbability(p){
  const value=numeric(p.play?.pct);
  if(p.play?.source==='official'&&value!==null&&value>=0&&value<=100)return {pct:Math.round(value),source:'official'};
  if(/injured|suspended|unavailable|infortun|squalific|indispon/i.test(p.status?.type||''))return null;
- const stored=currentPresenceEstimate(p);if(stored)return {pct:Math.min(97,Math.round(stored.pct)),source:'minutes-estimate'};
+ const stored=currentPresenceEstimate(p);if(stored)return {pct:roundPresenceEstimate(stored.pct),source:'minutes-estimate'};
  if(p.presenceEstimate?.model===PRESENCE_MODEL&&(!p.clubId||p.presenceEstimate.clubId===p.clubId))return null;
  if(p.stats?.recentPresence?.length){const estimate=estimatePresence(p);return estimate?{pct:estimate.pct,source:'minutes-estimate'}:null;}
- if(p.play?.source==='minutes-estimate'&&value!==null&&value>=0&&value<=100)return {pct:Math.min(97,Math.round(value)),source:'minutes-estimate'};
+ if(p.play?.source==='minutes-estimate'&&value!==null&&value>=0&&value<=100)return {pct:roundPresenceEstimate(value),source:'minutes-estimate'};
  const estimate=estimatePresence(p);return estimate?{pct:estimate.pct,source:'minutes-estimate'}:null;
 }
