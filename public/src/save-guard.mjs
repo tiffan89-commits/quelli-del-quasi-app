@@ -7,3 +7,11 @@ export function saveOnce(key,job){
  return promise;
 }
 export const savePending=key=>writes.has(key);
+
+// Retrying an identical draft reuses its key, including after a timeout.
+const slipAttempts=new Map();
+export function identifySlipSave(input,{user='',now=Date.now(),makeId=()=>crypto.randomUUID()}={}){
+ const signature=JSON.stringify([user,input.league,input.round,input.stake,input.baseSavedAt??null,Object.entries(input.picks||{}).sort(([a],[b])=>a.localeCompare(b))]);
+ const old=slipAttempts.get(signature);if(old&&now-old.at<24*3600000)return {...input,requestId:old.id};
+ const value={id:makeId(),at:now};slipAttempts.set(signature,value);while(slipAttempts.size>30)slipAttempts.delete(slipAttempts.keys().next().value);return {...input,requestId:value.id};
+}

@@ -19,6 +19,12 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.27] - 2026-11-04
+
+- Schedina Bar: salvataggio SQL mirato con ricevuta compatta, quote e controlli sul server, ritentativi identici senza doppio addebito; nessuna scansione globale di calendario e premi durante l'invio.
+- Formazione Fanta: autenticazione e validazione su dati essenziali, meno richieste al DB e blocco immediato del pulsante senza ricostruire lo studio; invii identici già salvati riconosciuti anche dopo la scadenza.
+- Probabilità di presenza: peso prevalente alle ultime cinque partite, crescita esponenziale per le titolarità consecutive, contributo delle buone prestazioni e di gol/assist decisivi verificati. Stime salvate in DB e aggiornate nei lavori esistenti, senza nuove chiamate al fornitore; voti e risultati invariati.
+
 ## [0.29.26] - 2026-11-04
 
 - Link pubblici con o senza estensione HTML riconosciuti dal server Windows e conteggiati nella stessa pagina Analytics, anche dopo la riscrittura degli URL da Netlify.

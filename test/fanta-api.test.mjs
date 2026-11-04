@@ -32,7 +32,8 @@ test('Fanta: native API satisfies delivered home, league, lineup and team contra
  assert.doesNotThrow(()=>renderIo({user:{username:'frankwood',name:'Test'},settings:{notify:{}}},[league.league],league.league.id));
  const auction=await(await call('auction?league=fanta-lucas-a')).json();assert.doesNotThrow(()=>renderAsta({...auction,status:'ended'}));
  const team=await(await call('team?league=fanta-lucas-a')).json();assert.equal(team.lineup.starters.length,11);assert.doesNotThrow(()=>renderSquadra({data:team,draft:{formation:'4-4-2',slots:{},bench:[]},sub:'rosa'}));
- await f.db.query("UPDATE fanta.rounds SET deadline='2000-01-01' WHERE league_id='fanta-lucas-a'");assert.equal((await call('lineup',{league:'fanta-lucas-a',round:1,...f.lineup('t1')})).status,409);
+ await f.db.query("UPDATE fanta.rounds SET deadline='2000-01-01' WHERE league_id='fanta-lucas-a'");assert.equal((await call('lineup',{league:'fanta-lucas-a',round:1,...f.lineup('t1')})).status,200);
+ assert.equal((await call('lineup',{league:'fanta-lucas-a',round:1,...f.lineup('t1'),bench:[...f.lineup('t1').bench].reverse()})).status,409);
  assert.deepEqual((await f.db.query('SELECT payload FROM fanta_state')).rows[0].payload,original);
  }finally{await f.close();}
 });

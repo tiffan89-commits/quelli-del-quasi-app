@@ -86,6 +86,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
   },
   async persistRoster(c,before,after,options){const result=await persistRosterChanges(c,before,after,options);await c.query('UPDATE fanta.auctions SET version=$2,data=$3 WHERE league_id=$1',[after.league.id,after.auction.version,JSON.stringify(after.auction)]);return result;},
   saveLineup:(uid,id,input,options)=>use(c=>saveLineup(c,uid,id,input,options)),
+  saveLineupForSession:(token,id,input,options)=>use(async c=>{const u=token?(await c.query(AUTH_SQL,[createHash('sha256').update(token).digest('hex'),Date.now()])).rows[0]:null;if(!u||!u.verified||u.demo||u.admin_only)fail('Accedi e conferma la tua email per entrare nel Fanta.',403);return saveLineup(c,u.id,id,input,{...options,username:u.username});}),
   connect,
   use,
  };

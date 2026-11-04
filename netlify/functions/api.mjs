@@ -1,4 +1,5 @@
 import {enrichStoredMatch} from '../../lib/lineup-presence.mjs';
+import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
 import {createLeaguePair,joinLinkedTeam} from '../../fanta/league-creation.mjs';
 import {dispatchFanta} from '../../fanta/jobs.mjs';
 import {inviteInfo} from '../../lib/public-area.mjs';
@@ -127,6 +128,7 @@ export function createApi({
   authTransact,
   membershipTransact,
   profileTransact,
+  slipSaver,
   env = process.env,
   deliverMail = deliverPendingMail,
   dispatchMail = dispatchAccountMail,
@@ -137,6 +139,7 @@ export function createApi({
   authTransact??=baseTransact===transaction?authTransaction:baseTransact;
   membershipTransact??=baseTransact===transaction?membershipTransaction:baseTransact;
   profileTransact??=baseTransact===transaction?profileTransaction:baseTransact;
+  slipSaver??=baseTransact===transaction?saveBarSlip:null;
   playerStore??=baseTransact===transaction?sqlPlayerStore:memoryPlayerStore();
   const portraitCache=new Map();let portraitBytes=0;
   return async (req, context = {}) => {
@@ -194,6 +197,7 @@ export function createApi({
       if (raw.length > 200000)
         return reply({ error: "Richiesta troppo grande" }, 413);
       const p = raw ? JSON.parse(raw) : {};
+      if(route==='slip'&&req.method==='POST'&&slipSaver){const data=await slipSaver(sid,p);recordFastActivity({route,uid:data.receipt?.uid,duration:Date.now()-started});return reply(data);}
       if(['register','forgot-password','resend-verification','activate','reset-password','set-email'].includes(route)&&p.requestId){
         if(typeof p.requestId!=='string'||!/^[A-Za-z0-9_-]{16,80}$/.test(p.requestId))fail('Identificativo richiesta non valido');
         accountRequest={id:p.requestId,digest:sha(JSON.stringify({route,p,actor:sha(sid||'')}))};
