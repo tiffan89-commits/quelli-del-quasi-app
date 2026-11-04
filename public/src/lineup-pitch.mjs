@@ -1,10 +1,10 @@
 import {roundPresenceEstimate} from './fanta/presence-probability.mjs';
+import {canonicalPitchRows} from './pitch-layout.mjs';
 import {playerSurname,playerJersey,opponentLabel} from './player-label.mjs';
 import {shirtBack} from './fanta/maglie-portieri.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function formationRows(team){
- const parts=String(team.formation||'').split('-').map(Number);if(!parts.length||parts.some(x=>!Number.isInteger(x)||x<1||x>5)||parts.reduce((a,b)=>a+b,0)!==10||team.players.length!==11)return null;
- let cursor=0;return [1,...parts].map(n=>{const row=team.players.slice(cursor,cursor+n);cursor+=n;return row;}).reverse();
+ return canonicalPitchRows(team)?.reverse()||null;
 }
 const same=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
 export const shirtSurname=playerSurname;

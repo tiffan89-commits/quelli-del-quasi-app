@@ -19,6 +19,8 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+- Posizioni in campo: coordinate esplicite prioritarie, ordine destra/sinistra dichiarato dagli importatori e normalizzazione unica delle linee. Il consenso conserva le posizioni della formazione scelta; le sostituzioni mantengono lo slot e gli schieramenti personali Fanta mantengono il proprio ordine.
+
 - Giocatori disponibili nelle probabili: selettore scorrevole Tutti/Portieri/Difensori/Centrocampisti/Attaccanti con conteggi, filtro immediato e dimensionamento dell'accordion; filtri indipendenti per squadra e nessuna nuova richiesta al server.
 
 - Probabili formazioni: al posto dei ballottaggi, elenco richiudibile degli altri giocatori disponibili del club, senza duplicati, in ordine di stima; indisponibili e inattivi esclusi. Panchine ufficiali e formazioni Fanta conservano il loro ordine.
