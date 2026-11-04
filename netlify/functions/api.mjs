@@ -1,6 +1,7 @@
 import {enrichStoredMatch} from '../../lib/lineup-presence.mjs';
 import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
 import {createLeaguePair,joinLinkedTeam} from '../../fanta/league-creation.mjs';
+import {detachBarCoach} from '../../fanta/linked-membership.mjs';
 import {dispatchFanta} from '../../fanta/jobs.mjs';
 import {inviteInfo} from '../../lib/public-area.mjs';
 import {liveSnapshot} from '../../lib/live-snapshot.mjs';
@@ -149,7 +150,7 @@ export function createApi({
         .filter(Boolean)
         .at(-1);
     const authRoute=['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email'].includes(activityRoute);
-    const membershipRoute=['create','join'].includes(activityRoute);
+    const membershipRoute=['create','join','member-remove','member-restore','league-prizes'].includes(activityRoute);
     const profileRoute=['profile','profile-avatar','profile-reminders','profile-email-reminders','support','fantacalcio-waitlist'].includes(activityRoute);
     const deliverAccount=async jobId=>deliverMail!==deliverPendingMail?deliverMail({jobId,transactionFn:authTransact,env}):dispatchMail(jobId,{env});
     let accountRequest=null;
@@ -621,7 +622,7 @@ export function createApi({
         }
         else {
           if (l.admin !== u.id) fail("Serve il presidente di lega", 403);
-          if (route === "member-remove") removeLeagueMember(l, p.uid, u.id);
+          if (route === "member-remove") {removeLeagueMember(l, p.uid, u.id);if(c)await detachBarCoach(c,l,p.uid);}
           else if (route === "member-restore")
             restoreLeagueMember(l, p.uid, u.id);
           else if (route === "league-prizes")

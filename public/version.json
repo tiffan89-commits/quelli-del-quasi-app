@@ -1,6 +1,6 @@
 {
-  "version": "0.29.29",
-  "releasedAt": "2026-11-04T13:14:02.079Z",
+  "version": "0.29.30",
+  "releasedAt": "2026-11-04T16:22:12.225Z",
   "features": [
     "dedicated-admin-mfa",
     "admin-wipe-controls",
