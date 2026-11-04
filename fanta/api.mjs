@@ -13,6 +13,7 @@ import {currentRound,homeView,teamView,roundView,matchupView,leagueView} from '.
 import {auctionAction,auctionView,auctionTickDue} from './auction.mjs';
 import {saveTeamLogo} from './team-logo.mjs';
 import {competitionAction} from './competitions.mjs';
+import {teamChoices} from './team-choices.mjs';
 export const betaUser=(u,env=process.env)=>!!u&&u.verified&&!u.demo&&!u.admin_only&&String(env.FANTA_BETA_USERS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(u.username?.toLowerCase());
 const betaLeagues=env=>String(env.FANTA_BETA_LEAGUES||'fanta-lucas-a').split(',').map(x=>x.trim());
 export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.now,presenceCache=databaseReadCache()}={}){
@@ -30,14 +31,16 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(!eligible)fail('Accedi e conferma la tua email per entrare nel Fanta.',403);
    if(route==='pilot/teams')fail('Entra nel Bar della tua lega per scegliere una squadra',410);
    if(route==='bootstrap'&&request.method==='GET'){
-    const leagues=allowed,selected=leagues.find(l=>l.id===url.searchParams.get('league'))||leagues[0];
+    const leagues=allowed,choices=store.connect?await teamChoices(u.id,{connect:store.connect}):[],requested=url.searchParams.get('league'),choice=choices.find(l=>l.id===requested)||(!leagues.length?choices[0]:null),selected=choice?null:leagues.find(l=>l.id===requested)||leagues[0];
     const initial=selected?await store.league(u.id,selected.id,s=>{const r=currentRound(s,now());if(url.searchParams.get('lite')==='1')return {home:homeView(s,u.id,now())};const mine=s.teams.find(t=>t.userId===u.id)?.id,m=r&&s.matchups.find(m=>m.round===r.number&&(m.home_id===mine||m.away_id===mine));return {home:homeView(s,u.id,now()),team:teamView(s,u.id,now()),league:leagueView(s,u.id,now()),round:r?roundView(s,r,u.id,now()):null,matchup:m?matchupView(s,r,m.id,u.id,now()):null};},{competition:url.searchParams.get('competition')}):{};
-    if(initial.home)initial.home=await withFinalVerification(initial.home,{now:now()});return reply({me:await me(),leagues,...initial});
+    if(initial.home)initial.home=await withFinalVerification(initial.home,{now:now()});return reply({me:await me(),leagues,teamChoices:choices,choiceLeagueId:choice?.id||null,...initial});
    }
    let p={};if(request.method==='POST'){const body=await request.text();if(body.length>(route==='team/logo'?350000:16384))fail('Richiesta troppo grande',413);try{p=JSON.parse(body);}catch{fail('Richiesta non valida');}}
    if(route==='pilot/claim')fail('Le iscrizioni pubbliche alla lega pilota sono chiuse',410);
    if(route==='settings'&&request.method==='POST'){const keys=['lineupReminder','roundStart','liveEvents','results','auction'];if(!p.notify||keys.some(k=>typeof p.notify[k]!=='boolean')||Object.keys(p.notify).some(k=>!keys.includes(k)))fail('Impostazioni non valide');return reply(await store.settings(u.id,{notify:Object.fromEntries(keys.map(k=>[k,p.notify[k]]))}));}
    if(route==='random/status'&&request.method==='GET')return reply(await randomStatus(u,{connect:store.connect}));
+   if(route==='team/choices'&&request.method==='GET')return reply(await teamChoices(u.id,{connect:store.connect}));
+   if(route==='team/claim'&&request.method==='POST')return reply(await claimRandom(u,p.league,{connect:store.connect,teamId:p.team??null}));
    if(route==='random/create'&&request.method==='POST'){const job=await queueRandom(u,p,{connect:store.connect});try{await dispatchFanta('random:'+job.id,env);}catch{return reply({...job,dispatchPending:true},202);}return reply(job,202);}
    if(route==='random/retry'&&request.method==='POST'){const jobs=await randomStatus(u,{connect:store.connect}),job=jobs.find(j=>j.id===p.job);if(!job||!['queued','failed'].includes(job.status))fail('Lavoro non disponibile',409);await dispatchFanta('random:'+job.id,env);return reply({ok:true},202);}
    if(route==='random/claim'&&request.method==='POST')return reply(await claimRandom(u,p.league,{connect:store.connect}));

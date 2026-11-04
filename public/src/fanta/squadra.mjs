@@ -350,6 +350,7 @@ export function renderPickSheet(sq, slot, guided = false) {
       <div><h2 id="fanta-sheet-title">${PICK_TITLE[role]}</h2><small>${cur ? `Ora c'è ${esc(cur.name)}` : guided ? `Titolare ${all - missingOf(d) + 1} di ${all}` : 'Posto libero'} · i disponibili per primi</small></div>
       <button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div>
     ${guided ? pickProgress(d) : ''}
+    <div class="fanta-pick-roles" role="group" aria-label="Scegli il reparto">${Object.entries(countsOf(d.formation)).map(([r,total])=>`<button type="button" class="v2-chip${r===role?' is-active':''}" data-pick-role="${r}" aria-pressed="${r===role}">${ROLE_PLURAL[r]} <small>${Object.entries(d.slots).filter(([s,id])=>s[0]===r&&id).length}/${total}</small></button>`).join('')}<button type="button" class="v2-chip" data-bench-add="1">Panchina</button></div>
     <div class="fanta-pick-list">${list.map(p => pickRow(p, d, 'data-pick')).join('')}</div>
     ${cur ? '<button type="button" class="secondary fanta-add" data-unpick="1">Lascia il posto vuoto</button>' : guided ? '<button type="button" class="secondary fanta-add" data-action="close-sheet">Basta così, continuo dal campo</button>' : ''}`;
 }

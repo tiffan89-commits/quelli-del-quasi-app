@@ -24,7 +24,7 @@ body.fs-open{overflow:hidden}
 .fs-lines i:before{left:-2px;border-left:0}.fs-lines i:after{right:-2px;border-right:0}
 .fs-col{position:relative;display:flex;flex-direction:column;justify-content:space-around;align-items:center;padding:4px 0}
 .fs-token{display:flex;flex-direction:column;align-items:center;gap:1px;width:66px;padding:0;background:none;border:0;color:var(--white)}
-.fs-token b{max-width:66px;font-size:9.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;border-radius:4px;background:#0c1815b3}
+.fs-token b{max-width:100%;font-size:12px;font-weight:700;white-space:normal;overflow-wrap:anywhere;padding:1px 3px;border-radius:4px;background:#0c1815e6;line-height:1.05}
 .fs-shirt{position:relative;display:block;width:32px;height:32px;flex:0 0 auto}
 .fs-shirt.sm{width:26px;height:26px}
 .fs-ring{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px dashed #ffffffa6;background:#0c181540;font-size:11px;font-weight:800;color:#ffffffd9}
@@ -135,3 +135,17 @@ body.fs-open{overflow:hidden}
 .fs-dock.is-droppable{box-shadow:inset 0 0 0 2px #e7746e66}.fs-dock.is-over{box-shadow:inset 0 0 0 2px #ff9e97;background:#342420}.fs-dock.is-droppable>.fs-hint{font-size:0}.fs-dock.is-droppable>.fs-hint:before{content:'Rilascia qui per togliere il giocatore';font-size:11px;color:#ffb9b1}.fs-dock.is-droppable>.fs-hint>span{display:none}
 @media(max-width:600px){.fs-head{gap:6px}.fs-close{width:32px;height:32px}.fs-title b{font-size:16px;white-space:normal;line-height:1.1}.fs-title b>span{display:block;font-size:12px;white-space:nowrap}.fs-title small{font-size:9px}.fs-actions .fs-quick{padding-inline:9px;font-size:11px;min-height:34px}.fs-head{min-height:66px}}
 @media(max-width:359px){.fs-head{padding-inline:8px;gap:5px}.fs-actions .fs-quick{padding-inline:7px;font-size:10px}.fs-title b{font-size:14px}.fs-title b>span{font-size:11px}}
+
+/* Readable names are never squeezed out by a shrinking shirt row. */
+.fs-pitch{height:clamp(228px,33dvh,320px);min-height:228px;--fs-token-size:24px}
+.fs-col{min-width:0;padding:5px 1px;gap:3px}
+.fs-token{width:100%;max-width:96px;flex:0 0 auto;gap:2px}
+.fs-token>b{flex:none;font:700 12px/1.05 'DM Sans',sans-serif;max-width:100%;min-height:13px;white-space:normal;overflow:visible;overflow-wrap:anywhere;text-overflow:clip}
+.fs-token>.fs-shirt,.fs-token>.fs-ring{width:24px;height:24px}
+.fs-bench-row{height:60px}.fs-bcell{width:76px;flex-shrink:0;gap:3px}.fs-bcell>b{max-width:76px;font-size:11px;line-height:1.05;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.fs-grid{grid-template-rows:minmax(120px,1fr);grid-auto-columns:112px}
+.fs-tile>b{font-size:13px;line-height:1.15;white-space:normal;overflow:visible;overflow-wrap:anywhere;flex-shrink:0}
+.fs-tile .fs-shirt{width:36px;height:36px;flex-shrink:0}.fs-tile>small{font-size:11px;flex-shrink:0}
+.fs-legend{flex-wrap:wrap;font-size:10px;gap:4px 8px}
+@media(max-height:700px){.fs-pitch{height:218px;min-height:218px}.fs-token>b{font-size:11px}.fs-token>.fs-shirt,.fs-token>.fs-ring{width:22px;height:22px}.fs-bench-row{height:54px}.fs-grid{grid-template-rows:minmax(108px,1fr)}.fs-hint{font-size:10px;margin-bottom:3px}}
+@media(max-height:480px) and (min-width:600px){.fs-pitch{height:calc(100dvh - 160px);min-height:200px}.fs-token>b{font-size:11px}.fs-grid{grid-template-rows:minmax(110px,1fr)}}

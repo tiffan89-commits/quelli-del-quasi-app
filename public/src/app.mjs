@@ -2465,6 +2465,7 @@ function applyLive(data){
   }
 }
 document.addEventListener('quasi:chat-context',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league||l.id===e.detail?.league);syncChatLauncher(linked||null);if(linked)updateChatWidget();});
+document.addEventListener('quasi:fanta-team-claimed',()=>{void refresh();});
 document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked)syncChatLauncher(linked);openLeagueChat();});
 document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['profilo','regolamento','admin','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}void navigatePage(target.dataset.barPage==='invita'?'profilo':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
