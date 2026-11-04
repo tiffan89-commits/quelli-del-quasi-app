@@ -19,6 +19,10 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.23] - 2026-11-04
+
+- Ripristinati gli adattatori gestiti Netlify per database e cache; il runtime Windows continua a selezionare esplicitamente gli adattatori locali.
+
 - Banner principale Fanta con lo stemma della propria squadra: il tocco apre direttamente l'editor esistente, senza caricare prima la sezione Squadra. Logo aggiornato nelle viste già aperte dopo il salvataggio.
 - Oggi Fanta: rimossi i pulsanti Panoramica/Risultati e voti; il riquadro La tua sfida apre i risultati della propria giornata. Avviso dei definitivi sotto la sfida, senza spazio aggiuntivo sopra la dashboard.
 - Voti: fascia neutra simmetrica intorno al riferimento del ruolo, con contributo nullo e statistiche gialle. Tolleranza legata alla variabilità e all'esposizione; le differenze oltre la fascia incidono gradualmente. Le percentuali hanno una tolleranza minima di due punti percentuali. Formula condivisa tra motore e dettaglio giocatore, senza cambiare bonus/malus e soglie degli episodi.

@@ -1,6 +1,6 @@
 {
   "name": "fantaschedina",
-  "version": "0.29.22",
+  "version": "0.29.23",
   "private": true,
   "type": "module",
   "engines": {
@@ -26,12 +26,13 @@
     "@jsquash/webp": "1.5.0",
     "linkedom": "0.18.14",
     "pg": "^8.16.0",
-    "web-push": "3.6.7"
+    "web-push": "3.6.7",
+    "@netlify/blobs": "11.1.7",
+    "@netlify/database": "^1.0.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17",
     "fflate": "0.8.3",
-    "esbuild": "0.28.1",
-    "@netlify/blobs": "11.1.7"
+    "esbuild": "0.28.1"
   }
 }
