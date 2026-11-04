@@ -17,7 +17,7 @@ test('no script, measurement, ping or event queue exists before consent or after
 });
 test('opt-in loads one deferred tag, one page view and strips private URLs and referrers',()=>{
  const f=fixture();f.controller.start();f.controller.consent(true);assert.equal(f.scripts.length,0);f.flush();assert.equal(f.scripts.length,1);
- const calls=f.win.dataLayer;assert.equal(calls.filter(c=>c[0]==='config').length,1);assert.equal(calls.filter(c=>c[1]==='page_view').length,1);
+ const calls=f.win.dataLayer;assert.equal(Object.prototype.toString.call(calls[0]),'[object Arguments]');assert.equal(calls.filter(c=>c[0]==='config').length,1);assert.equal(calls.filter(c=>c[1]==='page_view').length,1);
  assert.equal(calls.find(c=>c[0]==='config')[2].allow_google_signals,false);assert.equal(calls.find(c=>c[0]==='config')[2].send_page_view,false);
  f.controller.page();assert.equal(calls.filter(c=>c[1]==='page_view').length,1);
  f.win.location.hash='#/fanta/squadra?lega=another-secret&giornata=8';f.events.get('quasi:navigation')();f.flush();assert.equal(calls.filter(c=>c[1]==='page_view').length,2);

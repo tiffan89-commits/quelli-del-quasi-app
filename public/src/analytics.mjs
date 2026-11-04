@@ -35,7 +35,8 @@ export function createAnalytics({win,doc,config,now=Date.now,schedule=fn=>win.re
  let granted=readConsent(storage,now())===true,loaded=false,configured=false,lastScreen=null,disposed=false;
  const protectedOrigin='https://quellidelquasi.com';
  const safeReferrer=()=>{try{return new URL(doc.referrer).origin+'/';}catch{return '';}};
- const send=(...args)=>{if(!enabled||!granted||disposed)return;win.dataLayer??=[];win.dataLayer.push(args);};
+ // gtag commands must retain Google's Arguments-object format, not plain arrays.
+ function send(){if(!enabled||!granted||disposed)return;win.dataLayer??=[];win.dataLayer.push(arguments);}
  const context=()=>{const path=analyticsScreen(win.location);return {page_location:protectedOrigin+path,page_referrer:safeReferrer(),page_title:'Quelli del Quasi · '+path,page_path:path,app_surface:win.matchMedia?.('(display-mode: standalone)')?.matches?'pwa':'web'};};
  function page(){if(!enabled||!granted||!configured||disposed)return;const c=context();if(c.page_path===lastScreen)return;lastScreen=c.page_path;send('set',c);send('event','page_view',{...c,send_to:id});}
  function load(){
