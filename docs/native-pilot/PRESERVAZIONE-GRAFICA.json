@@ -1,0 +1,10 @@
+{
+  "unchangedDefinitions": [
+    "public/src/avatar.mjs",
+    "public/src/reward-catalog.mjs",
+    "public/src/achievements.mjs",
+    "public/src/locker-rooms.mjs"
+  ],
+  "drawingsMatchDelivery": true,
+  "defaultAvatarBytes": 6347
+}

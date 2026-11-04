@@ -1,0 +1,96 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@jsquash/png", "@jsquash/jpeg", "@jsquash/webp", "wasm-feature-detect"]
+  included_files = ["lib/release-context.json", "lib/operations/bootstrap-calendar.json", "node_modules/@jsquash/**/*.wasm"]
+[functions."operational-dispatch"]
+  schedule = "* * * * *"
+[[redirects]]
+  from = "https://www.quellidelquasi.com/*"
+  to = "https://quellidelquasi.com/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/invito/*"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+[[redirects]]
+  from = "/fanta-api/*"
+  to = "/.netlify/functions/fanta-api/:splat"
+  status = 200
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+
+[[headers]]
+  for = "/account.html"
+  [headers.values]
+    Cache-Control = "no-store"
+    Referrer-Policy = "no-referrer"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Release metadata only: application build/publish/functions are unchanged.
+[context.production]
+  command = "npm run build:production"
+  [context.production.environment]
+    APP_ENV = "production"
+    ENABLE_ENV_BANNER = "0"
+[context.staging]
+  command = "npm run build"
+  [context.staging.environment]
+    APP_ENV = "staging"
+    ENABLE_ENV_BANNER = "1"
+[context.deploy-preview]
+  command = "npm run build"
+  [context.deploy-preview.environment]
+    APP_ENV = "preview"
+    ENABLE_ENV_BANNER = "1"
+# Non-production noindex is generated as public/_headers by the build script.
+
+[[headers]]
+  for = "/assets/teams/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+[[headers]]
+  for = "/assets/rooms-v2/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+[[headers]]
+  for = "/assets/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+[[headers]]
+  for = "/assets/optimized/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/src/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/build/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

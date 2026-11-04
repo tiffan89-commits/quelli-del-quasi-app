@@ -1,0 +1,37 @@
+{
+  "name": "fantaschedina",
+  "version": "0.29.22",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "test": "node --import ./test/setup-release-context.mjs --test test/*.test.mjs",
+    "build": "node scripts/build-release-env.mjs && node scripts/build-ux.mjs",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major",
+    "build:production": "node scripts/build-release-env.mjs --production && node scripts/build-ux.mjs --production",
+    "start": "node --env-file-if-exists=.env runtime/server.mjs",
+    "worker": "node --env-file-if-exists=.env runtime/worker.mjs",
+    "migrate": "node --env-file-if-exists=.env runtime/migrate.mjs",
+    "init-admin": "node --env-file-if-exists=.env runtime/init-admin.mjs",
+    "test:selfhost": "node --test test/selfhost*.test.mjs"
+  },
+  "dependencies": {
+    "@jsquash/jpeg": "1.6.0",
+    "@jsquash/png": "3.1.1",
+    "@jsquash/webp": "1.5.0",
+    "linkedom": "0.18.14",
+    "pg": "^8.16.0",
+    "web-push": "3.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "fflate": "0.8.3",
+    "esbuild": "0.28.1",
+    "@netlify/blobs": "11.1.7"
+  }
+}

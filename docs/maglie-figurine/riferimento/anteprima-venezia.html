@@ -1,0 +1,138 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<style>
+@font-face{font-family:'Barlow Condensed';src:local('DejaVu Sans Condensed Bold');font-weight:700 800}
+*{box-sizing:border-box}
+body{margin:0;background:#0f1b17;color:#f6f3e7;font-family:'Inter',sans-serif;width:390px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px 0}
+.tabs b{padding:14px;text-align:center;font-weight:500;font-size:16px;border:1px solid #2b3c32;color:#c9d1c6}
+.tabs b.on{background:#cdb983;color:#1b1a14;border-color:#cdb983}
+.head{display:flex;justify-content:space-between;align-items:baseline;padding:22px 16px 12px}
+.head h1{margin:0;font:800 30px 'Barlow Condensed',sans-serif}
+.head span{color:#7fb2d6;font:600 18px 'Barlow Condensed',sans-serif;letter-spacing:.06em}
+.pitch{margin:0 16px;border-radius:20px;border:1px solid #3a5a44;background:linear-gradient(#2a5a3e,#244f37);padding:12px 10px 16px;position:relative;overflow:hidden}
+.pitch:before{content:"";position:absolute;inset:12px;border:1px solid #ffffff2e;border-radius:4px}
+.pitch:after{content:"";position:absolute;left:50%;top:42%;width:110px;height:110px;margin-left:-55px;border:1px solid #ffffff26;border-radius:50%}
+.row{display:flex;justify-content:space-around;margin:14px 0;position:relative;z-index:1}
+.pl{display:flex;flex-direction:column;align-items:center;gap:5px;width:66px}
+.fig{position:relative;width:76px;height:72px;display:flex;align-items:center;justify-content:center}
+
+.fig svg{flex:none;width:76px;height:76px;filter:drop-shadow(0 4px 4px #0009)}
+.pct{margin-top:-4px;font:700 11px 'Inter',sans-serif;color:#fff;background:#0c1815;border:1.5px solid #f6f3e7;border-radius:999px;padding:2px 7px}
+.pct.warn{color:#f2c230;border-color:#f2c230}
+.row-5 .pl{width:64px}.row-5 .fig{width:64px;height:64px}.row-5 .fig svg{width:66px;height:66px}
+.nm{font-size:12.5px;color:#f6f3e7;white-space:nowrap;text-shadow:0 1px 2px #000}
+.box{margin:18px 16px 0;border:1px solid #2b3c32;border-radius:16px;padding:16px}
+.box h3{margin:0;color:#7fb2d6;font-size:17px}
+.ball{display:flex;align-items:center;gap:16px;margin-top:14px}
+.ball .duel{display:flex;gap:10px}
+.mini{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px}
+.mini .fig{width:56px;height:66px}.mini .fig svg{width:58px;height:58px}
+.ball ul{list-style:none;margin:0;padding:0;flex:1}.ball li{display:flex;justify-content:space-between;padding:4px 0}
+.foot{color:#9ba99e;font-size:12px;padding:16px}
+</style></head><body>
+<div class="tabs"><b class="on">Venezia</b><b>Udinese</b></div>
+<div class="head"><h1>Venezia</h1><span>3-5-2</span></div>
+<div class="pitch"><div class="row"><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Lauberbach, numero 9">
+    <defs><clipPath id="bk1"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk1)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke" textLength="24" lengthAdjust="spacingAndGlyphs">LAUBERBACH</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">9</text>
+  </svg></div><span class="pct">100%</span></div><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Adams, numero 11">
+    <defs><clipPath id="bk2"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk2)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke">ADAMS</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">11</text>
+  </svg></div><span class="pct">100%</span></div></div><div class="row row-5"><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Hainaut, numero 2">
+    <defs><clipPath id="bk3"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk3)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke">HAINAUT</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">2</text>
+  </svg></div><span class="pct">100%</span></div><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Sohm, numero 8">
+    <defs><clipPath id="bk4"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk4)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke">SOHM</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">8</text>
+  </svg></div><span class="pct">100%</span></div><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Busio, numero 6">
+    <defs><clipPath id="bk5"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk5)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke">BUSIO</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">6</text>
+  </svg></div><span class="pct">100%</span></div><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Helgason, numero 10">
+    <defs><clipPath id="bk6"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk6)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke">HELGASON</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">10</text>
+  </svg></div><span class="pct warn">50%</span></div><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Mazzocchi, numero 7">
+    <defs><clipPath id="bk7"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk7)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke" textLength="24" lengthAdjust="spacingAndGlyphs">MAZZOCCHI</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">7</text>
+  </svg></div><span class="pct">100%</span></div></div><div class="row"><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Halhal, numero 4">
+    <defs><clipPath id="bk8"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk8)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke">HALHAL</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">4</text>
+  </svg></div><span class="pct">100%</span></div><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Moreno, numero 5">
+    <defs><clipPath id="bk9"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk9)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke">MORENO</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">5</text>
+  </svg></div><span class="pct">100%</span></div><div class="pl">
+<div class="fig"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Juan Jesus, numero 3">
+    <defs><clipPath id="bk10"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk10)"><rect width="40" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#f37021" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#f37021" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke" textLength="24" lengthAdjust="spacingAndGlyphs">JUAN JESUS</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">3</text>
+  </svg></div><span class="pct">100%</span></div></div><div class="row"><div class="pl">
+<div class="fig gk"><svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="Stankovic, numero 1">
+    <defs><clipPath id="bk11"><path d="M14 4 L8 6 L2 13 L2.5 28 L7.5 28 L10 18 L10 37 L30 37 L30 18 L32.5 28 L37.5 28 L38 13 L32 6 L26 4 Q20 5.5 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#bk11)"><rect width="40" height="40" fill="#f2c230"/></g>
+    <path d="M14 4 L8 6 L2 13 L2.5 28 L7.5 28 L10 18 L10 37 L30 37 L30 18 L32.5 28 L37.5 28 L38 13 L32 6 L26 4 Q20 5.5 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="#111111" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M2.6 26.6 L7.6 26.6 M32.4 26.6 L37.4 26.6" stroke="#111111" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="5" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke" textLength="24" lengthAdjust="spacingAndGlyphs">STANKOVIC</text>
+    <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">1</text>
+  </svg></div><span class="pct">100%</span></div></div></div>
+<div class="box"><h3>▸ Panchina · 16</h3></div>
+<div class="box"><h3>▸ Indisponibili e in dubbio</h3></div>
+<div class="foot">Stima basata su 2 fonti · copertura parziale · numeri di maglia di esempio</div>
+</body></html>

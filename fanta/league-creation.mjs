@@ -1,0 +1,34 @@
+import {randomUUID} from 'node:crypto';
+import {newLeague,fail} from '../lib/game.mjs';
+import {DEFAULT_RULES} from './rules.mjs';
+export async function createLeaguePair(c,s,user,input,{season=2026,now=Date.now()}={}){
+ const mode=input.rosterMode||'empty',requestedSize=Number(input.size??8),requestId=input.requestId||randomUUID();
+ if(!['empty','random'].includes(mode)||!Number.isInteger(requestedSize)||requestedSize<2||requestedSize>12)fail('Scegli rose vuote o random e da 2 a 12 squadre');
+ if(!/^[a-f0-9-]{36}$/.test(requestId))fail('Identificatore della richiesta non valido');
+ const previous=(await c.query('SELECT * FROM fanta.creation_jobs WHERE id=$1',[requestId])).rows[0];
+ if(previous){if(previous.owner_uid!==user.id)fail('Richiesta non accessibile',403);if(previous.roster_mode!==mode||previous.name!==String(input.name||'Quelli del quasi').trim().replace(/\s+/g,' ').slice(0,80))fail('Questa richiesta è già stata usata con impostazioni diverse',409);return {ok:true,league:previous.bar_id,fantaLeague:previous.league_id,reused:true,creationStatus:previous.status};}
+ const count=s.leagues.length,bar=newLeague(s,user,input.name),linked=(await c.query('SELECT fanta_league_id FROM fanta.bar_links WHERE bar_league_id=$1 AND active',[bar.id])).rows[0];
+ if(linked)return {ok:true,league:bar.id,fantaLeague:linked.fanta_league_id,reused:true};
+ const size=s.leagues.length===count&&bar.members.length>1?bar.members.length:requestedSize;if(size>12)fail('Questa lega ha più di 12 membri: contatta l’amministratore');
+ const id=(mode==='random'?'random:':'league:')+requestId,status=mode==='random'?'queued':'ready',at=new Date(now).toISOString();
+ if(mode==='random'){
+  const counts=(await c.query(`SELECT p.role,count(*)::int AS n FROM fanta.players p WHERE coalesce((p.data->>'active')::boolean,true) AND EXISTS(SELECT 1 FROM fanta.fixtures f WHERE f.season=$1 AND p.club_id IN(f.home_id,f.away_id)) GROUP BY p.role`,[season])).rows;
+  for(const [role,slots]of Object.entries(DEFAULT_RULES.roster))if((counts.find(x=>x.role===role)?.n||0)<size*slots)fail('Listone insufficiente nel ruolo '+role+' per '+size+' squadre');
+ }
+ await c.query(`INSERT INTO fanta.leagues(id,name,season,admin_uid,invite_code,rules,max_members,kind,auto_lineups_from) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[id,bar.name,season,user.id,'L-'+requestId,JSON.stringify({...DEFAULT_RULES,rosterMode:mode,creationPending:mode==='random'}),size,mode==='random'?'random':'standard',mode==='random'?at:null]);
+ const initialMembers=[user.id,...bar.members.map(m=>m.uid).filter(uid=>uid!==user.id)].slice(0,size);
+ const teams=Array.from({length:size},(_,i)=>{const uid=initialMembers[i]||null,coach=uid?s.users.find(u=>u.id===uid):null;return {id:id+':'+i,league_id:id,name:uid?'La squadra di '+(coach?.name||coach?.username||user.name||user.username):'Squadra '+(i+1),manager:uid?(coach?.name||coach?.username||user.name||user.username):'Allenatore da assegnare',user_id:uid,color:['#b64b5a','#d4aa45','#608ca8','#78a67b','#9a72b2','#df8952'][i%6]};});
+ await c.query(`INSERT INTO fanta.teams(id,league_id,name,manager,user_id,color) SELECT id,league_id,name,manager,user_id,color FROM jsonb_to_recordset($1::jsonb) x(id text,league_id text,name text,manager text,user_id text,color text)`,[JSON.stringify(teams)]);
+ await c.query(`INSERT INTO fanta.competitions(id,league_id,name,kind,status) VALUES($1,$2,'Campionato','league','draft')`,[id+':main',id]);
+ await c.query(`INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key,active) VALUES($1,$2,$2||':main',$3,true) ON CONFLICT(bar_league_id) DO UPDATE SET fanta_league_id=EXCLUDED.fanta_league_id,competition_id=EXCLUDED.competition_id,competition_key=EXCLUDED.competition_key,active=true WHERE NOT fanta.bar_links.active`,[bar.id,id,'native:'+id]);
+ await c.query(`INSERT INTO fanta.creation_jobs(id,bar_id,owner_uid,size,name,status,league_id,roster_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[requestId,bar.id,user.id,size,bar.name,status,id,mode]);
+ bar.nativeFantaLink={leagueId:id,competitionId:id+':main',coachIds:initialMembers};bar.fantaSlipsEnabled=true;bar.fantaCreation={jobId:requestId,status,rosterMode:mode,size};
+ return {ok:true,league:bar.id,fantaLeague:id,reused:s.leagues.length===count,creationStatus:status,...(status==='queued'?{jobId:requestId}:{}),message:mode==='random'?'Bar e Fanta creati. Le rose equilibrate saranno disponibili tra qualche minuto.':'Bar e Fanta creati. Squadre vuote pronte per l’asta iniziale.'};
+}
+export async function joinLinkedTeam(c,bar,user){
+ const id=bar.nativeFantaLink?.leagueId;if(!id)return;
+ const league=(await c.query(`SELECT id FROM fanta.leagues WHERE id=$1 AND source_key IS NULL AND rules->>'disabledAt' IS NULL`,[id])).rows[0];if(!league)return;
+ let team=(await c.query('SELECT id FROM fanta.teams WHERE league_id=$1 AND user_id=$2',[id,user.id])).rows[0];
+ if(!team){team=(await c.query('SELECT id FROM fanta.teams WHERE league_id=$1 AND user_id IS NULL ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED',[id])).rows[0];if(team)await c.query('UPDATE fanta.teams SET user_id=$2,manager=$3,joined_at=now() WHERE id=$1',[team.id,user.id,user.name||user.username]);}
+ if(team)bar.nativeFantaLink.coachIds=[...new Set([...(bar.nativeFantaLink.coachIds||[]),user.id])];
+}

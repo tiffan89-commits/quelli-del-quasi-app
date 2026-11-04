@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parseHTML} from 'linkedom';
+import {totalOdds,renderSlipV2,bindSlipV2} from '../public/src/v2/slip-v2.mjs';
+import {patchSlipResults} from '../public/src/slip-results.mjs';
+const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
+const round=()=>({id:'r',kickoff:'2099-01-01T12:00:00Z',rules:{maxStake:20},matches:[1,2,3].map(id=>({id:String(id),home:'Casa '+id,away:'Ospite '+id,odds:{'1':2,'X':3,'2':4,'X2':1.5},status:'NS'}))});
+const view=r=>renderSlipV2({round:r,picks:{'1':'1'},esc,fmt:String,date:String});
+test('passo 9: quota totale assente o prodotto di tre scelte',()=>{
+ const r=round();assert.equal(totalOdds(r,{}),null);assert.equal(totalOdds(r,{'1':'1','2':'X','3':'2'}),24);
+});
+test('passo 9: ogni gara espone gli agganci per aggiornare solo il risultato',()=>{
+ const r=round(),{document}=parseHTML('<html><body>'+view(r)+'</body></html>');
+ assert.equal(document.querySelectorAll('[data-match-card]').length,3);
+ assert.equal(document.querySelectorAll('[data-inline-result]').length,3);
+ const row=document.querySelector('[data-match-card="1"]'),choice=row.querySelector('[data-pick]');
+ r.matches[0].status='LIVE';r.matches[0].liveScore=[1,0];r.matches[0].clock="25'";
+ patchSlipResults(document,r,{'1':'1'},true);
+ assert.equal(document.querySelector('[data-match-card="1"]'),row);
+ assert.equal(row.querySelector('[data-pick]'),choice);
+ assert.match(row.querySelector('[data-inline-result]').textContent,/LIVE.*1 – 0/);
+ assert.ok(choice.classList.contains('pick-winning'));
+});
+test('passo 9: mercati aggiuntivi e callback mantengono gli identificatori',()=>{
+ const {document}=parseHTML('<html><body>'+renderSlipV2({round:round(),openMatch:'1',esc,fmt:String,date:String})+'</body></html>');
+ const calls=[];bindSlipV2(document,{onPick:(...a)=>calls.push(['pick',...a]),onToggle:id=>calls.push(['toggle',id]),onStake:v=>calls.push(['stake',v]),onSave:()=>calls.push(['save']),onGo:p=>calls.push(['go',p])});
+ document.querySelector('[data-pick="1"][data-value="X2"]').click();
+ document.querySelector('[data-v2-more="2"]').click();document.querySelector('[data-v2-stake="20"]').click();
+ document.querySelector('#save-slip').click();document.querySelector('[data-v2-go]').click();
+ assert.deepEqual(calls,[['pick','1','X2'],['toggle','2'],['stake',20],['save'],['go','regolamento']]);
+});
+const f=String;
+test('passo 9: le gare restano apribili e i mercati si richiudono anche dopo la scelta',()=>{
+ const r={matches:[{id:'m',home:'Casa',away:'Fuori',odds:{'1':2,'X2':1.5}}]};
+ const closed=renderSlipV2({round:r,picks:{m:'X2'},openMatch:null,esc:f,fmt:f,date:f});
+ assert.match(closed,/data-detail="m"/);assert.doesNotMatch(closed,/class="v2-odds-extra"/);
+ const open=renderSlipV2({round:r,picks:{m:'X2'},openMatch:'m',esc:f,fmt:f,date:f});
+ assert.match(open,/class="v2-odds-extra"/);
+ const points=renderSlipV2({round:{...r,pointsOnly:true},openMatch:'m',esc:f,fmt:f,date:f});
+ assert.doesNotMatch(points,/data-v2-more|data-value="X2"/);
+});

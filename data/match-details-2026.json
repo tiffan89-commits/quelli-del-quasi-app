@@ -1,0 +1,100 @@
+{
+  "version": "2026-10-29-goals-cards",
+  "matches": {
+    "401874993": {
+      "source": "ESPN",
+      "updatedAt": "2026-10-28T21:30:00Z",
+      "complete": true,
+      "events": [
+        {
+          "id": "54410027",
+          "kind": "goal",
+          "minute": "8'",
+          "seconds": 462,
+          "team": "Bologna",
+          "players": [
+            "Samuel Mbangula"
+          ],
+          "penalty": false
+        },
+        {
+          "id": "54410285",
+          "kind": "goal",
+          "minute": "14'",
+          "seconds": 801,
+          "team": "AC Milan",
+          "players": [
+            "Alphadjo Cissè"
+          ],
+          "penalty": false
+        },
+        {
+          "id": "54411280",
+          "kind": "goal",
+          "minute": "27'",
+          "seconds": 1589,
+          "team": "AC Milan",
+          "players": [
+            "Alphadjo Cissè"
+          ],
+          "penalty": false
+        },
+        {
+          "id": "54414272",
+          "kind": "own-goal",
+          "minute": "60'",
+          "seconds": 3582,
+          "team": "Bologna",
+          "players": [
+            "Davide Bartesaghi"
+          ],
+          "penalty": false
+        },
+        {
+          "id": "54414390",
+          "kind": "goal",
+          "minute": "62'",
+          "seconds": 3673,
+          "team": "Bologna",
+          "players": [
+            "Samuel Mbangula"
+          ],
+          "penalty": false
+        },
+        {
+          "id": "54415487",
+          "kind": "yellow",
+          "minute": "76'",
+          "seconds": 4516,
+          "team": "Bologna",
+          "players": [
+            "Tommaso Pobega"
+          ],
+          "penalty": false
+        },
+        {
+          "id": "54416176",
+          "kind": "yellow",
+          "minute": "84'",
+          "seconds": 5025,
+          "team": "Bologna",
+          "players": [
+            "Torbjørn Heggem"
+          ],
+          "penalty": false
+        },
+        {
+          "id": "54416208",
+          "kind": "goal",
+          "minute": "86'",
+          "seconds": 5127,
+          "team": "Bologna",
+          "players": [
+            "Samuel Mbangula"
+          ],
+          "penalty": false
+        }
+      ]
+    }
+  }
+}

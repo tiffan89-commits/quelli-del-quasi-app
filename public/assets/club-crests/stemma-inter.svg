@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 132 152" width="132" height="152" role="img" aria-label="Inter">
+<title>Inter</title>
+<defs>
+<clipPath id="q-inter-clip"><path d="M60 4 C80 12 98 12 114 9 L114 66 C114 103 90 125 60 136 C30 125 6 103 6 66 L6 9 C22 12 40 12 60 4 Z"/></clipPath>
+<radialGradient id="q-inter-vig" cx="50%" cy="40%" r="65%"><stop offset="0.55" stop-color="#2a1d14" stop-opacity="0"/><stop offset="1" stop-color="#2a1d14" stop-opacity="0.32"/></radialGradient>
+<pattern id="q-inter-grain" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="5" fill="#efe3c8" fill-opacity="0.08"/></pattern>
+</defs>
+<path d="M60 4 C80 12 98 12 114 9 L114 66 C114 103 90 125 60 136 C30 125 6 103 6 66 L6 9 C22 12 40 12 60 4 Z" fill="none" stroke="#2a1d14" stroke-width="12" stroke-linejoin="round"/>
+<path d="M60 4 C80 12 98 12 114 9 L114 66 C114 103 90 125 60 136 C30 125 6 103 6 66 L6 9 C22 12 40 12 60 4 Z" fill="none" stroke="#efe3c8" stroke-width="6" stroke-linejoin="round"/>
+<g clip-path="url(#q-inter-clip)">
+<rect x="-10" y="-10" width="140" height="160" fill="#1f1a17"/><rect x="17" y="-10" width="17" height="160" fill="#2d6a99"/><rect x="51" y="-10" width="17" height="160" fill="#2d6a99"/><rect x="85" y="-10" width="17" height="160" fill="#2d6a99"/><rect x="119" y="-10" width="17" height="160" fill="#2d6a99"/>
+<rect x="-10" y="-10" width="140" height="160" fill="url(#q-inter-grain)"/>
+<rect x="-10" y="-10" width="140" height="160" fill="url(#q-inter-vig)"/>
+<rect x="13.5" y="59.5" width="93" height="31" rx="5" fill="#efe3c8" stroke="#2a1d14" stroke-width="3"/>
+<path d="M38.223375753516414 83.5V82.12223710649698H40.18184862692566V67.87776289350302H38.223375753516414V66.5H46.10281312793035V67.87776289350302H44.13295378432686V82.12223710649698H46.10281312793035V83.5ZM48.4370395177495 83.5V82.12223710649698H50.39551239115874V67.87776289350302H48.4370395177495V66.5H53.21935699933021L62.453784326858674 78.53549899531146V67.87776289350302H60.50669792364367V66.5H65.85833891493637V67.87776289350302H63.899866041527126V83.5H61.21265907568654L51.84159410582719 71.21399866041527V82.12223710649698H53.788680509042194V83.5ZM70.94809109176155 83.5V82.12223710649698H72.97488278633622V68.05994641661086H68.78466175485599V70.74715338245144H67.3841259209645V66.5H82.55090421969189V70.74715338245144H81.16175485599463V68.05994641661086H76.93737441393168V82.12223710649698H78.98693904889484V83.5Z" fill="#2a1d14"/>
+</g>
+</svg>

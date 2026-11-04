@@ -1,0 +1,746 @@
+/* Quelli del Quasi · Fanta. Usa le variabili di styles.css (--bg --panel --line --lime --muted --white --orange)
+   e le classi v2-* / dash-* già presenti nel sito. Qui solo le aggiunte, tutte con prefisso fanta-. */
+:root{--fanta-pitch:#15392a;--fanta-pitch-2:#1d4a35;--fanta-gold:#cdb980;--fanta-cream:#f6efd3;--fanta-win:#9fd37a;--fanta-draw:#f7cf7b;--fanta-loss:#ff9984}
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.fanta-main{max-width:720px;margin:0 auto;padding:16px 16px calc(106px + var(--safe-bp))}
+
+/* Barra in alto: lega a sinistra, interruttore a destra */
+.fanta-top{gap:10px}
+.fanta-league-chip{min-width:0;flex:1 1 auto;max-width:none}
+.fanta-mode{display:flex;flex:0 0 auto;padding:3px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+.fanta-mode-btn{min-height:38px;min-width:52px;padding:0 12px;border-radius:999px;background:transparent;color:var(--muted);font-weight:700;font-size:13px;letter-spacing:.02em}
+.fanta-mode-btn.is-active{background:var(--lime);color:var(--bg)}
+
+/* Squadra in evidenza: un campo al posto dello spogliatoio del Bar */
+.fanta-hero{position:relative;isolation:isolate;overflow:hidden;border-radius:24px;padding:22px 20px 18px;border:1px solid #6d815840;background:linear-gradient(160deg,var(--fanta-pitch-2),var(--fanta-pitch) 60%,#0f2a1f)}
+.fanta-hero-pitch{position:absolute;inset:0;z-index:-1;opacity:.5;
+  background:
+    repeating-linear-gradient(90deg,#ffffff06 0 44px,transparent 44px 88px),
+    radial-gradient(circle at 100% 50%,transparent 62px,#ffffff22 63px,#ffffff22 64px,transparent 65px),
+    linear-gradient(90deg,transparent calc(100% - 1px),#ffffff22 0)}
+.fanta-hero .eyebrow{font-size:10px;letter-spacing:2.2px;color:#cfdcc4}
+.fanta-hero h1{font:700 clamp(38px,11vw,58px)/.95 'Barlow Condensed',sans-serif;margin:10px 0 4px;text-transform:uppercase;overflow-wrap:anywhere}
+.fanta-hero-manager{margin:0;color:#e2d9b8;font-size:13px}
+.fanta-hero-identity{display:grid;grid-template-columns:clamp(72px,20vw,100px) minmax(0,1fr);gap:14px;align-items:center;margin-top:12px}
+.fanta-hero-copy{min-width:0}.fanta-hero-copy h1{margin:0 0 6px;font-size:clamp(30px,8vw,48px)}
+.fanta-hero-crest{display:block;position:relative;width:100%;min-height:0;padding:0;border:0;border-radius:18px;background:none;cursor:pointer}
+.fanta-hero-crest>.team-logo{display:block;width:100%;height:auto;margin:0;aspect-ratio:120/124}
+.fanta-crest-edit{position:absolute;right:-2px;bottom:-2px;display:grid;place-items:center;width:25px;height:25px;border:2px solid var(--fanta-pitch);border-radius:50%;background:var(--lime);color:var(--bg);font-size:16px}
+.fanta-hero-crest:focus-visible{outline:2px solid var(--lime);outline-offset:5px}
+.fanta-hero-stats{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:4px 26px;margin:20px 0 14px}
+.fanta-hero-stats dt{font-size:11px;color:#b7c8b4}
+.fanta-hero-stats dd{margin:2px 0 0;font:700 clamp(30px,9vw,42px)/1 'Barlow Condensed',sans-serif;color:var(--fanta-cream);font-variant-numeric:tabular-nums}
+.fanta-hero-stats sup{font-size:.45em;color:var(--fanta-gold);margin-left:1px}
+.fanta-hero-form{display:flex;align-items:center;gap:10px}.fanta-hero-form small{font-size:11px;color:#b7c8b4}
+.fanta-form{display:inline-flex;gap:4px}
+.fanta-form i{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font:700 11px 'DM Sans',sans-serif;font-style:normal;color:#12240f}
+.fanta-form .is-V{background:var(--fanta-win)}.fanta-form .is-N{background:var(--fanta-draw)}.fanta-form .is-P{background:var(--fanta-loss)}
+
+/* Prossima mossa: riusa .dash-next della home del Bar */
+.fanta-next .eyebrow{color:var(--fanta-gold)}
+.fanta-next .secondary.dash-cta{border-color:var(--lime);color:var(--lime)}
+.fanta-live{color:var(--lime)!important;letter-spacing:.04em}
+.fanta-live:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;margin:0 6px 3px 0;vertical-align:middle;animation:fanta-pulse 1.4s ease-in-out infinite}
+@keyframes fanta-pulse{50%{opacity:.25}}
+
+/* Blocchi della home */
+.fanta-block{margin:26px 0 0;padding-top:22px;border-top:1px solid var(--line)}
+.fanta-link{background:none;color:var(--lime);font-weight:600;min-height:44px;padding:0 2px;white-space:nowrap}
+.fanta-badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;color:#12240f}
+.fanta-badge.is-V{background:var(--fanta-win)}.fanta-badge.is-N{background:var(--fanta-draw)}.fanta-badge.is-P{background:var(--fanta-loss)}
+
+/* La tua sfida */
+.fanta-vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:8px;padding:18px 12px;border-radius:18px;background:#ffffff0a}
+.fanta-vs-team{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0}
+.fanta-vs-team b{font:600 19px/1.1 'Barlow Condensed',sans-serif;overflow-wrap:anywhere}
+.fanta-vs-team small{font-size:11px;color:var(--muted)}
+.fanta-vs-team.is-me b{color:var(--lime)}
+.fanta-crest{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;margin-bottom:4px;font:800 17px 'Barlow Condensed',sans-serif;color:var(--bg);background:var(--crest);box-shadow:inset 0 -6px 0 #0002}
+.fanta-vs-points{display:block;margin-top:8px;font:700 30px/1 'Barlow Condensed',sans-serif;color:var(--fanta-cream);font-variant-numeric:tabular-nums}
+.fanta-vs-played{font-size:11px;color:var(--muted)}
+.fanta-match-link{display:block;width:100%;padding:0;margin:0;border:0;border-radius:18px;background:none;color:inherit;font:inherit;text-align:inherit;cursor:pointer}
+.fanta-match-link:focus-visible{outline:2px solid var(--lime);outline-offset:5px}
+.fanta-match-open{color:var(--lime);font-size:24px;line-height:1}
+.fanta-vs-mid{align-self:center;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;text-align:center}
+.fanta-vs-mid strong{font:700 30px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+.fanta-vs-mid strong.fanta-live{font-size:18px}
+.fanta-vs-mid small{font-size:11px;color:var(--muted)}
+.fanta-vs-foot{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 2px 0;font-size:13px;color:#cfd8c9}
+.fanta-bar-link{width:100%;margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;border:1px dashed #cdb98088;background:transparent;color:var(--white);text-align:left;min-height:56px}
+.fanta-bar-link b{display:block;font-size:13px}.fanta-bar-link small{font-size:11px;color:var(--muted)}
+.fanta-bar-odds{display:flex;gap:4px;flex:0 0 auto}
+.fanta-bar-odds i{font-style:normal;display:flex;flex-direction:column;align-items:center;min-width:42px;padding:4px 6px;border-radius:8px;background:var(--bg);border:1px solid var(--line);font-weight:700;font-size:13px}
+.fanta-bar-odds i small{font-size:10px;font-weight:500}
+
+/* Com'è andata */
+.fanta-result{width:100%;display:grid;gap:2px;padding:6px 14px 12px;border-radius:16px;background:#ffffff0a;color:var(--white);text-align:left}
+.fanta-result-row{display:grid;grid-template-columns:1fr auto 34px;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.fanta-result-row b{font:600 18px 'Barlow Condensed',sans-serif}
+.fanta-result-row span{color:var(--muted);font-variant-numeric:tabular-nums}
+.fanta-result-row strong{font:700 26px/1 'Barlow Condensed',sans-serif;text-align:right;color:var(--fanta-cream)}
+.fanta-result-foot{padding-top:10px;font-size:12px;color:var(--lime)}
+
+/* Classifica */
+.fanta-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.fanta-table th{font-size:11px;font-weight:500;color:var(--muted);text-align:right;padding:0 6px 8px}
+.fanta-table th:nth-child(-n+2){text-align:left}
+.fanta-table td{padding:10px 6px;border-top:1px solid var(--line);text-align:right;vertical-align:middle}
+.fanta-table td:first-child{width:28px;text-align:left;color:var(--muted);font-weight:700}
+.fanta-table td:nth-child(2){text-align:left}
+.fanta-table td:nth-child(2) b{font-weight:600}
+.fanta-table td:nth-child(2) small{display:block;font-size:11px;color:var(--muted);margin-left:16px}
+.fanta-table td strong{font:700 20px 'Barlow Condensed',sans-serif}
+.fanta-table td:last-child{color:var(--muted);font-size:13px}
+.fanta-table tr.is-me td{background:#d6f77b12}
+.fanta-table tr.is-me td:first-child{color:var(--lime);box-shadow:inset 3px 0 0 var(--lime)}
+.fanta-dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:baseline}
+
+/* Stati vuoti, caricamento, errori */
+.fanta-empty{padding:48px 4px;display:grid;gap:12px;justify-items:start}
+.fanta-empty h2{font:700 clamp(32px,9vw,44px)/1 'Barlow Condensed',sans-serif;margin:0}
+.fanta-empty p{margin:0;color:#cfd8c9;line-height:1.55;max-width:460px}
+.fanta-empty button{min-height:48px;border-radius:12px;padding:0 20px}
+.fanta-loading{padding:60px 4px;color:var(--muted)}
+
+/* ===== Giornata ===== */
+.fanta-round-head{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:8px;margin-bottom:16px}
+.fanta-round-title{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+.fanta-round-title .eyebrow{color:var(--fanta-gold);font-size:10px}
+.fanta-round-title h1{margin:0;font:700 56px/.95 'Barlow Condensed',sans-serif}
+.fanta-step{width:48px;height:48px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--white);font-size:26px;line-height:1}
+.fanta-step:disabled{opacity:.3;cursor:default}
+.fanta-status{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#ffffff12;color:#cfd8c9}
+.fanta-status.is-official{background:#9fd37a26;color:var(--fanta-win)}
+.fanta-status.is-live{background:#d6f77b1f;color:var(--lime)}
+.fanta-status.is-live:before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;animation:fanta-pulse 1.4s ease-in-out infinite}
+
+.fanta-mu-rail{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin:0 -2px;scroll-snap-type:x proximity;scrollbar-width:none}
+.fanta-mu-rail::-webkit-scrollbar{display:none}
+.fanta-mu{position:relative;flex:0 0 168px;scroll-snap-align:start;display:grid;gap:6px;padding:12px;border-radius:14px;background:#ffffff0a;border:1px solid transparent;color:var(--white);text-align:left}
+.fanta-mu.is-active{border-color:var(--lime);background:#d6f77b0f}
+.fanta-mu-tag{position:absolute;top:-1px;right:10px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:0 0 6px 6px;background:var(--lime);color:var(--bg)}
+.fanta-mu-team{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;font-size:13px}
+.fanta-mu-team i{width:8px;height:8px;border-radius:2px}
+.fanta-mu-team b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fanta-mu-team strong{font:700 18px/1 'Barlow Condensed',sans-serif;min-width:12px;text-align:right}
+.fanta-mu-saved,.fanta-mu-missing{font-size:12px;font-weight:800;min-width:12px;text-align:right}
+.fanta-mu-saved{color:var(--fanta-win)}.fanta-mu-missing{color:var(--muted)}
+.fanta-saved{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#9fd37a14;color:#cfe8b8;font-size:12px;line-height:1.45}
+
+.fanta-sb{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch;margin-top:6px}
+.fanta-sb-team{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:18px;background:#ffffff0a;border:1px solid transparent;color:var(--white);min-width:0}
+.fanta-sb-team.is-active{border-color:var(--lime);background:#d6f77b12}
+.fanta-sb-team b{font:600 18px/1.1 'Barlow Condensed',sans-serif;text-align:center;overflow-wrap:anywhere}
+.fanta-sb-points{font:700 30px/1 'Barlow Condensed',sans-serif;color:var(--fanta-cream);font-variant-numeric:tabular-nums;margin-top:4px}
+.fanta-sb-mid{align-self:center;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px}
+.fanta-sb-mid strong{font:700 34px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+.fanta-sb-mid small{font-size:11px;color:var(--muted)}
+.fanta-sb-hint{margin:8px 0 0;font-size:11px;color:var(--muted);text-align:center}
+
+.fanta-lineup{margin-top:22px}
+.fanta-lineup-head{display:flex;justify-content:space-between;align-items:flex-end;padding:0 2px 6px}
+.fanta-lineup-head h3{margin:0;font:600 24px 'Barlow Condensed',sans-serif}
+.fanta-lineup-head h3 span{color:var(--fanta-gold);margin-left:6px}
+.fanta-cols-row{display:flex;justify-content:flex-end;padding:0 2px}
+.fanta-cols{display:flex;font-size:11px;color:var(--muted)}
+.fanta-view{display:flex;padding:3px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+.fanta-view button{min-height:34px;padding:0 14px;border-radius:999px;background:transparent;color:var(--muted);font-weight:700;font-size:12px}
+.fanta-view button.is-active{background:var(--white);color:var(--bg)}
+
+/* Vista Campo */
+.fanta-pitch{position:relative;isolation:isolate;overflow:hidden;margin-top:10px;padding:18px 6px;border-radius:18px;display:grid;gap:14px;
+  background:repeating-linear-gradient(180deg,#1d4a35 0 52px,#1a4430 52px 104px);border:1px solid #6d815840}
+.fanta-pitch-lines{position:absolute;inset:10px;z-index:-1;border:2px solid #ffffff26;border-radius:6px;
+  background:
+    linear-gradient(#ffffff26,#ffffff26) center/100% 2px no-repeat,
+    radial-gradient(circle at 50% 50%,transparent 44px,#ffffff26 45px,#ffffff26 46px,transparent 47px)}
+.fanta-pitch-lines:before,.fanta-pitch-lines:after{content:'';position:absolute;left:50%;width:46%;height:13%;transform:translateX(-50%);border:2px solid #ffffff26}
+.fanta-pitch-lines:before{top:-2px;border-top:0}.fanta-pitch-lines:after{bottom:-2px;border-bottom:0}
+.fanta-pitch-row{display:flex;justify-content:space-evenly;align-items:flex-start;gap:2px}
+.fanta-token{position:relative;width:72px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;border-radius:12px;background:transparent;color:var(--white);text-align:center}
+button.fanta-token:hover{background:#ffffff10}
+.fanta-token-shirt{position:relative;width:46px;height:46px;display:block}
+.fanta-shirt{display:block;width:100%;height:100%;filter:drop-shadow(0 3px 4px #0007)}
+.fanta-token-shirt .fanta-role{position:absolute;right:-4px;bottom:0;width:18px;height:18px;border-radius:50%;font-size:10px;box-shadow:0 0 0 2px #1b4632}
+.fanta-token-shirt i{position:absolute;right:-6px;top:-4px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:11px;background:var(--lime);color:var(--bg)}
+.fanta-token .fanta-events{position:absolute;top:2px;left:0;flex-direction:column;align-items:flex-start;gap:2px}
+.fanta-token b{max-width:100%;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #0008}
+.fanta-token em{min-width:34px;padding:2px 6px;border-radius:6px;font:700 14px/1.1 'Barlow Condensed',sans-serif;font-style:normal;background:#0c1815d9;color:var(--fanta-cream);font-variant-numeric:tabular-nums}
+.fanta-token em.is-live{color:var(--lime)}
+.fanta-token em.is-sv{color:var(--muted)}
+.fanta-token em.is-when{font:600 10px/1.3 'DM Sans',sans-serif;color:#cfd8c9}
+.fanta-token.is-sv .fanta-token-shirt{opacity:.45;filter:grayscale(.6)}
+.fanta-token.is-to-play .fanta-token-shirt{opacity:.85}
+.fanta-cols span{width:44px;text-align:right}
+.fanta-group h4{margin:14px 2px 4px;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.fanta-p{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr) auto 44px 44px;align-items:center;gap:8px;padding:10px 2px;border-top:1px solid var(--line);background:transparent;color:var(--white);text-align:left;min-height:56px}
+button.fanta-p:hover{background:#ffffff06}
+.fanta-p.is-to-play{grid-template-columns:28px minmax(0,1fr) auto 88px}
+.fanta-p.is-sv .fanta-p-name b{color:var(--muted);text-decoration:line-through;text-decoration-color:#ffffff40}
+.fanta-p.is-entered{background:#d6f77b08}
+.fanta-p-name{display:flex;flex-direction:column;gap:1px;min-width:0}
+.fanta-p-name b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fanta-p-name small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fanta-p-sub{font-size:11px!important;font-weight:600}
+.fanta-p-sub.is-out{color:var(--orange)!important}.fanta-p-sub.is-in,.fanta-p-sub.is-live{color:var(--lime)!important}
+.fanta-p-vote{text-align:right;color:#cfd8c9;font-variant-numeric:tabular-nums}
+.fanta-p-fv{text-align:right;font:700 20px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fanta-p.is-playing .fanta-p-vote,.fanta-p.is-playing .fanta-p-fv{font-style:italic;color:var(--lime)}
+.fanta-p-when{text-align:right;font-size:12px;color:var(--muted)}
+.fanta-role{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#0c1815}
+.fanta-role.lg{width:44px;height:44px;border-radius:12px;font-size:18px;flex:0 0 auto}
+.fanta-role.is-P{background:#f7cf7b}.fanta-role.is-D{background:#7bc8a4}.fanta-role.is-C{background:#7bb3f7}.fanta-role.is-A{background:#ff9984}
+.fanta-events{display:flex;gap:3px;align-items:center;justify-content:flex-end}
+.ev{font-style:normal;font-size:10px;font-weight:800;line-height:1}
+.ev-goal{font-size:13px}
+.ev-assist{padding:3px 4px;border-radius:4px;background:#7bb3f7;color:#0c1815}
+.ev-yellow,.ev-red{width:9px;height:13px;border-radius:2px;background:#f7d64a}.ev-red{background:#ff5d4d}
+.ev-own,.ev-pen{padding:3px 4px;border-radius:4px;background:#9fd37a;color:#0c1815}.ev-own,.ev-pen.is-bad{background:#ff9984}
+.ev-conceded{padding:3px 4px;border-radius:4px;background:#ffffff14;color:#ffb3a6}
+
+.fanta-bench{margin-top:14px;border-top:1px solid var(--line)}
+.fanta-bench summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 2px;font:600 20px 'Barlow Condensed',sans-serif}
+.fanta-bench summary::-webkit-details-marker{display:none}
+.fanta-bench summary span{font:500 12px 'DM Sans',sans-serif;color:var(--muted)}
+.fanta-bench summary:after{content:'▾';color:var(--muted);font-size:14px;margin-left:8px}
+.fanta-bench[open] summary:after{content:'▴'}
+.fanta-note{margin:10px 2px 0;font-size:11px;line-height:1.5;color:var(--muted)}
+.fanta-note.is-wait{padding:18px 14px;border:1px dashed var(--line);border-radius:14px;font-size:13px;text-align:center}
+
+.fanta-total{margin-top:22px;padding:16px;border-radius:18px;background:#ffffff0a;display:grid;gap:8px}
+.fanta-total>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13px;color:#cfd8c9}
+.fanta-total small{color:var(--muted)}
+.fanta-total b{font:700 20px 'Barlow Condensed',sans-serif;color:var(--white);font-variant-numeric:tabular-nums}
+.fanta-total .is-sum{border-top:1px solid var(--line);padding-top:10px;color:var(--white);font-weight:700}
+.fanta-total .is-sum b{font-size:32px;margin-left:auto;color:var(--fanta-cream)}
+.fanta-total .is-sum em{font-style:normal;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--lime);color:var(--bg)}
+.fanta-total .fanta-note{margin:0}
+
+.fanta-mod{margin-top:14px;padding:16px;border-radius:18px;border:1px solid var(--line)}
+.fanta-mod h3{margin:0;font:600 22px 'Barlow Condensed',sans-serif}
+.fanta-mod.is-off p{margin:8px 0 0;font-size:13px;color:#cfd8c9}
+.fanta-mod-head{display:flex;justify-content:space-between;align-items:center}
+.fanta-mod-head strong{font:700 30px 'Barlow Condensed',sans-serif;color:var(--lime)}
+.fanta-mod-players{list-style:none;margin:10px 0 18px;padding:0;display:grid;gap:6px}
+.fanta-mod-players li{display:flex;align-items:center;gap:10px;font-size:13px}
+.fanta-mod-players b{margin-left:auto;font-variant-numeric:tabular-nums}
+.fanta-bands{position:relative;height:46px;margin:0 0 18px;border-radius:10px;background:#ffffff08}
+.fanta-band{position:absolute;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--bg);color:var(--muted)}
+.fanta-band b{font-size:13px}.fanta-band small{font-size:9px;white-space:nowrap}
+.fanta-band.is-active{background:#d6f77b26;color:var(--lime);border-radius:8px}
+.fanta-band-mark{position:absolute;top:calc(100% + 4px);width:0;height:0;margin-left:-6px;border:6px solid transparent;border-top:0;border-bottom:8px solid var(--fanta-cream)}
+.fanta-mod-avg{margin:10px 0 0;font-size:13px;color:#cfd8c9}.fanta-mod-avg b{color:var(--white)}
+
+.fanta-empty.is-inline{padding:28px 2px}
+.fanta-empty.is-inline h2{font-size:28px}
+
+/* Scheda del giocatore */
+.fanta-sheet{max-height:min(88vh,860px);overflow-y:auto;overscroll-behavior:contain;padding-top:10px}
+body.fanta-sheet-open{overflow:hidden}
+.fanta-ps-head{display:flex;align-items:center;gap:12px}
+.fanta-ps-head h2{margin:0!important;font:700 28px/1 'Barlow Condensed',sans-serif!important;text-transform:none!important}
+.fanta-ps-head small{display:block;margin-top:4px;font-size:12px;color:var(--muted)}
+.fanta-close{margin-left:auto;width:44px;height:44px;flex:0 0 auto;border-radius:12px;background:var(--bg);border:1px solid var(--line);color:var(--white);font-size:24px;line-height:1}
+.fanta-ps-body{display:grid;gap:18px;margin-top:8px}
+.fanta-ps-body h3{margin:0 0 8px;font:600 20px 'Barlow Condensed',sans-serif}
+.fanta-ps-scores{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fanta-ps-scores>div{padding:12px 14px;border-radius:14px;background:var(--bg);border:1px solid var(--line)}
+.fanta-ps-scores span{display:block;font-size:11px;color:var(--muted)}
+.fanta-ps-scores strong{font:700 44px/1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fanta-ps-scores .is-fv{background:var(--lime);border-color:var(--lime);color:var(--bg)}.fanta-ps-scores .is-fv span{color:#2d4527}
+.fanta-why{margin:0;font-size:14px;line-height:1.6;color:#e2e8dc}
+.fanta-calc{list-style:none;margin:0;padding:0;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.fanta-calc li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;background:var(--bg)}
+.fanta-calc li:first-child{border-top:0}
+.fanta-calc li b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.fanta-calc .is-start{color:var(--muted)}
+.fanta-calc .is-context span{color:#cfd8c9}
+.fanta-calc .is-ai{background:#7bb3f710}
+.fanta-calc .is-plus b{color:var(--fanta-win)}.fanta-calc .is-minus b{color:var(--fanta-loss)}
+.fanta-calc .is-total{background:#ffffff0d;font-weight:700}.fanta-calc .is-total b{font:700 22px 'Barlow Condensed',sans-serif}
+.fanta-calc .is-empty span{color:var(--muted)}
+.fanta-ai{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.06em;padding:2px 5px;margin-right:6px;border-radius:4px;background:#7bb3f7;color:#0c1815;vertical-align:1px}
+.fanta-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fanta-stat{padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);display:grid;gap:1px}
+.fanta-stat b{font:700 24px/1 'Barlow Condensed',sans-serif}
+.fanta-stat span{font-size:12px}
+.fanta-stat small{font-size:11px;color:var(--muted)}
+.fanta-stat.is-up b{color:var(--fanta-win)}.fanta-stat.is-down b{color:var(--fanta-loss)}
+.fanta-stat.is-neutral b,.fanta-stat.is-neutral .fanta-stat-neutral-note{color:var(--fanta-gold,#e3be72)}
+.fanta-stat.is-neutral{border-color:color-mix(in srgb,var(--fanta-gold,#e3be72) 40%,var(--line))}
+
+@media (min-width:900px){
+  .fanta-mu{flex-basis:200px}
+  .fanta-sheet{max-width:640px}
+  .fanta-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+
+/* ===== Squadra ===== */
+.fanta-sq-head{display:block;margin-bottom:6px}
+.fanta-sq-head .eyebrow{display:block}
+.fanta-sq-head .eyebrow{color:var(--fanta-gold);font-size:10px}
+.fanta-sq-head h1{margin:6px 0 4px;font:700 clamp(34px,10vw,48px)/.95 'Barlow Condensed',sans-serif;text-transform:uppercase}
+.fanta-sq-head p{margin:0;color:var(--muted);font-size:12px}
+.fanta-deadline{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:#ffffff0a;margin-bottom:12px}
+.fanta-deadline>div:first-child{display:grid;gap:6px}
+.fanta-deadline b{font:600 22px/1 'Barlow Condensed',sans-serif}
+.fanta-deadline .dash-clock strong{font-size:28px}
+.fanta-deadline.is-locked{display:grid;gap:4px}.fanta-deadline.is-locked span{font-size:13px;color:#cfd8c9}
+.fanta-formations{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.fanta-formations::-webkit-scrollbar{display:none}
+.fanta-formations .v2-chip{flex:0 0 auto;font-variant-numeric:tabular-nums}
+.fanta-tools{display:flex;justify-content:space-between;gap:12px;margin:-2px 0 4px}
+.fanta-link.is-muted{color:var(--muted)}
+.fanta-note.is-info{color:#cfe8b8}.fanta-note.is-alert{color:var(--orange)}
+.fanta-pitch.is-editor{min-height:420px;align-content:space-around}
+.fanta-slot{width:72px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 2px;background:transparent;color:#cfd8c9}
+.fanta-slot-ring{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;border:2px dashed #ffffff66;background:#0c181540}
+.fanta-slot-ring b{font-size:22px;font-weight:500;color:#ffffffcc}
+.fanta-slot small{font-size:10px;text-shadow:0 1px 2px #0008}
+.fanta-slot:hover .fanta-slot-ring{border-color:var(--lime);background:#d6f77b1a}
+.fanta-token.is-pick{cursor:pointer}
+.fanta-token.is-pick:disabled{cursor:default;opacity:1}
+.fanta-token.is-warn em{box-shadow:inset 0 0 0 1px var(--orange)}
+.fanta-token>.fanta-st{position:absolute;top:2px;left:4px}
+.fanta-st{display:inline-grid;place-items:center;min-width:20px;height:16px;padding:0 4px;border-radius:4px;font-style:normal;font-size:9px;font-weight:800;color:#0c1815;vertical-align:1px}
+.fanta-st.is-injured{background:#ff5d4d;color:#fff}.fanta-st.is-doubtful{background:#f7cf7b}.fanta-st.is-suspended{background:var(--orange)}
+.fanta-st-note{color:var(--orange)!important}
+.fanta-mini-shirt{width:30px;height:30px;flex:0 0 auto;display:block}
+.fanta-mini-shirt .fanta-shirt{filter:none}
+
+.fanta-bench-edit{margin-top:24px}
+.fanta-bench-edit h2{font:600 24px 'Barlow Condensed',sans-serif;margin:0}
+.fanta-bench-edit ol{list-style:none;margin:0;padding:0}
+.fanta-bench-row{display:grid;grid-template-columns:18px 30px 26px minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line)}
+.fanta-bench-n{font-size:12px;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.fanta-bench-actions{display:flex;gap:4px}
+.fanta-bench-actions button{width:36px;height:36px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--white);font-size:15px}
+.fanta-bench-actions button:disabled{opacity:.3}
+.fanta-add{width:100%;min-height:48px;margin-top:10px;border-radius:12px;border-style:dashed}
+.fanta-savebar .v2-save:disabled:not(.is-done){opacity:.45}
+.fanta-squadra.has-savebar{padding-bottom:120px}
+
+.fanta-roster-legend{display:flex;gap:14px;justify-content:flex-end;font-size:10px;color:var(--muted);margin:4px 2px 0}
+.fanta-group h4 span{color:var(--fanta-gold);margin-left:4px}
+.fanta-roster-row{display:grid;grid-template-columns:30px minmax(0,1fr) 40px 40px 26px 40px;align-items:center;gap:8px;padding:10px 2px;border-top:1px solid var(--line)}
+.fanta-roster-row .fanta-p-name em{font-style:normal;font-weight:700}
+.fanta-roster-row .fanta-p-name small,.fanta-pick-row .fanta-p-name small{white-space:normal}
+.fanta-roster-row .fanta-p-name em.is-campo{color:var(--lime)}.fanta-roster-row .fanta-p-name em.is-panchina{color:var(--fanta-gold)}
+.fanta-roster-stats{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
+.fanta-roster-stats b{font:700 16px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fanta-roster-stats small{font-size:9px;color:var(--muted)}
+.fanta-roster-price{text-align:right;font:700 16px 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+.fanta-roster-price small{font:500 9px 'DM Sans',sans-serif;margin-left:2px;color:var(--muted)}
+
+.fanta-pick-list{display:grid;gap:2px;margin-top:8px}
+.fanta-pick-group{margin:14px 2px 4px;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+.fanta-pick-row{display:grid;grid-template-columns:30px 26px minmax(0,1fr) 44px;align-items:center;gap:10px;width:100%;padding:10px 8px;border-radius:12px;background:var(--bg);border:1px solid var(--line);color:var(--white);text-align:left;min-height:58px}
+.fanta-pick-row:hover{border-color:var(--lime)}
+.fanta-pick-row.is-warn{border-color:#ffac7755}
+
+/* Tavolo della formazione: campo compatto che resta in vista mentre scorre la lista */
+.fanta-board{display:block}
+.fanta-board-pitch{position:sticky;top:calc(var(--env-banner-height,0px) + 66px);z-index:6;margin:0 -16px;padding:6px 16px 8px;background:var(--bg)}
+.fanta-pitch.is-editor{min-height:0;margin-top:0;padding:10px 4px;gap:4px}
+.fanta-pitch.is-editor .fanta-pitch-row{gap:0}
+.fanta-pitch.is-editor .fanta-token,.fanta-pitch.is-editor .fanta-slot{width:62px;padding:3px 1px;gap:2px}
+.fanta-pitch.is-editor .fanta-token-shirt,.fanta-pitch.is-editor .fanta-slot-ring{width:36px;height:36px}
+.fanta-pitch.is-editor .fanta-slot-ring b{font-size:18px}
+.fanta-pitch.is-editor .fanta-token b{font-size:10px}
+.fanta-pitch.is-editor .fanta-token em{font-size:9px;padding:1px 4px}
+.fanta-pitch.is-editor .fanta-slot small{font-size:9px}
+.fanta-pitch.is-editor .fanta-token-shirt .fanta-role{width:15px;height:15px;font-size:8px}
+.fanta-board-side .fanta-bench-edit{margin-top:12px}
+
+.fanta-players{margin-top:22px;border-radius:16px}
+.fanta-players h2{font:600 24px 'Barlow Condensed',sans-serif;margin:0}
+.fanta-filter{margin:4px 0 6px}
+.fanta-filter .v2-chip{min-height:34px;padding:4px 14px}
+.fanta-players ul{list-style:none;margin:0;padding:0}
+.fanta-player-row{display:grid;grid-template-columns:18px 30px 26px minmax(0,1fr) 44px;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line);cursor:grab;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
+.fanta-player-row:hover{background:#ffffff06}
+.fanta-player-row.is-campo{opacity:.5}
+.fanta-player-row.is-panchina .fanta-p-name em{color:var(--fanta-gold)}
+.fanta-player-row .fanta-p-name em{font-style:normal;font-weight:700;color:var(--lime)}
+.fanta-handle{font-style:normal;color:var(--muted);font-size:16px;line-height:1;cursor:grab;touch-action:none;padding:8px 2px;margin:-8px 0}
+.fanta-bench-row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
+.fanta-bench-row .fanta-bench-n{display:flex;align-items:center;gap:2px}
+.fanta-bench-row{grid-template-columns:30px 30px 26px minmax(0,1fr) auto auto}
+.fanta-pitch.is-editor [data-drag-id]{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+.fanta-bench-strip{margin-top:6px;padding:6px 6px 4px;border-radius:14px;background:#ffffff0a}
+.fanta-bench-label{display:block;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:0 2px 4px}
+.fanta-bench-label small{font-size:10px;letter-spacing:0;color:var(--fanta-gold);margin-left:4px}
+.fanta-bench-label{display:flex;align-items:center;gap:4px}
+.fanta-bench-all{margin-left:auto;min-height:28px;font-size:11px;letter-spacing:0;text-transform:none}
+/* Tutta la panchina in vista: righe da 7, va a capo da sola (con 14 panchinari sono 2 righe) */
+.fanta-bench-cells{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 2px;padding-top:4px}
+.fanta-bench-cell{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;padding:2px 0;border-radius:10px;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y;cursor:grab}
+.fanta-bench-cell .fanta-token-shirt{width:28px;height:28px}
+.fanta-bench-cell .fanta-token-shirt .fanta-role{width:13px;height:13px;font-size:7px;right:-3px}
+.fanta-bench-cell b{max-width:100%;font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#cfd8c9}
+.fanta-bench-cell.is-empty{cursor:default}
+.fanta-bench-ring{width:28px;height:28px;margin-bottom:12px;border-radius:50%;display:grid;place-items:center;border:1.5px dashed #ffffff40;font-size:11px;color:var(--muted)}
+.fanta-bench-x{position:absolute;top:-2px;right:2px;width:16px;height:16px;border-radius:50%;padding:0;background:#0c1815;border:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1}
+.is-droppable.fanta-bench-strip{box-shadow:inset 0 0 0 2px #d6f77b40}
+.is-over.fanta-bench-strip,.is-over.fanta-bench-cell{background:#d6f77b1f;box-shadow:inset 0 0 0 2px var(--lime)}
+.fanta-savebar{flex-direction:row;align-items:center;gap:10px;padding:8px 12px}
+.fanta-savebar .v2-state{flex:1;min-width:0;font-size:11px}
+.fanta-savebar .v2-save{min-height:44px;flex:0 0 auto;padding:0 14px}
+.fanta-savebar .v2-save span+span{display:none}
+
+/* Durante il trascinamento */
+body.fanta-dragging{cursor:grabbing}
+body.fanta-dragging *{cursor:grabbing!important}
+.fanta-ghost{position:fixed;left:0;top:0;z-index:100;pointer-events:none;opacity:.92;border-radius:12px;background:var(--panel);box-shadow:0 12px 30px #000a;list-style:none}
+.is-dragging{opacity:.3}
+.is-droppable.fanta-slot .fanta-slot-ring,.is-droppable.fanta-token .fanta-token-shirt{outline:2px dashed var(--lime);outline-offset:3px;border-radius:50%}
+.is-droppable.fanta-bench-edit,.is-droppable.fanta-players{box-shadow:inset 0 0 0 2px #d6f77b40;border-radius:16px}
+.is-over.fanta-slot .fanta-slot-ring,.is-over.fanta-token .fanta-token-shirt{outline:3px solid var(--lime);background:#d6f77b33}
+.is-over.fanta-bench-edit,.is-over.fanta-players{box-shadow:inset 0 0 0 2px var(--lime);background:#d6f77b0d}
+.is-over.fanta-bench-row{box-shadow:inset 0 3px 0 var(--lime)}
+
+@media (min-width:900px){
+  .fanta-board{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:start}
+  .fanta-board-pitch{margin:0;padding:0;top:calc(var(--env-banner-height,0px) + 80px)}
+  .fanta-pitch.is-editor{padding:18px 6px;gap:14px}
+  .fanta-pitch.is-editor .fanta-token,.fanta-pitch.is-editor .fanta-slot{width:72px}
+  .fanta-pitch.is-editor .fanta-token-shirt,.fanta-pitch.is-editor .fanta-slot-ring{width:44px;height:44px}
+  .fanta-board-side .fanta-bench-edit{margin-top:0}
+}
+
+/* ===== Asta ===== */
+.fanta-auction-card{width:100%;display:grid;gap:4px;justify-items:start;margin-bottom:16px;padding:16px 18px;border-radius:20px;text-align:left;color:var(--bg);
+  background:linear-gradient(135deg,var(--lime),#a8e05f);box-shadow:0 8px 24px #d6f77b26}
+.fanta-auction-card .fanta-live{color:var(--bg)!important;font-size:11px;font-weight:800}
+.fanta-auction-card b{font:700 28px/1 'Barlow Condensed',sans-serif;text-transform:uppercase}
+.fanta-auction-card small{font-size:12px;color:#2d4527}
+.fanta-auction-cta{margin-top:6px;font-weight:800;font-size:14px}
+
+.fanta-a-me{display:grid;grid-template-columns:auto auto 1fr;gap:6px 18px;align-items:end;margin:10px 0 14px;padding:12px 14px;border-radius:16px;background:#ffffff0a}
+.fanta-a-me span{display:block;font-size:11px;color:var(--muted)}
+.fanta-a-me strong{font:700 32px/1 'Barlow Condensed',sans-serif;color:var(--fanta-cream);font-variant-numeric:tabular-nums}
+.fanta-a-me>div:nth-child(2) strong{color:var(--lime)}
+.fanta-a-roles{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.fanta-a-roles span{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--white);font-variant-numeric:tabular-nums}
+.fanta-a-roles .fanta-role{width:20px;height:20px;border-radius:6px;font-size:10px;font-style:normal}
+.fanta-a-roles span.is-full{opacity:.45}
+
+.fanta-a-lot{padding:16px;border-radius:22px;background:linear-gradient(160deg,#1d4a35,#15392a 70%);border:1px solid #6d815840;display:grid;gap:12px}
+.fanta-a-lot.is-mine{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}
+.fanta-a-lot h2{margin:4px 0 0;font:700 30px/1 'Barlow Condensed',sans-serif}
+.fanta-a-lot p{margin:0;color:#cfd8c9;font-size:13px;line-height:1.5}
+.fanta-a-lot.is-idle,.fanta-a-lot.is-call{background:#ffffff0a}
+.fanta-a-lot.is-call{border-color:var(--lime)}
+.fanta-a-lot.is-sold{background:linear-gradient(160deg,#3d5a2a,#1d3a22);border-color:var(--fanta-win);animation:fanta-pop .35s ease-out}
+.fanta-a-lot.is-sold small b{color:var(--fanta-win);font-size:18px}
+@keyframes fanta-pop{from{transform:scale(.96);opacity:.4}}
+.fanta-a-player{display:flex;align-items:center;gap:14px}
+.fanta-a-player .fanta-role{display:inline-grid;margin-bottom:4px}
+.fanta-a-player small{display:block;margin-top:4px;font-size:12px;color:#cfd8c9}
+.fanta-a-shirt{width:68px;height:68px;flex:0 0 auto}
+.fanta-a-bidrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.fanta-a-bid span{display:block;font-size:11px;color:#b7c8b4}
+.fanta-a-bid strong{display:block;font:700 64px/.9 'Barlow Condensed',sans-serif;color:var(--fanta-cream);font-variant-numeric:tabular-nums}
+.fanta-a-bid em{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-style:normal;font-weight:700;font-size:14px}
+.fanta-a-bid em:before{content:'';width:10px;height:10px;border-radius:3px;background:var(--c)}
+.fanta-a-timer{position:relative;width:84px;height:84px;flex:0 0 auto;display:grid;place-items:center}
+.fanta-a-timer svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.fanta-a-timer circle{fill:none;stroke-width:5}
+.fanta-a-timer .track{stroke:#ffffff1a}
+.fanta-a-timer .bar{stroke:var(--lime);stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.fanta-a-timer b{font:700 30px/1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fanta-a-timer small{position:absolute;bottom:18px;font-size:9px;color:var(--muted)}
+.fanta-a-raises{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fanta-a-raise{min-height:58px;border-radius:14px;background:var(--lime);color:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.fanta-a-raise small{font-size:11px;font-weight:700}
+.fanta-a-raise b{font:800 24px 'Barlow Condensed',sans-serif}
+.fanta-a-raise:disabled{background:#ffffff14;color:var(--muted)}
+.fanta-a-custom{display:grid;grid-template-columns:1fr auto;gap:8px}
+.fanta-a-custom input,.fanta-a-search{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--white);padding:0 14px;font-size:16px;width:100%}
+.fanta-a-custom input:disabled{opacity:.5}
+.fanta-a-custom .primary{border-radius:12px;min-width:90px}
+.fanta-a-custom .primary:disabled{opacity:.4}
+.fanta-a-why{font-size:12px!important;color:var(--muted)!important}
+.fanta-a-why.is-ok{color:var(--lime)!important;font-weight:700}
+.fanta-a-why b{color:var(--orange)}
+.fanta-a-history{list-style:none;margin:0;padding:10px 0 0;border-top:1px solid #ffffff1a;display:grid;gap:6px;font-size:12px}
+.fanta-a-history li{display:flex;align-items:center;gap:8px}
+.fanta-a-history li:first-child{font-weight:700}
+.fanta-a-history i{width:8px;height:8px;border-radius:2px}
+.fanta-a-history span{color:var(--muted)}
+.fanta-a-history b{margin-left:auto;font:700 16px 'Barlow Condensed',sans-serif}
+.fanta-a-callbtn{min-height:52px;border-radius:14px}
+
+.fanta-a-teams,.fanta-a-log{list-style:none;margin:0;padding:0}
+.fanta-a-teams li{display:grid;grid-template-columns:12px minmax(0,1fr) 40px 40px 40px;align-items:center;gap:8px;padding:9px 2px;border-top:1px solid var(--line)}
+.fanta-a-teams li.is-me{background:#d6f77b10}
+.fanta-a-teams em{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;margin-left:6px;border-radius:999px;background:var(--lime);color:var(--bg);vertical-align:2px}
+.fanta-a-num{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
+.fanta-a-num b{font:700 17px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fanta-a-num small{font-size:9px;color:var(--muted)}
+.fanta-a-log li{display:grid;grid-template-columns:30px 26px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line)}
+.fanta-a-log .fanta-dot{width:8px;height:8px;margin-right:4px}
+.fanta-a-price{font:700 20px 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+.fanta-a-myrole{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding:8px 2px;border-top:1px solid var(--line);font-size:13px;line-height:1.5}
+.fanta-a-myrole b{color:var(--fanta-gold)}
+.fanta-a-myrole i{color:var(--muted)}
+
+.fanta-a-confirm{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:center;margin:10px 0;padding:12px;border-radius:14px;border:1px solid var(--lime);background:#d6f77b0d}
+.fanta-a-confirm .fanta-a-stepper,.fanta-a-confirm .primary,.fanta-a-confirm .fanta-note{grid-column:1/-1}
+.fanta-a-stepper{display:flex;align-items:center;justify-content:center;gap:18px}
+.fanta-a-stepper button{width:48px;height:48px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--white);font-size:24px}
+.fanta-a-stepper b{min-width:60px;text-align:center;font:700 40px 'Barlow Condensed',sans-serif}
+.fanta-a-confirm .primary{min-height:50px;border-radius:12px}
+.fanta-a-search{margin:8px 0 4px}
+.fanta-pick-row.is-picked{border-color:var(--lime);background:#d6f77b12}
+.fanta-pick-row:disabled{opacity:.4}
+
+/* Ultimi secondi (rallentati): allarme ben visibile su timer e card */
+.fanta-a-final{display:none;margin:-4px 0 0!important;text-align:center;font:800 22px/1 'Barlow Condensed',sans-serif!important;letter-spacing:.06em;text-transform:uppercase;color:#ff5d4d!important}
+.fanta-a-lot.is-final{border-color:#ff5d4d;animation:fanta-alarm .8s ease-in-out infinite}
+.fanta-a-lot.is-final .fanta-a-final{display:block;animation:fanta-blink .8s steps(2,start) infinite}
+.fanta-a-timer.is-final{transform:scale(1.18);transition:transform .2s}
+.fanta-a-timer.is-final .bar{stroke:#ff5d4d;stroke-width:7}
+.fanta-a-timer.is-final b{color:#ff5d4d;font-size:40px;animation:fanta-tick .833s ease-out infinite}
+@keyframes fanta-alarm{0%,100%{box-shadow:0 0 0 2px #ff5d4d inset,0 0 0 0 #ff5d4d66}50%{box-shadow:0 0 0 2px #ff5d4d inset,0 0 26px 6px #ff5d4d55}}
+@keyframes fanta-blink{to{visibility:hidden}}
+@keyframes fanta-tick{0%{transform:scale(1.35)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.fanta-a-lot.is-final,.fanta-a-lot.is-final .fanta-a-final,.fanta-a-timer.is-final b{animation:none}}
+
+.fanta-a-pass{min-height:48px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;font-weight:700;border-color:#ffffff33}
+.fanta-a-pass small{font-size:10px;font-weight:500;color:var(--muted)}
+.fanta-a-why.is-passed{color:var(--fanta-gold)!important}
+.fanta-a-history li.is-pass{color:var(--muted)}
+.fanta-a-teams em.is-pass{background:#ffffff1a;color:var(--muted)}
+
+.fanta-a-order{margin:0 0 14px}
+.fanta-a-order-label{display:block;font-size:11px;font-weight:700;color:var(--fanta-gold);margin:0 2px 6px}
+.fanta-a-order ol{list-style:none;margin:0;padding:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.fanta-a-order ol::-webkit-scrollbar{display:none}
+.fanta-a-order li{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#ffffff0a;font-size:12px;white-space:nowrap}
+.fanta-a-order li b{font-size:10px;color:var(--muted)}
+.fanta-a-order li i{width:8px;height:8px;border-radius:2px}
+.fanta-a-order li.is-now{background:var(--lime);color:var(--bg);font-weight:800}
+.fanta-a-order li.is-now b{color:var(--bg)}
+.fanta-a-order li.is-me:not(.is-now){box-shadow:inset 0 0 0 1px var(--lime)}
+.fanta-a-order li.is-done{opacity:.4}
+
+/* Scelta modalità (solo admin) */
+.fanta-a-modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 12px;padding:4px;border-radius:16px;background:#ffffff0a}
+.fanta-a-modes button{display:grid;gap:2px;padding:10px 8px;border-radius:12px;background:transparent;color:var(--muted);text-align:center;min-height:52px}
+.fanta-a-modes b{font-size:14px;color:var(--white)}
+.fanta-a-modes small{font-size:10px}
+.fanta-a-modes button.is-active{background:var(--lime);color:#2d4527}
+.fanta-a-modes button.is-active b{color:var(--bg)}
+
+/* Asta dal vivo: console del banditore */
+.fanta-m-console{display:grid;gap:10px;padding:16px;border-radius:22px;background:#ffffff0a;border:1px solid var(--line)}
+.fanta-m-console h2{margin:0;font:700 28px/1 'Barlow Condensed',sans-serif}
+.fanta-m-console>p{margin:0;font-size:13px;color:#cfd8c9;line-height:1.5}
+.fanta-m-console>.eyebrow{margin-top:6px;color:var(--fanta-gold)}
+.fanta-m-console .fanta-a-search{margin:0}
+.fanta-m-table{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:linear-gradient(160deg,#1d4a35,#15392a 70%);border:1px solid var(--lime)}
+.fanta-m-table .eyebrow{color:var(--lime);font-size:10px}
+.fanta-m-table h2{font-size:26px;margin:4px 0}
+.fanta-m-table small{font-size:12px;color:#cfd8c9}
+.fanta-m-table .fanta-link{margin-left:auto;align-self:flex-start}
+.fanta-m-teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.fanta-m-team{display:grid;grid-template-columns:10px minmax(0,1fr);gap:2px 8px;align-items:center;padding:10px;border-radius:12px;background:var(--bg);border:1px solid var(--line);color:var(--white);text-align:left;min-height:54px}
+.fanta-m-team i{width:10px;height:10px;border-radius:3px;grid-row:1/3}
+.fanta-m-team b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fanta-m-team small{font-size:10px;color:var(--muted)}
+.fanta-m-team.is-active{border-color:var(--lime);background:#d6f77b1a;box-shadow:inset 0 0 0 1px var(--lime)}
+.fanta-m-team:disabled{opacity:.35}
+/* Giocatore sul tavolo con il prezzo subito di fianco */
+.fanta-m-table{display:grid;grid-template-columns:56px minmax(0,1fr) 104px;gap:10px;align-items:center}
+.fanta-m-table .fanta-a-shirt{width:56px;height:56px}
+.fanta-m-who{min-width:0}
+.fanta-m-who h2{font-size:24px!important;margin:2px 0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fanta-m-who .fanta-link{min-height:30px;padding:0;font-size:12px}
+.fanta-m-price{display:grid;gap:2px;text-align:center}
+.fanta-m-price span{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--lime)}
+.fanta-m-price input{width:100%;min-height:64px;border-radius:14px;border:2px solid var(--lime);background:var(--bg);color:var(--white);text-align:center;font:700 38px 'Barlow Condensed',sans-serif;padding:0 4px}
+.fanta-m-price input::placeholder{color:#ffffff33}
+.fanta-m-team.is-blocked small{color:var(--orange)}
+.fanta-m-team:not(:disabled):active{transform:scale(.97);border-color:var(--lime)}
+
+/* Pop-up di conferma, al centro */
+.fanta-confirm{position:fixed;left:50%;top:50%;z-index:42;transform:translate(-50%,-50%);width:min(320px,calc(100vw - 32px));padding:20px 18px 16px;border-radius:22px;
+  background:var(--panel);border:1px solid var(--lime);box-shadow:0 20px 60px #000c;text-align:center;display:grid;justify-items:center;gap:6px;animation:fanta-pop .18s ease-out}
+.fanta-confirm h2{margin:4px 0 0;font:700 28px/1 'Barlow Condensed',sans-serif}
+.fanta-confirm p{margin:0;font-size:14px;color:#cfd8c9}
+.fanta-confirm p b{color:var(--white)}
+.fanta-confirm p b:before{content:'';display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;background:var(--c)}
+.fanta-confirm p strong{font:700 26px 'Barlow Condensed',sans-serif;color:var(--lime)}
+.fanta-confirm-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;width:100%;margin-top:10px}
+.fanta-confirm-actions button{min-height:52px;border-radius:14px;font-size:15px}
+.fanta-m-last{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;margin-top:12px;padding:10px 12px;border-radius:14px;background:#9fd37a14}
+.fanta-m-last .fanta-dot{width:8px;height:8px;margin-right:4px}
+.fanta-a-log.has-undo li{grid-template-columns:30px 26px minmax(0,1fr) auto 32px}
+.fanta-a-undo{width:32px;height:32px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:16px}
+
+.fanta-a-timer.is-small{width:44px;height:44px;margin-left:auto}
+.fanta-a-timer.is-small b{font-size:16px}
+.fanta-a-timer.is-small circle{stroke-width:6}
+.fanta-a-timer.is-small + .fanta-close{margin-left:8px}
+@media (min-width:900px){.fanta-a-bid strong{font-size:80px}.fanta-a-timer{width:100px;height:100px}}
+
+/* ===== Lega ===== */
+.fanta-lg-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:12px -16px 4px;padding:0 16px}
+.fanta-lg-tabs::-webkit-scrollbar{display:none}
+.fanta-lg-tabs .v2-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px}
+.fanta-lg-live{width:8px;height:8px;border-radius:50%;background:#ff5d4d;animation:fanta-pulse 1.4s ease-in-out infinite}
+.fanta-block.is-first{margin-top:8px;padding-top:6px;border-top:0}
+.fanta-form.is-small{vertical-align:middle;margin-left:2px}
+.fanta-form.is-small i{width:14px;height:14px;border-radius:4px;font-size:8px}
+.fanta-table-full td:nth-child(2) small{display:flex;align-items:center;gap:4px;margin-left:16px}
+.fanta-vnp{font-size:12px;color:var(--muted);white-space:nowrap}
+
+.fanta-cal{display:grid;gap:8px}
+.fanta-cal-round{border-radius:16px;background:#ffffff0a;overflow:hidden}
+.fanta-cal-round.is-current{box-shadow:inset 0 0 0 1px var(--lime)}
+.fanta-cal-head{width:100%;display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;background:transparent;color:var(--white);text-align:left}
+.fanta-cal-head b{font:600 20px 'Barlow Condensed',sans-serif}
+.fanta-cal-head i{margin-left:auto;font-style:normal;color:var(--muted)}
+.fanta-cal-state{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;background:#ffffff14;color:#cfd8c9}
+.fanta-cal-state.is-calcolata{background:#9fd37a26;color:var(--fanta-win)}
+.fanta-cal-state.is-in-corso{background:#d6f77b1f;color:var(--lime)}
+.fanta-cal-round ul{list-style:none;margin:0;padding:0 8px 8px}
+.fanta-cal-match{width:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:10px 6px;border-top:1px solid var(--line);background:transparent;color:var(--white);font-size:13px}
+button.fanta-cal-match:hover{background:#ffffff08}
+.fanta-cal-match.is-mine{background:#d6f77b0d}
+.fanta-cal-team{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fanta-cal-team.is-away{justify-content:flex-end;text-align:right}
+.fanta-cal-team.is-me{color:var(--lime);font-weight:700}
+.fanta-cal-team i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+.fanta-cal-score{display:flex;flex-direction:column;align-items:center;min-width:76px}
+.fanta-cal-score strong{font:700 20px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+.fanta-cal-score small{font-size:10px;color:var(--muted)}
+
+.fanta-lg-card{display:grid;gap:8px;justify-items:start;padding:18px;border-radius:22px;background:#ffffff0a;border:1px solid var(--line)}
+.fanta-lg-card.is-live{background:linear-gradient(160deg,#1d4a35,#15392a 70%);border-color:var(--lime)}
+.fanta-lg-card h2{margin:0;font:700 30px/1 'Barlow Condensed',sans-serif}
+.fanta-lg-card p{margin:0;font-size:13px;color:#cfd8c9}
+.fanta-lg-card .primary,.fanta-lg-card .secondary{min-height:48px;border-radius:12px;padding:0 18px;width:100%}
+.fanta-lg-card .dash-clock{text-align:left}
+.fanta-lg-sub{margin-top:24px}
+.fanta-lg-form{display:grid;gap:12px;margin-top:12px;padding:16px;border-radius:18px;border:1px dashed var(--lime)}
+.fanta-lg-form h3{margin:0;font:600 22px 'Barlow Condensed',sans-serif}
+.fanta-lg-form label{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+.fanta-lg-form select,.fanta-lg-form input[type=datetime-local]{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--white);padding:0 12px;font-size:15px;color-scheme:dark}
+.fanta-lg-form fieldset{border:0;margin:0;padding:0;display:grid;gap:8px}
+.fanta-lg-form legend{font-size:12px;color:var(--muted);margin-bottom:6px;padding:0}
+.fanta-lg-form .fanta-choice{display:flex;align-items:center;gap:10px;color:var(--white)}
+.fanta-lg-form .fanta-choice span{display:grid}
+.fanta-lg-form .fanta-choice small{font-size:11px;color:var(--muted)}
+.fanta-lg-form .primary{min-height:50px;border-radius:12px}
+
+.fanta-rules h3{margin:20px 0 8px;font:600 22px 'Barlow Condensed',sans-serif}
+.fanta-rules h3:first-child{margin-top:4px}
+.fanta-rules p{margin:0;font-size:13px;line-height:1.6;color:#cfd8c9}
+.fanta-rule-list{list-style:none;margin:0;padding:0;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.fanta-rule-list li{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-top:1px solid var(--line);font-size:13px}
+.fanta-rule-list li:first-child{border-top:0}
+.fanta-rule-list b{font-variant-numeric:tabular-nums;text-align:right}
+
+.fanta-lg-count{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:baseline;margin-bottom:12px}
+.fanta-lg-count strong{font:700 44px/1 'Barlow Condensed',sans-serif}
+.fanta-lg-count strong small{font-size:22px;color:var(--muted)}
+.fanta-lg-count span{font-size:13px;color:#cfd8c9}
+.fanta-lg-bar{grid-column:1/-1;height:6px;border-radius:6px;background:#ffffff14;overflow:hidden}
+.fanta-lg-bar i{display:block;height:100%;background:var(--lime);border-radius:6px}
+.fanta-lg-members{list-style:none;margin:0;padding:0}
+.fanta-lg-members li{display:grid;grid-template-columns:12px minmax(0,1fr);gap:10px;align-items:center;padding:10px 2px;border-top:1px solid var(--line)}
+.fanta-lg-members em{font-style:normal;font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 6px;margin-left:4px;border-radius:999px;background:var(--fanta-gold);color:var(--bg);vertical-align:2px}
+.fanta-lg-members em.is-me{background:var(--lime)}
+.fanta-lg-invite{display:grid;gap:10px;justify-items:start;margin-top:16px;padding:16px;border-radius:18px;background:#ffffff0a}
+.fanta-lg-invite code{font:700 26px 'Barlow Condensed',sans-serif;letter-spacing:.08em;color:var(--lime)}
+.fanta-lg-invite-actions{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;width:100%}
+.fanta-lg-invite-actions button{min-height:48px;border-radius:12px}
+.fanta-auction-card.is-soon{background:linear-gradient(135deg,#d5c18d,#a8c47a)}
+
+/* ===== Demo ===== */
+.fanta-demo-bar{position:sticky;top:calc(var(--env-banner-height,0px) + 65px);z-index:19;display:flex;align-items:center;gap:8px;padding:8px 16px;background:#f7cf7b;color:#2a2108;font-size:12px}
+.fanta-demo-bar b{font-size:11px;font-weight:900;letter-spacing:.1em;padding:2px 6px;border-radius:4px;background:#2a2108;color:#f7cf7b}
+.fanta-demo-bar span{flex:1;min-width:0}
+.fanta-demo-bar button{min-height:32px;padding:0 10px;border-radius:999px;background:#2a210814;color:#2a2108;font-weight:800;font-size:12px;white-space:nowrap}
+body:has(.fanta-demo-bar) .fanta-board-pitch{top:calc(var(--env-banner-height,0px) + 101px)}
+.fanta-demo-info{display:grid;gap:12px;margin-top:6px}
+.fanta-demo-info p{margin:0;font-size:14px;line-height:1.55;color:#e2e8dc}
+.fanta-demo-info ul{margin:0;padding-left:18px;display:grid;gap:10px;font-size:14px;line-height:1.5;color:#cfd8c9}
+.fanta-demo-info b{color:var(--white)}
+.fanta-demo-info .primary{min-height:52px;border-radius:14px;margin-top:6px}
+.fanta-toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-bp));z-index:60;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 32px);padding:12px 16px;border-radius:14px;
+  background:#f7cf7b;color:#2a2108;font-weight:700;font-size:13px;box-shadow:0 10px 30px #000a;animation:fanta-pop .2s ease-out}
+
+/* ===== Lega pilota ===== */
+.fanta-demo-bar.is-pilot{background:var(--lime)}
+.fanta-demo-bar.is-pilot b{background:#13230f;color:var(--lime)}
+.fanta-pilot .fanta-sq-head p{margin-top:10px;font-size:14px;line-height:1.55;color:#cfd8c9}
+.fanta-pilot .fanta-sq-head p b{color:var(--white)}
+.fanta-pl-count{display:flex;align-items:baseline;gap:10px;margin:16px 0 10px}
+.fanta-pl-count strong{font:700 40px/1 'Barlow Condensed',sans-serif}
+.fanta-pl-count strong small{font-size:20px;color:var(--muted)}
+.fanta-pl-count span{font-size:13px;color:#cfd8c9}
+.fanta-pl-random{width:100%;min-height:50px;border-radius:14px;margin-bottom:14px}
+.fanta-pl-grid{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.fanta-pl-team{padding:14px;border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 22%,transparent),#ffffff06 60%);border:1px solid color-mix(in srgb,var(--c1) 45%,transparent)}
+.fanta-pl-team.is-taken{opacity:.55;filter:saturate(.6)}
+.fanta-pl-head{display:flex;align-items:center;gap:12px}
+.fanta-pl-head b{display:block;font:700 24px/1 'Barlow Condensed',sans-serif}
+.fanta-pl-head small{font-size:12px;color:var(--muted)}
+.fanta-emblem{flex:0 0 auto;filter:drop-shadow(0 3px 5px #0006)}
+.fanta-pl-stars{list-style:none;margin:12px 0;padding:0;display:grid;gap:4px}
+.fanta-pl-stars li{display:grid;grid-template-columns:26px 22px 1fr auto;align-items:center;gap:8px;font-size:13px}
+.fanta-pl-stars .fanta-mini-shirt{width:26px;height:26px}
+.fanta-pl-stars .fanta-role{width:20px;height:20px;border-radius:6px;font-size:10px}
+.fanta-pl-stars b{color:var(--fanta-gold);font-variant-numeric:tabular-nums}
+.fanta-pl-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:#cfd8c9}
+.fanta-pl-foot b{color:var(--white)}
+.fanta-pl-foot .primary{min-height:44px;border-radius:12px;padding:0 16px}
+.fanta-pl-dice{font-size:48px;line-height:1}
+@media (min-width:900px){.fanta-pl-grid{grid-template-columns:1fr 1fr}}
+
+/* ===== Io ===== */
+.fanta-io-demo{display:grid;gap:8px;justify-items:start;margin:10px 0 6px;padding:16px;border-radius:18px;background:#f7cf7b1a;border:1px solid #f7cf7b66}
+.fanta-io-demo .eyebrow{color:#f7cf7b}
+.fanta-io-demo h2{margin:0;font:700 26px/1 'Barlow Condensed',sans-serif}
+.fanta-io-demo p{margin:0;font-size:13px;line-height:1.5;color:#cfd8c9}
+.fanta-io-demo button{min-height:44px;border-radius:12px}
+.fanta-io-toggles,.fanta-io-leagues{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.fanta-io-toggles label{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border-radius:14px;background:#ffffff0a;cursor:pointer}
+.fanta-io-toggles span{display:grid;gap:2px}
+.fanta-io-toggles b{font-size:14px}
+.fanta-io-toggles small{font-size:11px;color:var(--muted);line-height:1.4}
+.fanta-switch{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:46px;height:28px;border-radius:999px;background:#ffffff26;position:relative;cursor:pointer;transition:background .15s}
+.fanta-switch:after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+.fanta-switch:checked{background:var(--lime)}
+.fanta-switch:checked:after{transform:translateX(18px);background:var(--bg)}
+.fanta-io-leagues .v2-league-row{width:100%}
+.fanta-io-bar{width:100%;min-height:50px;border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+
+/* Solo anteprima: selettore degli stati */
+@media (max-width:420px){.fanta-league-chip .v2-role{display:none}}
+.fanta-preview-panel{position:fixed;left:10px;bottom:calc(84px + var(--safe-bp));z-index:35;padding:8px 10px;border-radius:12px;background:#ffdc32;color:#000;font-size:11px;font-weight:700;box-shadow:0 6px 20px #0006}
+.fanta-preview-panel label{display:grid;gap:4px}
+.fanta-preview-panel label+label{margin-top:6px}
+.fanta-preview-panel select{font-size:13px;min-height:32px;border-radius:6px;border:1px solid #0004;background:#fff;color:#000}
+
+@media (min-width:900px){
+  .fanta-main{padding-top:28px}
+  .fanta-hero{padding:32px 34px 24px}
+}
+@media (prefers-reduced-motion:reduce){.fanta-live:before{animation:none}}
+
+/* Schedine native: stessa cornice, senza duplicare lega o competizione. */
+.fanta-native-slips h1{font-size:28px;margin:4px 0 6px}.fanta-slip-heading{display:flex;align-items:start;justify-content:space-between;gap:16px}.fanta-slip-balance{text-align:right;flex:0 0 auto}.fanta-slip-balance small{display:block;font-size:11px;color:var(--muted)}.fanta-slip-balance b{display:block;font-size:24px;color:var(--lime)}
+.fanta-slip-tabs,.fanta-today-tabs{display:flex;gap:4px;padding:4px;background:var(--panel);border-radius:12px;margin:16px 0}.fanta-slip-tabs button,.fanta-today-tabs button{flex:1;min-height:44px;background:transparent;border:0;border-radius:9px;color:var(--muted);font-weight:700;font-size:13px}.fanta-slip-tabs button[aria-pressed=true],.fanta-today-tabs button[aria-pressed=true]{background:var(--lime);color:var(--bg)}
+.fanta-slip-round{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;margin:14px 0}.fanta-slip-round select{min-height:44px;max-width:65%;padding:9px;background:var(--panel);color:var(--white);border:1px solid var(--line);border-radius:10px}
+.fanta-native-slips .v2-title,.fanta-native-slips .v2-eyebrow{display:none}.fanta-native-slips .v2-slip{padding:0}.fanta-native-slips .v2-slipbar{position:static;width:auto;margin:12px 0 0;transform:none;z-index:auto;border-radius:16px}.fanta-native-slips .v2-odds-main{grid-template-columns:repeat(3,minmax(0,1fr))}.fanta-native-slips .v2-more{grid-column:1/-1;min-height:44px;width:100%;font-size:13px}.fanta-native-slips .bar-head h1{font-size:23px}.fanta-native-slips .bar-head .eyebrow{display:none}
+@media(min-width:900px){.fanta-slip-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;align-items:start;gap:20px}.fanta-native-slips .v2-slipbar{position:sticky;top:90px;margin-top:0}.fanta-native-slips .bar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fanta-main header.fanta-slip-heading{position:static;display:flex;min-height:0;width:100%;padding:0;margin:0;background:transparent;transform:none}.fanta-native-slips .v2-slipbar{max-width:none;left:auto;right:auto;bottom:auto}.fanta-native-slips .v2-slip{min-width:0}.fanta-native-slips .v2-slipbar .v2-stakes{flex-wrap:wrap}.fanta-native-slips .v2-points-legend{font-size:12px;line-height:1.5;color:var(--muted)}
+body.fanta-active.v2-on:has(.fanta-native-slips .v2-slipbar) main{padding-bottom:calc(110px + var(--safe-bp))!important}

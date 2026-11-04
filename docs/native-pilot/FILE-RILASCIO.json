@@ -1,0 +1,37 @@
+{
+  "version": "0.28.0",
+  "files": [
+    {
+      "path": "public/src/avatar-renderer.mjs",
+      "sha256": "2fe90c45dfa53fc462b8c459b1a87120ff65aee1eab540ef98cdde67e2195b23"
+    },
+    {
+      "path": "public/src/avatar-art.mjs",
+      "sha256": "71ce1e2aae229ea548583c74795e7eb82c079f6ffc88cd540c209eb2e0357d8e"
+    },
+    {
+      "path": "public/src/fanta/team-logo.mjs",
+      "sha256": "6c5d62726ab4db90f1920c7a0152b53f2623fa9da10a10f89c4e249d0eb4501a"
+    },
+    {
+      "path": "public/fanta.css",
+      "sha256": "bf0ec8635bf56974b2d18bd6c3bbadb61ba97ebd030b49f55bfa7337f073ae6a"
+    },
+    {
+      "path": "public/pubblico.css",
+      "sha256": "5c7a85c27ebf34b9e9dfc117c86751c9b1a5d399c995f1e9ba36babbb008dbdf"
+    },
+    {
+      "path": "public/v2.css",
+      "sha256": "b38a83c4898db5c064e45cdbfff7d08736d6e5649c30982338f5b3ff80abed33"
+    },
+    {
+      "path": "netlify/database/migrations/011_native_pilot_market.sql",
+      "sha256": "d4047ec00c9f542c86dbaaf2d33f2efc764153c62c84b5988d8c9eea1e0773b8"
+    },
+    {
+      "path": "public/quasi-studio.css",
+      "sha256": "6dff1b9d36df804e520d1ad8fa79260fdb08a7008922b8836a25162265fb126e"
+    }
+  ]
+}

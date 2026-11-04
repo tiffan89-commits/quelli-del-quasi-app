@@ -1,0 +1,9 @@
+import test from'node:test';import assert from'node:assert/strict';import fs from'node:fs/promises';import os from'node:os';import path from'node:path';import{execFileSync}from'node:child_process';import{buildReleaseEnv}from'../scripts/build-release-env.mjs';
+test('build metadata and noindex stay outside production; a production build clears prior preview output',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'quasi-release-build-'));
+ try{await fs.mkdir(path.join(root,'public'));await fs.writeFile(path.join(root,'public/version.json'),JSON.stringify({version:'0.25.1'}));for(const [CONTEXT,BRANCH,APP_ENV] of [['deploy-preview','feature/demo','preview'],['branch-deploy','staging','staging'],['production','main','production']]){
+ await buildReleaseEnv(root,{CONTEXT,BRANCH,APP_ENV,COMMIT_REF:'abcdef0123456789'});const output=JSON.parse(await fs.readFile(path.join(root,'public/env.json'),'utf8'));assert.equal(output.env,APP_ENV);if(APP_ENV==='production'){assert.deepEqual(output,{env:'production'});await assert.rejects(fs.stat(path.join(root,'public/_headers')),{code:'ENOENT'});}else assert.match(await fs.readFile(path.join(root,'public/_headers'),'utf8'),/X-Robots-Tag: noindex/);
+ const script=`delete process.env.CONTEXT;delete process.env.BRANCH;const m=await import(${JSON.stringify(new URL('../lib/release-env.mjs',import.meta.url).href)});console.log(m.appEnv());`;const result=execFileSync(process.execPath,['--input-type=module','-e',script],{cwd:root,encoding:'utf8'}).trim();assert.equal(result,APP_ENV);
+ }await assert.rejects(buildReleaseEnv(root,{CONTEXT:'deploy-preview',APP_ENV:'production'}),/does not match/);
+ }finally{if(!path.basename(root).startsWith('quasi-release-build-'))throw Error('Unexpected cleanup target');await fs.rm(root,{recursive:true,force:true});}
+});

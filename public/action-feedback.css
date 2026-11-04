@@ -1,0 +1,5 @@
+button:disabled,input[type=submit]:disabled{cursor:not-allowed;filter:none;box-shadow:none;opacity:.7}
+button.is-busy,button[aria-busy=true],input[type=submit][aria-busy=true]{background:#263a31!important;color:#d8e1d9!important;border-color:#526658!important;opacity:1!important;cursor:wait!important;pointer-events:none;box-shadow:none!important}
+button.is-busy::before,button[aria-busy=true]:not(.is-busy)::before{content:"";display:inline-block;width:13px;height:13px;margin-right:9px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:quasi-action-spin .8s linear infinite;flex:none}
+@keyframes quasi-action-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){button.is-busy::before,button[aria-busy=true]::before{animation:none;border-right-color:currentColor;opacity:.6}}

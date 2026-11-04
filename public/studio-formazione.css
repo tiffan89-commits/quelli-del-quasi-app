@@ -1,0 +1,137 @@
+/* ---------- Studio formazione: schermo intero, campo orizzontale in alto, giocatori sotto ---------- */
+body.fs-open{overflow:hidden}
+.fs{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:var(--bg);color:var(--white)}
+.fs-head{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;border-bottom:1px solid var(--line)}
+.fs-close{width:38px;height:38px;flex:0 0 auto;border-radius:50%;padding:0;background:#ffffff0d;border:1px solid var(--line);color:var(--white);font-size:22px;line-height:1}
+.fs-title{flex:1;min-width:0;display:grid;line-height:1.15}
+.fs-title b{font:700 19px 'Barlow Condensed',sans-serif;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-title small{font-size:11px;color:var(--muted)}
+.fs-quick{flex:0 0 auto;min-height:38px;padding:0 12px;border-radius:999px;border:0;background:var(--lime);color:#0c1815;font:700 12px 'DM Sans',sans-serif}
+.fs-stage{flex:1;min-height:0;display:flex;flex-direction:column}
+.fs-top{flex:0 0 auto;padding:8px 12px 6px;background:linear-gradient(#0f1f1a,var(--bg))}
+.fs-formations{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px}
+.fs-formations::-webkit-scrollbar{display:none}
+.fs-mod{flex:0 0 auto;min-height:32px;padding:0 11px;border-radius:999px;background:#ffffff0d;border:1px solid var(--line);color:var(--white);font:600 12px 'DM Sans',sans-serif;font-variant-numeric:tabular-nums}
+.fs-mod.is-active{background:var(--white);color:#0c1815;border-color:var(--white)}
+.fs-mod.is-soft{color:#cfd8c9}
+/* Campo in orizzontale: portiere a sinistra, attacco a destra */
+.fs-pitch{position:relative;display:grid;grid-template-columns:.8fr 1fr 1fr 1fr;aspect-ratio:16/9.6;border-radius:14px;overflow:hidden;
+  background:repeating-linear-gradient(90deg,#2d6a43 0 12.5%,#286039 12.5% 25%);box-shadow:inset 0 0 0 2px #ffffff26}
+.fs-lines{position:absolute;inset:0;pointer-events:none}
+.fs-lines:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:2px solid #ffffff2e}
+.fs-lines:after{content:"";position:absolute;left:50%;top:50%;width:22%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid #ffffff2e;border-radius:50%}
+.fs-lines i:before,.fs-lines i:after{content:"";position:absolute;top:25%;bottom:25%;width:11%;border:2px solid #ffffff2e}
+.fs-lines i:before{left:-2px;border-left:0}.fs-lines i:after{right:-2px;border-right:0}
+.fs-col{position:relative;display:flex;flex-direction:column;justify-content:space-around;align-items:center;padding:4px 0}
+.fs-token{display:flex;flex-direction:column;align-items:center;gap:1px;width:66px;padding:0;background:none;border:0;color:var(--white)}
+.fs-token b{max-width:66px;font-size:9.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;border-radius:4px;background:#0c1815b3}
+.fs-shirt{position:relative;display:block;width:32px;height:32px;flex:0 0 auto}
+.fs-shirt.sm{width:26px;height:26px}
+.fs-ring{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px dashed #ffffffa6;background:#0c181540;font-size:11px;font-weight:800;color:#ffffffd9}
+.fs-token.is-selected .fs-ring,.fs-token.is-selected .fs-shirt{outline:3px solid var(--lime);outline-offset:2px;border-radius:50%}
+.fs-token.is-selected b{background:var(--lime);color:#0c1815}
+/* Iconcina in alto a destra della maglia */
+.fs-badge{position:absolute;top:-5px;right:-9px;min-width:17px;height:15px;padding:0 3px;border-radius:8px;display:inline-grid;place-items:center;font:800 8.5px/1 'DM Sans',sans-serif;font-style:normal;color:#0c1815;box-shadow:0 0 0 1.5px #0c1815;font-variant-numeric:tabular-nums}
+.fs-badge.is-pct.is-hi{background:#8fe08a}.fs-badge.is-pct.is-mid{background:#f7cf7b}.fs-badge.is-pct.is-lo{background:#c9cfc6}
+.fs-badge.is-prev{background:#0c1815!important;color:#e9efe4;box-shadow:0 0 0 1.5px #0c1815,inset 0 0 0 1px #e9efe4;outline:1px dashed #e9efe4;outline-offset:-1px}
+.fs-badge.is-doubt{background:#ffac77!important;color:#0c1815}
+.fs-badge.is-inj{background:#ff5d4d;color:#fff;min-width:15px;font-size:10px}
+.fs-badge.is-sq{min-width:10px;width:10px;height:14px;padding:0;border-radius:2px;background:#e3352b;transform:rotate(12deg)}
+/* Panchina sotto il campo, scorre di lato */
+.fs-bench{display:flex;align-items:center;gap:8px;margin-top:6px}
+.fs-bench-label{flex:0 0 auto;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.fs-bench-label b{color:var(--fanta-gold)}
+.fs-bench-row{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:6px 6px 2px 0}
+.fs-bench-row::-webkit-scrollbar{display:none}
+.fs-bench-row small{font-size:11px;color:var(--muted);white-space:nowrap}
+.fs-bcell{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:1px;width:52px;padding:0;background:none;border:0;color:#cfd8c9}
+.fs-bcell b{max-width:52px;font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Il "guardaroba" dei giocatori */
+.fs-dock{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 12px 12px;border-top:1px solid var(--line);background:var(--panel)}
+.fs-tabs{position:sticky;top:0;z-index:2;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding:10px 12px 8px;background:var(--panel)}
+.fs-tabs::-webkit-scrollbar{display:none}
+.fs-tab{flex:0 0 auto;min-height:36px;padding:0 12px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--white);font:600 13px 'DM Sans',sans-serif}
+.fs-tab small{font-size:11px;color:var(--muted);margin-left:2px;font-variant-numeric:tabular-nums}
+.fs-tab.is-active{background:var(--lime);border-color:var(--lime);color:#0c1815}.fs-tab.is-active small{color:#0c1815b3}
+.fs-hint{margin:2px 2px 10px;font-size:12px;line-height:1.45;color:var(--muted)}
+.fs-hint.is-pick{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--white);font-size:13px}
+.fs-hint.is-pick>span:last-child{display:flex;gap:14px;flex:0 0 auto}
+.fs-hint.is-pick b{color:var(--lime)}
+.fs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.fs-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:12px 6px 8px;border-radius:14px;background:var(--bg);border:1px solid var(--line);color:var(--white);text-align:center}
+.fs-tile .fs-shirt{width:40px;height:40px;margin-bottom:2px}
+.fs-tile>b{max-width:100%;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-tile>small{font-size:10px;color:var(--muted);white-space:nowrap}
+.fs-tile-foot{display:flex;align-items:center;justify-content:space-between;align-self:stretch;margin-top:3px;font:700 14px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fs-tile-foot small{font:500 9px 'DM Sans',sans-serif;color:var(--muted)}
+.fs-tile-foot .fanta-role{width:20px;height:20px;border-radius:6px;font-size:10px}
+.fs-tile.is-campo{border-color:var(--lime);background:#d6f77b12}
+.fs-tile.is-panchina{border-color:#e7bb6280}
+.fs-tile.is-out{opacity:.6}
+.fs-flag{position:absolute;top:5px;left:6px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--lime)}
+.fs-flag.is-bench{color:var(--fanta-gold)}
+.fs-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 6px;margin:14px 2px 0;font-size:10.5px;line-height:1.6;color:var(--muted)}
+.fs-legend .fs-badge{position:static;margin-right:1px}
+.fs-empty{color:var(--muted);font-size:13px;line-height:1.5}
+.fs-blist{list-style:none;margin:0;padding:0}
+.fs-blist li{display:grid;grid-template-columns:18px 26px minmax(0,1fr) 36px 36px 36px;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.fs-bn{font-size:12px;color:var(--fanta-gold);text-align:center;font-weight:700}
+.fs-bname{display:grid;min-width:0}.fs-bname b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fs-bname small{font-size:10.5px;color:var(--muted)}
+.fs-blist button{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--white);padding:0}
+.fs-blist button:disabled{opacity:.3}
+.fs-bar{display:flex;align-items:center;gap:10px;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 8px);border-top:1px solid var(--line);background:var(--bg)}
+.fs-bar .v2-state{flex:1;min-width:0;font-size:11px;margin:0}
+.fs-bar .v2-save{min-height:46px;padding:0 18px;flex:0 0 auto}
+.fs-bar .v2-save:disabled:not(.is-done){opacity:.45}
+/* Ingresso nello studio dalla pagina Squadra */
+.fanta-studio-open{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;width:100%;margin:0 0 10px;padding:12px 16px;border-radius:16px;border:1px solid #d6f77b66;background:#d6f77b14;color:var(--white);text-align:left}
+.fanta-studio-open b{font:700 18px 'Barlow Condensed',sans-serif;text-transform:uppercase;color:var(--lime)}
+.fanta-studio-open small{grid-column:1;font-size:12px;color:#cfd8c9}
+.fanta-studio-open span{grid-row:1/3;grid-column:2;font-size:20px;color:var(--lime)}
+
+/* One scroll axis throughout: the field stays visible, the roster moves sideways. */
+.fs-stage{overflow:hidden;width:100%;max-width:1100px;margin:0 auto}
+.fs-top{min-height:0}.fs-pitch{height:min(29dvh,270px);min-height:150px;aspect-ratio:auto;max-width:740px;margin:0 auto}
+.fs-formations{max-width:740px;margin:0 auto;touch-action:pan-x}
+.fs-token{min-height:0;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.fs-token.is-droppable .fs-ring,.fs-token.is-droppable .fs-shirt{outline:2px solid #d6f77b;outline-offset:3px;border-radius:50%;box-shadow:0 0 18px #d6f77b90}
+.fs-token.is-over .fs-ring,.fs-token.is-over .fs-shirt{outline:3px solid white;transform:scale(1.15);background:#d6f77b66}
+.fs-bench.is-droppable{border-radius:10px;box-shadow:inset 0 0 0 1px #d6f77b66}.fs-bench.is-over{background:#d6f77b22}
+.fs-bcell.is-droppable,.fs-blist li.is-droppable{outline:1px solid #d6f77b66;border-radius:8px}.fs-bcell.is-over,.fs-blist li.is-over{outline:2px solid var(--lime)}
+.fs-bench{max-width:740px;margin:5px auto 0}.fs-bcell,.fs-tile,.fs-blist li{touch-action:pan-x;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.fs-bench-row{height:46px;overflow-y:hidden;touch-action:pan-x}.fs-bench-row small{white-space:normal;line-height:1.2}
+.fs-dock{display:flex;flex-direction:column;overflow:hidden;padding:0 12px 6px}
+.fs-tabs{position:static;flex-shrink:0;padding-top:6px;padding-bottom:5px;touch-action:pan-x;overflow-y:hidden}
+.fs-tab{min-height:32px;padding:0 10px;font-size:12px}.fs-tab small{font-size:10px}
+.fs-hint{flex-shrink:0;font-size:10px;line-height:1.3;margin:2px 0 6px}.fs-hint.is-pick{font-size:11px;gap:6px}
+.fs-hint.is-pick>span:last-child{gap:10px}.fs-hint .fanta-link{font-size:11px;min-height:24px;padding:0}
+.fs-grid{flex:1;min-height:0;display:grid;grid-template-columns:none;grid-template-rows:repeat(2,minmax(0,1fr));grid-auto-flow:column;grid-auto-columns:92px;gap:6px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x;padding:5px 3px 7px;scrollbar-width:thin;scrollbar-color:#d6f77b70 transparent}
+.fs-tile{justify-content:center;gap:2px;padding:6px 5px;min-height:0;border-radius:11px}
+.fs-tile .fs-shirt{width:30px;height:30px;margin:0 0 2px}.fs-tile>b{font-size:11px;max-width:100%}.fs-tile>small{font-size:10px;line-height:1.1}
+.fs-tile-foot{margin:0;font-size:12px;line-height:1}.fs-tile-foot .fanta-role{width:17px;height:17px;font-size:9px}
+.fs-badge.is-pct{min-width:23px;height:16px;font-size:8px;padding:0 3px;border-radius:999px}
+.fs-badge.is-pct.is-actual{background:#8fe08a;color:#09210d;box-shadow:0 0 0 1px #09210d}
+.fs-badge.is-pct.is-estimated{background:#050505;color:#fff;border:1px solid #fff;box-shadow:0 0 0 1px #050505}
+.fs-legend{flex-shrink:0;flex-wrap:nowrap;gap:8px;margin:6px 0 0;font-size:9px;line-height:1.3;min-height:20px}
+.fs-legend>span{display:inline-flex;gap:4px;align-items:center;white-space:nowrap}.fs-legend .fs-badge{flex-shrink:0;min-width:16px;height:14px;font-size:8px}.fs-legend .fs-badge.is-sq{min-width:8px;width:8px;height:11px}
+.fs-blist{flex:1;min-height:0;display:grid;grid-auto-flow:column;grid-auto-columns:140px;grid-template-rows:1fr;gap:8px;overflow-x:auto;overflow-y:hidden;padding:5px 3px 7px;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:thin}
+.fs-blist li{position:relative;display:grid;grid-template-columns:repeat(3,1fr);justify-items:center;align-content:center;gap:7px 2px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--bg);min-height:0}
+.fs-blist .fs-bn{position:absolute;top:6px;left:7px}.fs-blist .fs-shirt{grid-column:1/-1}.fs-blist .fs-bname{grid-column:1/-1;max-width:100%;text-align:center;gap:2px}.fs-blist .fs-bname b{font-size:11px}.fs-blist .fs-bname small{font-size:10px}.fs-blist button{width:34px;height:32px;min-height:0;font-size:17px}
+.fs-empty{font-size:12px;margin:6px 0;flex:1;min-height:0}
+.fanta-ghost{z-index:10000!important;max-height:150px;overflow:hidden;pointer-events:none!important}.fanta-ghost.fs-bcell{background:var(--panel);padding:8px}.fanta-ghost .fs-shirt{margin-inline:auto}.fanta-ghost li{list-style:none}
+.fs [data-drag-id].is-dragging{opacity:.3}.fs [data-drag-id]:active{cursor:grabbing}
+@media(min-width:900px){.fs-top{padding:10px 20px 6px}.fs-dock{padding-inline:20px}.fs-grid{grid-auto-columns:118px}.fs-tile .fs-shirt{width:38px;height:38px}.fs-tile>b{font-size:12px}.fs-legend{justify-content:center;font-size:10px}.fs-bar{justify-content:center}.fs-bar .v2-state{flex:0 1 auto}.fs-grid{max-height:300px}.fs-token b{font-size:10px}}
+@media(max-height:740px){.fs-pitch{height:27dvh;min-height:140px}.fs-grid{grid-template-rows:minmax(0,1fr)}.fs-head{padding-block:6px}.fs-bench-row{height:39px}.fs-bench .fs-shirt.sm{width:22px;height:22px}.fs-bar .v2-save{min-height:40px}.fs-legend{margin-top:3px}}
+@media(max-width:359px){.fs-title b{font-size:16px}.fs-quick{padding-inline:8px}.fs-legend{gap:5px;font-size:8px}.fs-grid{grid-auto-columns:86px}.fs-hint{font-size:9px}.fs-bar .v2-save{padding-inline:10px;font-size:12px}}
+@media(max-height:480px) and (min-width:600px){.fs-stage{display:grid;grid-template-columns:1fr 1fr}.fs-pitch{height:calc(100dvh - 220px);min-height:120px}.fs-token .fs-shirt{width:24px;height:24px}.fs-token b{font-size:8px}.fs-grid{grid-template-rows:minmax(0,1fr)}.fs-dock{border-left:1px solid var(--line)}}
+
+.fs-pitch{--fs-token-size:clamp(18px,calc((27dvh - 60px)/5),32px)}.fs-col{min-height:0;gap:1px}.fs-token{flex:0 1 auto;min-height:0}.fs-token>.fs-shirt{width:var(--fs-token-size);height:var(--fs-token-size)}.fs-token>.fs-ring{width:var(--fs-token-size);height:var(--fs-token-size)}.fs-token b{line-height:1.1}
+
+.fs-grid:has(.fs-all-picked){display:flex;align-items:center;justify-content:center}.fs-all-picked{max-width:350px;margin:0 10px;color:var(--muted);font-size:12px;line-height:1.5;text-align:center}
+
+/* Clear actions alter the draft only; saving still checks deadline and completeness. */
+.fs-actions{display:flex;gap:5px;flex:none;align-items:center}.fs-actions .fs-quick{padding-inline:11px}.fs-quick.is-danger{background:#a83836;color:#fff3ef;border:1px solid #e7746e}.fs-quick.is-danger:disabled{opacity:.35;cursor:default}.fs-quick:disabled{cursor:default}
+.fs-bench-label{display:flex;flex-direction:column;gap:2px}.fs-bench-label>span{white-space:nowrap}.fs-bench-clear{min-height:23px;padding:1px 6px;border-radius:999px;border:1px solid #d4777166;background:#a8383626;color:#ffb9b1;font:600 9px 'DM Sans',sans-serif;letter-spacing:0;text-transform:none}.fs-bench-clear:disabled{opacity:.35}
+.fs-dock.is-droppable{box-shadow:inset 0 0 0 2px #e7746e66}.fs-dock.is-over{box-shadow:inset 0 0 0 2px #ff9e97;background:#342420}.fs-dock.is-droppable>.fs-hint{font-size:0}.fs-dock.is-droppable>.fs-hint:before{content:'Rilascia qui per togliere il giocatore';font-size:11px;color:#ffb9b1}.fs-dock.is-droppable>.fs-hint>span{display:none}
+@media(max-width:600px){.fs-head{gap:6px}.fs-close{width:32px;height:32px}.fs-title b{font-size:16px;white-space:normal;line-height:1.1}.fs-title b>span{display:block;font-size:12px;white-space:nowrap}.fs-title small{font-size:9px}.fs-actions .fs-quick{padding-inline:9px;font-size:11px;min-height:34px}.fs-head{min-height:66px}}
+@media(max-width:359px){.fs-head{padding-inline:8px;gap:5px}.fs-actions .fs-quick{padding-inline:7px;font-size:10px}.fs-title b{font-size:14px}.fs-title b>span{font-size:11px}}

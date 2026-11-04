@@ -1,0 +1,38 @@
+import {evaluateMarquee} from './marquee.mjs';
+import {bonuses,DEFAULT_RULES,round2} from '../rules.mjs';
+import {MODEL,voteConfig,configDigest} from './config.mjs';
+import {round,clamp,roundByBands,digest} from './math.mjs';
+import {evaluateIndividual,LABELS} from './individual.mjs';
+import {evaluateContext} from './context.mjs';
+import {evaluateGoalSupport} from './goal-impact.mjs';
+import {evaluateRatingImpact} from './rating-impact.mjs';
+import {describePerformance,NARRATIVE_VERSION} from './narrative.mjs';
+export function calculateStatisticalVote(input,{rules=DEFAULT_RULES,config:overrides={},baselines=null,baselineVersion=null}={}){
+ const config=voteConfig(overrides),bonus=bonuses(input.events,input.role,rules),individual=evaluateIndividual(input,{config,baseline:baselines}),context=evaluateContext(input,individual,{config}),goalSupport=evaluateGoalSupport(input,individual,context,{config}),warnings=[...new Set([...(input.warnings||[]),...individual.warnings,...context.warnings])];
+ const marquee=evaluateMarquee(input,{config,individual,context});context.marquee=marquee;if(marquee.delta)context.label=marquee.label;
+ const base={id:input.id,name:input.name,role:input.role,subrole:input.classification?.subrole||null,club:input.club,minutes:input.minutes,events:input.events,model:MODEL,experimental:true,ai:null,needsReview:!!input.needsReview,baselineVersion,configHash:configDigest(config),warnings,
+ confidence:{value:round(individual.confidence*config.confidenceWeights.individual+context.confidence*config.confidenceWeights.context),label:'Copertura e robustezza dei dati, non probabilità di correttezza',individual:individual.confidence,context:context.confidence},individual,context,presence:input.presence||null};
+ const empty=(status,why)=>({...base,status,vote:null,rawVote:null,fantavote:null,why,breakdown:{start:config.base,lines:[],bonus:[]},stats:[]});
+ if(!input.onField)return empty(input.final?'sv':'to-play',input.final?'Non è entrato in campo.':'Deve ancora giocare.');
+ if(!input.role)return {...empty('sv','Ruolo non disponibile.'),needsReview:true};
+ const eventCount=key=>Number.isInteger(input.events?.[key])&&input.events[key]>0?input.events[key]:0,penSaved=input.role==='P'?eventCount('penSaved'):0,penMissed=eventCount('penMissed'),keyEvent=goalSupport.count>0||penSaved>0||penMissed>0,eventOnly=input.final&&(input.minutes==null||individual.coverage===0);
+ if(eventOnly&&!keyEvent)return {...empty('sv','Statistiche della prestazione non disponibili.'),needsReview:true};
+ const shortFinal=input.final&&input.minutes!=null&&input.minutes<config.minMinutes;if(shortFinal&&!keyEvent&&(!config.eventExceptions||!bonus.length))return empty('sv','Meno di '+config.minMinutes+' minuti giocati.');
+ const referenceOnly=shortFinal||eventOnly,penaltyMissedDelta=-config.eventVotes.penaltyMiss*penMissed,performanceVote=referenceOnly?config.base:individual.value+context.delta;
+ const ratingImpact=evaluateRatingImpact(input,{config});
+ const preFloorVote=performanceVote+goalSupport.delta+penaltyMissedDelta+ratingImpact.delta+marquee.delta,minimumVote=Math.max(goalSupport.count>0?config.eventVotes.scorerMinimum:config.minVote,penSaved>0?config.eventVotes.penaltySaveMinimum:config.minVote),floorAdjustment=round(Math.max(0,minimumVote-preFloorVote));
+ const rawVote=round(preFloorVote+floorAdjustment),bounded=round(clamp(rawVote,config.minVote,config.maxVote)),vote=roundByBands(bounded,config.rounding.bands);
+ const eventImpact={performanceVote:round(performanceVote),penSaved,penMissed,penaltyMissedDelta,minimumVote,floorAdjustment};
+ const lines=referenceOnly?[]:individual.blocks.filter(b=>b.observed).map(b=>({kind:'individual',key:b.key,label:b.label,delta:b.delta,why:b.metrics.map(m=>LABELS[m.key]||m.key).join(', ')}));
+ if(!referenceOnly&&context.available)lines.push({kind:'context',key:'match-context',label:'Contesto della partita',delta:context.delta,why:'Aspettative prepartita e qualità collettiva, attenuate per presenza ed efficacia individuale.'});
+ if(marquee.delta)lines.push({kind:'context',key:'marquee-match',label:marquee.label,delta:marquee.delta,why:marquee.youngDebut?'MVP statistico con gol o assist decisivo; giovane fino a 23 anni al primo anno in Italia verificato.':'MVP statistico con gol o assist decisivo in una partita di cartello.'});
+ if(goalSupport.delta)lines.push({kind:'impact',key:'goals',label:'Incisività sotto porta',delta:goalSupport.delta,why:'Prima rete +0,5; altre reti ponderate per prestazione, difficoltà e risultato, anche nella sconfitta.'});
+ if(ratingImpact.delta)lines.push({kind:'impact',key:'provider-rating-rank',label:ratingImpact.selected.label+' · '+ratingImpact.selected.rank+'°',delta:ratingImpact.delta,why:'Piazzamento per rating API-FOOTBALL. Un solo contributo, il maggiore in valore assoluto; nessuna somma tra partita e squadra.'});
+ if(penaltyMissedDelta)lines.push({kind:'impact',key:'penalty-missed',label:'Errore dal dischetto',delta:penaltyMissedDelta,why:'−0,5 alla prestazione per ogni rigore sbagliato; il malus fantacalcio resta separato.'});
+ if(floorAdjustment)lines.push({kind:'impact',key:'event-minimum',label:penSaved?'Rigore parato: soglia minima':'Gol: soglia della sufficienza',delta:floorAdjustment,why:penSaved?'Voto tecnico non inferiore a 6,5 dopo un rigore parato.':'Voto tecnico non inferiore a 6 dopo un gol.'});
+ const accounted=config.base+lines.reduce((n,x)=>n+x.delta,0),rounding=round(vote-accounted);if(rounding)lines.push({kind:'rounding',key:'rounding',label:'Arrotondamento e limiti',delta:rounding,why:'Soglie strette sul grezzo: oltre 5,6 → 6; oltre 6,2 → 6,5; oltre 6,65 → 7; oltre 7,25 → 7,5. Un solo arrotondamento finale.'});
+ const stats=Object.values(individual.features).map(f=>{const rate=f.key==='passAccuracy'||f.key.endsWith('Efficiency'),factor=rate?100:1;return {key:f.key,label:f.label,value:rate?round(f.value*100,1):f.value,avg:rate?round(f.reference*100,1):f.expected,unit:rate?'%':'',comparison:f.comparison,neutralBand:round(f.neutralBand*factor),score:f.score,attempts:f.attempts,successes:f.key==='passAccuracy'?input.metrics?.passesCompleted:null,referenceLabel:individual.historical?'mediana del ruolo':'riferimento del ruolo',source:f.source};});
+ const why=describePerformance(input,{individual,context,goalSupport,eventImpact,ratingImpact,vote,shortFinal,eventOnly});
+ return {...base,status:input.final?'voted':'playing',rawVote:round(rawVote),boundedVote:round(bounded),vote,fantavote:round2(vote+bonus.reduce((n,b)=>n+b.delta,0)),why,narrativeVersion:NARRATIVE_VERSION,goalSupport,eventImpact,ratingImpact,breakdown:{start:config.base,lines,bonus},stats,
+ calculation:{version:MODEL,configHash:configDigest(config),rounding:'strict-progressive-bands-v2',signature:digest({model:MODEL,config:configDigest(config),input,baseline:individual.baselineUsed,rules:rules.bonus})}};
+}

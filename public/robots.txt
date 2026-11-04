@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /api/
+Disallow: /fanta-api/
+Disallow: /.netlify/
+
+Sitemap: https://quellidelquasi.com/sitemap.xml

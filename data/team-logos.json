@@ -1,0 +1,106 @@
+{
+  "retrievedAt": "2026-10-29",
+  "note": "Club trademarks belong to their respective owners; used for team identification. Source ESPN CDN. No affiliation implied.",
+  "teams": [
+    {
+      "team": "Milan",
+      "file": "/assets/teams/103.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/103.png"
+    },
+    {
+      "team": "Roma",
+      "file": "/assets/teams/104.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/104.png"
+    },
+    {
+      "team": "Atalanta",
+      "file": "/assets/teams/105.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/105.png"
+    },
+    {
+      "team": "Bologna",
+      "file": "/assets/teams/107.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/107.png"
+    },
+    {
+      "team": "Cagliari",
+      "file": "/assets/teams/2925.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/2925.png"
+    },
+    {
+      "team": "Como",
+      "file": "/assets/teams/2572.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/2572.png"
+    },
+    {
+      "team": "Fiorentina",
+      "file": "/assets/teams/109.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/109.png"
+    },
+    {
+      "team": "Frosinone",
+      "file": "/assets/teams/4057.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/4057.png"
+    },
+    {
+      "team": "Genoa",
+      "file": "/assets/teams/3263.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/3263.png"
+    },
+    {
+      "team": "Inter",
+      "file": "/assets/teams/110.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/110.png"
+    },
+    {
+      "team": "Juventus",
+      "file": "/assets/teams/111.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/111.png"
+    },
+    {
+      "team": "Lazio",
+      "file": "/assets/teams/112.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/112.png"
+    },
+    {
+      "team": "Lecce",
+      "file": "/assets/teams/113.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/113.png"
+    },
+    {
+      "team": "Monza",
+      "file": "/assets/teams/4007.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/4007.png"
+    },
+    {
+      "team": "Napoli",
+      "file": "/assets/teams/114.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/114.png"
+    },
+    {
+      "team": "Parma",
+      "file": "/assets/teams/115.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/115.png"
+    },
+    {
+      "team": "Sassuolo",
+      "file": "/assets/teams/3997.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/3997.png"
+    },
+    {
+      "team": "Torino",
+      "file": "/assets/teams/239.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/239.png"
+    },
+    {
+      "team": "Udinese",
+      "file": "/assets/teams/118.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/118.png"
+    },
+    {
+      "team": "Venezia",
+      "file": "/assets/teams/17530.png",
+      "source": "https://a.espncdn.com/i/teamlogos/soccer/500/17530.png"
+    }
+  ]
+}

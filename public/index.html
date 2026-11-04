@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="it" class="app-booting">
+  <head>
+  <meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Quelli del Quasi | Fantacalcio e schedine tra amici</title>
+  <meta name="description" content="Fantacalcio con voti spiegati, asta e diretta. Schedine tra amici con crediti virtuali. Scopri Fanta e Bar, prova la demo. Niente pubblicità, per sempre.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="application-name" content="Quelli del Quasi"><meta name="apple-mobile-web-app-title" content="Quasi">
+  <meta name="theme-color" content="#0c1815"><link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48"><link rel="icon" href="/assets/icons/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png"><link rel="canonical" href="https://quellidelquasi.com/">
+  <meta property="og:type" content="website"><meta property="og:locale" content="it_IT"><meta property="og:site_name" content="Quelli del Quasi">
+  <meta property="og:title" content="Quelli del Quasi | Fantacalcio e schedine tra amici">
+  <meta property="og:description" content="Due giochi, una lega: Fanta con voti spiegati e Bar con schedine a crediti virtuali. Niente pubblicità, per sempre.">
+  <meta property="og:url" content="https://quellidelquasi.com/"><meta property="og:image" content="https://quellidelquasi.com/assets/icons/og-image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Quelli del Quasi: Fanta e Bar, niente pubblicità per sempre">
+  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Quelli del Quasi | Fantacalcio e schedine tra amici"><meta name="twitter:description" content="Fantacalcio, voti spiegati e schedine tra amici con crediti virtuali. Niente pubblicità, per sempre."><meta name="twitter:image" content="https://quellidelquasi.com/assets/icons/og-image.png"><meta name="twitter:image:alt" content="Quelli del Quasi: Fanta e Bar">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://quellidelquasi.com/#organization","name":"Quelli del Quasi","url":"https://quellidelquasi.com/","logo":{"@type":"ImageObject","url":"https://quellidelquasi.com/assets/icons/icon-512.png","width":512,"height":512}},{"@type":"WebSite","@id":"https://quellidelquasi.com/#website","url":"https://quellidelquasi.com/","name":"Quelli del Quasi","alternateName":"Quelli del Quasi · Fanta e Bar","inLanguage":"it-IT","publisher":{"@id":"https://quellidelquasi.com/#organization"}},{"@type":"WebApplication","@id":"https://quellidelquasi.com/#app","name":"Quelli del Quasi","url":"https://quellidelquasi.com/","applicationCategory":"SportsApplication","operatingSystem":"Web, Android, iOS","inLanguage":"it-IT","browserRequirements":"Browser moderno con JavaScript e connessione Internet","description":"Fantacalcio in fase pilota e schedine tra amici con crediti virtuali. Voti statistici spiegati, asta online o dal vivo, chat e personaggi personalizzabili. Niente pubblicità, per sempre.","featureList":["Formazioni e risultati di fantacalcio","Voti statistici spiegati","Asta online o dal vivo","Schedine con crediti virtuali","Classifiche e chat di lega","Personaggio Quasi personalizzabile"],"publisher":{"@id":"https://quellidelquasi.com/#organization"}},{"@type":"WebPage","@id":"https://quellidelquasi.com/#webpage","url":"https://quellidelquasi.com/","name":"Quelli del Quasi | Fantacalcio e schedine tra amici","description":"Fantacalcio con voti spiegati, asta e diretta. Schedine tra amici con crediti virtuali. Scopri Fanta e Bar, prova la demo. Niente pubblicità, per sempre.","inLanguage":"it-IT","isPartOf":{"@id":"https://quellidelquasi.com/#website"},"about":{"@id":"https://quellidelquasi.com/#app"},"mainEntity":{"@id":"https://quellidelquasi.com/#app"}}]}</script>
+  <link rel="stylesheet" href="/styles.css">
+  
+  
+  
+  <script type="module" src="/src/action-feedback.mjs"></script><link rel="stylesheet" href="/pubblico.css" /><script type="module" src="/src/password-toggle.mjs"></script><script type="module" src="/src/auth-submit.mjs"></script><style>html.app-booting,html.app-booting body{overflow:hidden!important}html.app-booting #app,html.app-booting #app-header,html.app-booting #landing{visibility:hidden!important}</style><noscript><style>html.app-booting,html.app-booting body{overflow:auto!important}html.app-booting #landing{visibility:visible!important}#entry-splash{display:none!important}</style></noscript></head><body>
+    <script type="module" src="/src/pwa-viewport.mjs"></script>
+
+
+    <div
+      id="entry-splash"
+      class="entry-splash"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="splash-inner">
+        <img
+          class="splash-emblem"
+          src="/league-logo.svg"
+          alt=""
+          width="90"
+          height="104"
+        />
+        <div class="splash-kicker">QUELLI DEL QUASI</div>
+        <h1 class="splash-title" id="splash-title">
+          Il talento sta caricando.
+        </h1>
+        <p class="splash-copy" id="splash-copy">
+          Le scuse, invece, sono già pronte.
+        </p>
+        <div class="splash-track" aria-hidden="true"></div>
+        <div class="splash-status">Prepariamo il tuo bar sport…</div>
+        <p class="bar-promise">Niente pubblicità, per sempre.</p>
+      </div>
+    </div>
+    <script>
+      (() => {
+        const variants = [
+          ["Il talento sta caricando.", "Le scuse, invece, sono già pronte."],
+          [
+            "Convocazione al bar sport.",
+            "Porta le tue certezze. Al novantesimo le restituiamo ammaccate.",
+          ],
+          [
+            "Stiamo lucidando il palo.",
+            "Quello che colpirà la tua ultima speranza.",
+          ],
+          [
+            "Un attimo di ottimismo.",
+            "Poi apriamo la schedina e ne riparliamo.",
+          ],
+          [
+            "Il VAR sta controllando.",
+            "Se questa volta avevi davvero studiato.",
+          ],
+          [
+            "Si scalda la panchina.",
+            "Il tuo piano infallibile ha chiesto il cambio.",
+          ],
+          [
+            "Carichiamo i pronostici.",
+            "La sfera di cristallo è in assistenza. Come ogni domenica.",
+          ],
+          [
+            "Fischio d’inizio imminente.",
+            "La dignità può restare negli spogliatoi.",
+          ],
+          [
+            "Quote pronte. Ego pure.",
+            "Manca soltanto il piccolo dettaglio di avere ragione.",
+          ],
+          [
+            "Benvenuto, quasi fenomeno.",
+            "Qui il “la sapevo” si scrive prima della partita.",
+          ],
+          [
+            "Stiamo gonfiando il pallone.",
+            "Le aspettative le hai già gonfiate tu.",
+          ],
+          [
+            "Riunione degli esperti.",
+            "Nessuno qualificato. Tutti molto convinti.",
+          ],
+        ];
+        let last = -1;
+        try {
+          last = Number(sessionStorage.getItem("quasiSplashLast") ?? -1);
+        } catch {}
+        let n = Math.floor(Math.random() * (variants.length - 1));
+        if (n >= last && last >= 0 && last < variants.length) n++;
+        n %= variants.length;
+        try {
+          sessionStorage.setItem("quasiSplashLast", String(n));
+        } catch {}
+        document.getElementById("splash-title").textContent = variants[n][0];
+        document.getElementById("splash-copy").textContent = variants[n][1];
+        let done = false;
+        window.finishEntrySplash = () => {
+          if (done) return;
+          done = true;
+          document.documentElement.classList.remove("app-booting");
+          const el = document.getElementById("entry-splash");
+          if (!el) return;
+          el.classList.add("leaving");
+          setTimeout(() => el.remove(), 320);
+        };
+        setTimeout(()=>{if(!done){const status=document.querySelector('#entry-splash .splash-status');if(status)status.textContent='Il bar sta ancora aprendo. Un attimo di pazienza…';}},10000);
+        setTimeout(()=>{if(!done){const status=document.querySelector('#entry-splash .splash-status');if(status){status.textContent='Il caricamento sta impiegando troppo.';const retry=document.createElement('button');retry.className='secondary';retry.textContent='Riprova';retry.onclick=()=>location.reload();status.append(document.createElement('br'),retry);}}},30000);
+      })();
+    </script>
+    <section id="landing"><div class="pb-landing">
+    <header class="pb-top">
+      <a class="pb-brand" href="#" data-go="home"><img src="/league-logo.svg" alt="" width="26" height="30">QUELLI DEL <b>QUASI.</b></a>
+      <a class="pb-btn is-small" href="#accedi" data-go="login">Accedi</a>
+    </header>
+
+    
+
+    <section class="pb-hero" aria-labelledby="pb-title">
+      <div class="pb-hero-copy">
+        <span class="eyebrow">Una lega di amici · due giochi</span>
+        <h1 id="pb-title">Il fanta dei tuoi amici. <em>Con il bar dentro.</em></h1>
+        <p>Schieri la formazione, segui i voti in diretta spiegati riga per riga e fai l'asta online o dal vivo. Al Bar scommetti crediti finti sulle partite della lega. Niente pubblicità, per sempre.</p>
+        <div class="pb-actions">
+          <a class="pb-btn is-primary" href="#registrati" data-go="register">Crea il tuo account <span aria-hidden="true">→</span></a>
+          <button type="button" class="pb-btn" data-go="demo">Guarda la demo <small>senza registrarti</small></button>
+        </div>
+        <ul class="pb-pills"><li>Niente pubblicità, per sempre</li></ul>
+      </div>
+      <div class="pb-show" aria-hidden="true">
+    <div class="pb-card pb-vote">
+      <div class="pb-vote-head"><span class="pb-shirt"><svg class="fanta-shirt" viewBox="0 0 40 40" role="img" aria-label="Maglia Lecce">
+    <defs><clipPath id="kit1"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 9 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#kit1)"><rect width="40" height="40" fill="#f6d00c"/><rect x="7.5" y="0" width="5" height="40" fill="#d0102b"/><rect x="-2.5" y="0" width="5" height="40" fill="#d0102b"/><rect x="17.5" y="0" width="5" height="40" fill="#d0102b"/><rect x="27.5" y="0" width="5" height="40" fill="#d0102b"/><rect x="37.5" y="0" width="5" height="40" fill="#d0102b"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 9 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 9 26 4" fill="none" stroke="#d0102b" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#d0102b" stroke-width="2.4" stroke-linecap="round"/>
+    <rect x="10.5" y="19" width="19" height="10" rx="2.5" fill="#0c1815" fill-opacity=".82"/>
+    <text x="20" y="26.8" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="8.6" letter-spacing=".3" fill="#ffffff">LEC</text>
+  </svg></span><div><b>S. Ferrara</b><small>C · Lecce vs Genoa · 2–1</small></div>
+        <div class="pb-vote-n"><small>Voto</small><strong>6,5</strong></div><div class="pb-vote-n is-fv"><small>FV</small><strong>9,5</strong></div></div>
+      <p class="pb-why"><b>Perché 6,5?</b> Parte da 6. Sale per 3 passaggi chiave (la media del ruolo è 1,1). Il gol vale nei bonus: +3.</p>
+    </div>
+    <div class="pb-card pb-auction">
+      <span class="pb-live">ASTA LIVE</span>
+      <div class="pb-auction-row"><span class="pb-shirt"><svg class="fanta-shirt" viewBox="0 0 40 40" role="img" aria-label="Maglia Juventus">
+    <defs><clipPath id="kit2"><path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 9 14 4 Z"/></clipPath></defs>
+    <g clip-path="url(#kit2)"><rect width="40" height="40" fill="#ffffff"/><rect x="7.5" y="0" width="5" height="40" fill="#111111"/><rect x="-2.5" y="0" width="5" height="40" fill="#111111"/><rect x="17.5" y="0" width="5" height="40" fill="#111111"/><rect x="27.5" y="0" width="5" height="40" fill="#111111"/><rect x="37.5" y="0" width="5" height="40" fill="#111111"/></g>
+    <path d="M14 4 L8 6 L2 12 L6.5 18 L10 15.5 L10 37 L30 37 L30 15.5 L33.5 18 L38 12 L32 6 L26 4 Q20 9 14 4 Z" fill="none" stroke="#0007" stroke-width="1"/>
+    <path d="M14 4 Q20 9 26 4" fill="none" stroke="#111111" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M2 12 L6.5 18 M38 12 L33.5 18" stroke="#111111" stroke-width="2.4" stroke-linecap="round"/>
+    <rect x="10.5" y="19" width="19" height="10" rx="2.5" fill="#0c1815" fill-opacity=".82"/>
+    <text x="20" y="26.8" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="8.6" letter-spacing=".3" fill="#ffffff">JUV</text>
+  </svg></span><div><b>E. Donati</b><small>A · valore 91</small></div>
+        <strong class="pb-bid">41</strong><span class="pb-ring"><i>7</i></span></div>
+      <div class="pb-raises"><span>+1</span><span>+5</span><span>+10</span><span class="is-pass">Passo</span></div>
+    </div>
+    <div class="pb-card pb-slip">
+      <span class="pb-tag">AL BAR</span>
+      <div class="pb-slip-row"><span>SamBuca – Real Gin</span><b>1 · 2,05</b><i class="ok">✓</i></div>
+      <div class="pb-slip-row"><span>Fly – AC Ciaccola</span><b>Over · 1,90</b><i class="ko">✕</i></div>
+      <div class="pb-slip-foot"><span>Puntata 20</span><strong>+41 crediti</strong></div>
+    </div>
+  </div>
+    </section>
+
+    <section class="pb-games" aria-labelledby="pb-games-title">
+      <h2 id="pb-games-title" class="pb-h2">Due giochi, una lega</h2>
+      <div class="pb-game-grid">
+        <article class="pb-game is-fanta">
+          <span class="pb-badge">In prova · guarda la demo</span>
+          <h3>Fanta</h3>
+          <p>Il fantacalcio vero, fatto bene.</p>
+          <ul>
+            <li><b>Voti spiegati</b>: per ogni giocatore, da dove arriva il voto.</li>
+            <li><b>Formazione col dito</b>: trascini i giocatori sul campo, con le maglie dei club.</li>
+            <li><b>Asta online o dal vivo</b>: a turni con il timer, oppure tutti insieme con il banditore.</li>
+            <li><b>Diretta</b>: voti e punteggi che si muovono durante le partite.</li>
+          </ul>
+          <button type="button" class="pb-link" data-go="demo-fanta">Prova la demo del Fanta <span aria-hidden="true">→</span></button>
+        </article>
+        <article class="pb-game is-bar">
+          <span class="pb-badge is-on">Disponibile</span>
+          <h3>Bar</h3>
+          <p>Le schedine sulla tua lega, con crediti finti e prese in giro vere.</p>
+          <ul>
+            <li><b>Scommetti sulle sfide della lega</b> e sulla Serie A.</li>
+            <li><b>Il tuo Quasi</b>: un personaggio da vestire con i premi che vinci.</li>
+            <li><b>Classifica crediti</b>, chat della lega e i profili da pronosticatore.</li>
+          </ul>
+          <button type="button" class="pb-link" data-go="demo-bar">Prova la demo del Bar <span aria-hidden="true">→</span></button>
+        </article>
+      </div>
+    </section>
+
+    <section class="pb-steps" aria-labelledby="pb-steps-title">
+      <h2 id="pb-steps-title" class="pb-h2">Come si comincia</h2>
+      <ol>
+        <li><b>Crea l'account</b><span>Email, username e password: un minuto.</span></li>
+        <li><b>Crea la lega o entra con un invito</b><span>Fino a 12 amici. L'admin li invita con un link su WhatsApp.</span></li>
+        <li><b>Gioca</b><span>Formazione, asta, schedine al Bar. Sul telefono, come un'app.</span></li>
+      </ol>
+    </section>
+
+    <section class="pb-principles" aria-label="I nostri principi">
+      <div><b>Niente pubblicità, per sempre</b><p>Mai banner, mai video da guardare per sbloccare qualcosa.</p></div><div><b>Crediti solo virtuali</b><p>Al Bar si gioca con crediti finti: non si comprano e non si vincono soldi.</p></div>
+    </section>
+
+    <section class="pb-faq" aria-labelledby="pb-faq-title">
+      <h2 id="pb-faq-title" class="pb-h2">Domande</h2>
+      <details><summary>Ci sono pubblicità?</summary><p>No, e non ce ne saranno mai: né banner né video. I crediti del Bar sono finti: non si comprano e non si vincono soldi.</p></details><details><summary>Quanti amici possono giocare in una lega?</summary><p>Fino a 12. Chi crea la lega è l'admin e invita gli altri con un link.</p></details><details><summary>Il Fanta è già disponibile?</summary><p>È in prova con una lega pilota. Intanto puoi provarlo nella demo, senza registrarti: niente viene salvato.</p></details><details><summary>Da dove arrivano i voti?</summary><p>Dalle statistiche vere di ogni partita di Serie A, con una formula pubblica. Ogni voto ha la sua spiegazione: «Perché 6,5?».</p></details>
+    </section>
+
+    <section class="pb-final">
+      <h2>Avevi quasi ragione. <em>Dimostralo.</em></h2>
+      <div class="pb-actions">
+        <a class="pb-btn is-primary" href="#registrati" data-go="register">Crea il tuo account <span aria-hidden="true">→</span></a>
+        <a class="pb-btn" href="#accedi" data-go="login">Accedi</a>
+      </div>
+    </section>
+
+    <nav class="pb-guide-links" aria-label="Scopri Quelli del Quasi"><a href="/fantacalcio-tra-amici.html">Il fantacalcio tra amici</a><a href="/asta-fantacalcio.html">Asta online e dal vivo</a><a href="/schedine-virtuali.html">Le schedine virtuali</a></nav>
+    <footer class="pb-foot"><span>Solo crediti virtuali. Nessun acquisto, nessun premio in denaro.</span><a href="https://www.api-football.com/" rel="noopener" target="_blank">Dati: API-FOOTBALL</a></footer>
+  </div></section>
+<script>
+  // Chi ha già una sessione non vede la landing (flag scritto da landing.mjs/markSession al login).
+  try { if (localStorage.getItem("qdq:hasSession") === "1") document.getElementById("landing").hidden = true; else document.body.classList.add("v2-landing-on"); } catch {}
+</script>
+<div id="v2-sheet-root" hidden></div>
+<div id="app"></div>
+    <footer
+      class="data-attribution"
+      style="padding: 0 5% 24px; text-align: center"
+    >
+      <a
+        href="https://www.api-football.com/"
+        rel="dofollow"
+        title="Sports data by API-FOOTBALL"
+        style="color: var(--muted); font-size: 12px"
+        >Powered by API-FOOTBALL</a
+      >
+    </footer>
+    <div id="toast" hidden></div>
+    
+    
+    
+    
+    <script src="/team-logos.js"></script>
+    <script type="module" src="/src/deferred-media.mjs"></script>
+    <script type="module" src="/src/app.mjs"></script>
+    
+  <script>
+fetch('/env.json', {cache:'no-store'}).then(r => r.ok ? r.json() : null).then(info => {
+  if (!info || !['staging','preview'].includes(info.env)) return;
+  const bar = document.createElement('div');
+  bar.textContent = 'PRE-PRODUZIONE · v' + info.version + ' · ' + info.commit;
+  bar.setAttribute('role', 'status');
+  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:24px;line-height:24px;z-index:2147483647;background:#ffdc32;color:#000;text-align:center;font:12px/24px sans-serif;white-space:nowrap;overflow:hidden';
+  document.body.style.paddingTop = '24px';
+  document.documentElement.style.setProperty('--env-banner-height', '24px');
+  document.body.prepend(bar);
+}).catch(() => {});
+</script>
+  </body>
+</html>
+

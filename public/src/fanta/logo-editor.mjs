@@ -1,0 +1,36 @@
+import {LOGO_SHAPES,LOGO_PATTERNS,LOGO_SYMBOLS,LOGO_COLORS,normalizeLogo,logoSvg,teamLogo} from './team-logo.mjs';
+import {esc} from './formato.mjs';
+const LIMIT=250*1024;
+export async function readLogoFile(file){
+ if(!file||file.size>LIMIT)throw Error('Scegli un’immagine fino a 250 KB.');
+ if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type))throw Error('Scegli un file PNG, JPG, WebP o GIF.');
+ let image;try{image=await createImageBitmap(file);if(!image.width||!image.height||image.width>4096||image.height>4096||image.width*image.height>8000000)throw Error('L’immagine ha dimensioni troppo grandi.');const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;const ctx=canvas.getContext('2d'),scale=Math.min(472/image.width,472/image.height);ctx.drawImage(image,(512-image.width*scale)/2,(512-image.height*scale)/2,image.width*scale,image.height*scale);const data=canvas.toDataURL('image/webp',.9);if(data.length>Math.ceil(LIMIT*4/3)+100)throw Error('L’immagine è troppo complessa. Scegli un file più leggero.');return data;}finally{image?.close();}
+}
+export function openLogoEditor({team,onSave}){
+ if(document.querySelector('dialog.fanta-logo-editor[open]'))return;
+ const dialog=document.createElement('dialog');dialog.className='fanta-logo-editor';dialog.setAttribute('aria-label','Modifica il logo della squadra');
+ const previous=document.activeElement,oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
+ let design=normalizeLogo(team.branding?.design,team.name),image=null,section='shape',colorSlot='primary',saving=false,changed=false,closed=false;
+ const tabs=[['shape','Forma'],['pattern','Stile'],['colors','Colori'],['symbol','Disegni'],['text','Testi'],['import','Importa']];
+ dialog.innerHTML=`<div class="logo-editor-top"><button type="button" data-logo-close aria-label="Chiudi editor del logo">‹</button><div><small>${esc(team.name)}</small><h1>Il tuo stemma</h1></div><button type="button" data-logo-reset>Azzera</button></div><div class="logo-editor-preview" aria-live="polite"></div><div class="logo-editor-tools"><div class="logo-editor-tabs" role="tablist">${tabs.map(([id,label])=>`<button type="button" role="tab" data-logo-tab="${id}" aria-selected="${section===id}">${label}</button>`).join('')}</div><div class="logo-editor-options"></div></div><div class="logo-editor-bottom"><p role="status" class="logo-editor-status">Un simbolo serio. Quasi.</p><button type="button" class="primary" data-logo-save disabled>Salva logo</button></div>`;
+ const preview=dialog.querySelector('.logo-editor-preview'),options=dialog.querySelector('.logo-editor-options'),status=dialog.querySelector('.logo-editor-status'),save=dialog.querySelector('[data-logo-save]');
+ const showPreview=()=>{preview.innerHTML=image?`<img src="${image}" alt="Anteprima del logo importato">`:!changed&&team.branding?.type==='image'?teamLogo(team,{eager:true}):logoSvg(design,team.name);save.disabled=!changed||saving;};
+ const mark=()=>{changed=true;status.textContent='Pronto a farsi riconoscere.';showPreview();};
+ const tile=(key,value,label)=>`<button type="button" class="logo-option ${design[key]===value?'is-active':''}" data-logo-key="${key}" data-logo-value="${value}" aria-pressed="${design[key]===value}">${logoSvg({...design,[key]:value},label)}<span>${label}</span></button>`;
+ const showOptions=()=>{
+  dialog.querySelectorAll('[data-logo-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.logoTab===section)));
+  if(section==='shape')options.innerHTML=`<div class="logo-option-grid">${LOGO_SHAPES.map(([v,n])=>tile('shape',v,n)).join('')}</div>`;
+  if(section==='pattern')options.innerHTML=`<div class="logo-option-grid">${LOGO_PATTERNS.map(([v,n])=>tile('pattern',v,n)).join('')}</div><div class="logo-border-options">${['simple','double'].map((v,i)=>`<button type="button" data-logo-key="border" data-logo-value="${v}" aria-pressed="${design.border===v}">${i?'Doppio bordo':'Bordo semplice'}</button>`).join('')}</div>`;
+  if(section==='symbol')options.innerHTML=`<div class="logo-option-grid">${LOGO_SYMBOLS.map(([v,n])=>tile('symbol',v,n)).join('')}</div>`;
+  if(section==='colors')options.innerHTML=`<div class="logo-color-slots">${[['primary','Base'],['secondary','Contrasto'],['ink','Dettagli']].map(([v,n])=>`<button type="button" data-logo-color-slot="${v}" aria-pressed="${colorSlot===v}"><i style="background:${design[v]}"></i>${n}</button>`).join('')}</div><div class="logo-swatches">${LOGO_COLORS.map(v=>`<button type="button" data-logo-key="${colorSlot}" data-logo-value="${v}" style="background:${v}" aria-label="Colore ${v}" aria-pressed="${design[colorSlot]===v}"></button>`).join('')}</div>`;
+  if(section==='text')options.innerHTML=`<div class="logo-text-fields"><label>Sigla<input data-logo-text="text" maxlength="5" value="${esc(design.text)}" placeholder="FLY"></label><label>Motto o nome breve<input data-logo-text="caption" maxlength="18" value="${esc(design.caption)}" placeholder="Quasi imbattibili"></label><label>Anno<input data-logo-text="year" inputmode="numeric" maxlength="4" value="${esc(design.year)}" placeholder="2026"></label></div>`;
+  if(section==='import')options.innerHTML='<label class="logo-upload-tile"><strong>Il tuo logo, da un file</strong><span>PNG, JPG, WebP o GIF · massimo 250 KB</span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-logo-file><span class="secondary">Scegli immagine</span></label><p class="fanta-note">L’immagine viene adattata al riquadro, mantenendo le proporzioni.</p>';
+ };
+ const close=()=>{if(saving||closed)return;closed=true;dialog.close();dialog.remove();document.body.style.overflow=oldOverflow;if(previous?.isConnected)previous.focus();};
+ dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+ dialog.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||saving)return;if(b.hasAttribute('data-logo-close'))close();if(b.dataset.logoTab){section=b.dataset.logoTab;showOptions();}if(b.dataset.logoColorSlot){colorSlot=b.dataset.logoColorSlot;showOptions();}if(b.dataset.logoKey){design=normalizeLogo({...design,[b.dataset.logoKey]:b.dataset.logoValue},team.name);image=null;mark();showOptions();}if(b.hasAttribute('data-logo-reset')){design=normalizeLogo({},team.name);image=null;mark();showOptions();}});
+ dialog.addEventListener('input',e=>{const key=e.target.dataset.logoText;if(key){design=normalizeLogo({...design,[key]:e.target.value},team.name);image=null;mark();}});
+ dialog.addEventListener('change',async e=>{if(!e.target.matches('[data-logo-file]'))return;try{save.disabled=true;status.textContent='Prepariamo il tuo logo…';image=await readLogoFile(e.target.files[0]);mark();}catch(err){status.textContent=err.message;e.target.value='';showPreview();}});
+ save.onclick=async()=>{if(saving||!changed)return;saving=true;save.disabled=true;save.setAttribute('aria-busy','true');save.textContent='Salvataggio in corso…';try{await onSave(image?{type:'image',image}:{type:'design',design});saving=false;close();}catch(err){status.textContent=err.message;saving=false;save.disabled=false;save.removeAttribute('aria-busy');save.textContent='Salva logo';}};
+ document.body.append(dialog);showPreview();showOptions();dialog.showModal();dialog.querySelector('[data-logo-close]').focus();return {close};
+}

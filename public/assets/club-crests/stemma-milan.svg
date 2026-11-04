@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 132 152" width="132" height="152" role="img" aria-label="Milan">
+<title>Milan</title>
+<defs>
+<clipPath id="q-milan-clip"><path d="M60 4 C80 12 98 12 114 9 L114 66 C114 103 90 125 60 136 C30 125 6 103 6 66 L6 9 C22 12 40 12 60 4 Z"/></clipPath>
+<radialGradient id="q-milan-vig" cx="50%" cy="40%" r="65%"><stop offset="0.55" stop-color="#2a1d14" stop-opacity="0"/><stop offset="1" stop-color="#2a1d14" stop-opacity="0.32"/></radialGradient>
+<pattern id="q-milan-grain" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="5" fill="#efe3c8" fill-opacity="0.08"/></pattern>
+</defs>
+<path d="M60 4 C80 12 98 12 114 9 L114 66 C114 103 90 125 60 136 C30 125 6 103 6 66 L6 9 C22 12 40 12 60 4 Z" fill="none" stroke="#2a1d14" stroke-width="12" stroke-linejoin="round"/>
+<path d="M60 4 C80 12 98 12 114 9 L114 66 C114 103 90 125 60 136 C30 125 6 103 6 66 L6 9 C22 12 40 12 60 4 Z" fill="none" stroke="#efe3c8" stroke-width="6" stroke-linejoin="round"/>
+<g clip-path="url(#q-milan-clip)">
+<rect x="-10" y="-10" width="140" height="160" fill="#a8322f"/><rect x="17" y="-10" width="17" height="160" fill="#1f1a17"/><rect x="51" y="-10" width="17" height="160" fill="#1f1a17"/><rect x="85" y="-10" width="17" height="160" fill="#1f1a17"/><rect x="119" y="-10" width="17" height="160" fill="#1f1a17"/>
+<rect x="-10" y="-10" width="140" height="160" fill="url(#q-milan-grain)"/>
+<rect x="-10" y="-10" width="140" height="160" fill="url(#q-milan-vig)"/>
+<rect x="13.5" y="59.5" width="93" height="31" rx="5" fill="#efe3c8" stroke="#2a1d14" stroke-width="3"/>
+<path d="M36.521098459477564 83.5V82.12223710649698H38.46818486269257V67.87776289350302H36.521098459477564V66.5H42.84058941728064L47.20160750167448 77.40823844608171L51.5853985264568 66.5H57.89350301406564V67.87776289350302H55.935030140656394V82.12223710649698H57.89350301406564V83.5H50.02545210984594V82.12223710649698H51.972538513060954V69.15304755525787L47.22438044206296 81.00636302746149H44.62826523777629L39.90288010716678 69.15304755525787V82.12223710649698H41.849966510381776V83.5ZM60.307434695244474 83.5V82.12223710649698H62.26590756865372V67.87776289350302H60.307434695244474V66.5H68.1868720696584V67.87776289350302H66.21701272605492V82.12223710649698H68.1868720696584V83.5ZM70.57803081044877 83.5V82.12223710649698H72.536503683858V67.87776289350302H70.57803081044877V66.5H78.45746818486269V67.87776289350302H76.48760884125922V81.94005358338914H82.51105157401206V79.25284661754856H83.90020093770931V83.5Z" fill="#2a1d14"/>
+</g>
+</svg>
