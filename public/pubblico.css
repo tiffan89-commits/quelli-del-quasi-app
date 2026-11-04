@@ -186,3 +186,6 @@ body.pb-sheet-open{overflow:hidden}
 
 /* Public discovery links: plain HTML routes, also available before app boot. */
 .pb-guide-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 24px;margin:32px 20px 20px;padding:20px 0;border-top:1px solid var(--line);font-size:13px}.pb-guide-links a{color:var(--muted);text-underline-offset:4px}.pb-guide-links a:hover,.pb-guide-links a:focus-visible{color:var(--lime)}
+
+/* Shared privacy controls, outside the initial application shell. */
+.analytics-footer{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:14px;padding:12px 16px 110px;text-align:center;font:12px system-ui,sans-serif;color:#a9bdb2}.analytics-footer a,.analytics-footer button{color:inherit;text-decoration:underline}.analytics-footer button{border:0;background:transparent;cursor:pointer;padding:10px 0;font:inherit}

@@ -6,6 +6,7 @@ import {isIP} from 'node:net';
 import {pathToFileURL} from 'node:url';
 import {configure} from './config.mjs';
 import {previewGate} from './preview-gate.mjs';
+import packageInfo from '../package.json' with {type:'json'};
 const mime={'.txt':'text/plain; charset=utf-8','.xml':'application/xml; charset=utf-8','.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.woff2':'font/woff2','.wasm':'application/wasm'};
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
 export function requestIp(req,trust=false){const direct=req.socket.remoteAddress||'unknown';if(!trust)return direct;const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();return isIP(forwarded)?forwarded:direct;}
@@ -18,7 +19,7 @@ export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,
    const preview=process.env.SELFHOST_TEST_INSTANCE==='true'||Boolean(process.env.SELFHOST_PREVIEW_KEY)||process.env.CONTEXT!=='production';
    if(preview||url.pathname.startsWith('/invito/'))res.setHeader('X-Robots-Tag','noindex, nofollow');
    const gate=previewGate(req,url);if(gate){res.writeHead(gate.status,Object.fromEntries(gate.headers));res.end(Buffer.from(await gate.arrayBuffer()));return;}
-   if(url.pathname==='/healthz')return json(res,req.method==='GET'?200:405,{ok:req.method==='GET',version:'0.29.22-selfhost'});
+   if(url.pathname==='/healthz')return json(res,req.method==='GET'?200:405,{ok:req.method==='GET',version:packageInfo.version+'-selfhost'});
    const handler=url.pathname.startsWith('/api/')?api:url.pathname.startsWith('/fanta-api/')?fanta:url.pathname==='/.netlify/functions/public-football'?scores:null;
    if(handler){
     let length=0;const chunks=[];for await(const chunk of req){length+=chunk.length;if(length>bodyLimit){req.resume();return json(res,413,{error:'Request too large'});}chunks.push(chunk);}
@@ -30,7 +31,7 @@ export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,
    }
    if(url.pathname.startsWith('/api')||url.pathname.startsWith('/fanta-api')||url.pathname.startsWith('/.netlify/')||url.pathname.split('/').some(p=>p.startsWith('.')))return json(res,404,{error:'Not found'});
    if(!['GET','HEAD'].includes(req.method))return json(res,405,{error:'Method not allowed'});
-   if(url.pathname==='/env.json')return json(res,200,{env:process.env.SELFHOST_TEST_INSTANCE==='true'?'preview':process.env.CONTEXT==='production'?'production':'preview',version:'0.29.22',commit:'server-casa'});
+   if(url.pathname==='/env.json')return json(res,200,{env:process.env.SELFHOST_TEST_INSTANCE==='true'?'preview':process.env.CONTEXT==='production'?'production':'preview',version:packageInfo.version,commit:'server-casa'});
    if(preview&&url.pathname==='/robots.txt'){res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});res.end(req.method==='HEAD'?undefined:'User-agent: *\nDisallow: /\n');return;}
    const pathname=url.pathname==='/'||url.pathname.startsWith('/invito/')?'/index.html':decodeURIComponent(url.pathname),file=path.resolve(staticRoot,'.'+pathname);
    if(!file.startsWith(staticRoot+path.sep))return json(res,404,{error:'Not found'});

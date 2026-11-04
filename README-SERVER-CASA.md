@@ -1,6 +1,6 @@
-# Quelli del Quasi — server Windows, versione applicativa 0.29.22
+# Quelli del Quasi — server Windows, runtime autonomo Windows
 
-Questo pacchetto contiene **frontend e backend completi**, adattati per funzionare senza hosting, database o Functions Netlify. La versione pubblica di partenza è la 0.29.22. Non è lo ZIP di un deploy statico.
+Questo pacchetto contiene **frontend e backend completi**, adattati per funzionare senza hosting, database o Functions Netlify. Il codice corrente è condiviso con il rilascio Netlify e include gli aggiornamenti successivi alla 0.29.22. Non è lo ZIP di un deploy statico.
 
 Apri nell’ordine:
 
@@ -15,4 +15,4 @@ I nuovi file di avvio sono in `runtime/`; gli script operativi Windows sono in `
 
 **Non contiene dati personali, backup del DB reale, password, cookie, chiavi API, `.env` reali o link privati della prova.** I dati effettivi e le chiavi si trasferiscono separatamente. Non applicare migrazioni storiche da zero a un database ripristinato: usare l’adozione descritta nella guida.
 
-Questa copia è per l’hosting autonomo. **Non pubblicarla direttamente su Netlify**: gli adattatori database/cache sono locali. L’archivio originale 0.29.22 rimane separato per il ritorno a Netlify.
+Il runtime Windows seleziona esplicitamente PostgreSQL e storage locale tramite `runtime/config.mjs`. La build Netlify utilizza invece database e Blobs gestiti. Non pubblicare la directory privata dell’installazione Windows: contiene configurazioni e dati che restano fuori dai sorgenti. Le due destinazioni condividono il codice, ma non devono aggiornare gli stessi dati o inviare gli stessi promemoria contemporaneamente.

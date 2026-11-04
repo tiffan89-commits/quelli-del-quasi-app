@@ -1,10 +1,11 @@
 // One abortable DB channel per tab. Late responses can never update another league.
 import {beginRequestFeedback} from './action-feedback.mjs';
+import {recordAnalyticsRequest} from './analytics.mjs';
 const writes=new Map();
 export function requestJson(url,options={}){
  const done=beginRequestFeedback(),key=options.method==='POST'?url+'\n'+options.body:null;
  if(key&&writes.has(key))return writes.get(key).finally(done);
- const job=requestTransport(url,options);if(key)writes.set(key,job);
+ const started=Date.now();const job=requestTransport(url,options).then(data=>{recordAnalyticsRequest(url,options.method,true,Date.now()-started);return data;},error=>{recordAnalyticsRequest(url,options.method,false,Date.now()-started,error.status);throw error;});if(key)writes.set(key,job);
  return job.finally(()=>{if(key)writes.delete(key);done();});
 }
 async function requestTransport(url, {fetcher = fetch, timeoutMs = 10000, signal, meta = false, ...options} = {}) {

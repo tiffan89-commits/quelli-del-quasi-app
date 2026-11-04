@@ -34,7 +34,7 @@ Le cache private si possono ricostruire e non devono essere trasferite come requ
 node --env-file="C:\PercorsoPrivato\blob-export.env" runtime/blob-transfer.mjs export "C:\PercorsoPrivato\operazioni.json"
 ```
 
-Il file privato contiene `NETLIFY_SITE_ID` e `NETLIFY_AUTH_TOKEN`. L'export SDK richiede `npm ci` con le devDependencies; `@netlify/blobs` non è una dipendenza del server in esercizio. Il trasferimento comprende `quasi-operations-v1/calendar` e `quasi-public-football-v1/scores`. Verificare eventuali nuovi store durevoli se la versione online è cambiata. Non esportare indiscriminatamente sessioni/cache private in un archivio pubblico.
+Il file privato contiene `NETLIFY_SITE_ID` e `NETLIFY_AUTH_TOKEN`. L'export SDK richiede `npm ci`; `@netlify/blobs` è installato per il supporto delle due destinazioni, mentre il bootstrap Windows seleziona lo storage locale. Il trasferimento comprende `quasi-operations-v1/calendar` e `quasi-public-football-v1/scores`. Verificare eventuali nuovi store durevoli se la versione online è cambiata. Non esportare indiscriminatamente sessioni/cache private in un archivio pubblico.
 
 ## 4. Ripristino isolato
 
