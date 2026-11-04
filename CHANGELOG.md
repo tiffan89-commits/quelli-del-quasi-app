@@ -19,6 +19,18 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.28] - 2026-11-04
+
+- Probabili guidate dalle nostre stime: le alternative con percentuale strettamente maggiore entrano nello stesso ruolo, mantenendo modulo e posizione del titolare sostituito. Parità e dati mancanti conservano la scelta di partenza; undici ufficiali e formazioni degli utenti restano prioritari. Conservata la base originale per rendere la selezione ripetibile e misurarne l'accuratezza.
+
+- Posizioni in campo: coordinate esplicite prioritarie, ordine destra/sinistra dichiarato dagli importatori e normalizzazione unica delle linee. Il consenso conserva le posizioni della formazione scelta; le sostituzioni mantengono lo slot e gli schieramenti personali Fanta mantengono il proprio ordine.
+
+- Giocatori disponibili nelle probabili: selettore scorrevole Tutti/Portieri/Difensori/Centrocampisti/Attaccanti con conteggi, filtro immediato e dimensionamento dell'accordion; filtri indipendenti per squadra e nessuna nuova richiesta al server.
+
+- Probabili formazioni: al posto dei ballottaggi, elenco richiudibile degli altri giocatori disponibili del club, senza duplicati, in ordine di stima; indisponibili e inattivi esclusi. Panchine ufficiali e formazioni Fanta conservano il loro ordine.
+- Probabilità stimate arrotondate sempre per eccesso a multipli di cinque, fino al 90%; percentuali ufficiali invariate. Stessa regola in campo e nello studio formazione, senza nuove chiamate API.
+- Misura prospettica dell'accuratezza degli undici: previsioni bloccate prima del calcio d'inizio e confrontate con gli ID degli ufficiali durante i lavori backend già esistenti. Voce pubblica nascosta fino a dieci partite con confronto completo; riepilogo condiviso in cache, senza polling né chiamate esterne aggiuntive.
+
 ## [0.29.27] - 2026-11-04
 
 - Schedina Bar: salvataggio SQL mirato con ricevuta compatta, quote e controlli sul server, ritentativi identici senza doppio addebito; nessuna scansione globale di calendario e premi durante l'invio.

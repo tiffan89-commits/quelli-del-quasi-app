@@ -4,7 +4,7 @@ import {officialLineups} from '../lib/official-lineups.mjs';import {enrichPresen
 import {presenceProbability} from '../public/src/fanta/presence-probability.mjs';import {probabilityFor} from '../fanta/play-probabilities.mjs';
 import {footballStatistics,bindFootballStatistics} from '../public/src/football-statistics.mjs';
 import {renderSlipV2} from '../public/src/v2/slip-v2.mjs';import {renderTabBar} from '../public/src/v2/tabs.mjs';import {renderLeagueChip} from '../public/src/v2/league-switcher.mjs';
-import {renderFantasyLineup} from '../public/src/lineup-pitch.mjs';
+import {renderFantasyLineup,renderLineup} from '../public/src/lineup-pitch.mjs';
 import {PGlite} from '@electric-sql/pglite';import {patchSports} from '../lib/operations/sports-db.mjs';
 const esc=x=>String(x??'').replaceAll('<','&lt;'),fmt=String;
 const raw={teams:{home:{id:1,name:'Milan'},away:{id:2,name:'Inter'}},lineups:[1,2].map(id=>({team:{id},formation:'4-4-2',startXI:Array.from({length:11},(_,i)=>({player:{id:id*100+i,name:'Firstname Surname'+i,number:i+1,pos:i===0?'G':i<5?'D':i<9?'M':'F'}})),substitutes:[{player:{id:id*100+99,name:'Backup Keeper',number:99,pos:'G'}}]}))};
@@ -25,11 +25,11 @@ test('a complete official XI supersedes probable percentages, gives 100/0 and re
  assert.equal(probabilityFor(p,[{number:10,players:[{id:'af:100',pct:100,kind:'official'}]}],11),null);
 });
 
-test('forecast, bench and ballots use the same minute share as the editor; unavailable starters are replaced by role',()=>{
+test('forecast and available players use the same estimates as the editor; unavailable starters are replaced by role',()=>{
  const catalog=[{id:'af:1',apiId:1,name:'Mario Rossi',team:'Milan',club:'Milan',role:'D',number:4,stats:{minutes:450,teamMatches:10},status:{type:'ok'}},{id:'af:2',apiId:2,name:'Marco Bianchi',team:'Milan',club:'Milan',role:'D',number:5,stats:{minutes:270,teamMatches:10},status:{type:'ok'}}];
  const l={kind:'probable',teams:[{team:'Milan',players:[{name:'Rossi',probability:100}],bench:[{name:'Bianchi',probability:0}],ballots:[{players:[{name:'Rossi'},{name:'Bianchi'}]}]}]};
- let result=enrichPresence(l,catalog);assert.equal(result.teams[0].players[0].probability,presenceProbability(catalog[0]).pct);assert.equal(result.teams[0].players[0].jersey,4);assert.deepEqual(result.teams[0].ballots[0].players.map(p=>p.probability),[50,30]);
- catalog[0].status={type:'suspended'};result=enrichPresence(l,catalog);assert.equal(result.teams[0].players[0].playerId,'af:2');assert.equal(result.teams[0].ballots[0].players[0].probability,0);assert.equal(result.teams[0].players[0].probabilityKind,'minutes-estimate');
+ let result=enrichPresence(l,catalog);assert.equal(result.teams[0].players[0].probability,presenceProbability(catalog[0]).pct);assert.equal(result.teams[0].players[0].jersey,4);assert.deepEqual(result.teams[0].ballots,[]);assert.equal(result.teams[0].bench[0].probability,30);
+ catalog[0].status={type:'suspended'};result=enrichPresence(l,catalog);assert.equal(result.teams[0].players[0].playerId,'af:2');assert.equal(result.teams[0].bench.length,0);assert.equal(result.teams[0].players[0].probabilityKind,'minutes-estimate');
 });
 
 test('match statistics initially show four rows; player statistics show five per selected team with a working selector',()=>{
@@ -38,6 +38,14 @@ test('match statistics initially show four rows; player statistics show five per
  const outer=document.querySelector('.match-statistics');assert.equal(outer.querySelector(':scope>.match-stats-scroll tbody').children.length,4);assert.equal(outer.querySelector('.statistics-more tbody').children.length,5);
  const section=document.querySelector('.player-statistics'),home=section.querySelector('[data-stats-panel=home]'),away=section.querySelector('[data-stats-panel=away]');assert.equal(home.querySelector(':scope>.match-stats-scroll tbody').children.length,5);assert.equal(home.querySelector('.statistics-more tbody').children.length,3);assert.equal(away.hidden,true);
  bindFootballStatistics(document);section.querySelector('[data-stats-team=away]').dispatchEvent(new window.Event('click'));assert.equal(home.hidden,true);assert.equal(away.hidden,false);
+});
+test('available-player panel includes the club roster once, sorted by independent estimate, excludes unavailable and inactive players; official bench is preserved',()=>{
+ const catalog=[['1','Titolare',90],['2','Alternativa',21],['3','Rientrante',53],['4','Indisponibile',50],['5','Inattivo',40],['6','Nessun minuto',0]].map(([id,name,pct])=>({id:'af:'+id,apiId:Number(id),club:'Juventus',name,role:'D',stats:{minutes:pct*9,teamMatches:10},status:{type:id==='4'?'injured':'ok'},active:id!=='5'}));
+ const lineup={kind:'probable',teams:[{team:'Juventus',players:[{name:'Titolare',playerId:'af:1'}],bench:[{name:'Alternativa',playerId:'af:2'}],ballots:[{players:[{name:'Titolare'},{name:'Alternativa'}]}]}]};
+ const result=enrichPresence(lineup,catalog),team=result.teams[0];assert.deepEqual(team.bench.map(p=>p.playerId),['af:3','af:2','af:6']);assert.deepEqual(team.bench.map(p=>p.probability),[55,25,0]);assert.deepEqual(team.ballots,[]);
+ const {document}=parseHTML(renderLineup({lineups:result})),panel=document.querySelector('.lineup-bench');assert.equal(panel.hasAttribute('open'),false);assert.match(panel.textContent,/Altri giocatori a disposizione/);assert.doesNotMatch(document.toString(),/Ballottaggi|duel-donut|Indisponibile|Inattivo/);
+ assert.equal(document.querySelectorAll('.bench-stickers .player-probability.estimated').length,3);
+ const official=enrichPresence({...lineup,kind:'official'},catalog);assert.equal(official.teams[0].players[0].probability,100);assert.deepEqual(official.teams[0].bench.map(p=>p.playerId),['af:2']);assert.equal(official.teams[0].bench[0].probability,0);
 });
 
 test('Bar slip uses supplied crests and puts the active profile control in the mother header',()=>{
