@@ -36,12 +36,14 @@ npm run dev
 `npm run dev` avvia l'anteprima isolata con dati sintetici: non usa il database reale e non invia email o richieste ai provider sportivi.
 
 ```sh
+npm run build
 npm test
 node scripts/check-syntax.mjs
-npm run build
 ```
 
 La build genera `dist/`, esclusa da Git. Non modificare gli asset generati per apportare cambiamenti: lavorare sui sorgenti in `public/`.
+
+Eseguire la build prima dei test anche in un clone nuovo: alcuni controlli verificano gli asset generati. I sei strumenti di compatibilità in `docs/history/legacy-data-tools/` sono conservati per i test delle migrazioni storiche e non vengono caricati dall'applicazione.
 
 ## Server completo su Windows
 

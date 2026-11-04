@@ -48,7 +48,8 @@ lib/release-context.json
 /docs/BASE-*-MANIFEST.json
 /docs/FRONTEND-MERGE-MANIFEST.json
 /docs/LOCAL-*.json
-/docs/history/
+/docs/history/*
+!/docs/history/legacy-data-tools/
 
 # Editors and OS files
 .DS_Store
