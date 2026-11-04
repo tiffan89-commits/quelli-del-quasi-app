@@ -10,7 +10,7 @@ export function analyticsScreen(location){
  if(publicScreens.has(publicPage))return '/'+publicPage;
  if(/(?:action|token|verify|reset)=/.test(hash))return '/account';
  const pathname=String(location?.pathname||'/');
- return /^\/(?:fantacalcio-tra-amici|asta-fantacalcio|schedine-virtuali|privacy)\.html$/.test(pathname)?pathname:'/inizio';
+ return /^\/(?:fantacalcio-tra-amici|asta-fantacalcio|schedine-virtuali|privacy)(?:\.html)?$/.test(pathname)?pathname.replace(/\.html$/,'')+'.html':'/inizio';
 }
 export function analyticsCampaign(search=''){
  const result={},params=new URLSearchParams(search);

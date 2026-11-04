@@ -10,6 +10,7 @@ import packageInfo from '../package.json' with {type:'json'};
 const mime={'.txt':'text/plain; charset=utf-8','.xml':'application/xml; charset=utf-8','.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.woff2':'font/woff2','.wasm':'application/wasm'};
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
 export function requestIp(req,trust=false){const direct=req.socket.remoteAddress||'unknown';if(!trust)return direct;const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();return isIP(forwarded)?forwarded:direct;}
+const friendlyPages=new Set(['/privacy','/fantacalcio-tra-amici','/asta-fantacalcio','/schedine-virtuali','/admin','/account']);
 export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,root=path.resolve('dist'),trustProxy=process.env.TRUST_PROXY==='true',bodyLimit=1024*1024}={}){
  const base=new URL(origin),staticRoot=path.resolve(root);
  const server=http.createServer(async(req,res)=>{
@@ -33,7 +34,7 @@ export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,
    if(!['GET','HEAD'].includes(req.method))return json(res,405,{error:'Method not allowed'});
    if(url.pathname==='/env.json')return json(res,200,{env:process.env.SELFHOST_TEST_INSTANCE==='true'?'preview':process.env.CONTEXT==='production'?'production':'preview',version:packageInfo.version,commit:'server-casa'});
    if(preview&&url.pathname==='/robots.txt'){res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});res.end(req.method==='HEAD'?undefined:'User-agent: *\nDisallow: /\n');return;}
-   const pathname=url.pathname==='/'||url.pathname.startsWith('/invito/')?'/index.html':decodeURIComponent(url.pathname),file=path.resolve(staticRoot,'.'+pathname);
+   const pathname=url.pathname==='/'||url.pathname.startsWith('/invito/')?'/index.html':friendlyPages.has(url.pathname)?url.pathname+'.html':decodeURIComponent(url.pathname),file=path.resolve(staticRoot,'.'+pathname);
    if(!file.startsWith(staticRoot+path.sep))return json(res,404,{error:'Not found'});
    let data,status=200,extension=path.extname(file);try{data=await fs.readFile(file);}catch(e){if(!['ENOENT','EISDIR'].includes(e.code))throw e;status=404;data=await fs.readFile(path.join(staticRoot,'404.html'));extension='.html';}
    res.writeHead(status,{'Content-Type':mime[extension]||'application/octet-stream','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Cache-Control':/\/build\/chunks\//.test(pathname)?'public,max-age=31536000,immutable':'public,max-age=0,must-revalidate'});res.end(req.method==='HEAD'?undefined:data);
