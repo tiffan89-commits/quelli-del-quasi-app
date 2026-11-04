@@ -1,4 +1,4 @@
-const CACHE = "quellidelquasi-shell-v0.29.22";
+const CACHE = "quellidelquasi-shell-v0.29.23";
 self.addEventListener("install", (e) =>
   e.waitUntil(
     caches

@@ -19,6 +19,8 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.23] - 2026-11-04
+
 - Ripristinati gli adattatori gestiti Netlify per database e cache; il runtime Windows continua a selezionare esplicitamente gli adattatori locali.
 
 - Banner principale Fanta con lo stemma della propria squadra: il tocco apre direttamente l'editor esistente, senza caricare prima la sezione Squadra. Logo aggiornato nelle viste già aperte dopo il salvataggio.
