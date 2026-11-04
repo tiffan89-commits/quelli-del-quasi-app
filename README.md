@@ -4,7 +4,7 @@ Bar e Fantacalcio: schedine con crediti virtuali, leghe, formazioni, voti statis
 
 ## Versione conservata nel repository
 
-Questa è la **versione locale corrente**, basata sulla 0.29.22 e comprensiva delle modifiche provate il 4 novembre 2026: maglie disegnate e stemmi, formazioni ufficiali, statistiche compatte, fascia neutra dei voti, navigazione Oggi e modifica dello stemma dal banner Fanta. Le modifiche successive alla 0.29.22 sono descritte sotto `Unreleased` nel [changelog](CHANGELOG.md).
+Questa è la **versione corrente**, comprensiva delle modifiche provate il 4 novembre 2026: maglie disegnate e stemmi, formazioni ufficiali, statistiche compatte, fascia neutra dei voti, navigazione Oggi e modifica dello stemma dal banner Fanta. Le modifiche sono descritte nel [changelog](CHANGELOG.md). Analytics e migrazione sono descritti in [ANALYTICS-E-MIGRAZIONE.md](docs/ANALYTICS-E-MIGRAZIONE.md).
 
 Il backend supporta sia **Netlify (database gestito, Blobs e Functions)** sia **server Node e PostgreSQL su Windows**. Gli adattatori locali sono attivati esclusivamente dal bootstrap del runtime autonomo; una build Netlify usa i servizi gestiti. I push Git non pubblicano automaticamente il sito.
 
