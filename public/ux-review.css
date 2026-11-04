@@ -92,3 +92,11 @@ body.fs-open>#open-chat,body.fs-open #league-chat-widget,html.studio-active #ope
 .v2-tabbar[aria-label="Navigazione principale"]{grid-template-columns:repeat(4,minmax(0,1fr))}
 
 .slip-team-label>.team-logo{width:25px;height:28px;min-width:25px;margin:0;flex:none}
+
+/* Lock the document width, while horizontal rails remain independent scrollers. */
+html{width:100%;max-width:100%;overflow-x:hidden!important;overscroll-behavior-x:none}
+body{width:100%;min-width:0;max-width:100%;position:relative;overflow-x:clip;overscroll-behavior-x:none}
+#app,#app-header,main,.fanta-main,.fanta-home{width:100%;max-width:100%;min-width:0;overflow-x:clip}
+.fanta-home>*,.league-dashboard>*,.dash-next>*{min-width:0;max-width:100%}
+.dash-next{grid-template-columns:minmax(0,1fr) auto}.dash-next h2,.fanta-hero-manager,.dashboard-top h1{overflow-wrap:anywhere}
+.fanta-hero-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px}.fanta-hero-stats dt{overflow-wrap:anywhere}
