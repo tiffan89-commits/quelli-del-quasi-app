@@ -464,7 +464,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   async function load() {
     ui.error = null;
     if(bootstrap?.me.access==='pilot'&&!bootstrap.me.pilotTeam){ui.me=bootstrap.me;bootstrap=null;}
-    if(bootstrap){const b=bootstrap;bootstrap=null;ui.me=b.me;ui.leagues=b.leagues;ui.teamChoices=b.teamChoices||[];ui.choiceLeagueId=b.choiceLeagueId||null;ui.leagueId=ui.choiceLeagueId||b.home?.league.id||ui.leagueId;ui.home=b.home;hydrateHomeVotes();ui.round=b.round;ui.roundNumber=b.round?.round.number;ui.matchup=b.matchup;ui.matchupId=b.matchup?.id;ui.side=b.matchup?.away?.team.id===b.home?.me.teamId?'away':'home';ui.lega.data=b.league;ui.squadra.data=b.team;if(b.team)ui.squadra.loadedAt=Date.now();if(b.team)setDraft(draftFrom(b.team.lineup||{formation:b.team.previous?.formation||'4-4-2'},b.team.roster));render();if(ui.choiceLeagueId||!ui.leagues.length)return;if(ui.tab==='squadra'&&!ui.squadra.data)await loadTeam();if(['lega','classifica'].includes(ui.tab)&&!ui.lega.data)await loadLega();if(ui.tab==='giornata'&&!ui.round)await loadRound(Number(readAppRoute()?.round)||ui.home?.round.number);return;}
+    if(bootstrap){const b=bootstrap;bootstrap=null;ui.me=b.me;ui.leagues=b.leagues;ui.teamChoices=b.teamChoices||[];ui.choiceError=b.autoClaimError||null;ui.choiceLeagueId=b.choiceLeagueId||null;ui.leagueId=ui.choiceLeagueId||b.home?.league.id||ui.leagueId;ui.home=b.home;hydrateHomeVotes();ui.round=b.round;ui.roundNumber=b.round?.round.number;ui.matchup=b.matchup;ui.matchupId=b.matchup?.id;ui.side=b.matchup?.away?.team.id===b.home?.me.teamId?'away':'home';ui.lega.data=b.league;ui.squadra.data=b.team;if(b.team)ui.squadra.loadedAt=Date.now();if(b.team)setDraft(draftFrom(b.team.lineup||{formation:b.team.previous?.formation||'4-4-2'},b.team.roster));render();if(ui.choiceLeagueId||!ui.leagues.length)return;if(ui.tab==='squadra'&&!ui.squadra.data)await loadTeam();if(['lega','classifica'].includes(ui.tab)&&!ui.lega.data)await loadLega();if(ui.tab==='giornata'&&!ui.round)await loadRound(Number(readAppRoute()?.round)||ui.home?.round.number);return;}
     try {
       if (!ui.me) ui.me = await api.me();
       if(ui.me.access==='pilot'&&!ui.me.pilotTeam){ui.pilot=await api.pilotTeams();render();return;}
@@ -681,6 +681,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   return {
     ready,
     get leagueId(){return league()?.id;},
+    get hasTeam(){return ui.leagues.some(l=>l.id===ui.leagueId);},
     setBarLeagues:(next)=>{barLeagues=next;},
     suspend:()=>{suspended=true;stopAuction();ui.sheet=null;ui.studio=null;renderSheet();document.body.classList.remove('fanta-sheet-open','fs-open');const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}},
     resume:(tab,{route}={})=>{suspended=false;ui.mode='fanta';if(route?.section){if(route.page==='squadra')ui.squadra.sub=route.section;else ui.lega.sub=route.section;}openTab(tab||ui.tab,route?.round?Number(route.round):undefined,undefined,!route);},

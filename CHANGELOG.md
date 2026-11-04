@@ -19,6 +19,11 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+- Home Bar/Fanta contenuta nella larghezza del dispositivo, mantenendo lo scorrimento dei soli caroselli. Icona casa per Oggi.
+- Rimozione dei partecipanti atomica tra Bar e Fanta collegato: revoca dell’assegnazione e delle vecchie associazioni pilota, senza cancellare squadra, rosa o storico. La sincronizzazione non reinserisce i rimossi; riparazione una tantum dei riferimenti preesistenti, incluso testuser2.
+- Prima apertura del Fanta: assegnazione automatica di una squadra libera soltanto nel Bar selezionato e soltanto ai membri attivi. Un solo POST, recupero delle risposte perse e nessuna assegnazione nelle normali letture o nei timer.
+- Schermate Fanta leggere: anagrafiche limitate alla lega e allo storico, dettagli completi dei voti solo nella sfida, rose escluse dal riepilogo asta; scelta squadre interrogata soltanto quando necessaria. Nessuna modifica al motore dei voti o alle frequenze dei provider.
+
 ## [0.29.29] - 2026-11-04
 
 - I membri del Bar senza squadra possono scegliere una panchina libera nella lega Fanta collegata, anche se allenano già in un’altra lega. Assegnazione verificata sul server, idempotente, protetta dai doppi clic e recuperata dopo timeout; nessun accesso a leghe estranee o import privati.
