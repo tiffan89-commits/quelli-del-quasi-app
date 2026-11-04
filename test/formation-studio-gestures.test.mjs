@@ -13,7 +13,7 @@ test('current probabilities beat minute estimates; stale forecasts never masquer
  assert.equal(presenceProbability({...p,stats:{minutes:0,teamMatches:4}}).pct,0);
  assert.equal(presenceProbability({...p,stats:{minutes:null,teamMatches:4}}),null);
  assert.equal(presenceProbability({...p,stats:{minutes:100,teamMatches:0}}),null);
- assert.equal(presenceProbability({...p,stats:{minutes:9999,teamMatches:4}}).pct,100);
+ assert.equal(presenceProbability({...p,stats:{minutes:9999,teamMatches:4}}).pct,97);
  assert.equal(presenceProbability({...p,stats:{},seasonStats:{games:{minutes:270}},matches:6}).pct,50);
  assert.match(playBadge(p),/is-estimated/);assert.match(playBadge({...p,play:{pct:20,source:'official'}}),/is-actual/);
  assert.match(playBadge({...p,status:{type:'injured'}}),/Infortunato/);

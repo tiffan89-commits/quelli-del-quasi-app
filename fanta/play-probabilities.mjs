@@ -1,5 +1,6 @@
 import {normalizeTeam} from '../lib/calendar.mjs';
 import {normalizePersonName} from './player-identities.mjs';
+import {PRESENCE_MODEL} from '../public/src/fanta/presence-probability.mjs';
 
 // Reuse only explicit percentages already stored by the Bar. Never infer a
 // percentage from starter/bench flags or associate an ambiguous namesake.
@@ -10,7 +11,7 @@ export function probabilityFor(player,rounds,current){
   const id=String(player.apiId||player.api_id||player.id||'').replace(/^(?:af:|api-football:|apifootball:)/,'');
   let found=candidates.filter(p=>p.id&&String(p.id).replace(/^(?:af:|api-football:|apifootball:)/,'')===id);
   if(!found.length){const names=[player.name,player.fullName,...(player.aliases||[])].map(normalizePersonName).filter(Boolean);found=candidates.filter(p=>normalizeTeam(p.club)===normalizeTeam(player.club)&&names.includes(normalizePersonName(p.name)));}
-  const stored=found.filter(p=>p.kind==='official'||p.method==='minutes-presence-v1'),confirmed=stored.filter(p=>p.kind==='official');
+  const stored=found.filter(p=>p.kind==='official'||p.method==='minutes-presence-v1'||p.method===PRESENCE_MODEL),confirmed=stored.filter(p=>p.kind==='official');
   const explicit=(confirmed.length?confirmed:stored).filter(p=>typeof p.pct==='number'&&Number.isFinite(p.pct)&&p.pct>=0&&p.pct<=100);
   const values=[...new Set(explicit.map(p=>p.pct))];
   if(values.length===1&&(!unavailable||explicit[0].kind==='official'))return {pct:values[0],source:explicit[0].kind==='official'?'official':'minutes-estimate'};
@@ -37,7 +38,7 @@ export async function readPlayProbabilities(c,round,season){
 // A small, shared, hourly cache is enough for the minutes-based fallback. No provider
 // call, background task or game-data write is introduced by opening the editor.
 export async function readPresenceMinutes(c,players,season,{cache,now=Date.now()}={}){
- const missing=players.filter(p=>p.clubId&&!Number.isFinite(p.seasonStats?.games?.minutes));
+ const missing=players.filter(p=>p.clubId&&!(p.presenceEstimate?.model===PRESENCE_MODEL&&p.presenceEstimate.clubId===p.clubId)&&!Number.isFinite(p.seasonStats?.games?.minutes));
  if(!missing.length)return {};
  const ids=[...new Set(missing.map(p=>p.id))].sort(),key=JSON.stringify(['presence-minutes-v1',season,missing.map(p=>[p.id,p.clubId]).sort()]);
  const load=async()=>{

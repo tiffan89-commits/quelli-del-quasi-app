@@ -168,7 +168,8 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   async function saveLineup() {
     const sq = ui.squadra;
     if (sq.data?.round.locked || sq.saving || missingOf(sq.draft) || !sq.dirty) return;
-    const id=league()?.id,round=sq.data.round.number,submitted=lineupOf(sq.draft);sq.saving=true;render();
+    const id=league()?.id,round=sq.data.round.number,submitted=lineupOf(sq.draft);sq.saving=true;
+    for(const button of new Set([...root.querySelectorAll('[data-lineup="save"]'),...document.querySelectorAll('.fs [data-lineup="save"]')])){button.disabled=true;button.setAttribute('aria-busy','true');button.classList.add('is-busy');button.textContent='Salvataggio…';}
     try {
       const saved=await api.saveLineup(id,round,submitted);if(destroyed||league()?.id!==id||sq.data?.round.number!==round)return;sq.data.lineup=saved;toast('Formazione salvata ✓');
       sq.dirty = false; sq.moved = null; sq.promoted = null;

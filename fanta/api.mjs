@@ -23,6 +23,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(!['GET','POST'].includes(request.method))fail('Metodo non supportato',405);
    if(request.headers.get('origin')&&request.headers.get('origin')!==url.origin)fail('Origine non consentita',403);
    const token=(request.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('sid='))?.slice(4);
+   if(route==='lineup'&&request.method==='POST'&&store.saveLineupForSession){const body=await request.text();if(body.length>16384)fail('Richiesta troppo grande',413);let input;try{input=JSON.parse(body);}catch{fail('Richiesta non valida');}if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.league!=='string'||!Number.isInteger(input.round))fail('Formazione non valida');return reply(await store.saveLineupForSession(token,input.league,input,{competition:input.competition,now}));}
    const u=token?await store.identity(token):null,eligible=!!u&&u.verified&&!u.demo&&!u.admin_only,owned=eligible?await store.leagues(u.id):[],access=eligible?'full':'demo',allowed=owned.filter(l=>l.sourceKey?u.username?.toLowerCase()==='frankwood':true),pilotTeam=owned.find(l=>l.kind==='pilot')?.teamId||null;
    const me=async()=>({user:{username:u?.username||'ospite',name:u?.name||'Ospite'},access,pilotTeam,settings:eligible?await store.settings(u.id):{notify:{lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true}}});
    if(route==='me'&&request.method==='GET')return reply(await me());

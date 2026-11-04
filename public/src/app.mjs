@@ -1,7 +1,7 @@
 import {pointTerms} from '../scoring.mjs';
 import {applySlipReceipt} from './slip-receipt.mjs';
 import {loadAppStyles} from './app-styles.mjs';
-import {saveOnce} from './save-guard.mjs';
+import {saveOnce,identifySlipSave} from './save-guard.mjs';
 import {readAppRoute,writeAppRoute} from './routes.mjs';
 import {leagueCreationFields,leagueCreationPayload} from './league-create-form.mjs';
 import {displayCache,clearDisplayCaches} from './display-cache.mjs';
@@ -282,11 +282,12 @@ async function openBarDemo(target={}){await prepareDemo();await loadAppStyles();
 const accountAttempts=new Map();
 async function api(path, data, options = {}) {
   if(barDemo&&state.user?.demo){const result=await barDemo.api(path,data);return options.meta?{data:result,etag:null}:result;}
+  if(path==='slip'&&data)data=identifySlipSave(data,{user:state.user?.id});
   const account=['register','login','logout','forgot-password','resend-verification','activate','reset-password','set-email'].includes(path);
   if(data&&account&&path!=='login'&&path!=='logout'){
     const signature=path+'\n'+JSON.stringify(data),prior=accountAttempts.get(signature);if(prior&&Date.now()-prior.at<60000)data={...data,requestId:prior.id};else{const id=crypto.randomUUID();accountAttempts.clear();accountAttempts.set(signature,{id,at:Date.now()});data={...data,requestId:id};}
   }
-  return saveOnce((data?'write:':'read:')+path+(data?':'+JSON.stringify(data):''),()=>requestJson('/api/'+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},...(data?{body:JSON.stringify(data)}:{}),...(account?{timeoutMs:25000}:{}),...options}));
+  return saveOnce((data?'write:':'read:')+path+(data?':'+JSON.stringify(data):''),()=>requestJson('/api/'+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},...(data?{body:JSON.stringify(data)}:{}),...(account?{timeoutMs:25000}:path==='slip'?{timeoutMs:20000}:{}),...options}));
 }
 
 function L() {

@@ -22,7 +22,8 @@ test('targeted lineup save is atomic, idempotent, own-roster only and rejects de
   await assert.rejects(store.saveLineup('u2','fanta-lucas-a',input),/tua rosa/);
   await assert.rejects(store.saveLineup('stranger','fanta-lucas-a',input),/accessibile/);
   await assert.rejects(store.saveLineup('u1','fanta-lucas-a',input,{competition:'other'}),/accessibile/);
-  await assert.rejects(store.saveLineup('u1','fanta-lucas-a',input,{now:Date.parse('2100-01-01')}),/scaduto/);
+  assert.deepEqual(await store.saveLineup('u1','fanta-lucas-a',input,{now:Date.parse('2100-01-01')}),one,'a late retry acknowledges an already committed identical lineup');
+  await assert.rejects(store.saveLineup('u1','fanta-lucas-a',{...input,bench:[...input.bench].reverse()},{now:Date.parse('2100-01-01')}),/scaduto/);
   assert.deepEqual((await f.db.query('SELECT payload FROM fanta_state')).rows,before);
   assert.equal((await f.db.query('SELECT count(*)::int AS count FROM fanta.lineups')).rows[0].count,1);
  }finally{await f.close();}
