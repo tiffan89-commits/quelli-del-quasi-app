@@ -1,1 +1,2 @@
-netlify/database/migrations/*.sql -text
+# Preserve SQL bytes, migration hashes and the seed statement boundaries on Windows.
+*.sql -text
