@@ -19,6 +19,8 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+- Giocatori disponibili nelle probabili: selettore scorrevole Tutti/Portieri/Difensori/Centrocampisti/Attaccanti con conteggi, filtro immediato e dimensionamento dell'accordion; filtri indipendenti per squadra e nessuna nuova richiesta al server.
+
 - Probabili formazioni: al posto dei ballottaggi, elenco richiudibile degli altri giocatori disponibili del club, senza duplicati, in ordine di stima; indisponibili e inattivi esclusi. Panchine ufficiali e formazioni Fanta conservano il loro ordine.
 - Probabilità stimate arrotondate sempre per eccesso a multipli di cinque, fino al 90%; percentuali ufficiali invariate. Stessa regola in campo e nello studio formazione, senza nuove chiamate API.
 - Misura prospettica dell'accuratezza degli undici: previsioni bloccate prima del calcio d'inizio e confrontate con gli ID degli ufficiali durante i lavori backend già esistenti. Voce pubblica nascosta fino a dieci partite con confronto completo; riepilogo condiviso in cache, senza polling né chiamate esterne aggiuntive.
