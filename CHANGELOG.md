@@ -19,6 +19,11 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.29] - 2026-11-04
+
+- I membri del Bar senza squadra possono scegliere una panchina libera nella lega Fanta collegata, anche se allenano già in un’altra lega. Assegnazione verificata sul server, idempotente, protetta dai doppi clic e recuperata dopo timeout; nessun accesso a leghe estranee o import privati.
+- Formazione mobile: cognomi più leggibili, nomi non compressi e campo utilizzabile anche con cinque difensori. Cambio libero del reparto sia dal campo sia dal selettore, senza ritorno automatico al reparto precedente; bozza, salvataggio e trascinamento conservati.
+
 ## [0.29.28] - 2026-11-04
 
 - Probabili guidate dalle nostre stime: le alternative con percentuale strettamente maggiore entrano nello stesso ruolo, mantenendo modulo e posizione del titolare sostituito. Parità e dati mancanti conservano la scelta di partenza; undici ufficiali e formazioni degli utenti restano prioritari. Conservata la base originale per rendere la selezione ripetibile e misurarne l'accuratezza.
