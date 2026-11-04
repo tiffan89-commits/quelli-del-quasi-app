@@ -9,7 +9,7 @@ function source(i){return {kind:'probable',source:'Private source '+i,sourceUrl:
 test('five sources vote once per player, give starters and bench percentages and generate coherent duels',()=>{
  const input=Array.from({length:5},(_,i)=>source(i));for(let i=3;i<5;i++){input[i].teams[0].players[10]={name:'Alternative'};input[i].teams[0].bench=[{name:'Player10'}];}
  const c=consensusLineups([...input,input[0]]),t=c.teams[0];assert.equal(c.sourceCount,5);assert.equal(t.players.length,11);assert.equal(t.players.find(p=>p.name==='Player10').probability,60);assert.equal(t.bench.find(p=>p.name==='Alternative').probability,40);assert.deepEqual(t.ballots[0].players.map(p=>p.probability),[60,40]);assert.equal(t.players[0].probability,100);
- const dto=publicLineups(c),html=renderLineup({lineups:dto});assert.ok(!JSON.stringify(dto).includes('Private source'));assert.ok(!JSON.stringify(dto).includes('private.test'));assert.match(html,/Stima basata su 5 fonti/);assert.match(html,/duel-donut/);assert.match(html,/Panchina/);assert.equal(formationRows(t).flat().length,11);
+ const dto=publicLineups(c),html=renderLineup({lineups:dto});assert.ok(!JSON.stringify(dto).includes('Private source'));assert.ok(!JSON.stringify(dto).includes('private.test'));assert.match(html,/Stima basata su 5 fonti/);assert.doesNotMatch(html,/duel-donut|Ballottaggi/);assert.match(html,/Altri giocatori a disposizione/);assert.equal(formationRows(t).flat().length,11);
 });
 test('officials replace forecasts immediately; incomplete and duplicate sources never pad the count',async()=>{
  const a=source(1),b=source(2);b.teams[0].players.pop();assert.equal(consensusLineups([a,b,a]).sourceCount,1);const official={...a,kind:'official'};assert.equal(consensusLineups([a,official]),official);
