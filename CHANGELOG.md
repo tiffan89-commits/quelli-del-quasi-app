@@ -19,6 +19,8 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 
 ## [Unreleased]
 
+## [0.29.24] - 2026-11-04
+
 - Google Analytics 4: proprietà dedicata, tag differito solo dopo consenso, scelta revocabile, URL generici senza dati personali e conteggio degli esiti di accesso, registrazione e salvataggio. Nessuna lettura DB aggiuntiva.
 - Informativa privacy con i contatti del titolare e collegamento ad Analytics nel pannello amministrativo.
 - Metadati di versione del server autonomo ricavati dal pacchetto, senza numeri obsoleti negli endpoint di salute.
