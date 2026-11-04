@@ -46,7 +46,7 @@ test('explicit Bar probabilities project by stable ID or unambiguous club/name, 
 test('lite bootstrap returns just the initial screen, team DTO reuses DB probabilities, actual vote counts are server-side',async()=>{
  const f=await fixtureDb();try{
   const api=createFantaApi({store:sqlFantaStore(f),now:()=>Date.parse('2026-11-03')}),get=async path=>{const r=await api(new Request('https://example.test/fanta-api/'+path,{headers:{cookie:'sid=token1'}}));assert.equal(r.status,200,await r.clone().text());return r.json();};
-  const b=await get('bootstrap?lite=1&league=fanta-lucas-a');assert.deepEqual(Object.keys(b).sort(),['home','leagues','me']);assert.equal(b.team,undefined);
+  const b=await get('bootstrap?lite=1&league=fanta-lucas-a');assert.deepEqual(Object.keys(b).sort(),['choiceLeagueId','home','leagues','me','teamChoices']);assert.equal(b.team,undefined);assert.deepEqual(b.teamChoices,[]);assert.equal(b.choiceLeagueId,null);
   const full=await get('bootstrap?league=fanta-lucas-a');assert.ok(full.team&&full.league&&full.round);
   const t=await get('team?league=fanta-lucas-a');assert.equal(t.roster.length,15);assert.ok(t.roster.every(p=>p.play===null));
   await f.db.query(`UPDATE fanta.rounds SET deadline='2026-11-01'`);await sqlFantaStore(f).saveLineup('u1','fanta-lucas-a',{round:1,...f.lineup('t1')},{now:Date.parse('2026-10-31')});

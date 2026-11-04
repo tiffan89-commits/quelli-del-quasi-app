@@ -120,3 +120,17 @@ test('undo restores the current-round saved lineup in both editors with no write
   assert.deepEqual([...document.querySelectorAll('.fs-bcell')].map(el=>el.dataset.stPlayer),saved.bench);assert.equal(document.querySelector('.fs [data-lineup="save"]').disabled,true);assert.equal(writes,0);assert.deepEqual((await api.team('lega-quasi')).lineup,saved);
  }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
+
+test('both formation editors allow D → C → D with unfinished departments and no forced step backwards',async()=>{
+ const {window,document}=parseHTML('<html><head></head><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
+ const keys=['window','document','location','history','localStorage','scrollTo','requestAnimationFrame','setInterval','clearInterval'],old=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+ Object.assign(globalThis,{window,document,location:{hash:'#/fanta/squadra',pathname:'/',search:''},history:{pushState(){},replaceState(){}},localStorage:{getItem:()=>null,setItem(){}},scrollTo(){},requestAnimationFrame:fn=>fn(),setInterval:()=>1,clearInterval(){}});let instance,writes=0;
+ const click=q=>{const el=document.querySelector(q);assert.ok(el,q);assert.equal(el.disabled,false,q);el.dispatchEvent(new window.Event('click',{bubbles:true}));};
+ try{
+ const api=createDemoFantaApi({delay:0});instance=mountFanta(document.getElementById('app'),{api:{...api,saveLineup:()=>{writes++;}},initialTab:'squadra'});await instance.ready;click('[data-studio="open"]');await new Promise(r=>setTimeout(r,5));
+ for(const role of ['D','C','D']){if(role==='C')click('[data-st-slot="C0"]');else click('[data-st-role="'+role+'"]');for(let i=0;i<2;i++)click('.fs-grid [data-st-player]');assert.equal(document.querySelector('.fs-tab.is-active').dataset.stRole,role);}
+ assert.equal(document.querySelectorAll('.fs-col.is-D [data-drag-id]').length,4);assert.equal(document.querySelectorAll('.fs-col.is-C [data-drag-id]').length,2);click('[data-studio="close"]');click('[data-lineup="clear"]');click('[data-lineup="guided"]');
+ for(const role of ['D','C','D']){click('[data-pick-role="'+role+'"]');for(let i=0;i<2;i++)click('.fanta-pick-list [data-pick]');assert.equal(document.querySelector('.fanta-pick-roles .is-active').dataset.pickRole,role);}
+ click('button[data-action="close-sheet"]');assert.equal(document.querySelectorAll('[data-slot^="D"][data-drag-id]').length,4);assert.equal(document.querySelectorAll('[data-slot^="C"][data-drag-id]').length,2);assert.equal(writes,0);
+ }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
+});
