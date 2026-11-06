@@ -5,6 +5,7 @@ import {applySlipReceipt} from './slip-receipt.mjs';
 import {loadAppStyles} from './app-styles.mjs';
 import {saveOnce,identifySlipSave} from './save-guard.mjs';
 import {readAppRoute,writeAppRoute} from './routes.mjs';
+import {placeAppFooter} from './app-footer.mjs';
 import {leagueCreationFields,leagueCreationPayload} from './league-create-form.mjs';
 import {displayCache,clearDisplayCaches} from './display-cache.mjs';
 import {randomLeagueControls,bindRandomLeagues} from './random-leagues.mjs';
@@ -655,6 +656,7 @@ function render() {
 
   displayedSlipRoundId=page==='schedina'?r?.id:null;
   retainAppHeader($('#app'));
+  placeAppFooter($('#app'));
   syncChatLauncher(l);
   bind(l, r);
   bindNew(l, r);

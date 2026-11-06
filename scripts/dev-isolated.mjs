@@ -11,6 +11,7 @@ import {REWARD_CATALOG} from '../public/src/reward-catalog.mjs';
 import {createHash} from 'node:crypto';
 import {createApi} from '../netlify/functions/api.mjs';
 import {decodeMail} from '../lib/mail.mjs';
+import {uxViewport} from './ux-viewport.mjs';
 process.env.ENABLE_DEMO='true';process.env.CONTEXT='dev';
 const root=process.env.PREVIEW_ASSET_ROOT?path.resolve(process.env.PREVIEW_ASSET_ROOT):fileURLToPath(new URL('../public/',import.meta.url));
 const state=emptyState();ensureCalendar(state);
@@ -64,7 +65,7 @@ for(let i=0;i<10;i++){const member={id:'perf-member-'+i,username:'quasi'+i,name:
  }
 }
 const owner={id:'local-frankwood',username:'frankwood',name:'Presidente locale',email:'frankwood@example.test',emailVerified:true,salt:'local-owner',password:hash('QuasiLocale26!','local-owner')};state.users.push(owner);a.members.push({uid:owner.id,initial:500,credits:500,points:0});
-const fixtureToken=session(state,u.id);
+const fixtureToken=session(state,process.env.PREVIEW_AUTO_USER==='frankwood'?owner.id:u.id);
 const native=await createNativePreview(state);
 const previewMailbox=[],previewMailEnv={RESEND_API_KEY:'synthetic-preview-only',APP_BASE_URL:'https://example.test'};
 const api=createApi({playerStore:memoryPlayerStore(mediaRows),transact,read:fn=>fn(state),env:previewMailEnv,deliverMail:async({jobId})=>{
@@ -77,6 +78,9 @@ globalThis.fetch=async()=>{throw Error('External calls disabled in local v2 prev
 http.createServer(async(req,res)=>{
  try{
   const port=Number(process.env.PREVIEW_PORT||8780),url=new URL(req.url,'http://127.0.0.1:'+port);
+  if(url.pathname==='/__preview/viewport'){
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow'}).end(uxViewport(url.searchParams));return;
+  }
   if(url.pathname==='/__preview/mail'&&process.env.PREVIEW_MAILBOX==='1'){
    res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify(previewMailbox));return;
   }

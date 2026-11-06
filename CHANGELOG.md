@@ -1,3 +1,7 @@
+# Unreleased — anteprima UX 0.29.46
+
+- Blocco 1: footer unico per Bar/Fanta, controlli privacy e statistiche senza duplicazioni, un solo margine finale calcolato sulle barre effettivamente fisse. Misure prima/dopo su 390×844 e 1280×800 nel rapporto UX.
+
 # 0.29.45 — 2026-11-06
 
 - Studio formazione con campo più ampio e una sola fascia orizzontale: tutti i non titolari sono riserve, senza duplicare la panchina. Dopo la scelta degli undici compaiono i comandi sinistra/destra per ordinare gli ingressi. Ordine già salvato mantenuto, cambio e trascinamento per ruolo, ripristino e blocco dei doppi salvataggi verificati.

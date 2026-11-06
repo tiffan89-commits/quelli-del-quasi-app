@@ -1,4 +1,5 @@
 import {patchRegion} from '../live-channel.mjs';
+import {placeAppFooter} from '../app-footer.mjs';
 import {createSportsPush} from '../sports-push.mjs';
 import {applyLeagueTheme,linkedLeagueIdentity} from '../league-theme.mjs';
 import {linkedInvite} from './league-invite.mjs';
@@ -253,6 +254,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       <main class="fanta-main">${competitionSwitcher(ui.home?.competitions||ui.lega.data?.competitions,ui.home?.competition?.id||ui.lega.data?.competition?.id)}${page()}</main>
       ${ui.mode === 'fanta'&&!ui.choiceLeagueId&&ui.leagues.length ? tabBar(FANTA_TABS.some(([id]) => id === ui.tab) ? ui.tab : TAB_OF[ui.tab] || 'oggi') : ''}`;
     retainAppHeader(root);
+    placeAppFooter(root);
     document.dispatchEvent(new window.CustomEvent('quasi:chat-context',{detail:{league:league()?.id}}));
     if(ui.tab==='schedine')slips.bind(root,slipContext());
     if (focusId) {
