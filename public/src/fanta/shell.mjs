@@ -39,7 +39,7 @@ export function leagueSheet(leagues, activeId) {
   return `<div class="v2-sheet-backdrop" data-action="close-sheet"></div>
   <div class="v2-sheet" role="dialog" aria-modal="true" aria-labelledby="fanta-sheet-title">
     <div class="v2-sheet-handle"></div>
-<h2 id="fanta-sheet-title">La tua lega</h2><div class="ux-league-actions"><button type="button" data-mode="bar" data-bar-page="regolamento">Regolamento del Bar</button><button type="button" data-mode="bar" data-bar-page="invita">Invita amici</button></div>${leagues.find(l=>l.id===activeId)?.role==='admin'?'<div class="ux-league-actions"><button type="button" data-mode="bar" data-bar-page="admin">Impostazioni lega</button></div>':''}<h3>Le tue leghe Fanta</h3>
+<h2 id="fanta-sheet-title">Le tue leghe Fanta</h2>
     ${leagues.map(l => `<button type="button" class="v2-league-row${l.id === activeId ? ' is-active' : ''}" data-league="${esc(l.id)}">
       ${leagueEmblem(l)}
       <span class="v2-league-info"><b>${esc(/^Random League/i.test(l.name)?l.name.replace(/^Random League/i,'Lega pilota'):l.name)}</b><small>${esc(l.teamName)} · ${esc(l.season)}</small></span>

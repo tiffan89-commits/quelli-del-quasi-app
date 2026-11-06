@@ -33,7 +33,7 @@ export function renderLeagueChip(league, uid, esc, fmt, mode='', account=null, c
 export function renderLeagueSheet(leagues, activeId, uid, esc) {
   return '<div class="v2-sheet-backdrop" id="v2-sheet-close"></div>' +
     '<div class="v2-sheet" role="dialog" aria-modal="true" aria-label="Le tue leghe"><div class="v2-sheet-handle"></div>' +
-    '<h2>La tua lega</h2><div class="ux-league-actions"><button type="button" data-bar-page="regolamento">Regolamento del Bar</button><button type="button" data-bar-page="invita">Invita amici</button>'+((leagues.find(l=>l.id===activeId)&&isLeagueAdmin(leagues.find(l=>l.id===activeId),uid))?'<button type="button" data-bar-page="admin">Impostazioni lega</button>':'')+'</div><h3>Le tue leghe</h3>' +
+    '<h2>Le tue leghe</h2>' +
     leagues.map(l => {
       const a = attentionOf(l, uid), admin = isLeagueAdmin(l, uid);
       return '<button type="button" class="v2-league-row' + (l.id === activeId ? ' is-active' : '') + '" data-v2-league="' + esc(l.id) + '">' +
@@ -44,7 +44,7 @@ export function renderLeagueSheet(leagues, activeId, uid, esc) {
     }).join('') +
     '<div class="v2-sheet-actions"><button type="button" class="secondary" data-v2-action="join" aria-expanded="false" aria-controls="v2-form-join">Entra con codice</button>' +
     '<button type="button" class="secondary" data-v2-action="create" aria-expanded="false" aria-controls="v2-form-create">Crea una nuova lega · Bar + Fanta</button></div>' +
-    (leagues.some(l=>l.id===activeId&&isLeagueAdmin(l,uid)&&!l.nativeFantaLink)?'<button type="button" class="secondary" data-v2-action="create" data-existing-bar="'+esc(leagues.find(l=>l.id===activeId).name)+'" data-existing-size="'+Math.max(2,leagues.find(l=>l.id===activeId).members?.length||2)+'">Attiva il Fanta di questa lega</button>':'') +
+    (leagues.some(l=>l.id===activeId&&isLeagueAdmin(l,uid)&&!l.nativeFantaLink)?'<button type="button" hidden class="secondary" data-v2-action="create" data-existing-bar="'+esc(leagues.find(l=>l.id===activeId).name)+'" data-existing-size="'+Math.max(2,leagues.find(l=>l.id===activeId).members?.length||2)+'">Attiva il Fanta di questa lega</button>':'') +
     '<form class="v2-sheet-form" id="v2-form-join" data-kind="join" hidden><label class="field">Codice lega<input name="code" required placeholder="ABC123" autocomplete="off" autocapitalize="characters"></label><button class="primary">Entra nella lega</button></form>' +
     '<form class="v2-sheet-form" id="v2-form-create" data-kind="create" hidden>' + leagueCreationFields() + '<button type="submit" class="primary">Crea Bar e Fanta</button><p data-create-error role="alert"></p></form></div>';
 }

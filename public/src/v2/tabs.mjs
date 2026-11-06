@@ -1,6 +1,6 @@
 // Navigazione v2: 5 tab al posto delle 10 sezioni.
 // Le pagine esistenti di app.mjs restano: qui le raggruppiamo.
-export const TABS=[{id:'oggi',label:'Oggi',icon:'<path d="M3 10.5 12 3l9 7.5M5 9v12h5v-7h4v7h5V9"/>'},{id:'schedina',label:'Schedina',icon:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6"/>'},{id:'classifica',label:'Classifica',icon:'<path d="M4 21V10h5v11M10 21V4h5v17M16 21v-6h5v6"/>'},{id:'quasi',label:'Quasi',icon:'<circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'},{id:'profilo',label:'Profilo',icon:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'}];
+export const TABS=[{id:'oggi',label:'Oggi',icon:'<path d="M3 10.5 12 3l9 7.5M5 9v12h5v-7h4v7h5V9"/>'},{id:'schedina',label:'Schedina',icon:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6"/>'},{id:'classifica',label:'Classifica',icon:'<path d="M4 21V10h5v11M10 21V4h5v17M16 21v-6h5v6"/>'},{id:'quasi',label:'Quasi',icon:'<circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'},{id:'legainfo',label:'Lega',icon:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'}];
 
 // page (variabile di app.mjs) -> tab attiva
 // "Oggi" è la home storica (pagina 'lega' di app.mjs): dashboard della lega con il tuo Quasi.
@@ -22,9 +22,9 @@ export function legaSections(isAdmin) {
   return s;
 }
 
-export function tabForPage(page){if(page==='admin')return null;return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',storico:'classifica',quasi:'quasi',profilo:'profilo'})[page]||'oggi';}
+export function tabForPage(page){if(page==='admin')return null;return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',storico:'classifica',quasi:'quasi',barleague:'legainfo',regolamento:'legainfo',profilo:'profilo'})[page]||'oggi';}
 export function defaultSource(){return 'seriea';}
-export function routeForTab(tab){return {page:({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo'})[tab]||'lega',sourceScope:'seriea'};}
+export function routeForTab(tab){return {page:({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',legainfo:'barleague',profilo:'profilo'})[tab]||'lega',sourceScope:'seriea'};}
 export function renderTabBar(active, { hasFanta = true } = {}) {
   return '<nav class="v2-tabbar" aria-label="Navigazione principale">' +
     TABS.filter(t => t.id!=='profilo'&&(hasFanta || t.id !== 'fanta')).map(t =>

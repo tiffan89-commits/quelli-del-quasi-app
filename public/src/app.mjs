@@ -352,7 +352,7 @@ async function refresh(reset = false) {
       slipSummary(previousRound, picks, stake, me()?.credits ?? Infinity).dirty;
     if (wasDirty && !reset) persistDraft();
     state = next;for(const league of state.leagues)for(const round of league.rounds||[])round.publicChoicesAvailable=!!round.closed&&Array.isArray(round.publicSlips);sportsFeedBlockedUntil=0;
-    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin'})[route.page]||'lega':'lega';if(route?.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
+    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega':'lega';if(route?.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
     if(requestedSlip&&state.leagues.some(l=>l.id===requestedSlip)){
       leagueId=requestedSlip;const round=L().rounds.find(r=>r.id===requestedSlipRound);page='schedina';slipScope='mine';if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}
       requestedSlip=null;requestedSlipRound=null;const params=new URLSearchParams(location.search);params.delete('slip');params.delete('round');window.history.replaceState(null,'',location.pathname+(params.size?'?'+params:''));
@@ -635,7 +635,8 @@ function render() {
             : !l
               ? onboarding()
               : page === "fantaquasi" ? fantaQuasiPage(l, state.user, esc)
-              : page === "quasi" ? '<section class="hero"><div class="eyebrow">LA TUA LEGA</div><h1>I Quasi</h1><p>' + esc(l.name) + ' · ' + l.members.length + ' al bancone.</p></section>' + '<section class="card quasi-own-card"><h2>Il tuo Quasi</h2><button class="dashboard-character" id="open-studio">'+quasiScene(state.user.avatar,state.user.name,{eager:true})+'<span>Modifica il tuo Quasi ✎</span></button></section>'+rewardsView(state.user,esc)+rosterView(l,state.user.id)
+              : page === "barleague" ? barLeagueInfo(l)
+              : page === "quasi" ? '<section class="hero"><div class="eyebrow">LA TUA LEGA</div><h1>I Quasi</h1><p>'+esc(l.name)+' · '+l.members.length+' al bancone.</p></section><details class="card my-league" open><summary>La squadra dei Quasi</summary>'+rosterView(l,state.user.id)+'</details>'
               : page === "schedina" ? slipsPage(l, r, m)
                 : page === "classifiche"
                   ? ranking(l)
@@ -1229,6 +1230,10 @@ function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p c
             .join(
               "",
             )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field">Vincitori aggiuntivi (uno per riga)<textarea name="extra">${esc(l.rules.winners.filter((x) => !["points", "credits"].includes(x)).join("\n"))}</textarea></label><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
+function barLeagueInfo(l){
+ const admin=isLeagueAdmin(l,state.user.id);
+ return '<section class="hero"><span class="eyebrow">LA TUA LEGA</span><h1>'+esc(l.name)+'</h1><p>'+l.members.length+' al bancone</p></section>'+(admin?'<section class="card"><button type="button" class="secondary" data-bar-page="admin">⚙ Pannello del presidente</button></section>':'')+'<details class="card"><summary>Regolamento del Bar</summary><p class="muted">Punteggi, crediti e regole della lega.</p><button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button></details><details class="card"><summary>Partecipanti · '+l.members.length+'</summary><ul class="bar-members">'+l.members.map(m=>'<li><span>'+esc(m.name)+'</span>'+(m.uid===l.admin?'<small>Presidente</small>':'')+'</li>').join('')+'</ul></details>'+(admin?'<details class="card"><summary>Invita nella tua lega</summary><p>Codice, link e WhatsApp sono nella sezione Persone.</p><button type="button" class="secondary" data-bar-page="admin" data-president-group="persone">Apri inviti</button></details>':renderAppInvite())+'<section class="card"><h2>Chiacchiere da bar</h2><button type="button" class="secondary" id="league-open-chat">Apri la chat della lega</button></section>';
+}
 function leagueAdmin(l){
  if(!isLeagueAdmin(l,state.user.id))return '';
  const color=LEAGUE_COLORS.find(([v])=>v===l.branding?.accent)?.[1]||LEAGUE_COLORS[0][1];
@@ -1447,7 +1452,7 @@ function navigatePage(next) {
   if(next===page)return;
   if(next==='schedina'){persistDraft();selectedRoundId=null;slipScope='mine';hydrateDraft();}
   sourceScope='seriea';dashboardSource='seriea';
-  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',quasi:'quasi',profilo:'profilo',storico:'classifica/storico',regolamento:'regolamento',admin:'admin'})[next]||next,league:L()?.id});
+  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',quasi:'quasi',profilo:'profilo',storico:'classifica/storico',regolamento:'regolamento',admin:'admin',barleague:'lega'})[next]||next,league:L()?.id});
   if (next === "chat") { openLeagueChat(); return; }
   persistDraft();
   page = next;
@@ -1483,6 +1488,7 @@ function openBarTarget(target) {
 }
 function bind(l, r) {
   bindRandomLeagues(document);
+  if($('#league-open-chat'))$('#league-open-chat').onclick=()=>openLeagueChat();
   if($('#open-native-slips'))$('#open-native-slips').onclick=()=>openNativeSlips();
   const fantaSelect=document.querySelector('[data-fanta-bar-select]');if(fantaSelect)fantaSelect.onchange=e=>{persistDraft();leagueId=e.target.value;sourceScope='fantacalcio';competitionScope=null;selectedRoundId=null;hydrateDraft();render();};
   bindAppInvites();
@@ -2499,7 +2505,7 @@ setInterval(() => {
 
 
 window.addEventListener("pagehide", persistDraft);
-window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin'})[route.page]||'lega';if(route.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
+window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega';if(route.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
 // Formations remain a stable DB snapshot. The live channel patches only scores,
 // events and small numeric regions, never formations, accordions or portraits.
 

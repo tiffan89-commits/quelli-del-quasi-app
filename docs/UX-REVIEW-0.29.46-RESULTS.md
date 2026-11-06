@@ -95,4 +95,17 @@ Titoli secondari 24–28 px; Oggi Bar con eroe di 120 px su telefono, riepilogo 
 
 21 test pertinenti passati. Verificato cambio Punti/Crediti senza alterare importi o graduatorie, dettaglio saldo richiudibile e consultazione grafico. File: `app.mjs`, `league-dashboard.mjs`, `bar-fanta-rankings.mjs`, `progression-ui.mjs`, `ux-spacing.css`, test interfaccia e pulizia whitespace in `fanta/shell.mjs`. [Oggi](ux-0.29.46/blocco5-oggi-390.png), [Classifica](ux-0.29.46/blocco5-classifica-390.png).
 
-Seguono i blocchi 6–7 e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.
+## Blocco 6 — percorsi coerenti
+
+Entrambe le modalità hanno cinque voci: Oggi, Schedina, Classifica, Quasi/Squadra, Lega. Nel Bar il percorso interno storico della dashboard resta separato dal nuovo URL `#/bar/lega`, anche su avanti/indietro e ricaricamento. Lega riunisce informazioni, regolamento, partecipanti e accesso alla chat, con collegamento al pannello per gli admin. Il menu superiore conserva cambio lega, ingresso e creazione. L’attivazione Fanta riusa il form esistente dal pannello.
+
+| Vista | Viewport | Prima | Dopo |
+|---|---|---:|---:|
+| Quasi | 390×844 | 2408 px | 1323 px |
+| Profilo | 390×844 | 2037 px | 2037 px |
+| Quasi | 1280×800 | 2397 px | 1416 px |
+| Profilo | 1280×800 | 1941 px | 1941 px |
+
+La galleria è richiudibile; la personalizzazione resta accessibile dal proprio Quasi e dal Profilo, senza duplicare premi/guardaroba. 20 test pertinenti passati, inclusi distinzione tra rotte Oggi/Lega, cinque tab e assenza di strumenti sparsi nel selettore. Verificati percorsi in browser. File: `app.mjs`, `v2/tabs.mjs`, `v2/league-switcher.mjs`, `fanta/shell.mjs`, `ux-spacing.css`, test presidente. [Galleria](ux-0.29.46/blocco6-quasi-390.png).
+
+Segue il blocco 7 e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.
