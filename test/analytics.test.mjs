@@ -4,7 +4,7 @@ import {CONSENT_KEY,readConsent,analyticsScreen,analyticsCampaign,requestOperati
 function fixture({host='quellidelquasi.com',gpc=false,choice}={}){
  const values=new Map(),scripts=[],callbacks=[],events=new Map(),removed=[];let now=10000000000;
  const storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)};
- if(choice!==undefined)storage.setItem(CONSENT_KEY,JSON.stringify({version:1,granted:choice,at:now}));
+ if(choice!==undefined)storage.setItem(CONSENT_KEY,JSON.stringify({version:2,granted:choice,at:now}));
  const win={location:{protocol:'https:',hostname:host,pathname:'/',hash:'#/bar/oggi?lega=private-league',search:'?token=private-token&utm_source=facebook'},navigator:{globalPrivacyControl:gpc},localStorage:storage,addEventListener:(k,v)=>events.set(k,v),removeEventListener:k=>events.delete(k)};
  const doc={head:{append:s=>scripts.push(s)},createElement:()=>({}),referrer:'https://example.org/reset?token=secret'};
  Object.defineProperty(doc,'cookie',{get:()=> '_ga=abc; _ga_TEST=def; sid=private-session',set:v=>removed.push(v)});
@@ -36,7 +36,7 @@ test('local previews, unknown hosts and global privacy control never load Google
 });
 test('expired consent and cross-tab withdrawal do not keep tracking enabled',()=>{
  const f=fixture({choice:true});f.advance(181*86400000);assert.equal(readConsent(f.storage,10000000000+181*86400000),null);
- const other=fixture({choice:true});other.controller.start();other.flush();other.storage.setItem(CONSENT_KEY,JSON.stringify({version:1,granted:false,at:10000000000}));other.events.get('storage')({key:CONSENT_KEY});assert.equal(other.controller.granted,false);assert.equal(other.win['ga-disable-G-TEST123'],true);
+ const other=fixture({choice:true});other.controller.start();other.flush();other.storage.setItem(CONSENT_KEY,JSON.stringify({version:2,granted:false,at:10000000000}));other.events.get('storage')({key:CONSENT_KEY});assert.equal(other.controller.granted,false);assert.equal(other.win['ga-disable-G-TEST123'],true);
 });
 test('account links and unknown screens never leak arbitrary hash contents',()=>{
  for(const pathname of ['/privacy','/privacy.html'])assert.equal(analyticsScreen({pathname}),'/privacy.html');for(const pathname of ['/asta-fantacalcio','/asta-fantacalcio.html'])assert.equal(analyticsScreen({pathname}),'/asta-fantacalcio.html');
@@ -49,3 +49,4 @@ test('production entry points share one analytics controller instead of splittin
  assert.ok(reachable('dist/build/app.mjs',owners[0]));assert.ok(reachable('dist/build/analytics-start.mjs',owners[0]));
  const html=fs.readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');assert.match(html,/src="\/build\/analytics-start\.mjs"/);assert.doesNotMatch(html,/<script[^>]+src="https:\/\/www\.googletagmanager/);
 });
+test('a fast registration after consent waits for the deferred tag, while refusal discards the operation',()=>{const f=fixture();f.controller.consent(true);f.controller.request('/api/register','POST',true,12,200);assert.equal(f.win.dataLayer,undefined);f.flush();assert.equal(f.win.dataLayer.filter(c=>c[1]==='registration_requested').length,1);const other=fixture();other.controller.consent(true);other.controller.request('/api/activate','POST',true,12,200);other.controller.consent(false);other.flush();assert.equal(other.win.dataLayer,undefined);assert.equal(requestOperation('/fanta-api/entry/claim','POST'),'team_claimed');assert.equal(analyticsScreen({pathname:'/prendi-squadra.html'}),'/prendi-squadra.html');});

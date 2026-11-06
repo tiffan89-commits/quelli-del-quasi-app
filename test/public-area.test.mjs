@@ -32,9 +32,16 @@ test('double submit calls login once, retains disabled progress until completion
  h.input('identity','utente');h.input('password','Password-finta');h.submit();h.submit();assert.equal(count,1);assert.equal(h.root.querySelector('button[type="submit"]').disabled,true);assert.match(h.root.textContent,/Accesso in corso/);
  finish({ok:true});await flush();assert.equal(h.logged.length,1);h.controller.destroy();
 });
-test('registration uses three fields and renders mailbox, one-minute resend cooldown and route back',async()=>{
- const h=harness('#registrati');await flush();assert.equal(h.root.querySelectorAll('input').length,3);
- h.input('email','nuovo@example.test');h.input('username','nuovo');h.input('password','Password-finta');h.submit();await flush();assert.match(h.root.textContent,/Controlla la tua email/);assert.match(h.root.textContent,/Reinvia tra 60 s/);assert.ok(h.root.querySelector('[data-pb-resend]').disabled);h.controller.destroy();
+test('registration uses only email and password and renders mailbox, one-minute resend cooldown and route back',async()=>{
+ const h=harness('#registrati');await flush();assert.equal(h.root.querySelectorAll('input').length,2);
+ h.input('email','nuovo@example.test');h.input('password','Password-finta');h.submit();await flush();assert.match(h.root.textContent,/Controlla la tua email/);assert.match(h.root.textContent,/Reinvia tra 60 s/);assert.ok(h.root.querySelector('[data-pb-resend]').disabled);h.controller.destroy();
+});
+
+test('email-only registration is single-flight and email correction sends the previous address, never a username',async()=>{
+ let complete;const sent=[],h=harness('#registrati',{register:p=>{sent.push(p);return sent.length===1?new Promise(r=>complete=r):Promise.resolve({pendingVerification:true});}});await flush();
+ h.input('email','typo@example.test');h.input('password','Password-finta');h.submit();h.submit();assert.equal(sent.length,1);assert.equal(h.root.querySelector('[type=submit]').disabled,true);assert.equal('username' in sent[0],false);
+ complete({pendingVerification:true});await flush();h.root.querySelector('[data-go=register-edit]').click();h.input('email','correct@example.test');h.input('password','Password-finta');h.submit();await flush();
+ assert.equal(sent.length,2);assert.equal(sent[1].previousEmail,'typo@example.test');assert.equal(sent[1].correctEmail,true);assert.equal('username' in sent[1],false);h.controller.destroy();
 });
 test('expired links stay recoverable and activation only happens on explicit submit',async()=>{
  let calls=0;const h=harness('#action=verify&token=finto',{activate:async()=>{calls++;throw Error('Link scaduto');}});await flush();assert.equal(calls,0);h.submit();await flush();assert.match(h.root.textContent,/Link scaduto/);assert.ok(h.root.querySelector('[data-go="resend"]'));h.controller.destroy();

@@ -1,4 +1,5 @@
 import {withFinalVerification} from './final-verification.mjs';
+import {queueAuctionOpened} from './notifications.mjs';
 import {lineupRound} from './round-selection.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
 import {probabilityFor,readPlayProbabilities,readPresenceMinutes} from './play-probabilities.mjs';
@@ -14,6 +15,7 @@ import {auctionAction,auctionView,auctionTickDue} from './auction.mjs';
 import {saveTeamLogo} from './team-logo.mjs';
 import {competitionAction} from './competitions.mjs';
 import {teamChoices} from './team-choices.mjs';
+import {entryStatus,claimEntry} from './acquisition.mjs';
 export const betaUser=(u,env=process.env)=>!!u&&u.verified&&!u.demo&&!u.admin_only&&String(env.FANTA_BETA_USERS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(u.username?.toLowerCase());
 const betaLeagues=env=>String(env.FANTA_BETA_LEAGUES||'fanta-lucas-a').split(',').map(x=>x.trim());
 export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.now,presenceCache=databaseReadCache()}={}){
@@ -24,10 +26,12 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(!['GET','POST'].includes(request.method))fail('Metodo non supportato',405);
    if(request.headers.get('origin')&&request.headers.get('origin')!==url.origin)fail('Origine non consentita',403);
    const token=(request.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('sid='))?.slice(4);
+   if(route==='auction/status'&&request.method==='GET'&&store.auctionStatusForSession)return reply(await store.auctionStatusForSession(token,url.searchParams.get('league')));
    if(route==='lineup'&&request.method==='POST'&&store.saveLineupForSession){const body=await request.text();if(body.length>16384)fail('Richiesta troppo grande',413);let input;try{input=JSON.parse(body);}catch{fail('Richiesta non valida');}if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.league!=='string'||!Number.isInteger(input.round))fail('Formazione non valida');return reply(await store.saveLineupForSession(token,input.league,input,{competition:input.competition,now}));}
    const u=token?await store.identity(token):null,eligible=!!u&&u.verified&&!u.demo&&!u.admin_only,owned=eligible?await store.leagues(u.id):[],access=eligible?'full':'demo',allowed=owned.filter(l=>l.sourceKey?u.username?.toLowerCase()==='frankwood':true),pilotTeam=owned.find(l=>l.kind==='pilot')?.teamId||null;
-   const me=async()=>({user:{username:u?.username||'ospite',name:u?.name||'Ospite'},access,pilotTeam,settings:eligible?await store.settings(u.id):{notify:{lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true}}});
+   const me=async()=>({user:{...(u?.username?{username:u.username}:{}),name:u?.name||'Ospite'},access,pilotTeam,settings:eligible?await store.settings(u.id):{notify:{lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true}}});
    if(route==='me'&&request.method==='GET')return reply(await me());
+   if(route==='entry/status'&&request.method==='GET'){if(env.FANTA_ACQUISITION_ENABLED!=='true')return reply({enabled:false,signedIn:eligible});return reply({enabled:true,...(eligible?await entryStatus(u,{connect:store.connect}):{signedIn:false})});}
    if(!eligible)fail('Accedi e conferma la tua email per entrare nel Fanta.',403);
    if(route==='pilot/teams')fail('Entra nel Bar della tua lega per scegliere una squadra',410);
    if(route==='bootstrap'&&request.method==='GET'){
@@ -36,6 +40,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(initial.home)initial.home=await withFinalVerification(initial.home,{now:now()});return reply({me:await me(),leagues,teamChoices:choices,choiceLeagueId:choice?.id||null,...initial});
    }
    let p={};if(request.method==='POST'){const body=await request.text();if(body.length>(route==='team/logo'?350000:16384))fail('Richiesta troppo grande',413);try{p=JSON.parse(body);}catch{fail('Richiesta non valida');}}
+   if(route==='entry/claim'&&request.method==='POST'){if(env.FANTA_ACQUISITION_ENABLED!=='true')fail('Le iscrizioni alla prova sono in pausa.',403);return reply(await claimEntry(u,{connect:store.connect}));}
    if(route==='pilot/claim')fail('Le iscrizioni pubbliche alla lega pilota sono chiuse',410);
    if(route==='settings'&&request.method==='POST'){const keys=['lineupReminder','roundStart','liveEvents','results','auction'];if(!p.notify||keys.some(k=>typeof p.notify[k]!=='boolean')||Object.keys(p.notify).some(k=>!keys.includes(k)))fail('Impostazioni non valide');return reply(await store.settings(u.id,{notify:Object.fromEntries(keys.map(k=>[k,p.notify[k]]))}));}
    if(route==='random/status'&&request.method==='GET')return reply(await randomStatus(u,{connect:store.connect}));
@@ -56,6 +61,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    // Most ticks only read. A running timer is not a reason to reload the full
    // catalog under a write lock every second for every spectator.
    if(route==='auction/tick'&&isWrite){const view=await store.league(u.id,id,s=>auctionTickDue(s.auction,now())?null:auctionView(s,u.id,now()),{competition:p.competition});if(view)return reply(view);}
+   let auctionNotice=null;
    const result=await store.league(u.id,id,async(s,c)=>{
     if(s.league.kind==='pilot'&&(route.startsWith('competition/')||route==='league/configure'||route==='team/link'))fail('Nella lega pilota non sono disponibili modifiche della competizione',403);
     if(s.league.kind==='random'&&isWrite&&(route.startsWith('roster/')||route==='league/configure'||route==='team/link'))fail('La Lega random cambia le rose soltanto tramite aste di riparazione',403);
@@ -68,9 +74,9 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(route==='team/logo'&&isWrite){const mine=s.teams.find(t=>t.userId===u.id);if(!mine||p.team&&p.team!==mine.id)fail('Puoi modificare solo il logo della tua squadra',403);return {team:mine.id,branding:await saveTeamLogo(c,mine,p,id)};}
     if(route==='team/link'&&isWrite){
      if(s.league.adminUid!==u.id)fail('Solo il presidente può associare le squadre',403);
-     const team=s.teams.find(t=>t.id===p.team),username=typeof p.username==='string'?p.username.trim().toLowerCase():'';
-     if(!team||!username||username.length>60)fail('Scegli la squadra e inserisci lo username');
-     const found=(await c.query(`SELECT u->>'id' AS id,u->>'username' AS username,(u->>'emailVerified')::boolean AS verified,(u->>'demo')::boolean AS demo,(u->>'adminOnly')::boolean AS admin_only FROM fanta_state CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u WHERE lower(u->>'username')=$1`,[username])).rows;
+     const team=s.teams.find(t=>t.id===p.team),username=typeof (p.identity||p.username)==='string'?(p.identity||p.username).trim().toLowerCase():'';
+     if(!team||!username||username.length>254)fail('Scegli la squadra e inserisci l’email o lo username del vecchio account');
+     const found=(await c.query(`SELECT u->>'id' AS id,u->>'username' AS username,(u->>'emailVerified')::boolean AS verified,(u->>'demo')::boolean AS demo,(u->>'adminOnly')::boolean AS admin_only FROM fanta_state CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u WHERE lower(u->>'username')=$1 OR lower(u->>'email')=$1`,[username])).rows;
      if(found.length!==1||!found[0].verified||found[0].demo||found[0].admin_only)fail('Account non trovato o email non ancora confermata',400);
      const target=found[0];if((await c.query(`SELECT 1 FROM fanta.bar_links b JOIN fanta_state s ON s.id=1 CROSS JOIN LATERAL jsonb_array_elements(s.payload->'leagues') bar CROSS JOIN LATERAL jsonb_array_elements(coalesce(bar->'removedMembers','[]')) m WHERE b.active AND b.fanta_league_id=$1 AND bar->>'id'=b.bar_league_id AND m->>'uid'=$2`,[id,target.id])).rows.length)fail('Riattiva prima questo partecipante nel Bar della lega',403);if(team.userId&&team.userId!==target.id)fail('Questa squadra ha già un account collegato',409);
      if(s.teams.some(t=>t.id!==team.id&&t.userId===target.id))fail('Questo account è già associato a un’altra squadra della lega',409);
@@ -81,6 +87,10 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
      if(kind==='players')return s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id))).sort((a,b)=>(b.value||1)-(a.value||1));
      if(!isWrite)return auctionView(s,u.id,now());
      const next=auctionAction(s,kind==='tick'?'read':kind,p,u.id,{admin:s.league.adminUid===u.id,now:now()});
+     if(next.auction.status==='running'&&s.auction.status!=='running'){
+      next.auction.openNotificationKey=s.league.id+':open:'+next.auction.version+':'+now();
+      auctionNotice=await queueAuctionOpened(c,next,next.auction,{now:now()});
+     }
      if(next.auction.version!==s.auction.version)await store.persistAuction(c,s,next,u.id,kind,p);
      return auctionView(next,u.id,now());
     }
@@ -91,7 +101,9 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(route==='home')return homeView(s,u.id,now());if(route==='team'){const r=lineupRound(s,now());s.probables=await readPlayProbabilities(c,r?.seriea_round,s.league.season);const target=s.teams.find(t=>url.searchParams.has('team')?t.id===url.searchParams.get('team'):t.userId===u.id);s.presenceMinutes=await readPresenceMinutes(c,(target?.roster||[]).filter(p=>probabilityFor(p,s.probables,r?.seriea_round)?.source!=='official'&&!['injured','suspended'].includes(p.status?.type)),s.league.season,{cache:presenceCache,now:now()});return teamView(s,u.id,now(),url.searchParams.get('team'));}if(route==='league')return leagueView(s,u.id,now());
     const n=Number(url.searchParams.get('number')),r=s.rounds.find(r=>r.number===n)||(!url.searchParams.has('number')?currentRound(s):null);if(!r)fail('Giornata non trovata',404);
     if(route==='round')return roundView(s,r,u.id,now());if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}fail('Pagina non trovata',404);
-   },{write:isWrite,auction:isAuction&&isWrite,catalog:isAuction||route==='roster/players',detailedVotes:route==='matchup',number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});return reply(route==='home'?await withFinalVerification(result,{now:now()}):result);
+   },{write:isWrite,auction:isAuction&&isWrite,catalog:isAuction||route==='roster/players',detailedVotes:route==='matchup',number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
+   if(auctionNotice)try{await dispatchFanta('auction-notify:'+auctionNotice,env);}catch{/* Durable notifications remain queued if dispatch needs a retry. */}
+   return reply(route==='home'?await withFinalVerification(result,{now:now()}):result);
   }catch(e){return reply({error:e.status?e.message:'Il Fanta non è temporaneamente disponibile. Riprova tra poco.'},e.status||503);}
  };
 }

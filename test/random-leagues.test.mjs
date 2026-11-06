@@ -31,7 +31,20 @@ test('random: creation snapshot, idempotency, real rosters, concurrent claims an
 });
 test('balanced random distributes top role tiers without duplicate players at multiple sizes',()=>{
  const players=['P','D','C','A'].flatMap(role=>Array.from({length:120},(_,i)=>({id:role+i,role,value:Math.max(1,15-Math.floor(i/4))})));
- for(const teams of [2,3,8,10,12,15]){const rosters=balancedRandomRosters(players,{teams,seed:'test'});assert.equal(new Set(rosters.flat().map(p=>p.id)).size,teams*25);for(const r of rosters){assert.equal(r.length,25);assert.ok(r.reduce((n,p)=>n+p.price,0)<=500);}const values=rosters.map(r=>r.reduce((n,p)=>n+p.value,0));assert.ok(Math.max(...values)-Math.min(...values)<=20);}
+ for(const teams of [2,3,8,10,12,15]){const rosters=balancedRandomRosters(players,{teams,seed:'test'});assert.equal(new Set(rosters.flat().map(p=>p.id)).size,teams*25);for(const r of rosters){assert.equal(r.length,25);assert.equal(r.reduce((n,p)=>n+p.price,0),500);}const values=rosters.map(r=>r.reduce((n,p)=>n+p.value,0));assert.ok(Math.max(...values)-Math.min(...values)<=20);}
+});
+
+test('random budgets use integer credits without reducing the selected top tiers or mutating the catalog',()=>{
+ const slots={P:1,D:2,C:2,A:1},players=Object.entries(slots).flatMap(([role,n])=>Array.from({length:3*n+5},(_,i)=>({id:role+i,role,value:200-i*3})));
+ const before=structuredClone(players);
+ for(const budget of [6,7,50,500,731]){
+  const rosters=balancedRandomRosters(players,{teams:3,budget,slots,seed:'full-budget'});
+  assert.deepEqual(rosters,balancedRandomRosters(players,{teams:3,budget,slots,seed:'full-budget'}));
+  for(const r of rosters){assert.equal(r.reduce((sum,p)=>sum+p.price,0),budget);assert.ok(r.every(p=>Number.isInteger(p.price)&&p.price>=1));}
+  for(const [role,n]of Object.entries(slots))assert.deepEqual(rosters.flat().filter(p=>p.role===role).map(p=>p.id).sort(),players.filter(p=>p.role===role).slice(0,n*3).map(p=>p.id).sort());
+ }
+ assert.deepEqual(players,before);
+ for(const budget of [5,0,500.5,NaN])assert.throws(()=>balancedRandomRosters(players,{teams:3,budget,slots}),/Budget/);
 });
 test('imported leagues are accessible only to frankwood; native team owners are not beta-gated',async()=>{
  const {createFantaApi}=await import('../fanta/api.mjs'),{sqlFantaStore}=await import('../fanta/store.mjs');

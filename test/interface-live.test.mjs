@@ -1,4 +1,5 @@
 import {pointTerms} from '../public/scoring.mjs';
+import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
 import {applySlipReceipt} from '../public/src/slip-receipt.mjs';
@@ -101,6 +102,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   const ctx = {
     mountPublic(root){root.innerHTML='<main>PUBLIC-AREA</main>';return {destroy(){},route(){}};},createPublicApi(){return {};},
     readAppRoute,writeAppRoute,saveOnce,applySlipReceipt,loadAppStyles(){},displayCache,clearDisplayCaches,retainAppHeader(){},barModeSwitch,preferredFanta:()=>false,leaveFanta(){},clearFantaSessions(){},enterFanta(){fantaEntries++;},
+    createSportsPush(){return {start(){},wake(){},stop(){}};},
     createLiveChannel(){return {start(){},wake(){},stop(){}};},requestJson:async()=>{requestCount++;if(blockRequests)return new Promise(resolve=>pendingRequests.push(resolve));return state;},
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,
@@ -144,7 +146,7 @@ test("live results render inside the slip, calendar remains clickable, standings
       removeItem() {},
     },
     groupMatches,
-    predictionStatus,inlineResultView,patchSlipResults,
+    predictionStatus,inlineResultView,patchSlipResults,nicknameNotice,
     TEAM_LOGOS: {},
     location: { hash: "", pathname: "/", search: "" },
     history: { replaceState() {} },

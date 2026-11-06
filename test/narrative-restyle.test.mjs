@@ -7,7 +7,7 @@ import {currentModelKey} from '../fanta/statistical-votes/repository.mjs';
 test('high grades lead with concrete impact and keep weaknesses as a secondary final observation',()=>{
  const input={id:'af:335056',fixtureId:'af:1550177',name:'Diego Moreira',onField:true,final:true,club:'AC Milan',opponent:'Inter',events:{goals:1,assists:2},metrics:{duelsTotal:12,duelsWon:3},fixture:{teamSide:'home',teams:{home:{name:'AC Milan'},away:{name:'Inter'}},score:{home:3,away:1}}};
  const data={vote:7.5,individual:{blocks:[{key:'duels',observed:true,delta:-.8},{key:'creation',observed:true,delta:.2}]},context:{marquee:{delta:.72,youngDebut:true}},goalSupport:{count:1,anchor:{types:[]}}};
- const why=describePerformance(input,data);assert.match(why,/Un gol e 2 assist/);assert.match(why,/partita di cartello/);assert.match(why,/primo anno|prima stagione/);assert.match(why,/una prova decisamente positiva\.$/);assert.ok(why.indexOf('assist')<why.indexOf('duelli'));assert.doesNotMatch(why,/0\.72|Fatica a imporsi|voto tecnico/);assert.equal(why,describePerformance(input,data));
+ const why=describePerformance(input,data);assert.match(why,/Un gol e 2 assist/);assert.match(why,/partita di cartello/);assert.match(why,/prova buona/);assert.ok(why.split(/\s+/).length<75);assert.ok(why.indexOf('assist')<0||!why.includes('duelli')||why.indexOf('assist')<why.indexOf('duelli'));assert.doesNotMatch(why,/0\.72|Fatica a imporsi|voto tecnico/);assert.equal(why,describePerformance(input,data));
 });
 test('editorial refresh changes only text fields, is bounded and idempotent, and retains historical revisions',async()=>{
  const f=await fixtureDb();try{

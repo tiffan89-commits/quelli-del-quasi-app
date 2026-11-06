@@ -7,12 +7,12 @@ import {displayCache} from '../display-cache.mjs';
 import {requestJson} from '../live-channel.mjs';
 import {saveOnce} from '../save-guard.mjs';
 
-async function getJson(path) {
-  return requestJson('/fanta-api/'+path,{credentials:'same-origin',headers:{accept:'application/json'},timeoutMs:20000});
+async function getJson(path,timeoutMs=20000) {
+  return requestJson('/fanta-api/'+path,{credentials:'same-origin',headers:{accept:'application/json'},timeoutMs});
 }
 
-async function postJson(path, body) {
-  return requestJson('/fanta-api/'+path,{method:'POST',credentials:'same-origin',headers:{accept:'application/json','content-type':'application/json'},body:JSON.stringify(body),timeoutMs:20000});
+async function postJson(path, body,timeoutMs=20000) {
+  return requestJson('/fanta-api/'+path,{method:'POST',credentials:'same-origin',headers:{accept:'application/json','content-type':'application/json'},body:JSON.stringify(body),timeoutMs});
 }
 
 const q = params => new URLSearchParams(params).toString();
@@ -23,7 +23,7 @@ export function createFantaApi({userId}={}) {
   const invalidateReads=()=>{generation++;cache.clear();pending.clear();saved?.clear();};
   const read=input=>{const path=input+(competition?(input.includes('?')?'&':'?')+q({competition}):'');if(path.startsWith('auction'))return getJson(path);const ttl=/^(league\?|leagues$)/.test(path)?300000:60000;const local=saved?.get(path,ttl);if(local)return Promise.resolve(local);const hit=cache.get(path);if(hit&&(!saved||hit.version===saved.generation)&&Date.now()-hit.at<ttl)return Promise.resolve(structuredClone(hit.data));if(pending.has(path))return pending.get(path).then(structuredClone);const version=generation,savedVersion=saved?.generation,job=getJson(path).then(data=>{if(version===generation){cache.set(path,{at:Date.now(),data,version:savedVersion});saved?.set(path,data,savedVersion);while(cache.size>64)cache.delete(cache.keys().next().value);}return data;}).finally(()=>{if(pending.get(path)===job)pending.delete(path);});pending.set(path,job);return job.then(structuredClone);};
   const write=(path,body)=>saveOnce('fanta:'+path+':'+(body?.league||userId||'')+':'+(body?.round||''),async()=>{const data=await postJson(path,{...body,...(competition?{competition}:{})});invalidateReads();return data;});
-  return {createRandom:options=>write('random/create',options),randomStatus:()=>read('random/status'),claimRandom:league=>write('random/claim',{league}),setSlips:(league,enabled)=>write('league/slips',{league,enabled}),pilotTeams:()=>read('pilot/teams'),pilotClaim:choice=>write('pilot/claim',choice),
+  return {auctionSocket:true,createRandom:options=>write('random/create',options),randomStatus:()=>read('random/status'),claimRandom:league=>write('random/claim',{league}),setSlips:(league,enabled)=>write('league/slips',{league,enabled}),pilotTeams:()=>read('pilot/teams'),pilotClaim:choice=>write('pilot/claim',choice),
     teamChoices:()=>read('team/choices'),claimTeam:(league,team)=>write('team/claim',{league,team}),
     rosterPlayers:league=>read('roster/players?'+q({league})),rosterChange:(league,kind,data)=>write('roster/'+kind,{league,...data}),rosterAudit:league=>read('roster/audit?'+q({league})),
     auctionAssigned:(league,query='')=>read('auction/assigned?'+q({league,q:query})),auctionRelease:(league,playerId,refund)=>write('auction/release',{league,playerId,refund}),auctionReleaseUndo:(league,playerId)=>write('auction/release-undo',{league,playerId}),auctionReleasesDone:league=>write('auction/releases-done',{league}),
@@ -41,7 +41,8 @@ export function createFantaApi({userId}={}) {
     matchup: (leagueId, number, id) => read('matchup?' + q({ league: leagueId, number, id })),
     team: (leagueId,team) => read('team?' + q({ league: leagueId,...(team?{team}:{}) })),
     saveLineup: (leagueId, round, lineup) => write('lineup', { league: leagueId, round, ...lineup }),
-    auction: leagueId => postJson('auction/tick',{league:leagueId,...(competition?{competition}:{})}),
+    auction: leagueId => postJson('auction/tick',{league:leagueId,...(competition?{competition}:{})},5000),
+    auctionStatus:leagueId=>getJson('auction/status?'+q({league:leagueId}),5000),
     auctionPlayers: leagueId => read('auction/players?' + q({ league: leagueId })),
     bid: (leagueId, lotId, amount) => write('auction/bid', { league: leagueId, lotId, amount }),
     pass: (leagueId, lotId) => write('auction/pass', { league: leagueId, lotId }),

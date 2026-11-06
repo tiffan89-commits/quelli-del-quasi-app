@@ -9,7 +9,7 @@ $node=(Get-Command node.exe).Source
 foreach($file in @('tools\winsw.exe','tools\caddy.exe','config\app.env')){if(-not(Test-Path -LiteralPath (Join-Path $root $file))){throw "File mancante: $file"}}
 foreach($name in @('QuasiPostgres','QuasiWeb','QuasiWorker','QuasiCaddy')){if(Get-Service -Name $name -ErrorAction SilentlyContinue){throw "Servizio $name già presente. Usare la procedura di aggiornamento, senza reinstallarlo."}}
 $services=Join-Path $root 'services';New-Item -ItemType Directory -Path $services -Force | Out-Null
-function Xml([string]$value){[Security.SecurityElement]::Escape($value)}
+function Xml([string]$value){$separator=[string][char]92;[Security.SecurityElement]::Escape($value.Replace($separator+$separator,$separator))}
 # All permission changes stay within this explicitly selected server directory.
 $owner=[Security.Principal.WindowsIdentity]::GetCurrent().Name
 function Set-PrivateAcl([string]$target,[string[]]$readers,[string[]]$writers){

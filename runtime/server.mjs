@@ -5,12 +5,14 @@ import {Readable} from 'node:stream';
 import {isIP} from 'node:net';
 import {pathToFileURL} from 'node:url';
 import {configure} from './config.mjs';
+import {installRuntimeLogging} from './observability.mjs';
 import {previewGate} from './preview-gate.mjs';
 import packageInfo from '../package.json' with {type:'json'};
 const mime={'.txt':'text/plain; charset=utf-8','.xml':'application/xml; charset=utf-8','.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.woff2':'font/woff2','.wasm':'application/wasm'};
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
 export function requestIp(req,trust=false){const direct=req.socket.remoteAddress||'unknown';if(!trust)return direct;const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();return isIP(forwarded)?forwarded:direct;}
 const friendlyPages=new Set(['/privacy','/fantacalcio-tra-amici','/asta-fantacalcio','/schedine-virtuali','/admin','/account']);
+export function staticEncoding(header=''){const entries=String(header).split(',').map(item=>{const [name,...args]=item.trim().split(';'),quality=args.find(x=>x.trim().startsWith('q='));return {name:name.trim(),q:quality?Number(quality.trim().slice(2)):1};});return ['br','gzip'].map(name=>({name,q:entries.find(e=>e.name===name)?.q??entries.find(e=>e.name==='*')?.q??0})).filter(e=>e.q>0&&e.q<=1).sort((a,b)=>b.q-a.q)[0]?.name||null;}
 export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,root=path.resolve('dist'),trustProxy=process.env.TRUST_PROXY==='true',bodyLimit=1024*1024}={}){
  const base=new URL(origin),staticRoot=path.resolve(root);
  const server=http.createServer(async(req,res)=>{
@@ -37,14 +39,20 @@ export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,
    const pathname=url.pathname==='/'||url.pathname.startsWith('/invito/')?'/index.html':friendlyPages.has(url.pathname)?url.pathname+'.html':decodeURIComponent(url.pathname),file=path.resolve(staticRoot,'.'+pathname);
    if(!file.startsWith(staticRoot+path.sep))return json(res,404,{error:'Not found'});
    let data,status=200,extension=path.extname(file);try{data=await fs.readFile(file);}catch(e){if(!['ENOENT','EISDIR'].includes(e.code))throw e;status=404;data=await fs.readFile(path.join(staticRoot,'404.html'));extension='.html';}
-   res.writeHead(status,{'Content-Type':mime[extension]||'application/octet-stream','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Cache-Control':/\/build\/chunks\//.test(pathname)?'public,max-age=31536000,immutable':'public,max-age=0,must-revalidate'});res.end(req.method==='HEAD'?undefined:data);
+   let encoding=null;const requested=staticEncoding(req.headers['accept-encoding']);if(status===200&&requested&&/\.(mjs|js|css)$/.test(file)){try{data=await fs.readFile(file+(requested==='br'?'.br':'.gz'));encoding=requested;}catch(e){if(e.code!=='ENOENT')throw e;}}
+   res.writeHead(status,{'Content-Type':mime[extension]||'application/octet-stream','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Vary':'Accept-Encoding',...(encoding?{'Content-Encoding':encoding}:{}),'Cache-Control':/\/build\/chunks\//.test(pathname)?'public,max-age=31536000,immutable':'public,max-age=0,must-revalidate'});res.end(req.method==='HEAD'?undefined:data);
   }catch(e){if(controller.signal.aborted)return;console.error('HTTP_FAILED',e.code||e.name);if(!res.headersSent)json(res,500,{error:'Servizio temporaneamente non disponibile'});else res.destroy();}
  });server.requestTimeout=30000;server.headersTimeout=15000;return server;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- configure();if(!process.env.DATABASE_URL)throw Error('DATABASE_URL obbligatorio');
+ configure();installRuntimeLogging('web');if(!process.env.DATABASE_URL)throw Error('DATABASE_URL obbligatorio');
  const {installInternalDispatch}=await import('./dispatch.mjs');installInternalDispatch();
  const [{default:api},{default:fanta},{default:scores},{closeDatabase}]=await Promise.all([import('../netlify/functions/api.mjs'),import('../netlify/functions/fanta-api.mjs'),import('../netlify/functions/public-football.mjs'),import('../lib/db.mjs')]);
- const server=createServer({api,fanta,scores});server.listen(Number(process.env.PORT)||3000,process.env.HOST||'127.0.0.1',()=>console.info('QUASI_HTTP_READY'));
- let ending=false;const stop=()=>{if(ending)return;ending=true;server.close(async()=>{await closeDatabase();});server.closeIdleConnections();};process.once('SIGTERM',stop);process.once('SIGINT',stop);
+ const server=createServer({api,fanta,scores});
+ const {attachAuctionSocket}=await import('./auction-socket.mjs');
+ const origin=process.env.PUBLIC_ORIGIN,aliases=new URL(origin).hostname==='quellidelquasi.com'?['https://casa.quellidelquasi.com','https://server.quellidelquasi.com']:[];
+ const auctionHub=await attachAuctionSocket(server,{origin,allowedOrigins:[origin,...aliases]});
+ const {attachSportsSocket}=await import('./sports-socket.mjs');const sportsHub=attachSportsSocket(auctionHub.io);
+ server.listen(Number(process.env.PORT)||3000,process.env.HOST||'127.0.0.1',()=>console.info('QUASI_HTTP_READY'));
+ let ending=false;const stop=async()=>{if(ending)return;ending=true;await sportsHub.close();await auctionHub.close();await closeDatabase();};process.once('SIGTERM',stop);process.once('SIGINT',stop);
 }

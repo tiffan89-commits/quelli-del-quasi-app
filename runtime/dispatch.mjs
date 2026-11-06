@@ -4,6 +4,7 @@ import {operationTicket,readOperationTicket} from '../lib/operations/store.mjs';
 import {jobTicket,validJobTicket} from '../fanta/jobs.mjs';
 import {footballRefreshTicket,validFootballRefreshTicket} from '../lib/api-football-refresh.mjs';
 import {matchCacheTicket,validMatchCacheTicket} from '../lib/match-cache.mjs';
+import {redact} from './observability.mjs';
 const entries={
  'account-mail-background':{header:'X-Quasi-Mail',read:t=>{const v=readMailTicket(t);return v?.jobId?{jobId:v.jobId}:null;},sign:v=>mailTicket(v.jobId)},
  'operational-worker-background':{header:'X-Quasi-Operation',read:readOperationTicket,sign:v=>operationTicket(v)},
@@ -28,5 +29,6 @@ export function installInternalDispatch({env=process.env,enqueue=enqueueJob,netw
 export async function executeJob({name,payload}){
  const entry=entries[name];if(!entry)throw Error('Unknown worker');
  const module=await import('../netlify/functions/'+name+'.mjs');
- await module.default(new Request(new URL('/.netlify/functions/'+name,process.env.PUBLIC_ORIGIN),{method:'POST',headers:{[entry.header]:entry.sign(payload)}}));
+ const response=await module.default(new Request(new URL('/.netlify/functions/'+name,process.env.PUBLIC_ORIGIN),{method:'POST',headers:{[entry.header]:entry.sign(payload)}}));
+ if(response instanceof Response){const text=await response.text();let body;try{body=JSON.parse(text);}catch{body=text;}const report=redact({status:response.status,body});console.info('LOCAL_JOB_RESPONSE',JSON.stringify(report));if(response.status>=400)throw Object.assign(Error('Background HTTP failure'),{code:'HTTP_'+response.status});return report;}
 }

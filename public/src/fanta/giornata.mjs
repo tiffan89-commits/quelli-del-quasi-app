@@ -1,3 +1,5 @@
+import {substitutionMark} from '../pitch-events.mjs';
+import {statNumber,formatStatNumber} from './stat-number.mjs';
 import {playerVisual} from './player-visual.mjs';
 // Pagina "Giornata": scelta della giornata e della sfida, formazioni con voti e fantavoti,
 // modificatore difesa, totale; scheda del singolo giocatore con la scomposizione del voto.
@@ -10,8 +12,8 @@ const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Att
 const ROLE_GROUPS = { P: 'Porta', D: 'Difesa', C: 'Centrocampo', A: 'Attacco' };
 const STATE_LABEL = { 'calcolata': ['Ufficiale', 'is-official'], 'in-corso': ['Live · provvisoria', 'is-live'], 'schierata': ['Da giocare', 'is-todo'], 'da-schierare': ['Da giocare', 'is-todo'] };
 
-const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + Number(Math.abs(n)).toLocaleString('it-IT',{maximumFractionDigits:3});
-export const formatPlayerStat=(value,unit='')=>Number.isFinite(value)?value.toLocaleString('it-IT',{maximumFractionDigits:unit==='%'?1:2}):'–';
+const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + formatStatNumber(Math.abs(n));
+export const formatPlayerStat=(value,unit='')=>formatStatNumber(value);
 const vote = n => n == null ? '–' : pts(n, n % 1 ? 1 : 0);
 const goalsLabel = g => g === 1 ? '1 gol' : `${g} gol`;
 
@@ -93,7 +95,7 @@ function token(p, replaced) {
     : `<em class="${p.status === 'playing' ? 'is-live' : ''}">${vote(p.fantavote)}</em>`;
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
-    <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>${replaced ? '<i aria-hidden="true">↺</i>' : ''}</span>
+    <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>${replaced ? substitutionMark('Entrato dalla panchina') : ''}</span>
     ${events(p.events)}<b>${esc(surname)}</b>${value}
   </${tag}>`;
 }
@@ -124,11 +126,8 @@ function lineup(s, notStarted, view) {
     <div class="fanta-lineup-head"><h3>Titolari <span>${esc(s.formation)}</span></h3>${toggle}</div>
     ${view === 'campo' ? '' : '<div class="fanta-cols-row"><span class="fanta-cols"><span>Voto</span><span>FV</span></span></div>'}
     ${groups}
-    <details class="fanta-bench"${benchUsed ? ' open' : ''}>
-      <summary>Panchina <span>${s.bench.length} giocatori${benchUsed ? ` · ${benchUsed} ${benchUsed === 1 ? 'entrato' : 'entrati'}` : ''}</span></summary>
-      ${s.bench.map(playerRow).join('')}
-      <p class="fanta-note">Chi resta senza voto viene sostituito dal primo panchinaro dello stesso ruolo con un voto, nell'ordine della panchina. Nessun limite di cambi; il modulo non cambia.</p>
-    </details>
+    ${s.bench.some(p=>p.enteredFor)?'<details class="fanta-bench" open><summary>Subentrati</summary>'+s.bench.filter(p=>p.enteredFor).map(playerRow).join('')+'</details>':''}
+    ${s.bench.some(p=>!p.enteredFor)?'<details class="fanta-bench"><summary>A disposizione</summary>'+s.bench.filter(p=>!p.enteredFor).map(playerRow).join('')+'</details>':''}
   </div>`;
 }
 
@@ -171,10 +170,10 @@ function teamPanel(m, side, view) {
   }
   const started = [...s.starters, ...s.bench].some(p => p.status !== 'to-play');
   const notStarted = m.state === 'da-schierare' || m.state === 'schierata';
-  return `${s.historical&&s.imported?'<p class="fanta-note">Voti storici archiviati</p>':''}${lineup(s, notStarted, view)}${started ? totals(s, m.official) + modifierCard(s.modifier) : '<p class="fanta-note is-wait">Voti e punti compaiono quando iniziano le partite.</p>'}`;
+  return `${s.historical&&s.imported?'<p class="fanta-note">Voti storici archiviati</p>':''}${lineup(s, notStarted, view)}${started ? '<details class="fanta-block"><summary>Punti e dettagli</summary>'+totals(s, m.official) + modifierCard(s.modifier)+'</details>' : '<p class="fanta-note is-wait">Voti e punti compaiono quando iniziano le partite.</p>'}`;
 }
 
-export function renderGiornata({ round, matchup, side, view = 'lista' }) {
+export function renderGiornata({ round, matchup, side, view = 'campo' }) {
   if (!round) return '<div class="fanta-loading" role="status">Carichiamo la giornata…</div>';
   return `<div class="fanta-round">
     ${roundHead(round)}
@@ -217,7 +216,7 @@ export function renderPlayerSheet(p, { official } = {}) {
   const bonus = p.breakdown.bonus.map(b => row(esc(b.label), signed(b.delta), b.delta > 0 ? 'is-plus' : 'is-minus')).join('');
   const stats = (Array.isArray(p.stats)?p.stats:[]).map(s => {
     const feature=p.individual?.features?.[s.key],rate=s.unit==='%',factor=rate?100:1;
-    const comparison=s.comparison||compareStat(s.value,s.avg,{rate,scale:feature?.scale?feature.scale*factor*(rate?1:Math.sqrt(Math.max(.25,Math.min(1.5,(p.minutes||90)/90)))):0,policy:rate?{scaleFraction:.25,volumeFraction:.1,rateFloor:2}:undefined}).comparison;
+    const comparison=s.comparison||compareStat(s.value,s.avg,{rate,scale:feature?.scale?feature.scale*factor*(rate?1:Math.sqrt(Math.max(.25,Math.min(1.5,(p.minutes||90)/90)))):0,policy:rate?{scaleFraction:.4,volumeFraction:.2,rateFloor:6}:undefined}).comparison;
     const state=comparison==='above'?'is-up':comparison==='below'?'is-down':comparison==='near'?'is-neutral':'';
     return `<div class="fanta-stat ${state}"><b>${formatPlayerStat(s.value,s.unit)}${s.unit||''}</b><span>${esc(s.label)}</span>${s.successes!=null&&s.attempts!=null?`<small>${s.successes} su ${s.attempts}</small>`:''}<small>${esc(s.referenceLabel||'riferimento')} ${formatPlayerStat(s.avg,s.unit)}${s.unit||''}</small>${comparison==='near'?'<small class="fanta-stat-neutral-note">In linea con il ruolo</small>':''}</div>`;
   }).join('');
@@ -229,11 +228,11 @@ export function renderPlayerSheet(p, { official } = {}) {
     </div>
     ${p.status === 'playing' ? '<p class="fanta-status is-live">Partita in corso: il voto può cambiare</p>' : ''}
     ${p.confidence?`<p class="fanta-note">Copertura dei dati ${p.confidence.value>=.7?'alta':p.confidence.value>=.4?'media':'bassa'}</p>`:''}<section><h3>Perché ${vote(p.vote)}?</h3><p class="fanta-why">${esc(p.why)}</p></section>
-    <section><h3>Come si arriva al voto</h3>
-      <ul class="fanta-calc">${row('Base', pts(p.breakdown.start, 0), 'is-start')}${lines}${p.rawVote!=null?row('Voto grezzo',formatPlayerStat(p.rawVote)) : ''}${row('Voto', vote(p.vote), 'is-total')}</ul></section>
-    <section><h3>Bonus e malus</h3>
-      <ul class="fanta-calc">${row('Voto', vote(p.vote), 'is-start')}${bonus || '<li class="is-empty"><span>Nessun bonus o malus</span><b>±0</b></li>'}${row('Fantavoto', vote(p.fantavote), 'is-total')}</ul></section>
-    <section><h3>I numeri della partita</h3><p class="fanta-note">Giallo: vicino al riferimento, senza penalità. Gli scarti oltre la fascia neutra pesano gradualmente.</p><div class="fanta-stats">${stats||'<p class="fanta-note">Statistiche non disponibili.</p>'}</div></section>
+    <details class="fanta-block"><summary>Come si arriva al voto</summary>
+      <ul class="fanta-calc">${row('Base', pts(p.breakdown.start, 0), 'is-start')}${lines}${p.rawVote!=null?row('Voto grezzo',formatPlayerStat(p.rawVote)) : ''}${row('Voto', vote(p.vote), 'is-total')}</ul></details>
+    <details class="fanta-block"><summary>Bonus e malus</summary>
+      <ul class="fanta-calc">${row('Voto', vote(p.vote), 'is-start')}${bonus || '<li class="is-empty"><span>Nessun bonus o malus</span><b>±0</b></li>'}${row('Fantavoto', vote(p.fantavote), 'is-total')}</ul></details>
+    <details class="fanta-block"><summary>I numeri della partita</summary><p class="fanta-note">Giallo: vicino al riferimento, senza penalità. Gli scarti oltre la fascia neutra pesano gradualmente.</p><div class="fanta-stats">${stats||'<p class="fanta-note">Statistiche non disponibili.</p>'}</div></details>
     <p class="fanta-note">${official ? 'Calcolo definitivo sui dati disponibili.' : 'Calcolo provvisorio: si aggiorna con i dati della partita.'}</p>
   </div>`;
 }

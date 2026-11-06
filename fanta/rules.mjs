@@ -1,4 +1,4 @@
-export const DEFAULT_RULES={version:'classic-v1',budget:500,roster:{P:3,D:8,C:8,A:6},minRaise:1,formations:['3-4-3','3-5-2','4-3-3','4-4-2','4-5-1','5-3-2','5-4-1'],benchMax:null,maxSubstitutions:null,substitutionsSameRoleOnly:true,minMinutes:15,bonus:{goals:3,assists:1,yellow:-.5,red:-1,ownGoals:-3,conceded:-1,penSaved:3,penMissed:-3},callSeconds:30,openSeconds:30,raiseSeconds:10,finalSeconds:3,finalStretch:5,lastRound:38};
+export const DEFAULT_RULES={version:'classic-v1',budget:500,roster:{P:3,D:8,C:8,A:6},minRaise:1,formations:['3-4-3','3-5-2','4-3-3','4-4-2','4-5-1','5-3-2','5-4-1'],benchMax:null,maxSubstitutions:null,substitutionsSameRoleOnly:true,minMinutes:15,bonus:{goals:3,assists:1,yellow:-.5,red:-1,ownGoals:-3,conceded:-1,penSaved:3,penMissed:-3},callSeconds:60,openSeconds:60,raiseSeconds:30,finalSeconds:3,finalStretch:3,lastRound:38};
 export const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 export const round2=n=>Math.round((n+Number.EPSILON)*100)/100;
 export function validateLineup(input,roster,rules=DEFAULT_RULES){
@@ -7,7 +7,7 @@ export function validateLineup(input,roster,rules=DEFAULT_RULES){
  const owned=new Map(roster.map(p=>[p.id,p]));if(ids.some(id=>!owned.has(id)))fail('Puoi schierare solo giocatori della tua rosa');
  const expected={P:1,...Object.fromEntries(['D','C','A'].map((r,i)=>[r,Number(input.formation.split('-')[i])]))};
  for(const role of ['P','D','C','A'])if(input.starters.filter(id=>owned.get(id).role===role).length!==expected[role])fail('I ruoli dei titolari non corrispondono al modulo');
- if(rules.benchMax!=null&&input.bench.length>rules.benchMax)fail('Troppi giocatori in panchina');
+ // Bench is optional: every subset of the remaining owned players is valid.
  return {formation:input.formation,starters:[...input.starters],bench:[...input.bench]};
 }
 export function bonuses(events={},role,rules=DEFAULT_RULES){return Object.entries(rules.bonus).filter(([k])=>k!=='conceded'||role==='P').flatMap(([k,n])=>Number(events[k])?[{key:k,label:({goals:'Gol',assists:'Assist',yellow:'Ammonizione',red:'Espulsione',ownGoals:'Autogol',conceded:'Gol subiti',penSaved:'Rigori parati',penMissed:'Rigori sbagliati'})[k],delta:round2(n*events[k])}]:[]);}

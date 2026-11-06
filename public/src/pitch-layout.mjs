@@ -19,3 +19,19 @@ export function normalizePitchLayout(team,{defaultOrder='left-to-right'}={}){
  const source=explicit?(team.layoutVersion===PITCH_LAYOUT_VERSION?team.layoutSource||'grid':'grid'):'source-order';
  return {...team,formation:rows.slice(1).map(r=>r.length).join('-'),players:rows.flatMap((row,r)=>row.map((p,c)=>({...p,grid:`${r+1}:${c+1}`}))),pitchOrder:'left-to-right',layoutVersion:PITCH_LAYOUT_VERSION,layoutSource:source,...(source==='source-order'?{layoutSourceOrder:team.layoutSourceOrder||team.pitchOrder||defaultOrder}:{})};
 }
+
+const playerKey=p=>String(p?.apiId??p?.id??'').replace(/^af:/,'');
+const teamKey=name=>String(name||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+// Restore coordinates from the cached official XI, never from the statistics-array order.
+export function recoverOfficialPitchLayout(lineups,sourceRows){
+ if(!lineups?.teams?.length||!Array.isArray(sourceRows)||!sourceRows.length)return lineups;
+ let recovered=0;
+ const teams=lineups.teams.map(t=>{
+  const pool=[...(t.players||[]),...(t.bench||[])],ids=new Set(pool.map(playerKey));
+  const row=sourceRows.find(r=>r.startXI?.length===11&&(teamKey(r.team?.name)===teamKey(t.team)&&teamKey(t.team)||r.startXI.filter(x=>ids.has(String(x.player?.id))).length>=9));
+  if(!row)return t;recovered++;
+  const convert=({player:p})=>{const previous=pool.find(x=>playerKey(x)===String(p.id));return {...previous,id:'af:'+p.id,apiId:p.id,name:previous?.name||p.name,jersey:p.number??previous?.jersey??'',position:p.pos||'',grid:p.grid||null,probability:100,probabilityKind:'official'};};
+  return normalizePitchLayout({...t,formation:row.formation,players:row.startXI.map(convert),bench:(row.substitutes||[]).map(x=>({...convert(x),probability:0})),pitchOrder:'right-to-left'});
+ });
+ return recovered?{...lineups,kind:recovered===teams.length?'official':lineups.kind,teams}:lineups;
+}

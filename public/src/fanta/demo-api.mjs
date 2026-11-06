@@ -7,7 +7,7 @@ import {TEAMS,MY_TEAM} from './squadre-finte.mjs';
 import {normalizeLogo} from './team-logo.mjs';
 const NOTIFY_DEFAULTS={lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true};
 // Same contracts as the real adapter. No fetch, storage, provider, email or push calls.
-export function createDemoFantaApi({state=()=> 'da-schierare',delay=60,user={id:'demo-user',username:'ospite',name:'Il Quasi di prova'},access='demo',onSlips=()=>{},onScenario=()=>{},fullRosters=true}={}){
+export function createDemoFantaApi({state=()=> 'da-schierare',delay=0,user={id:'demo-user',username:'ospite',name:'Il Quasi di prova'},access='demo',onSlips=()=>{},onScenario=()=>{},fullRosters=true}={}){
  const engine=createDemoAuctionEngine({fullRosters}),rooms=new Map();let selected=null,scenario=null,settings={notify:{...NOTIFY_DEFAULTS}};
  const room=id=>{if(!LEAGUES.some(l=>l.id===id))throw Error('Lega non disponibile');if(!rooms.has(id))rooms.set(id,{competitions:[{id:'demo-main',name:'Campionato del bar',kind:'league',status:'active',start_round:1}],lineups:new Map(),branding:{},audit:[],slipsEnabled:true,links:{}});return rooms.get(id);};
  const competition=id=>room(id).competitions.find(c=>c.id===selected)||room(id).competitions[0];
@@ -15,7 +15,7 @@ export function createDemoFantaApi({state=()=> 'da-schierare',delay=60,user={id:
  const saved=id=>new Map(room(id).lineups.has(CURRENT_ROUND)?[[MY_TEAM,room(id).lineups.get(CURRENT_ROUND)]]:[]);
  const admin=id=>{room(id);if(id==='fanta-ufficio')throw Error('Solo il presidente può farlo');};
  const decorate=(value,id)=>{const walk=o=>{if(!o||typeof o!=='object')return;if(o.id&&TEAMS[o.id]){o.branding=structuredClone(room(id).branding[o.id]||{});if(o.id===MY_TEAM)o.manager=user.name;}for(const v of Object.values(o))if(typeof v==='object')walk(v);};walk(value);return value;};
- const read=fn=>{try{const value=structuredClone(fn());return new Promise(resolve=>setTimeout(()=>resolve(value),delay));}catch(e){return Promise.reject(e);}};
+ const read=fn=>{try{const value=structuredClone(fn());return delay>0?new Promise(resolve=>setTimeout(()=>resolve(value),delay)):Promise.resolve(value);}catch(e){return Promise.reject(e);}};
  const write=fn=>{try{return Promise.resolve(structuredClone(fn()));}catch(e){return Promise.reject(e);}};
  const league=id=>{const l=leagueFor(id,phase(id),Date.now(),engine.auctionFor),r=room(id);return decorate({...l,league:{...l.league,maxMembers:8,slipsEnabled:r.slipsEnabled},members:l.members.map(m=>({...m,username:r.links[m.team.id]|| (m.isMe?user.username:null)})),competitions:r.competitions,competition:competition(id),sizeLocked:r.competitions.some(c=>c.status!=='draft'),readyToStart:true},id);};
  const teamData=(id,teamId=MY_TEAM)=>{

@@ -31,7 +31,7 @@ test('first verified equalizer or winner supports the technical vote by half a p
  }
 });
 test('goal support applies in defeats and live, including a late consolation goal',()=>{
- const live=scorer([['home',3,20]],{status:'1H',minutes:30}).input;assert.equal(support(live).delta,.5);assert.equal(support(live).provisional,true);assert.match(calculateVote(live).why,/provvisorio/);
+ const live=scorer([['home',3,20]],{status:'1H',minutes:30}).input;assert.equal(support(live).delta,.5);assert.equal(support(live).provisional,true);assert.match(calculateVote(live).why,/provvisori[ao]/);
  const lost=scorer([['away',8,20],['away',8,40],['home',3,80]]).input;assert.equal(support(lost).delta,.5);assert.ok(calculateVote(lost).vote>=6);assert.doesNotMatch(calculateVote(lost).why,/mezzo punto|voto base/);assert.match(calculateVote(lost).why,/senza evitare la sconfitta/);
  const changed=structuredClone(live);changed.fixture.score={home:1,away:2};assert.equal(support(changed).delta,.5);
 });
@@ -49,7 +49,7 @@ test('documented scorer statistics work without a timeline; cancelled, missed an
  const statistics=scorer([]).input;statistics.events.goals=2;assert.ok(support(statistics).delta>.5);
 });
 test('match reports explain the observed game without numerical stat lists or public experimental labels',()=>{
- const {input}=scorer([['home',3,25]]),a=calculateVote(input),b=calculateVote(input);assert.equal(a.why,b.why);assert.match(a.why,/vittoria in Lazio–Bologna \(1–0\)/);assert.doesNotMatch(a.why,/media del ruolo|86\.486|contrasti:|sperimentale|voto base|mezzo punto/);assert.equal(a.narrativeVersion,'quasi-match-report-v4');assert.equal(a.model,MODEL);
+ const {input}=scorer([['home',3,25]]),a=calculateVote(input),b=calculateVote(input);assert.equal(a.why,b.why);assert.match(a.why,/Lazio–Bologna 1–0/);assert.doesNotMatch(a.why,/media del ruolo|86\.486|contrasti:|sperimentale|voto base|mezzo punto/);assert.equal(a.narrativeVersion,'quasi-match-report-v5-short');assert.equal(a.model,MODEL);
  const live=scorer([['home',3,20],['away',8,25],['away',8,28]],{status:'1H',minutes:30}).input;assert.doesNotMatch(calculateVote(live).why,/non evita la sconfitta/);
 });
 test('new model installation merges once into an existing calendar without reviving old jobs or changing live leases',()=>{

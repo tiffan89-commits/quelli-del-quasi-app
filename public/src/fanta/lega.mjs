@@ -4,6 +4,7 @@ import { esc, pts, countdown, dayTime, OUTCOME, extremeClass, orderRounds } from
 import {teamLogo} from './team-logo.mjs';
 import {renderCompetitions} from './competitions-ui.mjs';
 import {renderAppInvite} from '../app-invite.mjs';
+import {renderLeagueInvite} from './league-invite.mjs';
 
 export const LEGA_GROUPS={classifica:['classifica','calendario','schedine'],lega:['asta','regole','partecipanti','competizioni']};
 export const groupOf=sub=>LEGA_GROUPS.classifica.includes(sub)?'classifica':'lega';
@@ -57,6 +58,7 @@ function calendar(l, ui) {
 
 function auctionSection(l, ui, now) {
   const a = l.auction, admin = l.isAdmin;
+  const singleNote=a.singlePlayer||a.singlePlayerAvailable?'<p class="fanta-note">Single player: le altre squadre sono guidate dal computer, con chiamate e rilanci automatici basati su valore, forma, infortuni e crediti.</p>':'';
   let card;
   if (a.status === 'running') {
     card = `<div class="fanta-lg-card is-live">
@@ -92,7 +94,7 @@ function auctionSection(l, ui, now) {
     </form>` : (ui.auctionError ? `<p class="fanta-note is-alert">${esc(ui.auctionError)}</p>` : '');
   const r = l.rules;
   return `<section class="fanta-block is-first">
-    ${card}
+    ${singleNote}${card}
     ${admin&&a.status!=='running'?'<div class="fanta-start-now"><button type="button" class="primary" data-lega-auction="now-manual">Apri subito · dal vivo</button><button type="button" class="secondary" data-lega-auction="now-live">Apri subito · online</button></div>':''}${form}
     <div class="dash-section-head fanta-lg-sub"><div><h2>Crediti e rose</h2><small>${r.budget} crediti a testa · rosa ${Object.entries(r.roster).map(([k, v]) => `${v} ${ROLE_PLURAL[k]}`).join(', ')}</small></div></div>
     <ul class="fanta-a-teams">${a.teams.map(t => `<li>
@@ -122,7 +124,7 @@ function rules(l) {
 }
 
 function members(l, ui) {
-  const pilot=l.league.kind==='pilot',n=pilot?l.members.filter(m=>m.human).length:l.members.length,max=l.league.maxMembers,full=n>=max;
+  const pilot=l.league.kind==='pilot',n=l.members.filter(m=>m.human).length,max=l.league.maxMembers,full=n>=max;
   return `<section class="fanta-block is-first">
     <div class="fanta-lg-count"><strong>${n}<small>/${max}</small></strong><span>${pilot?'allenatori':'partecipanti'}${full ? ' · lega al completo' : ` · ${max - n} posti liberi`}</span>
       <i class="fanta-lg-bar"><i style="width:${n / max * 100}%"></i></i></div>
@@ -130,17 +132,8 @@ function members(l, ui) {
       ${teamLogo(m.team)}
       <span class="fanta-p-name"><button type="button" class="fanta-team-name" data-team-roster="${esc(m.team.id)}">${esc(m.team.name)}</button>${m.isMe ? ' <em class="is-me">tu</em>' : ''}${m.isAdmin ? ' <em>admin</em>' : ''}<small>${esc(m.team.manager)} · dal ${esc(new Date(m.joinedAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }))}</small></span>
     </li>`).join('')}</ul>
-    ${l.isAdmin&&!pilot&&l.league.kind!=='random'?`<details class="fanta-block"><summary>Associa squadre e giocatori</summary><form class="fanta-lg-form" data-team-link-form><label>Squadra<select name="team">${l.members.map(m=>`<option value="${esc(m.team.id)}">${esc(m.team.name)}</option>`).join('')}</select></label><label>Username del giocatore<input name="username" required maxlength="60" autocapitalize="none" autocorrect="off" autocomplete="off"></label><button type="submit" class="primary">Associa account</button>${ui.linkError?`<p class="fanta-note is-alert" role="alert">${esc(ui.linkError)}</p>`:''}</form></details>`:''}
-    ${full ? `<p class="fanta-note">La lega è al completo: ${max} partecipanti.</p>` : !l.isAdmin || !l.league.inviteCode ? '' : `
-    <div class="fanta-lg-invite">
-      <span class="eyebrow">Invita un amico</span>
-      <code>${esc(l.league.inviteCode)}</code>
-      <div class="fanta-lg-invite-actions">
-        <button type="button" class="primary" data-lega-invite="share">Invia il link</button>
-        <button type="button" class="secondary" data-lega-invite="copy">${ui.copied ? 'Copiato ✓' : 'Copia'}</button>
-      </div>
-    <p class="fanta-note">Massimo ${max} partecipanti per lega.</p>
-    </div>`}
+    ${l.isAdmin&&!pilot&&l.league.kind!=='random'?`<details class="fanta-block"><summary>Associa squadre e giocatori</summary><form class="fanta-lg-form" data-team-link-form><label>Squadra<select name="team">${l.members.map(m=>`<option value="${esc(m.team.id)}">${esc(m.team.name)}</option>`).join('')}</select></label><label>Email o vecchio username del giocatore<input name="username" required maxlength="254" autocapitalize="none" autocorrect="off" autocomplete="off"></label><button type="submit" class="primary">Associa account</button>${ui.linkError?`<p class="fanta-note is-alert" role="alert">${esc(ui.linkError)}</p>`:''}</form></details>`:''}
+    ${full ? `<p class="fanta-note">La lega è al completo: ${max} partecipanti.</p>` : renderLeagueInvite(l.league,ui.invite,{copied:ui.copied})}
   </section>${renderAppInvite()}`;
 }
 

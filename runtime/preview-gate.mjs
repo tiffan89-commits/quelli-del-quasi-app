@@ -6,7 +6,8 @@ export function previewGate(req,url,{env=process.env,now=Date.now()}={}){
  const signature=value=>createHmac('sha256',key).update('preview:'+value).digest('base64url');
  if(url.pathname==='/_preview/access'&&req.method==='GET'&&equal(url.searchParams.get('key')||'',key)){
   const expires=String(now+24*3600000),cookie=expires+'.'+signature(expires);
-  return new Response(null,{status:303,headers:{Location:'/', 'Set-Cookie':'__Host-quasi-preview='+cookie+'; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400','Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
+  const next=url.searchParams.get('next'),target=['/prendi-squadra.html','/campagna.html','/entra-fanta.html'].includes(next)?next:'/';
+  return new Response(null,{status:303,headers:{Location:target, 'Set-Cookie':'__Host-quasi-preview='+cookie+'; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400','Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
  }
  const cookie=String(req.headers.cookie||'').split(';').map(v=>v.trim()).find(v=>v.startsWith('__Host-quasi-preview='))?.split('=').slice(1).join('=')||'',[expires,sig='']=cookie.split('.');
  if(/^\d{13}$/.test(expires||'')&&Number(expires)>now&&Number(expires)<=now+24*3600000&&equal(sig,signature(expires)))return null;

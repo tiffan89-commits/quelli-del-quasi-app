@@ -11,9 +11,12 @@ async function post(path,data){
 
 export function createPublicApi() {
   return {
-    // Il soprannome si sceglie dopo: all'inizio è uguale allo username (il server lo richiede).
-    register: ({ email, username, password,correctEmail=false }) => post('register', { ...(correctEmail?{correctEmail:true}:{}),name: username.trim(), email: email.trim(), username: username.trim().toLowerCase(), password }),
-    login: ({ username, password }) => post('login', { username: username.trim(), password }),
+    // Il server ricava il soprannome dalla parte prima della @. Nessuno username per i nuovi account.
+    register: ({ email, password,entry,correctEmail=false,previousEmail }) => post('register', { ...(correctEmail?{correctEmail:true,previousEmail}:{}),...(entry==='fanta'?{entry}:{}),email: email.trim(), password }),
+    login: ({ username, password }) => post('login', { identity: username.trim(), password }),
+    socialStart: data => post('social-start',data),
+    socialStatus:()=>requestJson('/api/social-status',{credentials:'same-origin',timeoutMs:15000}),
+    socialComplete:data=>post('social-complete',data),
     forgotPassword: identity => post('forgot-password', { identity: identity.trim() }),
     resendVerification: identity => post('resend-verification', { identity: identity.trim() }),
     activate: token => post('activate', { token }),
@@ -30,19 +33,20 @@ const fail = (msg, status = 400) => { throw Object.assign(Error(msg), { status }
 export function createFakePublicApi({ barDemo = false } = {}) {
   const users = [{ username: 'ilprofeta', email: 'profeta@esempio.it', password: 'quasiquasi10', verified: true }];
   return {
-    async register({ email, username, password }) {
+    async register({ email, password,correctEmail=false,previousEmail }) {
       await wait();
-      const u = username.trim().toLowerCase(), e = email.trim().toLowerCase();
-      if (users.some(x => x.username === u || x.email === e)) fail('Username o indirizzo email non disponibile. Se sei già registrato, accedi o recupera l\'account.');
-      users.push({ username: u, email: e, password, verified: false });
+      const e = email.trim().toLowerCase();
+      if (users.some(x => x.email === e)) fail('Indirizzo email non disponibile. Se sei già registrato, accedi o recupera l\'account.');
+      if(correctEmail){const existing=users.find(u=>u.email===String(previousEmail||'').trim().toLowerCase()&&!u.verified&&u.password===password);if(!existing)fail('Conferma la password appena scelta.');existing.email=e;return {pendingVerification:true};}
+      users.push({ name:e.split('@')[0].slice(0,60),email:e,password,verified:false });
       return { pendingVerification: true, message: `Ti abbiamo scritto a ${e}` };
     },
     async login({ username, password }) {
       await wait();
       const id = username.trim().toLowerCase(), u = users.find(x => x.username === id || x.email === id);
-      if (!u || u.password !== password) fail('Username o password non corretti', 401);
+      if (!u || u.password !== password) fail('Email o password non corretti', 401);
       if (!u.verified) fail('Devi ancora confermare l\'email: apri il link che ti abbiamo mandato.', 403);
-      return { ok: true, user: { username: u.username } };
+      return { ok: true, user: { name:u.name, ...(u.username?{username:u.username}:{}) } };
     },
     async forgotPassword() { await wait(); return { message: 'Se l\'account esiste, ti abbiamo mandato un link valido 30 minuti.' }; },
     async resendVerification() { await wait(); return { message: 'Se l\'account è da confermare, ti abbiamo mandato un nuovo link valido 24 ore.' }; },

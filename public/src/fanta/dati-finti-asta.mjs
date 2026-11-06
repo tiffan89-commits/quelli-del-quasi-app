@@ -4,23 +4,24 @@
 //
 // Regole di base (decise da Francesco):
 // - ordine di chiamata casuale, deciso dall'app all'inizio; a turno OGNI squadra deve chiamare lei un giocatore
-//   (il sistema non sceglie mai al posto suo); ha 30 secondi, altrimenti salta il turno;
-// - il giocatore chiamato parte con 30 secondi; ogni rilancio riporta il timer a 10;
-// - gli ultimi 3 secondi "durano" 5 secondi veri, per dare tempo all'ultimo rilancio;
+//   (il sistema non sceglie mai al posto suo); ha 60 secondi, altrimenti salta il turno;
+// - il giocatore chiamato parte con 60 secondi; ogni rilancio riporta il timer a 30;
+// - gli ultimi 3 secondi hanno durata reale, identica per tutti;
 // - si può passare: chi passa non può più rientrare su quel giocatore; passo automatico se il ruolo è già
 //   completo o se i crediti non bastano; se passano tutti tranne chi è in testa, il giocatore è suo subito.
 import { TEAMS, MY_TEAM, team } from './squadre-finte.mjs';
 import { rosterOf, seasonOf } from './dati-finti-giornata.mjs';
+import {demoMarketPlayers} from './demo-football.mjs';
 
 export const AUCTION_RULES = {
   budget: 500, roster: { P: 3, D: 8, C: 8, A: 6 }, minRaise: 1,
-  callSeconds: 30,      // tempo per chiamare
-  openSeconds: 30,      // timer del giocatore appena chiamato
-  raiseSeconds: 10,     // timer dopo ogni rilancio
+  callSeconds: 60,      // tempo per chiamare
+  openSeconds: 60,      // timer del giocatore appena chiamato
+  raiseSeconds: 30,     // timer dopo ogni rilancio
   finalSeconds: 3,      // ultimi secondi mostrati…
-  finalStretch: 5,      // …che durano davvero 5 secondi
+  finalStretch: 3,      // …con durata reale identica
 };
-// Durata vera di un timer che mostra `s` secondi (gli ultimi 3 rallentati).
+// Durata vera di un timer che mostra `s` secondi (senza rallentamenti).
 export const realMs = (s, r = AUCTION_RULES) => (s - r.finalSeconds + r.finalStretch) * 1000;
 
 const PREBOUGHT = { P: 1, D: 3, C: 3, A: 2 }; // l'asta è già a metà: ogni squadra ha 9 giocatori
@@ -39,7 +40,7 @@ function buildListone() {
   return Object.keys(TEAMS).flatMap(id => rosterOf(id)).map(p => {
     const top = { P: 26, D: 32, C: 48, A: 95 }[p.role], u = (hashNum('valore:' + p.id) % 1000) / 1000;
     const s = seasonOf(p);
-    return { id: p.id, name: p.name, role: p.role, club: p.club, value: 1 + Math.round(top * u * u), fm: s.avgFanta, played: s.played, status: s.status };
+    return { ...p, value: 1 + Math.round(top * u * u), fm: s.avgFanta, played: s.played, status: s.status };
   });
 }
 
@@ -55,7 +56,7 @@ function init(now) {
   const order = Object.keys(TEAMS);
   for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } // ordine casuale
   // phase: scheduled (programmata) → running (sala aperta) → ended. Nell'anteprima parte già aperta.
-  A = { phase: 'running', type: 'riparazione', startsAt: new Date(now - 40 * 60000).toISOString(), mode: 'live', table: null, order, players:buildListone().concat(fullRosters?Array.from({length:40},(_,i)=>({id:'mercato-'+i,name:['A.','G.','M.','V.'][i%4]+' '+['Venturi','Rosati','Ferrante','Cortesi','Della Torre','Cerri','Boschi','Valenti','Mancuso','Sarti'][Math.floor(i/4)],role:'PDCA'[i%4],club:['Inter','Napoli','Milan','Lazio'][i%4],value:5+i,fm:6.2,played:10})):[]), callerIdx: 0, lot: null, pauseUntil: now + 2500, lastSale: null, log: [], version: 1, lastTick: now, callSince: null, skipped: null };
+  A = { phase: 'running', type: 'riparazione', startsAt: new Date(now - 40 * 60000).toISOString(), mode: 'live', table: null, order, players:buildListone().concat(fullRosters?demoMarketPlayers().map((p,i)=>({...p,value:5+i,fm:seasonOf(p).avgFanta,played:seasonOf(p).played})):[]), callerIdx: 0, lot: null, pauseUntil: now + 2500, lastSale: null, log: [], version: 1, lastTick: now, callSince: null, skipped: null };
   for (const t of order) {
     for (const [role, n] of Object.entries(fullRosters?AUCTION_RULES.roster:PREBOUGHT)) {
       const mine = A.players.filter(p => p.role === role && p.id.startsWith(t + '-') && !p.soldTo).slice(0, n);

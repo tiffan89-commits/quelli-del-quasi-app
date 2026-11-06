@@ -661,6 +661,7 @@ button.fanta-cal-match:hover{background:#ffffff08}
 .fanta-lg-invite code{font:700 26px 'Barlow Condensed',sans-serif;letter-spacing:.08em;color:var(--lime)}
 .fanta-lg-invite-actions{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;width:100%}
 .fanta-lg-invite-actions button{min-height:48px;border-radius:12px}
+.fanta-home-invite p{color:var(--muted);font-size:13px;line-height:1.5}.fanta-home-invite small{display:block;margin-top:10px;color:var(--muted)}.fanta-home-invite .fanta-lg-invite-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.fanta-home-invite .whatsapp-invite{grid-column:1/-1;justify-content:center}.fanta-home-invite .secondary{font-size:12px;padding:10px}
 .fanta-auction-card.is-soon{background:linear-gradient(135deg,#d5c18d,#a8c47a)}
 
 /* ===== Demo ===== */

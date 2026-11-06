@@ -259,7 +259,7 @@ function lastSaleBanner(a) {
 }
 
 function renderManual(a, ui, players) {
-  return `<div class="fanta-asta">
+  return `<div class="fanta-asta">${a.singlePlayer||a.singlePlayerAvailable?'<p class="fanta-note is-info">Single player · Le squadre del computer simulano chiamate e rilanci in base a valore, forma, infortuni, crediti e posti disponibili.</p>':''}
     <header class="fanta-sq-head"><span class="eyebrow">Asta · dal vivo · banditore ${esc(a.auctioneer)}</span><h1>Asta dal vivo</h1>
       <p>Nessun timer: si chiama e si rilancia a voce, tutti insieme. ${a.isAdmin ? 'Tu sei il banditore: registri ogni acquisto.' : 'Il banditore registra ogni acquisto e lo vedi qui in diretta.'}</p></header>
     ${modeSwitch(a)}
@@ -277,8 +277,9 @@ export function renderAsta(a, ui = {}, players = null) {
   if (!a) return '<div class="fanta-loading" role="status">Entriamo nella sala d\'asta…</div>';
   if (a.status === 'none' || a.status === 'scheduled' || a.status === 'ended') {
     const when = new Date(a.startsAt).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-    return `<div class="fanta-asta">
+    return `<div class="fanta-asta">${a.singlePlayer||a.singlePlayerAvailable?'<p class="fanta-note is-info">Single player · Le squadre del computer simulano chiamate e rilanci in base a valore, forma, infortuni, crediti e posti disponibili.</p>':''}
       <header class="fanta-sq-head"><span class="eyebrow">Asta</span><h1>Sala d'asta</h1></header>
+      ${a.status==='ended'&&(a.competition?.status==='active'||a.competitionActivation?.status==='active')?'<section class="fanta-block"><h2>Si scende in campo.</h2><p>La competizione è avviata. Puoi preparare la tua formazione.</p><button type="button" class="primary" data-go="formazione">Schiera la formazione →</button></section>':''}
       <section class="fanta-a-lot is-idle"><span class="eyebrow">${a.status === 'scheduled' ? 'Non ancora aperta' : a.status==='none'?'Sala pronta':'Asta chiusa'}</span>
         <h2>${a.status === 'scheduled' ? `Si apre ${esc(when)}` : a.status==='none'?'Il banditore sta arrivando.':'L\'asta è finita'}</h2>
         <p>${a.status === 'scheduled' ? 'La sala si apre all\'orario stabilito dall\'admin.' : a.status==='none'?'Il presidente può aprire subito la sala o programmare un’asta.':a.teams.every(t=>t.slotsLeft===0)?'Tutte le rose sono complete: non ci sono posti disponibili per nuovi acquisti.':'Rose e crediti restano qui sotto.'}</p>
@@ -287,7 +288,7 @@ export function renderAsta(a, ui = {}, players = null) {
     </div>`;
   }
   if (a.mode === 'manual') return renderManual(a, ui, players);
-  return `<div class="fanta-asta">
+  return `<div class="fanta-asta">${a.singlePlayer||a.singlePlayerAvailable?'<p class="fanta-note is-info">Single player · Le squadre del computer simulano chiamate e rilanci in base a valore, forma, infortuni, crediti e posti disponibili.</p>':''}
     <header class="fanta-sq-head"><span class="eyebrow">Asta · a chiamata · live</span><h1>Sala d'asta</h1>
       <p>Chi è chiamato parte con ${a.rules.openSeconds} secondi, ogni rilancio riporta il timer a ${a.rules.raiseSeconds}. Allo scadere vince l'ultima offerta.</p></header>
     ${modeSwitch(a)}
