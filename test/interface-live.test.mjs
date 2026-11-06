@@ -1,4 +1,8 @@
+import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
+import {leagueActions} from '../public/src/league-actions.mjs';
 import {pointTerms} from '../public/scoring.mjs';
+import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
+import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
@@ -8,7 +12,7 @@ import {randomLeagueControls,bindRandomLeagues} from '../public/src/random-leagu
 import {fantasyAccount,fantasyGroup,fantasyWalletKey} from '../public/src/fantasy-accounts.mjs';
 import * as v2Tabs from '../public/src/v2/tabs.mjs';
 import {renderLeagueChip,isLeagueAdmin} from '../public/src/v2/league-switcher.mjs';
-import {renderSlipV2} from '../public/src/v2/slip-v2.mjs';
+import {renderSlipV2,patchSlipV2} from '../public/src/v2/slip-v2.mjs';
 import {barModeSwitch} from '../public/src/fanta-mode.mjs';
 import {inlineResultView,patchSlipResults} from '../public/src/slip-results.mjs';
 import { LEAGUE_COLORS, LEAGUE_EMBLEMS } from "../public/src/league-theme.mjs";
@@ -93,6 +97,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   for(const match of activeRound.matches){match.kickoff=activeRound.kickoff;match.odds={1:2,X:3,2:4};}
   let html = "",workerMessage,barTab;const publicEvents=new Map();let blockRequests=false,requestCount=0,fantaEntries=0;const pendingRequests=[];
   const app = {
+      querySelector(){return null;},
       insertAdjacentHTML(position,value) { html=value+html; },
       set innerHTML(v) {
         html = v;
@@ -107,7 +112,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
-    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,
+    ...v2Tabs, leagueActions,barHomeInvite,settingsLogout,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },
@@ -158,7 +163,7 @@ test("live results render inside the slip, calendar remains clickable, standings
       getElementById(id){return this.querySelector("#"+id);},
       addEventListener(){},
       body:{dataset:{},classList:{add(){},remove(){}}},
-      documentElement: { style: { setProperty() {} } },
+      documentElement: { style: { setProperty() {},removeProperty() {} } },
       querySelector(q) {
         if(q==='.auth')return null; // This lightweight harness models IDs; the mobile browser verifies the real back button.
         if (q === "#app") return app;
@@ -196,9 +201,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   try{
     for(const target of ['profilo','classifiche','calendario','quasi','storico','regolamento','admin','lega','schedina']){
       vm.runInContext('navigatePage('+JSON.stringify(target)+')',ctx);
-      assert.equal(vm.runInContext('page',ctx),target);
+      assert.equal(vm.runInContext('page',ctx),target==='profilo'?'admin':target);
       assert.match(html,/aria-current="page"/);
-      if(target==='profilo')assert.match(html,/IL TUO PROFILO/);
+      if(target==='profilo')assert.match(html,/Impostazioni/);
       if(target==='lega')assert.match(html,/class="dash-hero"/);
     }
     assert.equal(requestCount,beforeNavigation,'menus must render synchronously without requesting state, even when the server cannot respond');
@@ -214,7 +219,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html, /id="open-chat"/);
   const nav = html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1];
   assert.equal(nav.includes("Movimenti"), false);
-  assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.match(html,/class="ux-profile" data-bar-page="profilo"/);
+  assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.match(html,/aria-label="Apri impostazioni"/);assert.doesNotMatch(html,/class="ux-profile"/);
   assert.equal(nav.includes("Regolamento"), false);
   assert.equal(nav.includes('data-page="altri"'), false);
   assert.match(html, /La mia schedina/);
@@ -238,9 +243,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /league-regulation|Regolamento della lega|Movimenti e giornate archiviate|Entra o crea una nuova lega|class="card my-league"/);
   assert.match(html, /class="dash-hero"/);
   assert.match(html, /id="day-objectives"/);
-  assert.match(html, /id="league-portfolio"/);
-  assert.match(html, /Il Fantacalcio del Quasi/);
-  assert.ok(html.indexOf('id="day-objectives"')<html.indexOf('id="league-portfolio"'));
+  assert.match(html, /class="dash-summary"/);
+  assert.doesNotMatch(html, /Il Fantacalcio del Quasi|Scegli la tua squadra/);
+  assert.doesNotMatch(html,/id="portfolio-lazy"/);
   vm.runInContext("page='regolamento';render()", ctx);
   assert.match(html, /IL REGOLAMENTO/);
   vm.runInContext("page='storico';render()", ctx);
@@ -252,7 +257,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html, /Il fantacalcio che si gioca al bar/);
   assert.match(html, /Cosa ci troverai/);
   vm.runInContext("page='lega';render()", ctx);
-  assert.doesNotMatch(html, /aria-label="Invita con WhatsApp"/);
+  assert.match(html, /data-home-league-invite/);
   vm.runInContext("page='classifiche';render()",ctx);
   assert.doesNotMatch(html,/data-v2-lega="admin"/);
   vm.runInContext("page='lega';render()",ctx);
@@ -269,7 +274,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /Le leghe di cui fai parte|Associa Chrome/);
   assert.doesNotMatch(html, /chat-context-button|id="switch"/);
   vm.runInContext("page='classifiche';rankingScope='seriea';render()", ctx);
-  assert.match(html,/id="ranking-metric"/);assert.doesNotMatch(html,/Vittorie casa/);
+  assert.match(html,/data-ranking-metric="points"/);assert.doesNotMatch(html,/Vittorie casa/);
   vm.runInContext("page='schedina';sourceScope='seriea';slipScope='standings';render()",ctx);
   assert.match(html,/Classifica Serie A/);assert.match(html,/Vittorie casa/);
   vm.runInContext("slipScope='mine'",ctx);
@@ -316,12 +321,19 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html,/quasi-roster-grid/);
   assert.doesNotMatch(html, /Collega competizione/);
   vm.runInContext("page='classifiche';render()", ctx);
-  assert.match(html, /id="ranking-metric"/);assert.doesNotMatch(html,/data-ranking=/);
+  assert.match(html, /data-ranking-metric="points"/);assert.doesNotMatch(html,/data-ranking=/);
+  vm.runInContext("page='schedina';showLiveStatus({state:'ready',at:Date.now()});showLiveStatus({state:'error'})",ctx);
+  assert.equal(nodes.get('#live-channel-status').hidden,true,'first channel failure must not alarm the user');
+  vm.runInContext("showLiveStatus({state:'error'});showLiveStatus({state:'error'})",ctx);
+  assert.equal(nodes.get('#live-channel-status').hidden,false);
+  assert.match(nodes.get('#live-channel-status').textContent,/Aggiornamento in pausa/);
+  vm.runInContext("page='lega';showLiveStatus(liveStatus)",ctx);
+  assert.equal(nodes.get('#live-channel-status').hidden,true,'connection notice is only relevant to results');
   vm.runInContext("state.leagues[0].admin='another-president';page='lega';render()",ctx);
-  assert.doesNotMatch(html,/Invita nella tua lega|Invita con WhatsApp|id="copy"/);
+  assert.match(html,/data-home-league-invite/);assert.doesNotMatch(html,/id="copy"/);
   assert.doesNotMatch(html,/data-page="admin"/);
   vm.runInContext("page='admin';render()",ctx);
-  assert.equal(vm.runInContext('page',ctx),'lega');
+  assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita nella tua lega/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);
   vm.runInContext("page='profilo';render()",ctx);
   assert.ok(html.indexOf('inline-support')<html.indexOf('profile-logout'));
   assert.ok(html.indexOf('inline-support')>html.indexOf('profile-reminder-settings'));

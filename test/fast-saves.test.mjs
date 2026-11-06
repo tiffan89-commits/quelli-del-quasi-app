@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {fixtureDb} from './fanta/helpers.mjs';import {saveBarSlip} from '../lib/bar-slip-save.mjs';
 import {emptyState} from '../lib/db.mjs';import {newLeague,session} from '../lib/game.mjs';
 import {identifySlipSave} from '../public/src/save-guard.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {createFantaApi} from '../fanta/api.mjs';
+import {applySlipReceipt} from '../public/src/slip-receipt.mjs';
 test('slip retry keys are stable for identical drafts and differ across users or changes',()=>{
  const input={league:'l',round:'r',picks:{b:'X',a:'1'},stake:10,baseSavedAt:null};let n=0;
  const options={user:'u',makeId:()=>String(++n).padStart(20,'0'),now:1};
@@ -47,5 +48,18 @@ test('native Fanta slip keeps per-league wallets isolated and migrates only the 
   const saved=(await f.db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload,member=saved.leagues[0].members[0];
   assert.equal(member.credits,500);assert.equal(member.fantasyWallets['fanta-lucas-a'].credits,490);assert.equal(member.fantasyWallets['other-league'].credits,550);assert.equal(member.fantasyWalletMigration.version,2);
   assert.deepEqual(saved.leagues[0].members[1],l.members[1]);assert.deepEqual(saved.rounds[1],other);assert.equal(result.receipt.fantasyRanking.groups.length,2);
+ }finally{await f.close();}
+});
+
+test('one-credit save immediately acknowledges the reward and objective, including a retry without another DB write',async()=>{
+ const f=await fixtureDb();try{
+  const s=emptyState(),u={id:'u1',emailVerified:true};s.users.push(u);const l=newLeague(s,u,'Premio test'),token=session(s,u.id),r={id:'one-credit',league:l.id,source:'seriea',number:11,title:'Giornata 11',kickoff:'2099-01-01T15:00Z',rules:l.rules,slips:[],matches:[{id:'m',odds:{1:2,X:3,2:4}}]};s.rounds.push(r);
+  await f.db.query('UPDATE fanta_state SET payload=$1 WHERE id=1',[JSON.stringify(s)]);
+  const input={league:l.id,round:r.id,picks:{m:'1'},stake:1,baseSavedAt:null},first=await saveBarSlip(token,input,{connect:f.connect}),before=(await f.db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload;
+  assert.ok(before.playerRewards.u1.some(a=>a.achievement==='minimum'&&a.ids.includes('starter-coin')));
+  const client={user:{id:'u1',rewards:[]},leagues:[{id:l.id,members:[{uid:'u1',credits:500}],rounds:[structuredClone(r)],progression:{objectives:[{round:'other',goals:[]}]}}]};
+  const retry=await saveBarSlip(token,input,{connect:f.connect});assert.ok(retry.replayed);assert.deepEqual((await f.db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload,before);
+  for(const result of [first,retry,retry])assert.ok(applySlipReceipt(client,result));
+  assert.equal(client.user.rewards.filter(a=>a.achievement==='minimum').length,1);assert.equal(client.leagues[0].progression.objectives.find(g=>g.round===r.id).goals.find(g=>g.id==='minimum').earned,true);assert.equal(client.leagues[0].progression.objectives.length,2);
  }finally{await f.close();}
 });

@@ -9,5 +9,10 @@ export function applySlipReceipt(state,result){
  if(Array.isArray(receipt.ledger))league.ledger=[...new Map([...structuredClone(receipt.ledger),...(league.ledger||[])].map(x=>[x.id,x])).values()].sort((a,b)=>Date.parse(b.created||0)-Date.parse(a.created||0));
  if(receipt.fantasyRanking)league.fantasyRanking=structuredClone(receipt.fantasyRanking);
  if(receipt.user){if(receipt.user.avatar)state.user.avatar=structuredClone(receipt.user.avatar);if(Array.isArray(receipt.user.rewards))state.user.rewards=structuredClone(receipt.user.rewards);}
+ if(receipt.objectives?.round===round.id&&Array.isArray(receipt.objectives.goals)){
+  league.progression??={};
+  league.progression.objectives=[...(league.progression.objectives||[]).filter(x=>x.round!==round.id),structuredClone(receipt.objectives)];
+ }
+ if(Array.isArray(receipt.earnedAwards))state.user.rewards=[...new Map([...(state.user.rewards||[]),...structuredClone(receipt.earnedAwards)].map(a=>[a.objectiveKey||a.round,a])).values()];
  return true;
 }

@@ -1,3 +1,4 @@
+import {objectiveReceipt} from '../../lib/day-objectives.mjs';
 import {enrichStoredMatch} from '../../lib/lineup-presence.mjs';
 import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
 import {createLeaguePair,joinLinkedTeam} from '../../fanta/league-creation.mjs';
@@ -631,7 +632,7 @@ export function createApi({
           if(!c||(await c.query(`SELECT 1 FROM fanta.leagues fl JOIN fanta.bar_links b ON b.fanta_league_id=fl.id WHERE fl.id=$1 AND b.bar_league_id=$2 AND b.active AND fl.source_key IS NULL AND fl.slips_enabled AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=fl.id AND t.user_id=$3)`,[r.nativeFanta.leagueId,l.id,u.id])).rows.length!==1)fail('Devi allenare una squadra di questa lega Fanta',403);
         }placeSlip(s,l,r,u,p);syncRoundRewards(s);
           const member=l.members.find(m=>m.uid===u.id);
-          return {data:{ok:true,receipt:{uid:u.id,league:l.id,round:r.id,slip:r.slips.find(x=>x.uid===u.id),user:{avatar:normalizeAvatar(u.avatar,ownedRewardIds(s,u.id)),rewards:s.playerRewards?.[u.id]||[]},fantasyRanking:fantasyRanking(s,l),member:{...accountTotals(s,l,member),credits:member.credits,initial:member.initial,points:member.points,...(member.fantasyWallets?{fantasyWallets:member.fantasyWallets}:{}),...(member.fantasyWallet?{fantasyWallet:member.fantasyWallet}:{})},ledger:s.ledger.filter(x=>x.league===l.id&&x.uid===u.id).slice(-100).reverse()}}};
+          return {data:{ok:true,receipt:{...objectiveReceipt(s,l,r,u.id),uid:u.id,league:l.id,round:r.id,slip:r.slips.find(x=>x.uid===u.id),user:{avatar:normalizeAvatar(u.avatar,ownedRewardIds(s,u.id)),rewards:s.playerRewards?.[u.id]||[]},fantasyRanking:fantasyRanking(s,l),member:{...accountTotals(s,l,member),credits:member.credits,initial:member.initial,points:member.points,...(member.fantasyWallets?{fantasyWallets:member.fantasyWallets}:{}),...(member.fantasyWallet?{fantasyWallet:member.fantasyWallet}:{})},ledger:s.ledger.filter(x=>x.league===l.id&&x.uid===u.id).slice(-100).reverse()}}};
         }
         else {
           if (l.admin !== u.id) fail("Serve il presidente di lega", 403);

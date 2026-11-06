@@ -1,3 +1,18 @@
+# 0.29.46 — 2026-11-06
+
+- Ritocchi finali: «+» integrato nel nome della lega, logout esterno agli accordion in Impostazioni, inviti per tutti nella home Bar fino a lega piena e rimozione della promozione Fanta. Corretto il riscontro immediato degli obiettivi dopo il salvataggio: premi già persistenti, spunta e guardaroba aggiornati dalla ricevuta compatta. Formazioni ufficiali API-FOOTBALL a T−30 con retry server ogni 5 minuti solo finché incomplete; cache definitiva nel DB.
+
+- Ritocco della prova: Impostazioni accessibili a tutti con ingranaggio cartoon, account e assistenza integrati e comandi riservati al presidente nascosti ai membri. Premi trasferiti in Quasi, inizialmente chiusi; inviti nella lega disponibili a tutti i membri. Selettore Bar/Fanta della stessa larghezza, «+» separato, nessuna icona Profilo e voce Lega con icona gruppo. «Entra in una lega» e «Crea lega · Bar + Fanta» usano gli stessi moduli nei due prodotti. Barra verificata anche a 320 px con entrambi i saldi.
+- Correzione nella prova: esiti, importo e mercati della schedina aggiornano solo i controlli, conservando gli stemmi e le testate partita già caricati. Verificati Bar/Fanta, bozze e salvataggio protetto; nessun aggiornamento del sito ufficiale.
+- Prova separata su pre.quellidelquasi.com con account sintetici, password privata, dati RAM, noindex e nessun invio o worker verso utenti reali. Sito ufficiale invariato.
+- Blocco 7: nomi e titoli dei Quasi sotto le miniature, badge partecipanti compatti, nomi squadra senza spezzare parole, nessuna etichetta vuota delle ultime partite, campo Fanta allineato e font coerenti. Barra desktop da 48 px e dashboard su due colonne. Avviso connessione solo nei risultati dopo più errori, senza cambiare aggiornamenti o frequenze.
+- Blocco 6: navigazione Bar/Fanta a cinque voci coerenti, pagina Lega informativa separata da Oggi, selettore superiore dedicato alle leghe. Nel ritocco finale Quasi riunisce galleria e premi; l'account passa alle Impostazioni.
+- Blocco 5: titoli più compatti, testata Oggi mobile di 120 px e riepilogo unificato; mini-grafico in Oggi e grafico completo richiudibile in Classifica. Classifica con righe da 45 px, dettagli crediti espandibili e pulsanti Punti/Crediti. Sezioni schedina su una sola riga scorrevole.
+- Blocco 4: strumenti di gestione Fanta riuniti nel pannello del presidente, pagine Lega informative per tutti, squadre computer riconoscibili e percorso di attivazione Fanta dal Bar. Nessuna modifica alle API o alle regole.
+- Blocco 3: pannello Presidente con quattro gruppi e riepiloghi, accesso diretto riservato agli admin, Da fare in Oggi, invito unico, membri da 49 px con ricerca e menu rimozione, palette compatta. Formulari e operazioni di gioco invariati.
+- Blocco 2: barra schedina compatta di 64 px, importo modificabile in un pannello richiudibile e chat nascosta mentre la barra è attiva. Conservati bozza, limiti, stato e comportamento del salvataggio; controlli privacy ripristinati anche tornando alla login.
+- Blocco 1: footer unico per Bar/Fanta, controlli privacy e statistiche senza duplicazioni, un solo margine finale calcolato sulle barre effettivamente fisse. Misure prima/dopo su 390×844 e 1280×800 nel rapporto UX.
+
 # 0.29.45 — 2026-11-06
 
 - Studio formazione con campo più ampio e una sola fascia orizzontale: tutti i non titolari sono riserve, senza duplicare la panchina. Dopo la scelta degli undici compaiono i comandi sinistra/destra per ordinare gli ingressi. Ordine già salvato mantenuto, cambio e trascinamento per ruolo, ripristino e blocco dei doppi salvataggi verificati.

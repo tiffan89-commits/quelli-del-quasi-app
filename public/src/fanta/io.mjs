@@ -14,17 +14,20 @@ const NOTIFY = [
 export function renderIo(me, leagues, activeLeagueId, ui = {}, demo = false) {
   if (!me) return '<div class="fanta-loading" role="status">Carichiamo il tuo profilo…</div>';
   const n = me.settings?.notify || {};
-  return `<div class="fanta-io">
-    <header class="fanta-sq-head"><span class="eyebrow">Il tuo profilo</span><h1>${esc(me.user.name)}</h1>${me.user.username?`<p>@${esc(me.user.username)}</p>`:""}</header>
-    ${demo ? `<section class="fanta-io-demo"><span class="eyebrow">Modalità demo</span><h2>Stai provando il Fanta</h2>
-      <p>Calciatori e club di Serie A sono reali; squadre fantasy e aste sono simulate. Le tue modifiche restano durante la prova; ricaricando la pagina si riparte.</p>
-      <button type="button" class="secondary" data-action="demo-info">Come funziona la demo</button></section>` : ''}
-    <section class="fanta-block is-first"><div class="dash-section-head"><div><h2>Notifiche del Fanta</h2><small>${ui.saved ? 'Salvate ✓' : 'Scegli quali avvisi ricevere'}</small></div></div>
+  const notifications=`    <section class="fanta-block is-first"><div class="dash-section-head"><div><h2>Notifiche del Fanta</h2><small>${ui.saved ? 'Salvate ✓' : 'Scegli quali avvisi ricevere'}</small></div></div>
       <ul class="fanta-io-toggles">${NOTIFY.filter(([k])=>!ui.pilot||k!=='auction').map(([k, title, sub]) => `<li><label>
         <span><b>${title}</b><small>${sub}</small></span>
         <input type="checkbox" class="fanta-switch" data-notify="${k}"${n[k] ? ' checked' : ''}>
       </label></li>`).join('')}</ul>
     </section>
+`;
+  if(ui.settingsOnly)return notifications;
+  return `<div class="fanta-io">
+    <header class="fanta-sq-head"><span class="eyebrow">Il tuo profilo</span><h1>${esc(me.user.name)}</h1>${me.user.username?`<p>@${esc(me.user.username)}</p>`:""}</header>
+    ${demo ? `<section class="fanta-io-demo"><span class="eyebrow">Modalità demo</span><h2>Stai provando il Fanta</h2>
+      <p>Calciatori e club di Serie A sono reali; squadre fantasy e aste sono simulate. Le tue modifiche restano durante la prova; ricaricando la pagina si riparte.</p>
+      <button type="button" class="secondary" data-action="demo-info">Come funziona la demo</button></section>` : ''}
+    ${notifications}
     <section class="fanta-block"><div class="dash-section-head"><div><h2>Le tue leghe Fanta</h2></div></div>
       <ul class="fanta-io-leagues">${leagues.map(l => `<li><button type="button" class="v2-league-row${l.id === activeLeagueId ? ' is-active' : ''}" data-league="${esc(l.id)}">
         <span class="v2-league-dot lg" style="background:${esc(l.accent)}"></span>

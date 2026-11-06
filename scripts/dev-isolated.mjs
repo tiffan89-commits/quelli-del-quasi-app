@@ -11,10 +11,13 @@ import {REWARD_CATALOG} from '../public/src/reward-catalog.mjs';
 import {createHash} from 'node:crypto';
 import {createApi} from '../netlify/functions/api.mjs';
 import {decodeMail} from '../lib/mail.mjs';
+import {uxViewport} from './ux-viewport.mjs';
 process.env.ENABLE_DEMO='true';process.env.CONTEXT='dev';
 const root=process.env.PREVIEW_ASSET_ROOT?path.resolve(process.env.PREVIEW_ASSET_ROOT):fileURLToPath(new URL('../public/',import.meta.url));
+const publicPreview=process.env.PREVIEW_PUBLIC==='1',previewPassword=process.env.PREVIEW_PASSWORD||'QuasiLocale26!';
+if(publicPreview&&(previewPassword.length<20||process.env.PREVIEW_AUTO_AUTH==='1'||process.env.PREVIEW_MAILBOX==='1'))throw Error('Public preview requires private credentials and no automatic authentication/mailbox');
 const state=emptyState();ensureCalendar(state);
-const u={id:'v2-local-player',username:'anteprima',name:'Il Quasi di prova',email:'anteprima@example.test',emailVerified:true,salt:'local-v2-salt',password:hash('QuasiLocale26!','local-v2-salt')};
+const u={id:'v2-local-player',username:'anteprima',name:'Il Quasi di prova',email:'anteprima@example.test',emailVerified:true,salt:'local-v2-salt',password:hash(previewPassword,'local-v2-salt')};
 const rival={id:'v2-local-rival',username:'geometra',name:'Il Geometra',emailVerified:true};state.users.push(u,rival);
 const a=newLeague(state,u,'Il Bar v2 · Anteprima',true),b=newLeague(state,rival,'Il Bar degli Ospiti',true);a.code='V2LOCAL';b.members.push({uid:u.id,initial:350,credits:350,points:2});
 a.members.push({uid:rival.id,initial:500,credits:500,points:5});
@@ -63,10 +66,10 @@ for(let i=0;i<10;i++){const member={id:'perf-member-'+i,username:'quasi'+i,name:
   settle(state,a,rd);
  }
 }
-const owner={id:'local-frankwood',username:'frankwood',name:'Presidente locale',email:'frankwood@example.test',emailVerified:true,salt:'local-owner',password:hash('QuasiLocale26!','local-owner')};state.users.push(owner);a.members.push({uid:owner.id,initial:500,credits:500,points:0});
-const fixtureToken=session(state,u.id);
+const owner={id:'local-frankwood',username:'frankwood',name:'Presidente locale',email:'frankwood@example.test',emailVerified:true,salt:'local-owner',password:hash(previewPassword,'local-owner')};state.users.push(owner);a.members.push({uid:owner.id,initial:500,credits:500,points:0});
+const fixtureToken=session(state,process.env.PREVIEW_AUTO_USER==='frankwood'?owner.id:u.id);
 const native=await createNativePreview(state);
-const previewMailbox=[],previewMailEnv={RESEND_API_KEY:'synthetic-preview-only',APP_BASE_URL:'https://example.test'};
+const previewMailbox=[],previewMailEnv={RESEND_API_KEY:'synthetic-preview-only',APP_BASE_URL:publicPreview?'https://pre.quellidelquasi.com':'https://example.test'};
 const api=createApi({playerStore:memoryPlayerStore(mediaRows),transact,read:fn=>fn(state),env:previewMailEnv,deliverMail:async({jobId})=>{
  const job=state.mailOutbox?.find(x=>x.id===jobId);if(!job)return 'none';
  previewMailbox.push(decodeMail(job,previewMailEnv));state.mailOutbox=state.mailOutbox.filter(x=>x.id!==jobId);
@@ -76,7 +79,12 @@ const api=createApi({playerStore:memoryPlayerStore(mediaRows),transact,read:fn=>
 globalThis.fetch=async()=>{throw Error('External calls disabled in local v2 preview');};
 http.createServer(async(req,res)=>{
  try{
-  const port=Number(process.env.PREVIEW_PORT||8780),url=new URL(req.url,'http://127.0.0.1:'+port);
+  const port=Number(process.env.PREVIEW_PORT||8780),url=new URL(req.url,publicPreview?'https://pre.quellidelquasi.com':'http://127.0.0.1:'+port);
+  if(publicPreview){res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');if(url.pathname.startsWith('/__preview/')){res.writeHead(404).end();return;}if(url.pathname==='/robots.txt'){res.writeHead(200,{'Content-Type':'text/plain'}).end('User-agent: *\nDisallow: /\n');return;}}
+  if(url.pathname==='/healthz'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify({ok:true,preview:true,version:JSON.parse(await fs.readFile(path.join(root,'version.json'),'utf8')).version}));return;}
+  if(url.pathname==='/__preview/viewport'){
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow'}).end(uxViewport(url.searchParams));return;
+  }
   if(url.pathname==='/__preview/mail'&&process.env.PREVIEW_MAILBOX==='1'){
    res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify(previewMailbox));return;
   }
@@ -92,12 +100,12 @@ http.createServer(async(req,res)=>{
    let data='';for await(const chunk of req)data+=chunk;
    const request=new Request(url,{method:req.method,headers:{...req.headers,...(port===8790||process.env.PREVIEW_AUTO_AUTH==='1'?{cookie:'sid='+fixtureToken}:{})},...(data?{body:data}:{})});
    const response=await api(request,{ip:'127.0.0.1'});const headers=Object.fromEntries(response.headers);
-   if(headers['set-cookie'])headers['set-cookie']=headers['set-cookie'].replace('; Secure','');
+   if(headers['set-cookie']&&!publicPreview)headers['set-cookie']=headers['set-cookie'].replace('; Secure','');
    res.writeHead(response.status,headers).end(Buffer.from(await response.arrayBuffer()));return;
   }
   if(url.pathname==='/env.json'){
    const metadata=JSON.parse(await fs.readFile(path.join(root,'version.json'),'utf8'));
-   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify({env:'preview',version:metadata.version+' · frontend v2',commit:'locale'}));return;
+   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify({env:'preview',version:metadata.version+(publicPreview?'':' · frontend v2'),commit:publicPreview?'prova isolata':'locale'}));return;
   }
   const file=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'||url.pathname.startsWith('/invito/')?'/index.html':url.pathname));
   if(!file.startsWith(path.resolve(root)+path.sep)){res.writeHead(403).end();return;}
@@ -115,6 +123,6 @@ http.createServer(async(req,res)=>{
   const types={'.html':'text/html; charset=utf-8','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.json':'application/json','.webmanifest':'application/manifest+json','.woff2':'font/woff2'};
   res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'}).end(data);
  }catch(e){res.writeHead(404,{'Content-Type':'text/plain'}).end('Not found');console.error(req.url,e.message);}
-}).listen(Number(process.env.PREVIEW_PORT||8780),'127.0.0.1',()=>console.log('Anteprima isolata: http://127.0.0.1:'+Number(process.env.PREVIEW_PORT||8780)+' — login anteprima / QuasiLocale26! — dati solo in RAM'));
+}).listen(Number(process.env.PREVIEW_PORT||8780),'127.0.0.1',()=>console.log('Anteprima isolata: http://127.0.0.1:'+Number(process.env.PREVIEW_PORT||8780)+' — dati sintetici in RAM · nessun invio esterno'));
 
 
