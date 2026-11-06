@@ -1,0 +1,8 @@
+#pwa-install-card{position:fixed;z-index:45;bottom:calc(var(--app-tabbar-height,0px) + 12px);right:12px;left:12px;max-width:350px;margin-left:auto;padding:12px 14px;border:1px solid var(--lime,#7bc8f7);border-radius:16px;background:var(--panel,#15261f);color:var(--white,#f7f4e8);box-shadow:0 6px 28px #0005;font:13px/1.4 'DM Sans',sans-serif}
+#pwa-install-card[hidden]{display:none}
+#pwa-install-card>div:first-child{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#pwa-install-card p{margin:3px 0 8px;font-size:11px;color:var(--muted,#b4c3ba)}
+#pwa-install-card button{cursor:pointer;border:0;font:700 12px 'DM Sans',sans-serif;border-radius:10px;min-height:34px;padding:6px 12px;background:var(--lime,#7bc8f7);color:var(--bg,#0c1815)}
+#pwa-install-card [data-install-dismiss]{background:transparent;color:var(--white,#f7f4e8);font-size:23px;min-width:34px;padding:0}
+#pwa-install-card [data-install-help]{font-size:12px;margin-top:9px}
+body:has(dialog[open]) #pwa-install-card,body.match-page-active #pwa-install-card,body:has(.fanta-studio) #pwa-install-card,body:has(.logo-editor) #pwa-install-card{display:none}

@@ -1,7 +1,7 @@
 {
-  "version": "0.29.47",
+  "version": "0.29.48",
   "channel": "stable",
-  "releasedAt": "2026-11-06T20:03:42.413Z",
+  "releasedAt": "2026-11-06T20:21:12.683Z",
   "features": [
     "dedicated-admin-mfa",
     "admin-wipe-controls",
@@ -158,6 +158,9 @@
     "centered-mode-switch",
     "dedicated-compact-match-pages",
     "compact-serie-a-standings",
-    "commit-triggered-sports-push"
+    "commit-triggered-sports-push",
+    "automatic-invite-join-after-social",
+    "consent-based-pwa-install",
+    "maximized-readable-match-pitch"
   ]
 }

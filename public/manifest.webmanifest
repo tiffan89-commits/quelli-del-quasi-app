@@ -34,5 +34,8 @@
     }
   ],
   "id": "/",
-  "description": "Fantacalcio con voti spiegati e schedine tra amici con crediti virtuali. Niente pubblicità, per sempre."
+  "description": "Fantacalcio con voti spiegati e schedine tra amici con crediti virtuali. Niente pubblicità, per sempre.",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }

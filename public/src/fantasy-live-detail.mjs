@@ -1,5 +1,7 @@
+import {pitchEvents} from './pitch-events.mjs';
 const grade = value => Number.isFinite(value) ? String(value).replace('.',',') : 's.v.';
 export function fantasyEventsText(events = []) {
+  if(!Array.isArray(events)){const labels={goals:'Gol',assists:'Assist',yellow:'Ammonizione',red:'Espulsione',ownGoals:'Autogol',penSaved:'Rigore parato',penMissed:'Rigore sbagliato'};return Object.entries(events||{}).filter(([,n])=>Number(n)>0).map(([k,n])=>(labels[k]||k)+(n>1?' ×'+n:'')).join(' · ');}
   const counts = new Map();
   for (const event of events) counts.set(event.label,(counts.get(event.label)||0)+1);
   return [...counts].map(([label,n])=>label+(n>1?' ×'+n:'')).join(' · ');
@@ -14,7 +16,9 @@ export function patchFantasyMatch(root, match) {
   for(const row of root.querySelectorAll('[data-fantasy-player]')) {
     const player=players.get(row.dataset.fantasyPlayer);if(!player)continue;
     const value=row.querySelector('[data-fantasy-grade]');
-    if(value){value.hidden=false;value.textContent=(value.dataset.fantasyGrade==='pitch'?'V ':'')+grade(player.grade)+(value.dataset.fantasyGrade==='pitch'?' · FV ':' / ')+grade(player.fantagrade);}
+    const playing=Number.isFinite(player.grade)||Number.isFinite(player.fantagrade)||['playing','voted','sv'].includes(player.status);
+    if(value&&playing){row.querySelectorAll('.pitch-next-opponent,.pitch-player-club,.player-probability').forEach(el=>el.hidden=true);value.hidden=false;value.textContent=(value.dataset.fantasyGrade==='pitch'?'V ':'')+grade(player.grade)+(value.dataset.fantasyGrade==='pitch'?' · FV ':' / ')+grade(player.fantagrade);}
+    const marker=row.querySelector('[data-pitch-events]');if(marker&&playing){const html=pitchEvents(player);if(marker.outerHTML!==html)marker.outerHTML=html;}
     const events=row.querySelector('[data-fantasy-events]');if(events)events.textContent=fantasyEventsText(player.events);
   }
 }

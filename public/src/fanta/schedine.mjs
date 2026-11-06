@@ -1,3 +1,4 @@
+import {createSportsPush} from '../sports-push.mjs';
 import {openMatchPage} from '../match-page.mjs';
 import {patchFantasyMatch} from '../fantasy-live-detail.mjs';
 import {teamLogo} from './team-logo.mjs';
@@ -72,12 +73,17 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
    const match=data.round.matches.find(m=>m.id===b.dataset.detail);if(!match)return;
    const existing=root.ownerDocument.getElementById('match-page-root');if(existing?.open&&existing.dataset.match===match.id)return;
    message='';const key=scope+':'+data.round.id+':'+match.id,old=detailCache.get(key);
-   const page=openMatchPage({document:root.ownerDocument,onClose:()=>{detail=null;}});detail=match.id;page.dataset.match=match.id;
+   let live=null;const page=openMatchPage({document:root.ownerDocument,onClose:()=>{detail=null;live?.stop();}});detail=match.id;page.dataset.match=match.id;
+   if(globalThis.window&&match.nativeId&&!services?.snapshot?.()?.user?.demo){live=createSportsPush({context:()=>page.open?{mode:'fanta',league:context.leagueId,competition:context.competitionId,round:Number(data.round.number),matchup:match.nativeId}:null,apply:({matchup:view})=>{
+    if(!page.open||!view||detail!==match.id)return;const before=detailCache.get(key)?.data,shape=v=>JSON.stringify(['home','away'].map(k=>[v?.[k]?.formation,...(v?.[k]?.starters||[]).map(p=>p.id),...(v?.[k]?.bench||[]).map(p=>p.id)]));detailCache.set(key,{data:view,at:now()});if(shape(before)!==shape(view))show();
+    const status=view.official?'FT':view.state==='in-corso'?'LIVE':match.status,score=[view.home.goals,view.away.goals];
+    patchFantasyMatch(page,{...match,status,...(score.every(Number.isFinite)?status==='FT'?{score}:{liveScore:score}:{}),fantasyPoints:[view.home.total,view.away.total],details:{teams:['home','away'].map(side=>({players:[...(view[side].starters||[]),...(view[side].bench||[])].map(p=>({...p,grade:p.vote,fantagrade:p.fantavote}))}))}});
+   }});}
    const show=()=>{if(!page.open||detail!==match.id)return;page._pitchCleanup?.();page.innerHTML=matchDetail(data.round);page.querySelector('[data-fanta-slip-detail-close]').onclick=()=>page.close();bindLineupPitch(page);};show();
-   if(!loadMatchup||old?.pending||old?.data&&now()-old.at<60000)return;
+   if(!loadMatchup||old?.pending||old?.data&&now()-old.at<60000){live?.start();return;}
    detailCache.set(key,{pending:true});
    try{const view=await loadMatchup(context,data.round,match);detailCache.set(key,{data:view,at:now()});}catch(error){detailCache.set(key,{error:'Formazioni momentaneamente non disponibili. Riprova.'});}
-   show();
+   show();live?.start();
   });
   root.querySelectorAll('[data-quasi-member]').forEach(b=>b.onclick=()=>{const member=data.league?.members?.find(m=>m.uid===b.dataset.quasiMember);if(member)showQuasi(member);});
   if(!d)return;

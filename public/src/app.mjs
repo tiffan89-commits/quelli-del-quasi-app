@@ -1,3 +1,4 @@
+import {joinInvite} from './invite-join.mjs';
 import {openMatchPage} from './match-page.mjs';
 import {barHomeInvite} from './bar-home-invite.mjs';
 import {leagueActions} from './league-actions.mjs';
@@ -30,7 +31,7 @@ import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource, rende
 import { renderLeagueChip, bindLeagueSwitcher, isLeagueAdmin } from "./v2/league-switcher.mjs";
 import { showLanding, hideLanding, markSession, pendingInvite, clearPendingInvite } from "./v2/landing.mjs";
 const PUBLIC_AUTH_HASHES={login:'accesso',register:'registrati',forgot:'recupera',resend:'reinvia',demo:'demo'};
-let pendingAppRoute=readAppRoute();
+let pendingAppRoute=readAppRoute(),inviteAttempt=null;
 const initialPublicMode=Object.keys(PUBLIC_AUTH_HASHES).find(k=>PUBLIC_AUTH_HASHES[k]===location.hash.slice(1));
 let v2Invite = pendingInvite(), landingDismissed = !!v2Invite||!!initialPublicMode, forceDemo = initialPublicMode==='demo';
 let initialDemoRequested=initialPublicMode==='demo';
@@ -360,6 +361,11 @@ async function refresh(reset = false) {
       leagueId=requestedSlip;const round=L().rounds.find(r=>r.id===requestedSlipRound);page='schedina';slipScope='mine';if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}
       requestedSlip=null;requestedSlipRound=null;const params=new URLSearchParams(location.search);params.delete('slip');params.delete('round');window.history.replaceState(null,'',location.pathname+(params.size?'?'+params:''));
     }
+    const invite=state.user?.emailVerified&&!state.user.demo?pendingInvite():null;
+    if(invite&&inviteAttempt!==state.user.id+':'+invite){inviteAttempt=state.user.id+':'+invite;try{
+      const joined=await joinInvite(invite,{join:code=>api('join',{code}),clear:()=>{clearPendingInvite();v2Invite=null;clearEntry(localStorage);}});
+      state=await api('state?lite=1');leagueId=joined.league;selectedRoundId=null;page='lega';writeAppRoute({mode:'bar',page:'oggi',league:joined.league},{replace:true});
+    }catch(error){notify(error.message);}}
     if(next.adminOnly){location.replace("/admin.html");return;}
     if(state.user?.emailVerified&&!state.user.demo&&new URLSearchParams(location.search).get('entry')==='fanta'&&!accountAction&&!pendingInvite()){rememberEntry(localStorage);location.replace('/entra-fanta.html'+location.search);return true;}
     if (!leagueId && state.user)
@@ -649,7 +655,7 @@ function render() {
                       ? settings(l, r)
                       : page === "calendario"
                         ? calendarPage()
-                        : history(l);
+                        : leagueHistory(l);
   document.body.dataset.gameMode='bar';
   const palette = LEAGUE_COLORS.map(([color]) => color);
   applyLeagueTheme(L());
@@ -712,7 +718,7 @@ function renderAuth(){
   if(result.requireAdminCode){sessionStorage.setItem('quasi-admin-challenge',JSON.stringify(result));location.assign('/admin.html');return;}
   if(entryIntent(localStorage)&&!result.invite&&!pendingInvite()){location.assign('/entra-fanta.html'+location.search);return;}
   leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}
-  const code=result.invite||pendingInvite();if(code){try{await api('join',{code});clearPendingInvite();v2Invite=null;clearEntry(localStorage);const url=new URL(location.href);url.searchParams.delete('entry');history.replaceState(null,'',url.pathname+url.search+url.hash);}catch(error){notify(error.message);}}
+  const code=result.invite||pendingInvite();if(code){try{const joined=await joinInvite(code,{join:code=>api('join',{code}),clear:()=>{clearPendingInvite();v2Invite=null;clearEntry(localStorage);}});leagueId=joined.league;selectedRoundId=null;pendingAppRoute={mode:'bar',page:'oggi',league:joined.league};}catch(error){notify(error.message);}}
   if(pendingAppRoute){writeAppRoute(pendingAppRoute,{replace:true});pendingAppRoute=null;}
   await loadAppStyles();
   accountAction=null;if(!await refresh(true)||!state.user)throw Error('L’accesso è riuscito, ma il bar non si è ancora caricato. Premi di nuovo Accedi tra pochi secondi.');if(!readAppRoute())writeAppRoute({mode:'bar',page:'oggi'},{replace:true});
@@ -1092,7 +1098,7 @@ async function saveCurrentSlip() {
     try {
       localStorage.removeItem(key);
     } catch {}
-    const ok=applySlipReceipt(state,result)?(markPublicSlipChoices(),hydrateDraft(),render(),true):Array.isArray(result?.state?.leagues)||Array.isArray(result?.leagues)?(state=result.state||result,markPublicSlipChoices(),render(),true):await refresh(true);
+    const ok=applyAcknowledgedSlip(result)?(markPublicSlipChoices(),hydrateDraft(),render(),true):Array.isArray(result?.state?.leagues)||Array.isArray(result?.leagues)?(state=result.state||result,markPublicSlipChoices(),render(),true):await refresh(true);
     notify(
       ok
         ? "Schedina confermata. Ora puoi iniziare a dubitare."
@@ -1335,7 +1341,7 @@ function serieACalendarPage() {
         .join("")}</details>`,
   )}`;
 }
-function history(l) {
+function leagueHistory(l) {
   return `<h2 style="margin-bottom:25px">Il conto delle tue certezze</h2><div class="card">${l.ledger.length ? l.ledger.map((x) => `<div class="rankrow"><span>↗</span><div>${esc(x.reason)}<small>${date(x.created)}</small></div><b class="${x.amount >= 0 ? "green" : "orange"}">${x.amount >= 0 ? "+" : ""}${fmt(x.amount)} cr</b></div>`).join("") : "Nessun movimento. La tua reputazione è ancora intatta."}</div><h2>Giornate archiviate</h2>${l.rounds
     .filter((x) => x.settled)
     .map(
@@ -1471,7 +1477,7 @@ function nativeSlipServices(){return {
  account:{view:()=>profile({embedded:true}),bind:bindAccount},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
- save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applySlipReceipt(state,result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
+ save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
  refresh:async id=>{if(!sportsWindowActive(state.calendar?.rounds||[]))return false;const before=JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);const data=await api('live?'+new URLSearchParams({league:id}));mergeLiveSnapshot(state,data);return before!==JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);}
 };}
 function markPublicSlipChoices(){for(const l of state.leagues||[])for(const r of l.rounds||[])r.publicChoicesAvailable=!!r.closed&&Array.isArray(r.publicSlips);}
@@ -1774,6 +1780,7 @@ function otherSlips(l, r) {
 // Verdicts for the whole table arrive in one light request; tiles and popup share the same cache.
 const barVerdicts = new Map(),
   barVerdictPending = new Map();
+function applyAcknowledgedSlip(result){const ok=applySlipReceipt(state,result);if(ok)barVerdicts.delete(result.receipt.league+':'+result.receipt.round);return ok;}
 function barVerdictKey(r) {
   return L().id + ":" + r.id;
 }
@@ -1804,7 +1811,7 @@ function bindBarSlips() {
       if (R()?.id === round) barVerdictPatch(document.querySelector(".bar-table"), players);
     })
     .catch(() => {
-      document.querySelectorAll("[data-bar-quip]").forEach((q) => (q.textContent = "Il bar è chiuso per inventario. Riprova tra poco."));
+      document.querySelectorAll('[data-bar-quip]').forEach(q=>{q.hidden=true;});
       document.querySelectorAll("[data-bar-archetype]").forEach((q) => (q.textContent = ""));
     });
   root.querySelectorAll("[data-quasi-member]").forEach(

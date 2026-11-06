@@ -37,7 +37,7 @@ export function barVerdictPatch(root,players){
  for(const p of players){
   const tileEl=root.querySelector(`[data-bar-uid="${CSS.escape(p.uid)}"]`);if(!tileEl)continue;
   const a=tileEl.querySelector('[data-bar-archetype]');if(a)a.textContent=`${ARCH_EMOJI[p.style]||'🎟️'} ${p.archetype}`;
-  const q=tileEl.querySelector('[data-bar-quip]');if(q){q.textContent='«'+p.headline+'»';q.classList.add('is-ready');}
+  const q=tileEl.querySelector('[data-bar-quip]');if(q){q.hidden=false;q.textContent='«'+p.headline+'»';q.classList.add('is-ready');}
   const risk=tileEl.querySelector('[data-bar-risk]');if(risk){risk.hidden=false;risk.dataset.tone=riskTone(p.risk);risk.style.setProperty('--risk',p.risk+'%');risk.querySelector('b').textContent='Rischio '+p.risk;}
   const who=tileEl.querySelector('.bar-who');
   if(who&&players.length>2&&max!==min&&!who.querySelector('.bar-badge')){const badge=p.risk===max?['🎲','Il più spericolato']:p.risk===min?['🧯','Il pompiere']:null;if(badge){const b=document.createElement('span');b.className='bar-badge';b.title=badge[1];b.textContent=badge[0];who.append(b);}}

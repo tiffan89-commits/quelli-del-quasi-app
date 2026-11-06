@@ -25,7 +25,7 @@ function availablePlayers(team){
 function sticker(p,team,available=false){
  const started=!!team.started||['playing','voted','sv'].includes(p.status)||Number.isFinite(p.grade);
  const probability=!started&&Number.isFinite(p.probability)&&p.probability>=0&&p.probability<=100?(p.probabilityKind==='official'?p.probability:roundPresenceEstimate(p.probability)):null;
- return `<div class="pitch-player" ${available?`data-available-role="${availablePlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:5})}${started?pitchEvents(p):'<span data-pitch-events></span>'}</div>${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(p.name)}</span>${p.next?'<small class="pitch-next-opponent">'+esc(opponentLabel(p.next))+'</small>':''}${p.club&&!same(p.club,team.team)?'<small class="pitch-player-club">'+esc(p.club)+'</small>':''}<small class="pitch-player-grades" data-fantasy-grade="pitch" ${started?'':'hidden'}>${started?(Number.isFinite(p.grade)?'V '+p.grade:p.status==='sv'?'s.v.':'—'):''}${Number.isFinite(p.fantagrade)?' · FV '+p.fantagrade:''}</small></div>`;
+ return `<div class="pitch-player" ${available?`data-available-role="${availablePlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:6.2})}${started?pitchEvents(p):'<span data-pitch-events></span>'}</div>${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(p.name)}</span>${!started&&p.next?'<small class="pitch-next-opponent">'+esc(opponentLabel(p.next))+'</small>':''}${!started&&p.club&&!same(p.club,team.team)?'<small class="pitch-player-club">'+esc(p.club)+'</small>':''}<small class="pitch-player-grades" data-fantasy-grade="pitch" ${started?'':'hidden'}>${started?(Number.isFinite(p.grade)?'V '+p.grade:p.status==='sv'?'s.v.':'—'):''}${Number.isFinite(p.fantagrade)?' · FV '+p.fantagrade:''}</small></div>`;
 }
 function benchSections(t,kind){
  const entered=t.started?(t.bench||[]).filter(hasEntered):[],rest=(t.bench||[]).filter(p=>!entered.includes(p));
@@ -42,6 +42,10 @@ export function bindLineupPitch(root){
  const slides=root.querySelector('.pitch-slides');if(!slides)return;
  const tabs=[...root.querySelectorAll('[data-pitch-tab]')],teams=[...root.querySelectorAll('.pitch-team')];let current=0,settleTimer=null,scrolling=false;
  const size=()=>{const team=teams[current];if(team)slides.style.height=Math.ceil(team.getBoundingClientRect().height)+'px';};
+ const fit=()=>{const page=root.closest?.('#match-page-root');if(!page||!Number.isFinite(globalThis.window?.innerHeight))return;const pitch=slides.querySelector('.football-pitch');if(!pitch)return;
+  const nav=document.querySelector('nav.v2-tabbar'),fixed=nav&&getComputedStyle(nav).position==='fixed',bottom=fixed?nav.getBoundingClientRect().height:0;
+  const top=pitch.getBoundingClientRect().top+(globalThis.scrollY||0),height=Math.max(240,Math.floor(window.innerHeight-bottom-top-8));
+  page.style.setProperty('--match-pitch-height',height+'px');size();};
  const select=i=>{current=i;tabs.forEach((b,j)=>b.setAttribute('aria-selected',String(j===i)));};
  // Changing height while horizontal scrolling can reset the browser's snap target.
  const settled=()=>{clearTimeout(settleTimer);scrolling=false;size();};
@@ -53,7 +57,7 @@ export function bindLineupPitch(root){
  const filterRole=event=>{const button=event.target.closest?.('[data-lineup-role]'),panel=button?.closest('.lineup-bench');if(!panel)return;const role=button.dataset.lineupRole;panel.querySelectorAll('[data-lineup-role]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));let visible=0;panel.querySelectorAll('[data-available-role]').forEach(card=>{card.hidden=role!=='all'&&card.dataset.availableRole!==role;if(!card.hidden)visible++;});const empty=panel.querySelector('[data-lineup-role-empty]');if(empty)empty.hidden=visible>0;size();};
  root.addEventListener('click',filterRole);
  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{if(!scrolling)size();});teams.forEach(t=>observer?.observe(t));
- const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;tabs.forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});size();
+ const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;tabs.forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);globalThis.window?.removeEventListener?.('resize',fit);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});globalThis.window?.addEventListener?.('resize',fit);fit();size();
 }
 
 const grade=v=>Number.isFinite(v)?String(v):'s.v.';
