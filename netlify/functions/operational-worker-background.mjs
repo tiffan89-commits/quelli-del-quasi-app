@@ -11,6 +11,7 @@ export default async request=>{
  const started=Date.now();let result;
  try{const {runOperation}=await import('../../lib/operations/workflows.mjs');result=await runOperation(claimed,lockedPlan);}
  catch(error){result={ok:false,error:String(error.message||'operation-failed').slice(0,220)};}
+ if(job.kind==='live'&&process.env.SELFHOST_RUNTIME==='true')try{const {notifySportsSaved}=await import('../../runtime/sports-notifications.mjs');await notifySportsSaved();}catch{console.error('SPORTS_PUSH_WAKE_FAILED');}
  await mutatePlan(current=>completeWork(current,job,result),{store});
  console.info('QUASI_OPERATION',JSON.stringify({kind:job.kind,id:job.id,status:result.ok?'done':'error',durationMs:Date.now()-started,...result.metrics,error:result.error||null}));
 };

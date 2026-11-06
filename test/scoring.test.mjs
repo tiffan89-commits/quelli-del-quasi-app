@@ -135,13 +135,14 @@ test("all existing league defaults and open rounds migrate once while closed his
   assert.equal(l.members[0].credits, 500);
   assert.equal(migrateScoring(s, now + 1), false);
 });
-test("league invite codes are excluded from ordinary member responses", () => {
+test("league members can invite but outsiders cannot read league invite codes", () => {
   const s = emptyState(),
     a = { id: "a", name: "Admin", emailVerified: true },
     b = { id: "b", name: "Member", emailVerified: true };
   s.users.push(a, b);
   const l = newLeague(s, a, "Test", true);
   l.members.push({ uid: b.id, credits: 500, points: 0 });
-  assert.equal(JSON.stringify(stateFor(s, b)).includes(l.code), false);
+  assert.equal(stateFor(s, b).leagues[0].code, l.code);
+  const outsider={id:"outside",name:"Outside",emailVerified:true};s.users.push(outsider);assert.equal(JSON.stringify(stateFor(s, outsider)).includes(l.code),false);
   assert.equal(stateFor(s, a).leagues[0].code, l.code);
 });

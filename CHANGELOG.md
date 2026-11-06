@@ -1,3 +1,11 @@
+# 0.29.47 — 2026-11-06
+
+- Switch Bar/Fanta centrato nella barra comune; «Il mio Quasi» dalla home apre direttamente lo studio.
+- Partite, probabili/ufficiali e risultati in una pagina dentro le barre, con Chiudi e ritorno alla bozza senza ricaricarla. Campo compatto, squadre centrate e accordion inizialmente chiusi.
+- Classifica Serie A interamente nello schermo: rimossi i due indicatori percentuali casa/trasferta, conservati punti, PG, V/N/P e gol.
+- Live: il worker condiviso resta al minuto e, dopo le scritture completate, notifica il server Socket.IO tramite PostgreSQL; una lettura per stanza, push a tutti i dispositivi, senza polling HTTP client.
+- Prove sintetiche indipendenti dalle vecchie foto; test allineati alla navigazione Impostazioni/Lega e agli inviti condivisi già rilasciati.
+
 # 0.29.46 — 2026-11-06
 
 - Ritocchi finali: «+» integrato nel nome della lega, logout esterno agli accordion in Impostazioni, inviti per tutti nella home Bar fino a lega piena e rimozione della promozione Fanta. Corretto il riscontro immediato degli obiettivi dopo il salvataggio: premi già persistenti, spunta e guardaroba aggiornati dalla ricevuta compatta. Formazioni ufficiali API-FOOTBALL a T−30 con retry server ogni 5 minuti solo finché incomplete; cache definitiva nel DB.

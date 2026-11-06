@@ -1,3 +1,5 @@
+import {openMatchPage} from '../match-page.mjs';
+import {patchFantasyMatch} from '../fantasy-live-detail.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderFantasyLineup,bindLineupPitch} from '../lineup-pitch.mjs';
 import {readAppRoute,writeAppRoute} from '../routes.mjs';
@@ -43,7 +45,7 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   const m=round?.matches?.find(m=>m.id===detail);if(!m)return '';
   const cached=detailCache.get(scope+':'+round.id+':'+m.id),view=cached?.data;
   const teams=view?['home','away'].map(side=>({name:view[side].team.name,formation:view[side].formation,players:[...(view[side].starters||[]).map(p=>({...p,starter:true})),...(view[side].bench||[]).map(p=>({...p,starter:false}))].map(p=>({...p,next:{opponent:p.opponent,home:p.home}}))})):m.details?.teams;
-  return `<section class="fanta-block" data-slip-detail><button type="button" class="secondary" data-fanta-slip-detail-close>Chiudi dettaglio</button><h3>${esc(m.home)} – ${esc(m.away)}</h3><p>${m.score?'Risultato: '+m.score.join(' – '):m.liveScore?'Live: '+m.liveScore.join(' – '):'In attesa del calcio d’inizio.'}${m.fantasyPoints?' · Fantapunti: '+m.fantasyPoints.map(fmt).join(' – '):''}</p>${teams?renderFantasyLineup({teams,complete:view?.official||m.details?.complete,at:m.details?.at}):`<p role="status">${esc(cached?.error||'Carichiamo le formazioni…')}</p>`}</section>`;
+  return `<section class="fanta-block" data-slip-detail><button type="button" class="secondary" data-fanta-slip-detail-close>Chiudi dettaglio</button><h2 class="match-page-title">${esc(m.home)} – ${esc(m.away)}</h2><p data-live-detail-score>${m.score?'Risultato: '+m.score.join(' – '):m.liveScore?'Live: '+m.liveScore.join(' – '):'In attesa del calcio d’inizio.'}${m.fantasyPoints?' · Fantapunti: '+m.fantasyPoints.map(fmt).join(' – '):''}</p>${teams?renderFantasyLineup({teams,complete:view?.official||m.details?.complete,at:m.details?.at}):`<p role="status">${esc(cached?.error||'Carichiamo le formazioni…')}</p>`}</section>`;
  }
 
  const signature=data=>JSON.stringify([scope,sub,data.round?.id,isClosed(data.round,now()),data.eligible.map(r=>r.id)]);
@@ -55,27 +57,28 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   const tabs=`<div class="fanta-slip-tabs" role="group" aria-label="Schedine"><button type="button" data-fanta-slip-sub="mine" aria-pressed="${sub==='mine'}">La mia schedina</button><button type="button" data-fanta-slip-sub="league" aria-pressed="${sub==='league'}">Le altre schedine</button></div>`;
   if(!round)return '<section class="fanta-native-slips"><h1>Schedina del Fanta</h1><p class="fanta-note">Scommetti sulle sfide della tua lega.</p>'+tabs+'<div class="fanta-block">La prossima schedina arriva con il calendario della competizione.</div></section>';
   const selector=data.eligible.length<2?`<div class="fanta-slip-round"><b>${esc(round.title)}</b><span>${roundAvailability(round,now())}</span></div>`:`<label class="fanta-slip-round">Giornata<select data-fanta-slip-round>${data.eligible.map(r=>`<option value="${esc(r.id)}" ${r.id===round.id?'selected':''}>${esc(r.title)}</option>`).join('')}</select></label>`;
-  if(sub==='league')return '<section class="fanta-native-slips"><h1>Schedina del Fanta</h1>'+tabs+barSlipsView({l:league,r:round,uid,fmt,rounds:data.eligible,sourceOf}).replace('id="round-switch"','data-fanta-slip-round').replaceAll('Le schedine del Bar','Le altre schedine').replace('LE SCHEDINE DEL BAR','LE SCHEDINE DELLA LEGA')+matchDetail(round)+'</section>';
+  if(sub==='league')return '<section class="fanta-native-slips"><h1>Schedina del Fanta</h1>'+tabs+barSlipsView({l:league,r:round,uid,fmt,rounds:data.eligible,sourceOf}).replace('id="round-switch"','data-fanta-slip-round').replaceAll('Le schedine del Bar','Le altre schedine').replace('LE SCHEDINE DEL BAR','LE SCHEDINE DELLA LEGA')+'</section>';
   const d=draft(data),account=fantasyAccount(league.members?.find(m=>m.uid===uid),round,league);
   const closed=isClosed(round,now());
   const feedback=message?`<p class="fanta-note" data-fanta-slip-feedback role="status">${esc(message)}</p>`:'';
-  return `<section class="fanta-native-slips"><header class="fanta-slip-heading"><div><h1>Schedina del Fanta</h1><p class="fanta-note">Scommetti sulle sfide della tua lega.</p></div><div class="fanta-slip-balance"><small>Crediti schedine</small><b>${fmt(account.credits)}</b></div></header>${tabs}${selector}${feedback}${d.conflict?'<div class="notice" role="alert">La schedina è stata aggiornata da un altro dispositivo. La tua bozza è conservata.<button type="button" class="secondary" data-fanta-slip-reload>Usa la schedina salvata</button></div>':''}<div class="fanta-slip-layout">${renderSlipV2({round:{...round,closed},picks:d.picks,stake:d.stake,credits:account.credits,openMatch:expanded,esc,fmt,date,teamLabel:name=>'<span class="slip-team-label">'+teamLogo(teamResolver?.(name)||{name})+'<span>'+esc(name)+'</span></span>'})}</div>${matchDetail(round)}${closed?'<p class="fanta-note">Scelte bloccate. I colori seguono gli esiti disponibili.</p>':''}</section>`;
+  return `<section class="fanta-native-slips"><header class="fanta-slip-heading"><div><h1>Schedina del Fanta</h1><p class="fanta-note">Scommetti sulle sfide della tua lega.</p></div><div class="fanta-slip-balance"><small>Crediti schedine</small><b>${fmt(account.credits)}</b></div></header>${tabs}${selector}${feedback}${d.conflict?'<div class="notice" role="alert">La schedina è stata aggiornata da un altro dispositivo. La tua bozza è conservata.<button type="button" class="secondary" data-fanta-slip-reload>Usa la schedina salvata</button></div>':''}<div class="fanta-slip-layout">${renderSlipV2({round:{...round,closed},picks:d.picks,stake:d.stake,credits:account.credits,openMatch:expanded,esc,fmt,date,teamLabel:name=>'<span class="slip-team-label">'+teamLogo(teamResolver?.(name)||{name})+'<span>'+esc(name)+'</span></span>'})}</div>${closed?'<p class="fanta-note">Scelte bloccate. I colori seguono gli esiti disponibili.</p>':''}</section>`;
  }
  function bind(root,context,{keepDetail=false}={}){
   const data=current(context),d=sub==='mine'?draft(data):null;
   root.querySelectorAll('[data-fanta-slip-sub]').forEach(b=>b.onclick=()=>{if(sub===b.dataset.fantaSlipSub)return;selection=data.round?.id||null;sub=b.dataset.fantaSlipSub;detail=null;message='';writeAppRoute({mode:'fanta',page:'schedine',section:sub,league:context.leagueId,round:selection});redraw();});
   root.querySelectorAll('[data-fanta-slip-round]').forEach(s=>s.onchange=()=>{selection=s.value;message='';detail=null;writeAppRoute({mode:'fanta',page:'schedine',section:sub,league:context.leagueId,round:selection});redraw();});
   const reload=root.querySelector('[data-fanta-slip-reload]');if(reload)reload.onclick=()=>{try{storage.removeItem(d.key);}catch{}drafts.delete(d.key);message='';redraw();};
-  const close=root.querySelector('[data-fanta-slip-detail-close]');if(close)close.onclick=()=>{detail=null;redraw();};
   root.querySelectorAll('[data-detail]').forEach(b=>b.onclick=async()=>{
    const match=data.round.matches.find(m=>m.id===b.dataset.detail);if(!match)return;
-   detail=match.id;message='';const key=scope+':'+data.round.id+':'+match.id,old=detailCache.get(key);redraw();root.querySelector('[data-slip-detail]')?.scrollIntoView?.({block:'nearest'});
+   const existing=root.ownerDocument.getElementById('match-page-root');if(existing?.open&&existing.dataset.match===match.id)return;
+   message='';const key=scope+':'+data.round.id+':'+match.id,old=detailCache.get(key);
+   const page=openMatchPage({document:root.ownerDocument,onClose:()=>{detail=null;}});detail=match.id;page.dataset.match=match.id;
+   const show=()=>{if(!page.open||detail!==match.id)return;page._pitchCleanup?.();page.innerHTML=matchDetail(data.round);page.querySelector('[data-fanta-slip-detail-close]').onclick=()=>page.close();bindLineupPitch(page);};show();
    if(!loadMatchup||old?.pending||old?.data&&now()-old.at<60000)return;
    detailCache.set(key,{pending:true});
    try{const view=await loadMatchup(context,data.round,match);detailCache.set(key,{data:view,at:now()});}catch(error){detailCache.set(key,{error:'Formazioni momentaneamente non disponibili. Riprova.'});}
-   if(detail===match.id){redraw();root.querySelector('[data-slip-detail]')?.scrollIntoView?.({block:'nearest'});}
+   show();
   });
-  if(!keepDetail&&root.querySelector('[data-slip-detail]'))bindLineupPitch(root.querySelector('[data-slip-detail]'));
   root.querySelectorAll('[data-quasi-member]').forEach(b=>b.onclick=()=>{const member=data.league?.members?.find(m=>m.uid===b.dataset.quasiMember);if(member)showQuasi(member);});
   if(!d)return;
   const redrawChoices=()=>{
@@ -104,5 +107,5 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   patchSlipResults(root,data.round,d.picks,isClosed(data.round,now()));
  }
  function ranking(context,metric='points'){const data=current(context);return data.league?playerRanking(data.league,'fantacalcio',metric,{id:data.uid},esc,fmt,data.round?.competitionKey).replace(/<section class="round-heading">[\s\S]*?<\/section>/,'<p class="fanta-note">Punti e crediti delle schedine del Fanta.</p>'):'<section class="fanta-block"><h2>Classifica schedine</h2><p>La classifica arriva con il calendario della lega.</p></section>';}
- return {render,bind,ranking,context:current,enter:()=>{selection=null;sub='mine';detail=null;message='';},tick:context=>{const data=current(context);if(lastView!==signature(data))redraw();}};
+ return {render,bind,ranking,context:current,enter:()=>{selection=null;sub='mine';detail=null;message='';},tick:context=>{const data=current(context);const page=globalThis.document?.getElementById('match-page-root'),match=data.round?.matches?.find(m=>m.id===detail);if(page?.open&&match&&page.dataset.match===match.id)patchFantasyMatch(page,match);if(lastView!==signature(data))redraw();}};
 }

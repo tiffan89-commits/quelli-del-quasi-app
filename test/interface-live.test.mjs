@@ -276,7 +276,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='classifiche';rankingScope='seriea';render()", ctx);
   assert.match(html,/data-ranking-metric="points"/);assert.doesNotMatch(html,/Vittorie casa/);
   vm.runInContext("page='schedina';sourceScope='seriea';slipScope='standings';render()",ctx);
-  assert.match(html,/Classifica Serie A/);assert.match(html,/Vittorie casa/);
+  assert.match(html,/Classifica Serie A/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori/);assert.match(html,/serie-table-card/);
   vm.runInContext("slipScope='mine'",ctx);
   vm.runInContext("page='schedina';rankingScope='league';render()", ctx);
   assert.doesNotMatch(html, /data-source="fantacalcio"/);

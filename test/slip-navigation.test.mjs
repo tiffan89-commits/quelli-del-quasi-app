@@ -40,7 +40,7 @@ test('entering Bar slip starts on open round; pressing its active menu is a true
 test('Bar subsection switch pins displayed round across mine, bar and verdict',()=>{
  const {document}=parseHTML('<button data-slip-scope="mine"></button><button data-slip-scope="bar"></button><button data-slip-scope="community"></button>');
  const ctx={document,r:past,selectedRoundId:null,slipScope:'mine',persistDraft:()=>{},hydrateDraft:()=>{},render:()=>{}};vm.createContext(ctx);
- const start=source.indexOf('  document.querySelectorAll("[data-slip-scope]")'),end=source.indexOf('  bindSupportInline();',start);vm.runInContext(source.slice(start,end),ctx);
+ const start=source.indexOf('  document.querySelectorAll("[data-slip-scope]")'),end=source.indexOf('  if ($('+'"#open-chat"))',start);vm.runInContext(source.slice(start,end),ctx);
  for(const sub of ['bar','community','mine']){document.querySelector(`[data-slip-scope="${sub}"]`).onclick();assert.equal(ctx.selectedRoundId,'r10');assert.equal(ctx.slipScope,sub);}
 });
 test('Fanta subsections preserve old selection, re-entry resets to open and unknown future routes are ignored',()=>{

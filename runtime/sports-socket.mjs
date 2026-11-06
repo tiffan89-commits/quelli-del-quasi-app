@@ -32,5 +32,5 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
   if(room.state&&now()-room.loadedAt<intervalMs)send(s,room);else void refresh(room);
  });
  let checking=false,authFailures=0;const authTimer=setInterval(async()=>{if(checking||closed||!ns.sockets.size)return;checking=true;try{const users=await validateAll([...new Set([...ns.sockets.values()].map(s=>s.data.token))]);authFailures=0;for(const socket of ns.sockets.values()){const u=users.get(socket.data.token);if(!u)socket.disconnect(true);else socket.data.user=u;}}catch{if(++authFailures>=3)ns.disconnectSockets(true);else for(const s of ns.sockets.values())s.emit('sports:unavailable');}finally{checking=false;}},intervalMs);authTimer.unref?.();
- return {stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();}};
+ return {refresh:()=>Promise.all([...rooms.values()].map(room=>refresh(room))),stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();}};
 }
