@@ -241,9 +241,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /league-regulation|Regolamento della lega|Movimenti e giornate archiviate|Entra o crea una nuova lega|class="card my-league"/);
   assert.match(html, /class="dash-hero"/);
   assert.match(html, /id="day-objectives"/);
-  assert.match(html, /id="league-portfolio"/);
+  assert.match(html, /class="dash-summary"/);
   assert.match(html, /Il Fantacalcio del Quasi/);
-  assert.ok(html.indexOf('id="day-objectives"')<html.indexOf('id="league-portfolio"'));
+  assert.doesNotMatch(html,/id="portfolio-lazy"/);
   vm.runInContext("page='regolamento';render()", ctx);
   assert.match(html, /IL REGOLAMENTO/);
   vm.runInContext("page='storico';render()", ctx);
@@ -272,7 +272,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /Le leghe di cui fai parte|Associa Chrome/);
   assert.doesNotMatch(html, /chat-context-button|id="switch"/);
   vm.runInContext("page='classifiche';rankingScope='seriea';render()", ctx);
-  assert.match(html,/id="ranking-metric"/);assert.doesNotMatch(html,/Vittorie casa/);
+  assert.match(html,/data-ranking-metric="points"/);assert.doesNotMatch(html,/Vittorie casa/);
   vm.runInContext("page='schedina';sourceScope='seriea';slipScope='standings';render()",ctx);
   assert.match(html,/Classifica Serie A/);assert.match(html,/Vittorie casa/);
   vm.runInContext("slipScope='mine'",ctx);
@@ -319,7 +319,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html,/quasi-roster-grid/);
   assert.doesNotMatch(html, /Collega competizione/);
   vm.runInContext("page='classifiche';render()", ctx);
-  assert.match(html, /id="ranking-metric"/);assert.doesNotMatch(html,/data-ranking=/);
+  assert.match(html, /data-ranking-metric="points"/);assert.doesNotMatch(html,/data-ranking=/);
   vm.runInContext("state.leagues[0].admin='another-president';page='lega';render()",ctx);
   assert.doesNotMatch(html,/Invita nella tua lega|Invita con WhatsApp|id="copy"/);
   assert.doesNotMatch(html,/data-page="admin"/);

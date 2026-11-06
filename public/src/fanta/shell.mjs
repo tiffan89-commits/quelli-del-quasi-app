@@ -21,7 +21,7 @@ export function topBar({ mode, league, credits,slipCredits,user,hideCredits=fals
     ? `<button type="button" class="v2-league-chip fanta-league-chip" data-action="leagues" aria-haspopup="dialog">
         ${leagueEmblem(league)}
         <span class="v2-league-name">${esc(league.name.replace(/^Random League/i,'Lega pilota'))}</span>
-        
+
         <span aria-hidden="true">▾</span>
       </button>`
     : '<span></span>';

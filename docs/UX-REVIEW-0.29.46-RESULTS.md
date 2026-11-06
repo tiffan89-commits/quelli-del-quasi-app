@@ -78,4 +78,21 @@ Il nuovo pannello chiuso misura 947 px a 390×844. Il prima Fanta è rilevato co
 
 File: `public/src/fanta/app.mjs`, `shell.mjs`, `lega.mjs`, `competitions-ui.mjs`, `test/ux-ux-core.test.mjs`, rapporto e CHANGELOG. [Pannello Fanta](ux-0.29.46/blocco4-presidente-fanta-390.png).
 
-Seguono i blocchi 5–7 e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.
+## Blocco 5 — gerarchia e densità
+
+Titoli secondari 24–28 px; Oggi Bar con eroe di 120 px su telefono, riepilogo compatto e resoconto apribile. Mini-grafico dai dati già in memoria, grafico completo spostato in Classifica e chiuso di default. Righe classifica da 45 px; saldo disponibile/impegnato su apertura della singola riga, pulsanti Punti/Crediti. Sezioni della schedina in una sola fascia orizzontale.
+
+| Vista | Viewport | Prima | Dopo |
+|---|---|---:|---:|
+| Bar Oggi | 390×844 | 2559 px | 1678 px |
+| Bar Classifica | 390×844 | 1965 px | 1649 px |
+| Bar Schedina | 390×844 | 1331 px | 1264 px |
+| Fanta Oggi | 390×844 | 1976 px | 1906 px |
+| Bar Oggi | 1280×800 | 2686 px | 1889 px |
+| Bar Classifica | 1280×800 | 1979 px | 1647 px |
+| Bar Schedina | 1280×800 | 1245 px | 1223 px |
+| Fanta Oggi | 1280×800 | 1593 px | 1593 px |
+
+21 test pertinenti passati. Verificato cambio Punti/Crediti senza alterare importi o graduatorie, dettaglio saldo richiudibile e consultazione grafico. File: `app.mjs`, `league-dashboard.mjs`, `bar-fanta-rankings.mjs`, `progression-ui.mjs`, `ux-spacing.css`, test interfaccia e pulizia whitespace in `fanta/shell.mjs`. [Oggi](ux-0.29.46/blocco5-oggi-390.png), [Classifica](ux-0.29.46/blocco5-classifica-390.png).
+
+Seguono i blocchi 6–7 e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.

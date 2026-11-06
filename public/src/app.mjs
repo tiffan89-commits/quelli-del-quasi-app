@@ -1121,7 +1121,7 @@ function matchStatus(m) {
     return "Risultato in aggiornamento";
   return m.kickoff ? date(m.kickoff) : "Orario da definire";
 }
-function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt);}
+function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt)+portfolioShell();}
 function adminBudget() { return ""; }
 function profile() {
   const u = state.user,
@@ -1202,20 +1202,20 @@ function maybeRevealRewards(){
   d.showModal();
  }catch{rewardRevealOpen=false;}
 }
-function portfolioShell(){return '<section class="dash-portfolio" id="league-portfolio" aria-label="La Borsa del Quasi"><div class="dash-section-head"><div><h2>La Borsa del Quasi</h2><small>Serie A · crediti e punti, giornata per giornata.</small></div></div><div id="portfolio-lazy"></div></section>';}
+function portfolioShell(){return '<section class="dash-portfolio" id="portfolio-shell" aria-label="La Borsa del Quasi"><div id="portfolio-lazy"></div></section>';}
 function bindLazySections(l){
  if(!l)return;
  const target=document.querySelector('#portfolio-lazy');
  if(target&&!target.dataset.loaded){
   target.dataset.loaded='true';
-  target.outerHTML=portfolioBody(l,'seriea',esc,fmt);
+  target.outerHTML=progressionView(l,'seriea',esc,fmt,null,{serieAOnly:true});
   bindProgression(l,'seriea',esc,fmt,()=>{});
  }
 }
 function fantasyNudge(){return '';}
 
 function settings(l,r){
- return (isLeagueAdmin(l,state.user.id)?presidentTodos(barPresidentTasks(l)):'')+randomLeagueControls(l,state.user)+'<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>'+fantasyNudge(l)+'<div id="league-objectives">'+achievementBoard(l,esc,dashboardSource,dashboardCompetition,{calendar:state.calendar})+'</div>'+portfolioShell()+fantaQuasiTeaser(esc);
+ return (isLeagueAdmin(l,state.user.id)?presidentTodos(barPresidentTasks(l)):'')+randomLeagueControls(l,state.user)+'<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>'+fantasyNudge(l)+'<div id="league-objectives">'+achievementBoard(l,esc,dashboardSource,dashboardCompetition,{calendar:state.calendar})+'</div>'+fantaQuasiTeaser(esc);
 }
 let presidentGroup=null;
 function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p class="muted">La modalità ponderata distingue gli esiti secchi dalle doppie chance. Le giornate già create conservano le proprie regole.</p><button type="button" class="secondary" id="balanced-rules">Ripristina ponderazione automatica</button>${adminBudget()}<div class="notice">Crediti iniziali per i nuovi iscritti. Le regole aggiornate si applicano alle giornate acquisite successivamente; le giornate già create mantengono le proprie regole.</div>${[
@@ -1559,6 +1559,7 @@ function bind(l, r) {
     const group=L().fantasyRanking?.groups?.find(g=>'bet:'+g.key===rankingScope);
     sourceScope=group?'fantacalcio':'seriea';competitionScope=group?.competitionKeys[0]||null;selectedRoundId=null;hydrateDraft();render();
   };
+  document.querySelectorAll('[data-ranking-metric]').forEach(b=>b.onclick=()=>{tab=b.dataset.rankingMetric;render();});
   if($('#ranking-metric'))$('#ranking-metric').onchange=e=>{tab=e.target.value;render();};
   bindBarSlips();
   if ($("#profile-name"))

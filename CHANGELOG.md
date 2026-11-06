@@ -1,5 +1,6 @@
 # Unreleased — anteprima UX 0.29.46
 
+- Blocco 5: titoli più compatti, testata Oggi mobile di 120 px e riepilogo unificato; mini-grafico in Oggi e grafico completo richiudibile in Classifica. Classifica con righe da 45 px, dettagli crediti espandibili e pulsanti Punti/Crediti. Sezioni schedina su una sola riga scorrevole.
 - Blocco 4: strumenti di gestione Fanta riuniti nel pannello del presidente, pagine Lega informative per tutti, squadre computer riconoscibili e percorso di attivazione Fanta dal Bar. Nessuna modifica alle API o alle regole.
 - Blocco 3: pannello Presidente con quattro gruppi e riepiloghi, accesso diretto riservato agli admin, Da fare in Oggi, invito unico, membri da 49 px con ricerca e menu rimozione, palette compatta. Formulari e operazioni di gioco invariati.
 - Blocco 2: barra schedina compatta di 64 px, importo modificabile in un pannello richiudibile e chat nascosta mentre la barra è attiva. Conservati bozza, limiti, stato e comportamento del salvataggio; controlli privacy ripristinati anche tornando alla login.

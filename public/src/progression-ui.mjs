@@ -61,3 +61,10 @@ export function bindRewards(user,esc,onEquip){
  root.querySelectorAll('[data-catalog-filter]').forEach(b=>b.onclick=()=>{catalogFilter=b.dataset.catalogFilter;page=0;root.querySelectorAll('[data-catalog-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render();});
  root.querySelector('#reward-more').onclick=()=>{limit+=4;render();};root.querySelector('#catalog-prev').onclick=()=>{page--;render();root.querySelector('.reward-catalog>summary').scrollIntoView({block:'start'});};root.querySelector('#catalog-next').onclick=()=>{page++;render();root.querySelector('.reward-catalog>summary').scrollIntoView({block:'start'});};render();
 }
+
+export function portfolioPreview(league,esc){
+ const d=league.progression?.seriea,h=d?.history||[];
+ if(!h.length)return '<p class="portfolio-mini-empty">La Borsa del Quasi apre con la prima giornata conclusa.</p>';
+ const values=[d.initial||0,...h.map(r=>r.capital)],min=Math.min(...values),max=Math.max(...values),coords=values.map((v,i)=>(i*300/Math.max(1,values.length-1)).toFixed(1)+','+(45-(v-min)/Math.max(1,max-min)*40).toFixed(1)).join(' ');
+ return '<button type="button" class="portfolio-mini" data-page="classifiche" aria-label="Apri La Borsa del Quasi in Classifica"><span>La Borsa del Quasi <b aria-hidden="true">↗</b></span><svg viewBox="0 0 300 50" role="img" aria-label="Andamento dei crediti nelle ultime giornate"><polyline fill="none" stroke="currentColor" stroke-width="2" points="'+esc(coords)+'"/></svg></button>';
+}
