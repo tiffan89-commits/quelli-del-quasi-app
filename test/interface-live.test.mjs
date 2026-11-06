@@ -10,7 +10,7 @@ import {randomLeagueControls,bindRandomLeagues} from '../public/src/random-leagu
 import {fantasyAccount,fantasyGroup,fantasyWalletKey} from '../public/src/fantasy-accounts.mjs';
 import * as v2Tabs from '../public/src/v2/tabs.mjs';
 import {renderLeagueChip,isLeagueAdmin} from '../public/src/v2/league-switcher.mjs';
-import {renderSlipV2} from '../public/src/v2/slip-v2.mjs';
+import {renderSlipV2,patchSlipV2} from '../public/src/v2/slip-v2.mjs';
 import {barModeSwitch} from '../public/src/fanta-mode.mjs';
 import {inlineResultView,patchSlipResults} from '../public/src/slip-results.mjs';
 import { LEAGUE_COLORS, LEAGUE_EMBLEMS } from "../public/src/league-theme.mjs";
@@ -110,7 +110,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
-    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
+    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },

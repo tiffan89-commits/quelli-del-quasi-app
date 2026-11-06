@@ -1,5 +1,6 @@
 # 0.29.46 — revisione UX · non pubblicata
 
+- Correzione nella prova: esiti, importo e mercati della schedina aggiornano solo i controlli, conservando gli stemmi e le testate partita già caricati. Verificati Bar/Fanta, bozze e salvataggio protetto; nessun aggiornamento del sito ufficiale.
 - Prova separata su pre.quellidelquasi.com con account sintetici, password privata, dati RAM, noindex e nessun invio o worker verso utenti reali. Sito ufficiale invariato.
 - Blocco 7: nomi e titoli dei Quasi sotto le miniature, badge partecipanti compatti, nomi squadra senza spezzare parole, nessuna etichetta vuota delle ultime partite, campo Fanta allineato e font coerenti. Barra desktop da 48 px e dashboard su due colonne. Avviso connessione solo nei risultati dopo più errori, senza cambiare aggiornamenti o frequenze.
 - Blocco 6: navigazione Bar/Fanta a cinque voci coerenti, pagina Lega informativa separata da Oggi, selettore superiore dedicato alle leghe. Quasi mostra soltanto la galleria; guardaroba e premi rimangono nel Profilo.

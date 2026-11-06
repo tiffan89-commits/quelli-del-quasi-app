@@ -20,7 +20,7 @@ import {createLiveChannel,requestJson,mergeLiveSnapshot,patchRegion,patchDashboa
 import {withButtonFeedback} from './action-feedback.mjs';
 import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
 import {footballStatistics,bindFootballStatistics} from './football-statistics.mjs';
-import { renderSlipV2, bindSlipV2, stakeInputValue } from "./v2/slip-v2.mjs";
+import { renderSlipV2, patchSlipV2, bindSlipV2, stakeInputValue } from "./v2/slip-v2.mjs";
 import { quasiScene, showQuasi } from "./quasi-scene.mjs";
 import {barSlipsView,barVerdictPatch,barProfileView} from "./bar-slips.mjs";
 import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource, renderLegaSections } from "./v2/tabs.mjs";
@@ -2150,17 +2150,22 @@ function bindNew(l, r) {
       bar.querySelector(".v2-error")?.remove();
       if (fresh.querySelector(".v2-error")) bar.append(fresh.querySelector(".v2-error"));
     };
-    bindSlipV2(document, {
+    const redrawChoices=()=>{
+      if(!patchSlipV2(document,{round:R(),picks,stake,credits:me().credits,openMatch:activeMatchId,esc,fmt,date})){render();return;}
+      bindSlipV2(document,choiceHandlers);controls();patchSlipResults($('#app'),R(),picks,isClosed(R()));
+    };
+    const choiceHandlers={
       onPick: (id, value) => {
         if (isClosed(r) || busy) return;
         if (picks[id] === value) delete picks[id]; else picks[id] = value;
-        persistDraft(); render();
+        persistDraft(); redrawChoices();
       },
-      onToggle: (id) => { activeMatchId = activeMatchId === id ? null : id; render(); },
+      onToggle: (id) => { activeMatchId = activeMatchId === id ? null : id; redrawChoices(); },
       onStake: (value) => { if (busy || isClosed(r)) return; stake = value; persistDraft(); controls(); },
       onSave: async () => { const pending = saveCurrentSlip(); controls(); await pending; controls(); },
       onGo: (target) => { void navigatePage(target); },
-    });
+    };
+    bindSlipV2(document,choiceHandlers);
     controls();
     patchSlipResults($("#app"), r, picks, isClosed(r));
   }

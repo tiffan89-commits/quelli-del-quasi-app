@@ -138,3 +138,9 @@ Versione sorgenti e cache: 0.29.46, canale candidate. Build frontend riuscita (1
 Metadati di versione aggiornati in package.json, lockfile, public/version.json e cache del service worker. I file SEO generati dalla build preview sono stati riportati ai contenuti precedenti per non introdurre noindex nei sorgenti del sito ufficiale. Il sito installato è rimasto separato per tutta la revisione.
 
 Verifiche della prova pubblica: HTTPS, login con password errata rifiutata, entrambi gli account sintetici autenticati, bootstrap Fanta disponibile, cookie Secure, robots e noindex. Verificati in browser ingresso, switch e pannello. Sito ufficiale ancora `0.29.45-selfhost`. [Screenshot della prova pubblica](ux-0.29.46/pre-0.29.46-pubblica.png).
+
+## Correzione successiva — stemmi intermittenti nella schedina
+
+La selezione di un esito ricreava il DOM della pagina, inclusi gli stemmi con caricamento lazy/decodifica asincrona. Il codice era condiviso con l’app normale; nella prova il comportamento era amplificato dalla risposta no-store delle immagini. Le scelte e l’espansione dei mercati ora aggiornano solo controlli, quote e riepilogo, lasciando intatti header, immagini e dettagli aperti. Stesso intervento nelle schedine Fanta, anche per l’importo.
+
+32 test pertinenti passati, con due regressioni che verificano identità degli stessi elementi img/header/input dopo più scelte e nessun ridisegno completo del Fanta. Build riuscita; in browser sei stemmi caricati e visibili dopo scelta ed espansione dei mercati. I soli tre moduli FE sono stati copiati nella prova senza riavvio o reset dei dati. [Screenshot](ux-0.29.46/stemmi-stabili-schedina.png). Sito ufficiale invariato.

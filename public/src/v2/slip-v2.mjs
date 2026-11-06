@@ -1,4 +1,5 @@
 import {slipTeamLabel} from '../club-crest.mjs';
+import {patchRegion} from '../live-channel.mjs';
 import {pointTerms} from '../../scoring.mjs';
 // 0.26: righe compatibili con patchSlipResults (data-match-card, data-inline-result, data-match-status, data-pick-feedback).
 // Schedina v2: 1/X/2 al primo livello, altri mercati espandibili, barra fissa con puntata e quota totale.
@@ -57,7 +58,7 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
     ? ['v2-error is-hint', 'status', 'Mancano ' + left + (left === 1 ? ' partita' : ' partite') + ': scegli un esito per ognuna per confermare.']
     : ['v2-error', 'alert', 'Controlla la puntata (1–' + max + ') e i crediti disponibili.'];
   const label = saved ? 'Confermata ✓' : round.slip ? 'Salva' : 'Conferma';
-  return '<section class="v2-slip" data-slip-match-list><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
+  return '<section class="v2-slip" data-slip-round="'+esc(round.id||'')+'" data-slip-match-list><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
     '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><p class="v2-sub">' + chosen + ' / ' + (round.matches?.length || 0) + ' esiti · ' +
     (availability==='non ancora aperta'?'non ancora aperta':closed ? 'chiusa' : 'chiude ' + esc(date(round.deadline || round.kickoff))) + ' · una scelta per partita</p>' + rows +
     '<p class="tiny muted">Punti per gli esiti indovinati, crediti per la puntata moltiplicata per la quota totale. Quote uguali per tutti. <a href="#" data-v2-go="regolamento">Regolamento</a></p></section>' +
@@ -70,6 +71,26 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
       (hint ? '<p class="' + hint[0] + ' sr-only" role="' + hint[1] + '">' + hint[2] + '</p>' : '') + '</div>');
 }
 
+// A choice changes the odds controls, never the match header or its loaded crest.
+// A different round/shape deliberately falls back to the caller's normal render.
+export function patchSlipV2(root,options){
+ const current=root.querySelector('.v2-slip');if(!current||current.dataset.slipRound!==String(options.round?.id||''))return false;
+ const doc=current.ownerDocument,template=doc.createElement('template');template.innerHTML=renderSlipV2(options);
+ const fresh=template.content.querySelector('.v2-slip'),bar=root.querySelector('.v2-slipbar'),nextBar=template.content.querySelector('.v2-slipbar');
+ const rows=[...current.querySelectorAll('[data-match-card]')],nextRows=[...fresh.querySelectorAll('[data-match-card]')],byId=new Map(rows.map(row=>[row.dataset.matchCard,row]));
+ if(rows.length!==nextRows.length||nextRows.some(row=>!byId.has(row.dataset.matchCard))||!!bar!==!!nextBar)return false;
+ current.querySelector('.v2-sub').textContent=fresh.querySelector('.v2-sub').textContent;
+ for(const next of nextRows){
+  const row=byId.get(next.dataset.matchCard),odds=row.querySelector('.v2-odds-main');
+  patchRegion(odds,next.querySelector('.v2-odds-main').outerHTML);
+  const extra=row.querySelector('.v2-odds-extra'),nextExtra=next.querySelector('.v2-odds-extra');
+  if(extra&&nextExtra)patchRegion(extra,nextExtra.outerHTML);
+  else if(extra)extra.remove();else if(nextExtra)odds.after(nextExtra);
+ }
+ if(bar){patchRegion(bar,nextBar.outerHTML);const input=bar.querySelector('#stake'),next=nextBar.querySelector('#stake');if(input&&next){input.disabled=next.disabled;if(doc.activeElement!==input)input.value=next.value;}}
+ return true;
+}
+
 // handlers: onPick(matchId, value), onToggle(matchId), onStake(n), onSave(), onGo(page)
 export function bindSlipV2(root, { onPick, onToggle, onStake, onSave, onGo }) {
   root.querySelectorAll('.v2-odd[data-pick]').forEach(b => b.onclick = () => onPick(b.dataset.pick, b.dataset.value));
@@ -77,6 +98,6 @@ export function bindSlipV2(root, { onPick, onToggle, onStake, onSave, onGo }) {
   root.querySelectorAll('[data-v2-stake]').forEach(b => b.onclick = () => {onStake(Number(b.dataset.v2Stake));root.querySelector('.v2-stake-picker')?.removeAttribute('open');});
   const input = root.querySelector('#stake'); if (input) input.oninput = () => onStake(Number(input.value));
   const save = root.querySelector('#save-slip'); if (save) save.onclick = () => {root.querySelector('.v2-stake-picker')?.removeAttribute('open');return onSave();};
-  root.querySelector('.v2-stake-picker')?.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.currentTarget.removeAttribute('open');e.currentTarget.querySelector('summary')?.focus();}});
+  const picker=root.querySelector('.v2-stake-picker');if(picker)picker.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.currentTarget.removeAttribute('open');e.currentTarget.querySelector('summary')?.focus();}};
   root.querySelectorAll('[data-v2-go]').forEach(a => a.onclick = (e) => { e.preventDefault(); onGo(a.dataset.v2Go); });
 }
