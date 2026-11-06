@@ -48,4 +48,19 @@ Screenshot: [barra a 390 px](ux-0.29.46/blocco2-barra-390.png), [modifica import
 
 ## Passaggi successivi
 
-Il pannello del presidente (blocco 3) richiede proposta e OK del proprietario prima dell’implementazione. Le altre modifiche e la pre-produzione pubblica 0.29.46 seguono nell’ordine richiesto. Nessun merge su main o deploy sul sito ufficiale.
+## Blocco 3 — pannello del presidente
+
+Struttura approvata dal proprietario: Persone, Regole, Calendario e asta, Identità. Riepiloghi leggibili da chiusi, accesso diretto dalla barra per i presidenti, nessuna tab Oggi evidenziata erroneamente. Da fare espone solo stati già disponibili, senza inviare promemoria nuovi. Invito della lega unico nel gruppo Persone, codice/link/WhatsApp; premiati conservano il salvataggio esplicito, ora raggiungibile durante lo scorrimento. Rimozioni nel menu ⋯ con conferma già esistente. Ricerca oltre 12 membri e palette accessibile da 36 px.
+
+| Stato Admin Bar | Viewport | Prima | Dopo |
+|---|---|---:|---:|
+| Tutto chiuso | 390×844 | 1024 px | 958 px |
+| Persone aperto | 390×844 | 3174 px | 2335 px |
+| Tutto chiuso | 1280×800 | 1027 px | 942 px |
+| Persone aperto | 1280×800 | 2443 px | 2213 px |
+
+La nuova sezione Persone comprende anche l’invito, prima separato e chiuso: il confronto aperto non è soltanto una riduzione di righe. Ogni riga membro misura 49 px. Verificati ricerca, apertura/chiusura, assenza di tab attiva, accessibilità e conservazione dei form. 19 test pertinenti passati; nessun test massivo backend.
+
+File principali: `public/src/president-panel.mjs`, `public/src/app.mjs`, `public/src/v2/league-switcher.mjs`, `public/src/v2/tabs.mjs`, `public/ux-spacing.css`; test `ux-president`, `interface-live`, `ux-ux-core`. [Screenshot telefono](ux-0.29.46/blocco3-presidente-390.png).
+
+Gli strumenti Fanta seguono nel blocco 4, poi le altre modifiche e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.

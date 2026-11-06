@@ -22,7 +22,7 @@ export function legaSections(isAdmin) {
   return s;
 }
 
-export function tabForPage(page){return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',storico:'classifica',quasi:'quasi',profilo:'profilo'})[page]||'oggi';}
+export function tabForPage(page){if(page==='admin')return null;return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',storico:'classifica',quasi:'quasi',profilo:'profilo'})[page]||'oggi';}
 export function defaultSource(){return 'seriea';}
 export function routeForTab(tab){return {page:({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo'})[tab]||'lega',sourceScope:'seriea'};}
 export function renderTabBar(active, { hasFanta = true } = {}) {

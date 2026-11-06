@@ -1,3 +1,4 @@
+import {presidentEntry} from '../president-panel.mjs';
 import {leagueEmblem} from '../league-theme.mjs';
 import {leagueCreationFields,leagueCreationPayload} from '../league-create-form.mjs';
 // Selettore lega v2: chip in alto con ruolo e crediti, bottom sheet con tutte le leghe.
@@ -23,8 +24,8 @@ export function renderLeagueChip(league, uid, esc, fmt, mode='', account=null, c
   return '<header class="v2-top"><button type="button" class="v2-league-chip" id="v2-open-leagues" aria-haspopup="dialog">' +
     leagueEmblem(league) +
     '<span class="v2-league-name">' + esc(league.name) + '</span>' +
-    '<span class="v2-role' + (admin ? ' is-admin' : '') + '">' + (admin ? 'ADMIN' : 'MEMBRO') + '</span>' +
-    '<span aria-hidden="true">▾</span></button><div class="ux-controls">' + mode +
+    (!admin?'<span class="v2-role">MEMBRO</span>':'') +
+    '<span aria-hidden="true">▾</span></button><div class="ux-controls">' + (admin?presidentEntry():'')+mode +
     (me ? '<div class="v2-credits"><b>' + fmt(me.credits ?? 0) + '</b><span>'+esc(caption)+'</span></div>' : '') +
     '<button type="button" class="ux-profile" data-bar-page="profilo" aria-label="Apri profilo"'+(profileActive?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button></div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
 }

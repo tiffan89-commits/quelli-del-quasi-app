@@ -1,3 +1,4 @@
+import {presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
 import {nicknameNotice} from './nickname-notice.mjs';
 import {pointTerms} from '../scoring.mjs';
@@ -621,7 +622,7 @@ function render() {
   const l = L(),
     r = R(),
     m = me();
-  if(page==='admin'&&l?.admin!==state.user.id)page='lega';
+  if(page==='admin'&&!isLeagueAdmin(l,state.user.id))page='lega';
   const content =
     (!state.user.emailVerified && !state.user.demo) || page === "profilo"
       ? profile()
@@ -659,6 +660,11 @@ function render() {
   placeAppFooter($('#app'));
   syncChatLauncher(l);
   bind(l, r);
+  bindPresidentPanel($('#app'));
+  document.querySelectorAll('[data-president-group]').forEach(b=>b.addEventListener('click',()=>{presidentGroup=b.dataset.presidentGroup;}));
+  document.querySelector('[data-president-copy-link]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/invito/'+encodeURIComponent(l.code));notify('Link copiato.');}catch{notify('Copia il codice della lega.');}});
+  document.querySelector('[data-president-activate]')?.addEventListener('click',()=>{document.getElementById('v2-open-leagues')?.click();document.querySelector('[data-existing-bar]')?.click();});
+  document.querySelectorAll('[data-president-mode]').forEach(b=>b.addEventListener('click',()=>{writeAppRoute({mode:'fanta',page:'presidente',league:l.nativeFantaLink?.leagueId});closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:l.nativeFantaLink?.leagueId,initialTab:'presidente',onBar:openBarTarget});}));
   bindNew(l, r);
   $("#edit-suggested-nickname")?.addEventListener("click",()=>{const section=$(".profile-account");if(section)section.open=true;const field=$("#profile-name input");field?.scrollIntoView({block:"center",behavior:"smooth"});field?.focus({preventScroll:true});});
   if(liveStatus)showLiveStatus(liveStatus);
@@ -1209,11 +1215,10 @@ function bindLazySections(l){
 function fantasyNudge(){return '';}
 
 function settings(l,r){
- return randomLeagueControls(l,state.user)+'<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>'+fantasyNudge(l)+'<div id="league-objectives">'+achievementBoard(l,esc,dashboardSource,dashboardCompetition,{calendar:state.calendar})+'</div>'+portfolioShell()+fantaQuasiTeaser(esc);
+ return (isLeagueAdmin(l,state.user.id)?presidentTodos(barPresidentTasks(l)):'')+randomLeagueControls(l,state.user)+'<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>'+fantasyNudge(l)+'<div id="league-objectives">'+achievementBoard(l,esc,dashboardSource,dashboardCompetition,{calendar:state.calendar})+'</div>'+portfolioShell()+fantaQuasiTeaser(esc);
 }
-function leagueAdmin(l){
- if(l.admin!==state.user.id)return '';
- return '<section class="hero"><div class="eyebrow">PRESIDENTE DI LEGA</div><h1>Admin</h1><p>'+esc(l.name)+'</p></section>'+leagueMembers(l,true)+ '<details class="card league-invite"><summary>Invita nella tua lega</summary><div class="money">'+esc(l.code)+'</div><div class="league-invite-actions"><button class="secondary" id="copy">Copia codice</button>'+whatsappInvite(l,esc)+'</div></details>'+renderAppInvite()+ '<details class="card"><summary>Identità del bar</summary>'+brandingForm(l)+'</details>'+`<details class="card"><summary>Le regole del bar · amministratore</summary><form id="rules"><h3>Le regole del bar</h3><p class="muted">La modalità ponderata distingue gli esiti secchi dalle doppie chance. Le giornate già create conservano le proprie regole.</p><button type="button" class="secondary" id="balanced-rules">Ripristina ponderazione automatica</button>${adminBudget()}<div class="notice">Crediti iniziali per i nuovi iscritti. Le regole aggiornate si applicano alle giornate acquisite successivamente; le giornate già create mantengono le proprie regole.</div>${[
+let presidentGroup=null;
+function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p class="muted">La modalità ponderata distingue gli esiti secchi dalle doppie chance. Le giornate già create conservano le proprie regole.</p><button type="button" class="secondary" id="balanced-rules">Ripristina ponderazione automatica</button>${adminBudget()}<div class="notice">Crediti iniziali per i nuovi iscritti. Le regole aggiornate si applicano alle giornate acquisite successivamente; le giornate già create mantengono le proprie regole.</div>${[
             ["initial", "Crediti iniziali"],
             ["maxStake", "Puntata massima"],
           ]
@@ -1223,8 +1228,20 @@ function leagueAdmin(l){
             )
             .join(
               "",
-            )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field">Vincitori aggiuntivi (uno per riga)<textarea name="extra">${esc(l.rules.winners.filter((x) => !["points", "credits"].includes(x)).join("\n"))}</textarea></label><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form></details>`;
+            )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field">Vincitori aggiuntivi (uno per riga)<textarea name="extra">${esc(l.rules.winners.filter((x) => !["points", "credits"].includes(x)).join("\n"))}</textarea></label><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
+function leagueAdmin(l){
+ if(!isLeagueAdmin(l,state.user.id))return '';
+ const color=LEAGUE_COLORS.find(([v])=>v===l.branding?.accent)?.[1]||LEAGUE_COLORS[0][1];
+ const fanta=l.nativeFantaLink?'<button type="button" data-president-mode="fanta">Fanta →</button>':'';
+ const activate='<button type="button" class="secondary" data-president-activate>Attiva il Fanta di questa lega</button>';
+ return presidentPanel({name:l.name,mode:'bar',other:fanta,open:presidentGroup,tasks:barPresidentTasks(l),groups:{
+ persone:{summary:l.members.length+' membri · '+(l.prizeWinners||[]).length+' a premio · inviti',html:'<section class="president-invite"><h2>Invita nella tua lega</h2><div class="money">'+esc(l.code)+'</div><div class="league-invite-actions"><button class="secondary" id="copy">Copia codice</button>'+whatsappInvite(l,esc)+'<button type="button" class="secondary" data-president-copy-link>Copia link</button></div></section>'+leagueMembers(l,true)},
+ regole:{summary:(l.rules.mode==='weighted'?'Ponderata':'Classica')+' · '+l.rules.initial+' cr iniziali · max '+l.rules.maxStake,html:barRulesForm(l)},
+ calendario:{summary:l.nativeFantaLink?'Fanta attivo · competizioni e asta':l.fantaCreation?'Fanta in preparazione':'Il Fanta non è attivo',html:l.nativeFantaLink?'<p>Competizioni, rose e asta si gestiscono dal Fanta della stessa lega.</p>'+fanta:randomLeagueControls(l,state.user)||activate},
+ identita:{summary:'Simbolo '+(l.branding?.emblem||'Q')+' · '+color,html:brandingForm(l)}
+ }});
 }
+
 function calendarStatus(m) {
   if(m.status==='LIVE')return 'LIVE · '+(m.liveScore?.join(' – ')||'—')+(m.clock?' · '+m.clock:'');
   return m.status === "FT" && m.score
@@ -2332,7 +2349,7 @@ function brandingForm(l) {
     '</div><fieldset class="theme-palette"><legend>Colore del template</legend>' +
     LEAGUE_COLORS.map(
       ([color, label]) =>
-        '<label class="theme-option"><input type="radio" name="accent" value="' +
+        '<label class="theme-option" title="'+esc(label)+'"><input type="radio" name="accent" data-color-name="'+esc(label)+'" aria-label="'+esc(label)+'" value="' +
         color +
         '" ' +
         ((l.branding?.accent || LEAGUE_COLORS[0][0]) === color
@@ -2350,46 +2367,13 @@ function brandingForm(l) {
   );
 }
 function leagueMembers(l, admin) {
-  const winners = l.prizeWinners || [];
-  return (
-    (admin
-      ? '<details class="card member-management"><summary>Gestisci partecipanti e premi</summary><p class="muted">Scegli chi va a premio. La scelta viene mostrata in classifica e non modifica punti o crediti.</p><form id="league-prizes">' +
-        l.members
-          .map(
-            (m) =>
-              '<div class="member-management-row"><label><input type="checkbox" name="winner" value="' +
-              esc(m.uid) +
-              '" ' +
-              (winners.includes(m.uid) ? "checked" : "") +
-              "> " +
-              esc(m.name) +
-              ' <span class="tiny muted">a premio</span></label>' +
-              (m.uid !== l.admin
-                ? '<button class="text-button" type="button" data-member-remove="' +
-                  esc(m.uid) +
-                  '">Rimuovi dalla lega</button>'
-                : '<span class="tiny muted">Presidente</span>') +
-              "</div>",
-          )
-          .join("") +
-        '<button class="secondary">Salva premiati</button></form>' +
-        ((l.removedMembers || []).length
-          ? "<h3>Partecipanti rimossi</h3>" +
-            l.removedMembers
-              .map(
-                (m) =>
-                  '<div class="member-management-row"><span>' +
-                  esc(m.name) +
-                  '</span><button type="button" class="secondary" data-member-restore="' +
-                  esc(m.uid) +
-                  '">Riammetti</button></div>',
-              )
-              .join("")
-          : "") +
-        "</details>"
-      : "")
-  );
+ if(!admin)return '';
+ const winners=l.prizeWinners||[];
+ return '<section class="member-management"><h2>Partecipanti e premi</h2><p class="tiny muted">Scegli chi va a premio, poi salva.</p>'+
+ (l.members.length>12?'<label class="field">Cerca partecipante<input type="search" data-member-search placeholder="Nome del partecipante"></label><p class="tiny muted" data-member-count role="status">'+l.members.length+' partecipanti mostrati</p>':'')+
+ '<form id="league-prizes">'+l.members.map(m=>'<div class="member-management-row" data-member-name="'+esc(m.name)+'"><span class="member-name">'+esc(m.name)+'</span><label class="member-prize"><input type="checkbox" name="winner" value="'+esc(m.uid)+'" '+(winners.includes(m.uid)?'checked':'')+'><span>a premio</span><span class="sr-only"> · '+esc(m.name)+'</span></label>'+(m.uid!==l.admin?'<details class="member-menu"><summary aria-label="Azioni per '+esc(m.name)+'">⋯</summary><button class="text-button" type="button" data-member-remove="'+esc(m.uid)+'">Rimuovi dalla lega</button></details>':'<span class="sr-only">Presidente</span>')+'</div>').join('')+'<div class="member-save"><button class="secondary">Salva premiati</button></div></form>'+((l.removedMembers||[]).length?'<details><summary>Partecipanti rimossi · '+l.removedMembers.length+'</summary>'+l.removedMembers.map(m=>'<div class="member-management-row"><span>'+esc(m.name)+'</span><button type="button" class="secondary" data-member-restore="'+esc(m.uid)+'">Riammetti</button></div>').join('')+'</details>':'')+'</section>';
 }
+
 function bindFantasy(l) {
 }
 async function act(route, data, msg) {

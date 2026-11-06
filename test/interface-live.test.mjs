@@ -1,5 +1,6 @@
 import {pointTerms} from '../public/scoring.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
+import {presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
@@ -94,6 +95,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   for(const match of activeRound.matches){match.kickoff=activeRound.kickoff;match.odds={1:2,X:3,2:4};}
   let html = "",workerMessage,barTab;const publicEvents=new Map();let blockRequests=false,requestCount=0,fantaEntries=0;const pendingRequests=[];
   const app = {
+      querySelector(){return null;},
       insertAdjacentHTML(position,value) { html=value+html; },
       set innerHTML(v) {
         html = v;
@@ -108,7 +110,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
-    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,placeAppFooter,restoreAppFooter,
+    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },
