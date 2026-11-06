@@ -31,7 +31,7 @@ test('Oggi retains a clickable completed round while the next round is open; exp
  const source=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=source.slice(source.indexOf('function availableRounds()'),source.indexOf('\nfunction me()')),ctx={L:()=>l,publicSlipView:()=>false,sourceScope:'seriea',competitionScope:null,selectedRoundId:'old',selectableSlipRounds,selectablePublicSlipRounds,sourceOf,currentSlipRound,defaultSlipRound,currentPublicSlipRound,state,Date};vm.createContext(ctx);vm.runInContext(body+'\nselected=R().id;',ctx);assert.equal(ctx.selected,'old');
 });
 
-test('header controls share one non-wrapping container; both products expose the profile in the same header position',()=>{
- const {document}=parseHTML(renderLeagueChip({id:'l',name:'Lega',members:[{uid:'u',credits:9999}]},'u',String,String,'<button>Bar Fanta</button>'));assert.ok(document.querySelector('.ux-controls .v2-credits'));assert.equal(document.querySelectorAll('.ux-controls .ux-profile').length,1);
- const f=parseHTML(topBar({mode:'fanta',league:{name:'Lega'},credits:9999,slipCredits:9999})).document;assert.equal(f.querySelectorAll('.ux-controls .ux-profile').length,1);assert.equal(f.querySelectorAll('.ux-controls .v2-credits').length,2);
+test('header controls share one non-wrapping container; both products expose settings in the same header position',()=>{
+ const {document}=parseHTML(renderLeagueChip({id:'l',name:'Lega',members:[{uid:'u',credits:9999}]},'u',String,String,'<button>Bar Fanta</button>'));assert.ok(document.querySelector('.ux-controls .v2-credits'));assert.equal(document.querySelectorAll('.ux-controls .settings-entry').length,1);
+ const f=parseHTML(topBar({mode:'fanta',league:{name:'Lega'},credits:9999,slipCredits:9999})).document;assert.equal(f.querySelectorAll('.ux-controls .settings-entry').length,1);assert.equal(f.querySelectorAll('.ux-controls .v2-credits').length,2);
 });

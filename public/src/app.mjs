@@ -1,3 +1,4 @@
+import {openMatchPage} from './match-page.mjs';
 import {barHomeInvite} from './bar-home-invite.mjs';
 import {leagueActions} from './league-actions.mjs';
 import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from './president-panel.mjs';
@@ -1175,7 +1176,7 @@ function bindDashboard() {
     if(round){sourceScope=sourceOf(round);selectedRoundId=round.id;competitionScope=round.competitionKey||null;}
     slipScope='mine';page='schedina';writeAppRoute({mode:'bar',page:'schedina',league:L()?.id,round:selectedRoundId});hydrateDraft();render();window.scrollTo(0,0);
   });
-  const avatar=$('.dashboard-character');
+  const avatar=$('[data-open-quasi-studio]');
   if(avatar)avatar.onclick=()=>{void openStudio();};
   bindObjectives();
 }
@@ -1763,7 +1764,7 @@ function bind(l, r) {
 function serieATable() {
   const t = state.standings;
   if (!t) return '<div class="card">Classifica in aggiornamento.</div>';
-  return `<section class="hero"><div class="eyebrow">SERIE A · ${t.season}/${String(t.season + 1).slice(-2)}</div><h1>IL CAMPIONATO.<br><em>QUI CONTANO I GOL.</em></h1><p>Vittorie, pareggi, sconfitte e rendimento tra casa e trasferta.</p></section><div class="card table-scroll"><table class="serie-table"><thead><tr>${["#", "Squadra", "Pt", "PG", "V", "N", "P", "GF", "GS", "DR", "Vittorie casa", "Vittorie fuori"].map((x) => `<th scope="col">${x}</th>`).join("")}</tr></thead><tbody>${t.rows.map((x, i) => `<tr data-ranking-team="${esc(x.name)}"><td>${i + 1}</td><td>${teamLabel(x.name)}</td><td><b class="green">${x.points}</b></td>${["played", "won", "drawn", "lost", "gf", "gs", "dr"].map((k) => `<td>${x[k]}</td>`).join("")}<td>${x.homeWinPct === null ? "—" : fmt(x.homeWinPct) + "%"} <small class="muted">(${x.homeWon}/${x.homePlayed})</small></td><td>${x.awayWinPct === null ? "—" : fmt(x.awayWinPct) + "%"} <small class="muted">(${x.awayWon}/${x.awayPlayed})</small></td></tr>`).join("")}</tbody></table></div><p class="tiny muted">PG: partite giocate · V/N/P: vinte, pareggiate, perse · GF/GS: gol fatti e subiti · DR: differenza reti. Le percentuali usano le sole partite giocate rispettivamente in casa e fuori.</p><div class="notice">${esc(t.note)} ${t.finals} risultati finali disponibili · aggiornamento ${date(t.updatedAt)}.</div>`;
+  return `<section class="hero"><div class="eyebrow">SERIE A · ${t.season}/${String(t.season + 1).slice(-2)}</div><h1>IL CAMPIONATO.<br><em>QUI CONTANO I GOL.</em></h1><p>Punti, risultati e gol del campionato.</p></section><div class="card serie-table-card"><table class="serie-table"><thead><tr>${["#", "Squadra", "Pt", "PG", "V", "N", "P", "GF", "GS", "DR"].map((x) => `<th scope="col">${x}</th>`).join("")}</tr></thead><tbody>${t.rows.map((x, i) => `<tr data-ranking-team="${esc(x.name)}"><td>${i + 1}</td><td>${teamLabel(x.name)}</td><td><b class="green">${x.points}</b></td>${["played", "won", "drawn", "lost", "gf", "gs", "dr"].map((k) => `<td>${x[k]}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="tiny muted">PG: partite giocate · V/N/P: vinte, pareggiate, perse · GF/GS: gol fatti e subiti · DR: differenza reti.</p><div class="notice">${esc(t.note)} ${t.finals} risultati finali disponibili · aggiornamento ${date(t.updatedAt)}.</div>`;
 }
 function otherSlips(l, r) {
   if (!l || !r)
@@ -1892,11 +1893,11 @@ async function openMatch(id, quiet = false) {
   );
   let match = fantasyRound?.matches.find((m) => m.id === id);
   if (match) {
-    if (quiet && !document.querySelector("dialog[open]")) {
+    if (quiet && !document.querySelector("#match-page-root")) {
       activeMatchId = null;
       return;
     }
-    const d = quiet ? document.querySelector("dialog[open]") : popup(),
+    const d = quiet ? document.querySelector("#match-page-root") : openMatchPage({onClose:()=>{activeMatchId=null;}}),
       scroll = d.scrollTop;
     activeMatchId = id;
     try{match=await matchSnapshot(match,fantasyRound);}catch(error){d.innerHTML='<button class="secondary" id="close-modal">Chiudi ×</button><p>'+esc(error.message)+'</p>';$('#close-modal').onclick=()=>d.close();return;}
@@ -1911,6 +1912,8 @@ async function openMatch(id, quiet = false) {
     d.dataset.match = id;
     d.dataset.fantasyRevision=match.detailRevision||match.details?.at||'';
     const fantasyScore=d.querySelector(".live-score");if(fantasyScore)fantasyScore.setAttribute("data-live-detail-score", "");
+    d.querySelectorAll('details[open]').forEach(x=>x.open=false);
+    const bookmaker=d.querySelector('details.card');if(bookmaker)d.append(bookmaker);
     bindLineupPitch(d);
     if (quiet) d.scrollTop = scroll;
     $("#close-modal").onclick = () => {
@@ -1921,10 +1924,10 @@ async function openMatch(id, quiet = false) {
     return;
   }
 
-  let dialog = $("#match-modal");
+  let dialog = $("#match-page-root");
   if (quiet && (!dialog?.open || dialog.dataset.match !== id)) return;
   if (!quiet) {
-    dialog = popup();
+    dialog = openMatchPage({onClose:()=>{activeMatchId=null;}});
     dialog.dataset.match = id;
     activeMatchId = id;
   }
@@ -1943,7 +1946,7 @@ async function openMatch(id, quiet = false) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
-    dialog.innerHTML = `<button class="secondary" id="close-modal" style="float:right">Chiudi ×</button><div class="eyebrow">LA PARTITA</div><h2 style="margin:20px 0">${fixtureTeams(data.home, data.away)}</h2><div class="money" data-live-detail-score>${data.score ? data.score.join(" – ") : data.liveScore ? data.liveScore.join(" – ") : "—"}</div><p class="muted" data-live-detail-status>${data.status === "FT" ? "Finale" + (data.officialConfirmed ? " · confermato" : " · in attesa di conferma") : data.status === "LIVE" ? "In corso · " + esc(data.clock || "minuto non disponibile") : "Da giocare"}</p>${lineupView(data)}<details class="match-statistics"><summary>Dettagli della partita</summary><div data-live-detail-events>${events.length ? eventColumns(data, events) : data.status === "NS" ? "" : '<div class="notice">Gol e cartellini non ancora disponibili.</div>'}</div></details>`;
+    dialog.innerHTML = `<button class="secondary" id="close-modal" >Chiudi ×</button><div class="eyebrow">LA PARTITA</div><h2 class="match-page-title">${fixtureTeams(data.home, data.away)}</h2><div class="match-page-score" data-live-detail-score>${data.score ? data.score.join(" – ") : data.liveScore ? data.liveScore.join(" – ") : "—"}</div><p class="muted" data-live-detail-status>${data.status === "FT" ? "Finale" + (data.officialConfirmed ? " · confermato" : " · in attesa di conferma") : data.status === "LIVE" ? "In corso · " + esc(data.clock || "minuto non disponibile") : "Da giocare"}</p>${lineupView(data)}<details class="match-statistics"><summary>Dettagli della partita</summary><div data-live-detail-events>${events.length ? eventColumns(data, events) : data.status === "NS" ? "" : '<div class="notice">Gol e cartellini non ancora disponibili.</div>'}</div></details>`;
     $("#close-modal").onclick = () => {
       activeMatchId = null;
       dialog.dataset.match = "";
@@ -1952,6 +1955,7 @@ async function openMatch(id, quiet = false) {
     const numbers=document.createElement('div');numbers.setAttribute('data-live-detail-statistics','');numbers.innerHTML=footballStatistics(data);
     dialog.querySelector('[data-live-detail-events]')?.after(numbers);
     bindFootballStatistics(numbers);
+    dialog.querySelectorAll('details[open]').forEach(x=>x.open=false);
     bindLineupPitch(dialog);
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
@@ -2469,7 +2473,7 @@ function applyLive(data){
     const text=calendarStatus(m);if(score.textContent!==text)score.textContent=text;
     score.classList.toggle('green',m.status==='FT'&&!!m.score);
   }
-  const dialog=$('#match-modal');if(dialog?.open){
+  const dialog=$('#match-page-root');if(dialog?.open){
     const m=matches.find(m=>m.id===dialog.dataset.match);if(m){
       const fantasyRound=L().rounds.find(r=>sourceOf(r)==='fantacalcio'&&r.matches.some(x=>x.id===m.id));
       if(fantasyRound){

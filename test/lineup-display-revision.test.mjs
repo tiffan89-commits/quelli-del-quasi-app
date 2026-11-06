@@ -48,10 +48,10 @@ test('available-player panel includes the club roster once, sorted by independen
  const official=enrichPresence({...lineup,kind:'official'},catalog);assert.equal(official.teams[0].players[0].probability,100);assert.deepEqual(official.teams[0].bench.map(p=>p.playerId),['af:2']);assert.equal(official.teams[0].bench[0].probability,0);
 });
 
-test('Bar slip uses supplied crests and puts the active profile control in the mother header',()=>{
+test('Bar slip uses supplied crests and puts the shared settings control in the mother header',()=>{
  const round={number:11,kickoff:'2099-01-01',matches:[{id:'m',home:'Milan',away:'Inter',odds:{1:2,X:3,2:4}}],rules:{maxStake:20}};
  const html=renderSlipV2({round,esc,fmt,date:String});assert.match(html,/stemma-milan.svg/);assert.match(html,/stemma-inter.svg/);assert.doesNotMatch(renderTabBar('profilo'),/data-v2-tab="profilo"/);
- assert.match(renderLeagueChip({name:'Bar',members:[]},'u',esc,fmt,'',null,'crediti Bar',true),/data-bar-page="profilo"[^>]+aria-current="page"/);
+ assert.match(renderLeagueChip({name:'Bar',members:[]},'u',esc,fmt,'',null,'crediti Bar',true),/data-bar-page="admin"[^>]+aria-label="Apri impostazioni"/);
 });
 
 test('shared sports persistence copies official lineups to Bar rounds while leaving existing slips intact',async()=>{

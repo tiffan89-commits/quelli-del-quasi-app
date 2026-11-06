@@ -74,3 +74,52 @@ body details.rankrow{display:block;padding:0;border-bottom:1px solid var(--line)
 }
 
 .bar-home-invite{padding:16px;margin:12px 0;border:1px solid var(--line);border-left:3px solid var(--lime);border-radius:14px;background:var(--panel)}.bar-home-invite h2{font-size:23px;margin:5px 0}.bar-home-invite p{font-size:12px;color:var(--muted);margin:6px 0 12px}.bar-home-invite .league-invite-actions{display:flex;flex-wrap:wrap;gap:8px}.bar-home-invite .league-invite-actions>*{min-height:40px;font-size:12px}.president-panel>.profile-logout{margin-top:20px}
+
+/* Match pages keep the shared chrome and the underlying draft mounted. */
+#app-header .v2-top{position:relative}
+#app-header .v2-top .ux-controls>.fanta-mode{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0!important}
+body.match-page-active #app>main,body.match-page-active #app>.demo-session-bar,body.match-page-active .v2-slipbar{display:none!important}
+body.match-page-active #app{min-height:0!important;padding-bottom:0!important}
+body.match-page-active #open-chat{display:none!important}
+body.match-page-active main.match-page{--match-pitch-height:clamp(260px,calc(100dvh - var(--ux-header-height,64px) - var(--app-tabbar-height,84px) - 216px),430px);width:100%;max-width:650px;box-sizing:border-box;margin:0 auto;padding:8px 12px calc(var(--app-tabbar-height,84px) + 12px);min-height:0}
+.match-page>#close-modal,.match-page [data-fanta-slip-detail-close]{display:block;margin:0 0 5px auto;min-height:36px;padding:7px 16px;border:1px solid var(--lime);border-radius:12px;color:var(--lime);font-size:13px;font-weight:700;background:var(--panel)}
+.match-page>.eyebrow{font-size:9px;text-align:center;margin:0!important;letter-spacing:1.4px}
+.match-page h2.match-page-title,.match-page>h2{font-size:clamp(20px,4.8vw,27px);line-height:1.1;margin:5px 0!important;text-align:center;display:flex;justify-content:center;align-items:center;gap:8px}
+.match-page h2 .team-label{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:0}
+.match-page h2 svg,.match-page h2 img{width:23px;height:26px;flex:none}
+.match-page .match-page-score,.match-page>.live-score{font:700 23px/1.1 'Barlow Condensed',sans-serif;text-align:center;margin:4px 0}
+.match-page>[data-live-detail-status],.match-page>[data-fantasy-points]{font-size:10px;text-align:center;margin:3px 0 5px}
+.match-page .lineup-section{max-width:none;margin:5px 0}
+.match-page .lineup-section>h3{font-size:17px;text-align:center;margin:5px 0}
+.match-page .pitch-tabs{margin:5px 0;gap:5px}
+.match-page .pitch-tabs>button{min-height:32px;padding:6px;font-size:12px;border-radius:8px}
+.match-page .pitch-heading{margin:3px 0 5px;font-size:12px;justify-content:center;gap:10px}
+.match-page .pitch-heading strong{font-size:15px}
+.match-page .football-pitch{min-height:0;height:var(--match-pitch-height);box-sizing:border-box;padding:7px 6px}
+.match-page .pitch-rows{min-height:0;height:100%;gap:3px;padding:0}
+.match-page .pitch-row{min-height:0;flex:1}
+.match-page .player-sticker{width:clamp(34px,calc((var(--match-pitch-height) - 20px)/var(--pitch-lines,4) - 22px),66px);height:clamp(34px,calc((var(--match-pitch-height) - 20px)/var(--pitch-lines,4) - 22px),66px);margin:0}
+.match-page .row-5 .player-sticker{max-width:58px;max-height:58px}
+.match-page .pitch-player{min-width:0;gap:1px}
+.match-page .player-sticker svg{width:100%;height:100%}
+.match-page .player-probability{font-size:10px;line-height:1.1;padding:2px 5px;margin-top:-2px;min-height:0}
+.match-page .pitch-player-grades,.match-page .pitch-next-opponent,.match-page .pitch-player-club{font-size:9px;line-height:1.1;margin:1px 0;max-width:100%;text-align:center}
+.match-page .lineup-bench,.match-page .lineup-votes,.match-page .lineup-unavailable,.match-page .match-statistics{margin-top:7px;padding:8px 10px;border:1px solid var(--line);border-radius:12px}
+.match-page .lineup-bench>summary,.match-page .lineup-votes>summary,.match-page .lineup-unavailable>summary,.match-page .match-statistics>summary{min-height:22px;padding:0;font-size:12px;line-height:22px}
+.match-page .lineup-source,.match-page .lineup-method{font-size:9px;line-height:1.3;margin:4px 0;text-align:center}
+.match-page [data-slip-detail]{padding:0;border:0;margin:0;background:transparent}
+@media(min-width:1024px){body.match-page-active main.match-page{--match-pitch-height:410px;padding-bottom:20px}.match-page .pitch-tabs{margin-top:8px}}
+/* Every league statistic fits the screen; avoid a horizontal table viewport. */
+.serie-table-card{padding:10px 4px!important;overflow:hidden}
+.serie-table-card .serie-table{width:100%;min-width:0;table-layout:fixed;font-variant-numeric:tabular-nums;font-size:11px}
+.serie-table-card .serie-table th,.serie-table-card .serie-table td{padding:9px 2px;white-space:normal;text-align:center;overflow-wrap:anywhere}
+.serie-table-card .serie-table th:first-child,.serie-table-card .serie-table td:first-child{width:18px}
+.serie-table-card .serie-table th:nth-child(2),.serie-table-card .serie-table td:nth-child(2){width:31%;text-align:left}
+.serie-table-card .team-label{gap:4px;min-width:0;display:flex;align-items:center}
+.serie-table-card .team-label svg,.serie-table-card .team-label img{width:19px;height:22px;flex:none}
+@media(max-width:380px){.serie-table-card .serie-table{font-size:10px}.serie-table-card .team-label svg,.serie-table-card .team-label img{width:16px;height:19px}}
+body.match-page-active main.match-page{--match-pitch-height:clamp(230px,calc(100dvh - var(--ux-header-height,64px) - var(--app-tabbar-height,84px) - 390px),410px);padding:8px 12px calc(var(--app-tabbar-height,84px) + 12px)!important}
+.match-page .lineup-section{padding:0;border:0}
+@media(min-width:1024px){body.match-page-active main.match-page{--match-pitch-height:410px}}
+body.match-page-active main.match-page{max-width:650px!important;margin-inline:auto!important}
+@media(min-width:1024px){body.match-page-active main.match-page{--match-pitch-height:290px}}

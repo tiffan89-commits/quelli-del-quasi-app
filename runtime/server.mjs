@@ -53,6 +53,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const origin=process.env.PUBLIC_ORIGIN,aliases=new URL(origin).hostname==='quellidelquasi.com'?['https://casa.quellidelquasi.com','https://server.quellidelquasi.com']:[];
  const auctionHub=await attachAuctionSocket(server,{origin,allowedOrigins:[origin,...aliases]});
  const {attachSportsSocket}=await import('./sports-socket.mjs');const sportsHub=attachSportsSocket(auctionHub.io);
+ const {listenSportsSaved}=await import('./sports-notifications.mjs');const sportsListener=listenSportsSaved(()=>sportsHub.refresh());
  server.listen(Number(process.env.PORT)||3000,process.env.HOST||'127.0.0.1',()=>console.info('QUASI_HTTP_READY'));
- let ending=false;const stop=async()=>{if(ending)return;ending=true;await sportsHub.close();await auctionHub.close();await closeDatabase();};process.once('SIGTERM',stop);process.once('SIGINT',stop);
+ let ending=false;const stop=async()=>{if(ending)return;ending=true;await sportsListener.close();await sportsHub.close();await auctionHub.close();await closeDatabase();};process.once('SIGTERM',stop);process.once('SIGINT',stop);
 }
