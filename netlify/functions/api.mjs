@@ -22,6 +22,8 @@ import {
   recordFastActivity,
 } from "../../lib/platform-admin.mjs";
 import {provisionSystemAdmin,beginAdminLogin,finishAdminLogin,isSystemAdmin,requireSystemAdmin} from '../../lib/system-admin-auth.mjs';
+import {createSocialAuth} from '../../lib/social-auth.mjs';
+import {socialProviders} from '../../lib/social-providers.mjs';
 import {adminLeagues,forceAllFantasy,planWipe,executeWipe,runAdminProbe} from '../../lib/system-admin-operations.mjs';
 import {
   removeLeagueMember,
@@ -134,6 +136,7 @@ export function createApi({
   deliverMail = deliverPendingMail,
   dispatchMail = dispatchAccountMail,
   playerStore,
+  insightService,
 } = {}) {
   baseRead??=baseTransact===transaction?readSnapshot:baseTransact;
   chatTransact??=baseTransact===transaction?chatTransaction:baseTransact;
@@ -149,7 +152,7 @@ export function createApi({
         .split("/")
         .filter(Boolean)
         .at(-1);
-    const authRoute=['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email'].includes(activityRoute);
+    const authRoute=activityRoute.startsWith('social-')||['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email'].includes(activityRoute);
     const membershipRoute=['create','join','member-remove','member-restore','league-prizes'].includes(activityRoute);
     const profileRoute=['profile','profile-avatar','profile-reminders','profile-email-reminders','support','fantacalcio-waitlist'].includes(activityRoute);
     const deliverAccount=async jobId=>deliverMail!==deliverPendingMail?deliverMail({jobId,transactionFn:authTransact,env}):dispatchMail(jobId,{env});
@@ -187,10 +190,11 @@ export function createApi({
       const url = new URL(req.url),
         route = url.pathname.split("/").filter(Boolean).at(-1),
         origin = req.headers.get("origin");
+      if(route.startsWith('social-')){const response=await createSocialAuth({transact:authTransact,env,onLogin:recordLogin,deliverMail:deliverAccount})(req,context);recordFastActivity({route:activityRoute,status:response.status,duration:Date.now()-started});return response;}
       if(origin&&origin!==url.origin)return reply({error:'Origine non consentita'},403);
       if (!["GET", "POST"].includes(req.method))
         return reply({ error: "Metodo non supportato" }, 405);
-      if(route==='features'&&req.method==='GET')return reply({barDemo:true});
+      if(route==='features'&&req.method==='GET'){const providers=socialProviders(env);return reply({barDemo:true,...(providers.length?{socialProviders:providers}:{})});}
       if(route==='invite-info'&&req.method==='GET'){const preview=await inviteInfo(url.searchParams.get('code'),{ip:context.ip||req.headers.get('x-nf-client-connection-ip')||'unknown'});return reply(preview.data,preview.status);}
       if(!sid&&(route==='platform'||route.startsWith('platform-')))
         return reply({error:'Accesso riservato all’amministratore di sistema'},403);
@@ -218,6 +222,12 @@ export function createApi({
         const out=await transact(s=>route==='admin-login'?beginAdminLogin(s,p,env):finishAdminLogin(s,p,env));
         if(out.mailId){try{await deliverAccount(out.mailId);}catch{out.data.message='Codice in preparazione. Controlla la tua email tra un minuto.';}}
         return reply(out.data,out.status||200,out.token?cookie(out.token).replace('Max-Age=604800','Max-Age=28800'):undefined);
+      }
+      if(['platform-insights','platform-insights-task','platform-insights-refresh'].includes(route)){
+       await read(s=>requireSystemAdmin(s,userFor(s,token)),{kind:'player-auth',tokenHash:sha(token||'')});
+       if(req.method!==(route==='platform-insights'?'GET':'POST'))return reply({error:'Metodo non supportato'},405);
+       const insights=insightService||await import('../../lib/admin-insights/service.mjs');
+       return reply(await (route==='platform-insights'?insights.readInsights():route==='platform-insights-task'?insights.updateSuggestion(p):insights.requestRefresh()));
       }
       if(['platform-operations','platform-operations-retry','platform-operations-calendar'].includes(route)){
        await read(s=>requireSystemAdmin(s,userFor(s,token)),{kind:'player-auth',tokenHash:sha(token||'')});
@@ -289,8 +299,9 @@ export function createApi({
           if(!m)fail('Partita non trovata',404);
           const keys=['id','home','away','status','score','liveScore','clock','phase','clockUpdatedAt','scoreUpdatedAt','lineups','officialConfirmed','details','fantasyPoints','odds','oddsModel'];return {...Object.fromEntries(keys.map(k=>[k,m[k]??null])),fantasy:!!league};
         },{kind:'match',league:url.searchParams.get('league'),competition:url.searchParams.get('round'),team:url.searchParams.get('id')});
-        if(data.lineups||data.fantasy&&data.details?.teams){const roster=await playerStore.catalog(data.fantasy?undefined:[data.home,data.away]);if(data.lineups)data.lineups=publicLineups(enrichLineupPortraits(data.lineups,roster));if(data.fantasy)data.details=enrichFantasyPortraits(data.details,roster);}
+        if(data.lineups||data.fantasy&&data.details?.teams){const roster=await playerStore.catalog(data.fantasy?undefined:[data.home,data.away]);if(data.lineups)data.lineups=enrichLineupPortraits(data.lineups,roster);if(data.fantasy)data.details=enrichFantasyPortraits(data.details,roster);}
         const enriched=data.fantasy?data:await enrichStoredMatch(data).catch(()=>data);
+        if(enriched.lineups)enriched.lineups=publicLineups(enriched.lineups);
         return reply(enriched);
       }
       if(route==='player-photo'&&req.method==='GET'){
@@ -471,7 +482,7 @@ export function createApi({
             };
           }
           if (route === "register") {
-            if(p.correctEmail===true){const u=s.users.find(u=>u.username===String(p.username||'').trim().toLowerCase()&&!u.emailVerified&&!u.adminOnly&&!u.demo&&Date.parse(u.createdAt)>Date.now()-24*3600000);if(!u||String(p.password||'').length>200||!checkPassword(u,String(p.password||'')))fail('Per correggere l’email usa lo stesso username e la password della registrazione appena creata.');setAccountEmail(s,u,p,env);}else registerAccount(s, p, env);
+            if(p.correctEmail===true){const u=s.users.find(u=>(p.previousEmail?[u.email,u.pendingEmail].some(value=>String(value||'').toLowerCase()===String(p.previousEmail).trim().toLowerCase()):!!p.username&&u.username===String(p.username).trim().toLowerCase())&&!u.emailVerified&&!u.adminOnly&&!u.demo&&Date.parse(u.createdAt)>Date.now()-24*3600000);if(!u||String(p.password||'').length>200||!checkPassword(u,String(p.password||'')))fail('Per correggere l’email usa la password della registrazione appena creata.');setAccountEmail(s,u,p,env);}else registerAccount(s, p, env);
             return {
               mailId: s.mailOutbox.at(-1)?.id,
               data: {
@@ -533,13 +544,14 @@ export function createApi({
               fail("Modalità demo disabilitata");
             u = demo(s);
           } else {
-            const username = String(p.username || "")
+            const username = String(p.email || p.identity || p.username || "")
                 .trim()
                 .toLowerCase(),
               password = String(p.password || "");
             if (password.length > 200 || username.length > 254)
               fail("Credenziali troppo lunghe");
-            u = s.users.find((x) => String(x.username||'').toLowerCase() === username || !x.adminOnly&&String(x.email||'').toLowerCase()===username);
+            if (!username || !password) fail("Inserisci email e password");
+            u = s.users.find((x) => String(x.username||'').toLowerCase() === username || !x.adminOnly&&(String(x.email||'').toLowerCase()===username||!x.emailVerified&&String(x.pendingEmail||'').toLowerCase()===username));
             if(username==='tiffano')return beginAdminLogin(s,p,env);
             if (!checkPassword(u, password))
               return { data: { error: "Credenziali errate" }, status: 401 };
@@ -575,6 +587,7 @@ export function createApi({
         if (route === "profile") {
           const name = String(p.name || "").trim();
           if (!name || name.length > 60) fail("Soprannome non valido");
+          if(u.name!==name)delete u.nicknameSuggested;
           u.name = name;
           return { data: { ok: true } };
         }

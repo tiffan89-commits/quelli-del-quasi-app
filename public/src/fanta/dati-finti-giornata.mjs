@@ -2,15 +2,13 @@
 // Tutto deterministico (stesso seme → stessi numeri). Nell'app vera questi calcoli li fa il server
 // con il motore regole e il motore voti: il frontend mostra solo ciò che riceve.
 import { TEAMS, MY_TEAM, team } from './squadre-finte.mjs';
+import {demoFixtures,demoRoster,demoPerformance,demoSeason} from './demo-football.mjs';
 
 export const CURRENT_ROUND = 11;
 
-const CLUB_PAIRS = [['Inter', 'Juventus'], ['Napoli', 'Roma'], ['Milan', 'Atalanta'], ['Fiorentina', 'Bologna'], ['Lazio', 'Udinese'], ['Genoa', 'Parma'], ['Torino', 'Como'], ['Lecce', 'Cagliari'], ['Monza', 'Sassuolo'], ['Frosinone', 'Venezia']];
+const CLUB_PAIRS = demoFixtures(CURRENT_ROUND).map(f=>[f.teams.home.name,f.teams.away.name]);
 const CLUBS = CLUB_PAIRS.flat();
 const KICKOFFS = ['sab 15:00', 'sab 18:00', 'sab 20:45', 'dom 12:30', 'dom 15:00', 'dom 15:00', 'dom 18:00', 'dom 20:45', 'lun 18:30', 'lun 20:45'];
-// Nomi inventati.
-const SURNAMES = ['Rinaldi', 'Ferretti', 'Colombo', 'Marchetti', 'Galli', 'Bellini', 'Testa', 'Fabbri', 'Moretti', 'Barbieri', 'Lombardi', 'Rizzo', 'Pellegrini', 'Santoro', 'Gatti', 'Caruso', 'Ferrara', 'Monti', 'Leone', 'Valentini', 'Serra', 'Fontana', 'Conte', 'Vitale', 'Grasso', 'Sala', 'Neri', 'Bassi', 'Orlando', 'Ricci', 'Martini', 'Gentile', 'Longo', 'Cattaneo', 'Farina', 'Riva', 'Benedetti', 'Palumbo', 'Sartori', 'Messina', 'Donati', 'Silvestri', 'Guerra', 'Bianco', 'Parisi', 'Villa', 'Ruggiero', 'Mariani', 'Amato', 'Piras'];
-const INITIALS = 'ABCDEFGLMNPRSTV';
 const FORMATIONS = { sambuca: '4-4-2', realgin: '3-4-3', fly: '4-3-3', perfetta: '3-5-2', bis: '4-4-2', falcone: '3-4-3', ciaccola: '4-3-3', united: '3-5-2' };
 const ROLE_COUNTS = { P: 3, D: 8, C: 8, A: 6 };
 const BENCH = { P: 1, D: 2, C: 2, A: 2 };
@@ -26,18 +24,7 @@ const pick = (r, list) => list[Math.floor(r() * list.length)];
 const sum = list => list.reduce((t, x) => t + x, 0);
 const andList = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' e ' + a.at(-1) : a[0];
 
-const ROSTERS = (() => {
-  const r = rng('rose-lega-quasi'), used = new Set(), out = {};
-  for (const id of Object.keys(TEAMS)) {
-    out[id] = [];
-    for (const [role, n] of Object.entries(ROLE_COUNTS)) for (let i = 0; i < n; i++) {
-      let name; do name = pick(r, INITIALS) + '. ' + pick(r, SURNAMES); while (used.has(name));
-      used.add(name);
-      out[id].push({ id: `${id}-${role}${i}`, name, role, club: pick(r, CLUBS) });
-    }
-  }
-  return out;
-})();
+const ROSTERS=Object.fromEntries(Object.keys(TEAMS).map((id,i)=>[id,demoRoster(i,ROLE_COUNTS).map(({slot,...p})=>({...p,id:id+'-'+slot}))]));
 
 // Calendario della lega: giornate 10 e 11 fisse (le usa la home), le altre a rotazione.
 export function schedule(n) {
@@ -65,9 +52,16 @@ function clubMatch(n, state, clubIndex) {
   return { ...base, status: live ? 'live' : 'done', minute, gf: s[home ? 0 : 1], ga: s[home ? 1 : 0] };
 }
 
-function performance(p, n, state, starter) {
+const historicalPerformances=new Map();
+function performance(p,n,state,starter){
+ if(state!=='calcolata')return calculatePerformance(p,n,state,starter);
+ const key=[p.id,p.apiId,n,starter].join(':');if(!historicalPerformances.has(key))historicalPerformances.set(key,calculatePerformance(p,n,state,starter));
+ return structuredClone(historicalPerformances.get(key));
+}
+function calculatePerformance(p, n, state, starter) {
+  const archived=demoPerformance(p,n,state);if(archived)return archived;
   const clubIndex = CLUBS.indexOf(p.club), match = clubMatch(n, state, clubIndex);
-  const base = { id: p.id, name: p.name, role: p.role, club: p.club, opponent: match.opponent, home: match.home };
+  const base = { id: p.id, apiId:p.apiId,jersey:p.jersey,name: p.name, role: p.role, club: p.club, opponent: match.opponent, home: match.home };
   if (match.status === 'to-play') return { ...base, status: 'to-play', kickoff: match.kickoff, vote: null, fantavote: null };
   const r = rng(`voto:${p.id}:${n}`), roll = r();
   const planned = starter ? (roll < 0.07 ? 0 : roll < 0.3 ? int(r, 55, 80) : 90) : (roll < 0.55 ? 0 : int(r, 8, 35));
@@ -157,12 +151,15 @@ export const defaultFormation = teamId => FORMATIONS[teamId];
 
 // Prossima partita di Serie A del club nella giornata n (avversario, casa/trasferta, orario).
 export function nextMatchOf(club, n = CURRENT_ROUND) {
-  const i = CLUB_PAIRS.findIndex(p => p.includes(club)), home = CLUB_PAIRS[i][0] === club;
-  return { opponent: CLUB_PAIRS[i][home ? 1 : 0], home, kickoff: KICKOFFS[i], round: n };
+  const fixture=demoFixtures(n).find(f=>[f.teams.home.name,f.teams.away.name].includes(club));
+  if(fixture){const home=fixture.teams.home.name===club;return {opponent:fixture.teams[home?'away':'home'].name,home,kickoff:fixture.kickoff,round:n};}
+  const i = CLUB_PAIRS.findIndex(p => p.includes(club));if(i<0)return {opponent:'',home:true,round:n};const home=CLUB_PAIRS[i][0]===club;
+  return {opponent:CLUB_PAIRS[i][home?1:0],home,kickoff:KICKOFFS[i],round:n};
 }
 
 // Medie della stagione (giornate già calcolate) e stato fisico finto ma stabile.
 export function seasonOf(p) {
+  const archived=demoSeason(p);if(archived)return archived;
   const done = [];
   for (let n = 1; n < CURRENT_ROUND; n++) {
     const x = performance(p, n, 'calcolata', true);

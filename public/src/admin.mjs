@@ -1,18 +1,19 @@
 let data = null,
-  entity = "users",
+  entity = "",
   currentPage = 0,
   loading = false,
   query = "";
 const fmt = (n) => Number(n || 0).toLocaleString("it-IT");
-export function adminView(esc, toolsHtml = "") {
+export function adminView(esc, toolsHtml = "", introHtml = "") {
   const labels = {
-    users: "Utenti",
+    users: "Account (anche admin)",
     verified: "Email verificate",
     leagues: "Leghe",
     memberships: "Partecipazioni",
     rounds: "Giornate",
     slips: "Schedine",
     sessions: "Sessioni attive",
+    connections: "Collegamenti esterni",
     chatMessages: "Messaggi chat",
 
     finalMatches: "Partite finali",
@@ -21,9 +22,9 @@ export function adminView(esc, toolsHtml = "") {
   return (
     '<section class="hero"><div class="eyebrow">TIFFANO · AMMINISTRAZIONE DI SISTEMA</div><h1>Dietro il bancone.</h1><p>Utenti, leghe, dati e motori del bar.</p><button class="secondary" id="admin-refresh">Aggiorna dati</button> <button class="secondary" id="admin-logout">Logout</button></section><div id="admin-status" role="status">' +
     (loading ? "Caricamento…" : "") +
-    "</div>" +
+    "</div>" + introHtml +
     (data
-      ? '<div class="admin-stats">' +
+      ? '<details class="card"><summary>Totali dell’archivio</summary><div class="admin-stats">' +
         Object.entries(data.summary)
           .map(
             ([key, value]) =>
@@ -34,7 +35,7 @@ export function adminView(esc, toolsHtml = "") {
               "</strong></article>",
           )
           .join("") +
-        '</div>' + toolsHtml + '<section class="card"><h2>Accessi e chiamate</h2><p class="tiny muted">Le statistiche vengono raccolte da questa versione' +
+        '</div></details>' + toolsHtml + '<section class="card"><h2>Accessi e chiamate</h2><p class="tiny muted">Le statistiche vengono raccolte da questa versione' +
         (data.stats.startedAt
           ? " · dal " +
             new Date(data.stats.startedAt).toLocaleString("it-IT", {
@@ -159,7 +160,7 @@ export function bindAdmin({ api, render, esc, onLogout, onData=()=>{} }) {
 
 export function clearAdminState() {
   data = null;
-  entity = "users";
+  entity = "";
   query = "";
   currentPage = 0;
 }

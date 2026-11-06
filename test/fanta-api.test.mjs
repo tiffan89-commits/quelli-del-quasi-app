@@ -8,7 +8,7 @@ const env={FANTA_BETA_USERS:'frankwood',FANTA_BETA_LEAGUES:'fanta-lucas-a'};
 test('auction ticks use read cache until an authoritative timer transition is due',async()=>{
  const f=await fixtureDb();try{let time=Date.now(),writes=0;const base=sqlFantaStore(f),store={...base,league:(uid,id,fn,options={})=>{if(options.write)writes++;return base.league(uid,id,fn,options);}},api=createFantaApi({store,env,now:()=>time}),call=async(path,body={})=>{const r=await api(new Request('https://example.test/fanta-api/'+path,{method:'POST',headers:{cookie:'sid=token1'},body:JSON.stringify({league:'fanta-lucas-a',...body})}));assert.equal(r.status,200,await r.clone().text());return r.json();};
   await call('auction/start-now',{mode:'manual',type:'iniziale'});writes=0;for(let i=0;i<3;i++)await call('auction/tick');assert.equal(writes,0);
-  await call('auction/mode',{mode:'live',type:'iniziale'});writes=0;const before=await call('auction/tick');assert.equal(writes,0);time+=31000;const after=await call('auction/tick');assert.equal(writes,1);assert.ok(after.version>before.version);assert.ok(after.skipped);
+  await call('auction/mode',{mode:'live',type:'iniziale'});writes=0;const before=await call('auction/tick');assert.equal(writes,0);time+=61000;const after=await call('auction/tick');assert.equal(writes,1);assert.ok(after.version>before.version);assert.ok(after.skipped);
  }finally{await f.close();}
 });
 test('Fanta: real SQL schema enforces membership cap; all routes enforce server beta and league membership',async()=>{
@@ -53,5 +53,14 @@ test('Fanta: only the president can link a beta account, and one user cannot own
  assert.equal((await call({team:'new',username:'frankwood'})).status,409);
  await f.db.query("UPDATE fanta.teams SET user_id=NULL WHERE id='t2'");assert.equal((await call({team:'t2',username:'amico'})).status,200);
  assert.equal((await f.db.query("SELECT user_id FROM fanta.teams WHERE id='t2'")).rows[0].user_id,'u2');
+ }finally{await f.close();}
+});
+
+test('Fanta: saves and reloads an empty or partial bench without filling it or enforcing obsolete caps',async()=>{
+ const f=await fixtureDb();try{
+  await f.db.query("UPDATE fanta.leagues SET rules=rules||'{\"benchMax\":1}'::jsonb WHERE id='fanta-lucas-a'");
+  const api=createFantaApi({store:sqlFantaStore(f),env}),base=f.lineup('t1');
+  for(const n of [0,1,3,4]){const response=await api(new Request('https://example.test/fanta-api/lineup',{method:'POST',headers:{cookie:'sid=token1','content-type':'application/json'},body:JSON.stringify({league:'fanta-lucas-a',round:1,...base,bench:base.bench.slice(0,n)})}));assert.equal(response.status,200,await response.clone().text());const saved=(await f.db.query("SELECT bench FROM fanta.lineups WHERE league_id='fanta-lucas-a' AND team_id='t1' AND round=1")).rows[0];assert.deepEqual(saved.bench,base.bench.slice(0,n));}
+  const view=await(await api(new Request('https://example.test/fanta-api/team?league=fanta-lucas-a',{headers:{cookie:'sid=token1'}}))).json();assert.equal(view.rules.benchMax,null);
  }finally{await f.close();}
 });

@@ -1,3 +1,99 @@
+# 0.29.45 — 2026-11-06
+
+- Studio formazione con campo più ampio e una sola fascia orizzontale: tutti i non titolari sono riserve, senza duplicare la panchina. Dopo la scelta degli undici compaiono i comandi sinistra/destra per ordinare gli ingressi. Ordine già salvato mantenuto, cambio e trascinamento per ruolo, ripristino e blocco dei doppi salvataggi verificati.
+- Accesso tiffano compatibile con il campo identity della login generale e con username nella pagina Admin. Password e codice email obbligatorio invariati; hotfix già applicata prima del restyling.
+
+# 0.29.44 — 2026-11-06
+
+- Corretto il verso delle probabili formazioni: le coordinate sono normalizzate prima di rimuovere i metadati delle fonti dal DTO pubblico, anche per le previsioni già in cache. Consenso ed elaborazione delle percentuali mantengono i lati del campo e non duplicano la trasformazione. Nessuna modifica a voti, titolari o probabilità.
+
+# 0.29.43 — 2026-11-06
+
+- Formazioni finali ridisegnate dalle coordinate ufficiali: il campo non dipende più dall’ordine delle statistiche. Riparazione idempotente delle coordinate già archiviate, senza chiamate esterne; slot delle formazioni fantasy separati dalle posizioni nel club.
+- Contesto positivo limitato a +0,3: vittoria da sfavoriti verificata sulle quote prepartita, ponderata per probabilità, presenza, prestazione e qualità dei dati. Un solo contributo di contesto, senza duplicare il premio per la vittoria.
+
+- Laboratorio isolato con tre partite archiviate in replay e asta single player; computer guidati da valore, forma, infortuni, posti e budget. Nomi automatici di due parole, al massimo tre.
+- Candidato del motore v2.5: fascia statistica neutra più ampia, penalità ridotte, contributi in passi di 0,05, giudizi brevi e analisi dei portieri con parate, efficacia, xG/tiri avversari e rating. Sostegni per porta inviolata o parate nella vittoria alternativi, fino a +0,5. Nessun ricalcolo dei dati di produzione.
+- Risultati via Socket.IO: lettura server condivisa per lega/giornata, nessun polling HTTP del client; revoca sessioni verificata in una lettura aggregata. Campi, voti ed episodi prima dei dettagli richiudibili; subentrati aperti e riserve chiuse.
+- Registrazione con sole email e password, senza creare username. Soprannome iniziale dalla parte prima della @, modificabile dal profilo; accesso con vecchio username conservato per gli account esistenti. Aggiornati accesso social, email di conferma, correzione indirizzo e associazione account alle squadre.
+
+# 0.29.42 — 2026-11-06
+
+- Panchina facoltativa: ogni sottoinsieme dei giocatori rimasti in rosa, anche vuoto, è valido. Rimangono obbligatori undici titolari con ruoli corretti; duplicati e giocatori estranei alla rosa sono rifiutati. I vecchi limiti numerici non tagliano più la panchina né bloccano il salvataggio.
+- Schede dei disponibili più compatte, tre affiancate sui telefoni e dimensioni limitate su desktop, con fantamedia sotto al cognome.
+- Verificati salvataggio e rilettura di panchine vuote/parziali, tutte le dimensioni da 0 a 14, schermi mobili piccoli e grandi e desktop. Nessuna modifica a formazioni già salvate o voti.
+
+# 0.29.41 — 2026-11-06
+
+- Formazione modificabile e salvabile esclusivamente dallo studio; Squadra mostra solo la formazione salvata e un pulsante per aprire o riprendere lo studio. Le bozze non vengono confuse con i dati salvati.
+- Cognomi ricavati dal campo strutturato quando presente, con fallback per nomi completi, iniziali e cognomi composti; nomi originali conservati nei titoli accessibili.
+- Fantamedia sempre indicata su campo, panchina e giocatori disponibili, con trattino quando manca. Maglie adattive in base a spazio e numero di giocatori del reparto, più grandi a rosa completa.
+- Verifiche responsive con Mastantuono, moduli da cinque giocatori, panchina, annullamento e salvataggio singolo.
+
+# 0.29.40 — 2026-11-06
+
+- Studio formazione: due giocatori affiancati, fino a due righe visibili sui telefoni grandi e quattro colonne su desktop; altezze adattate agli schermi bassi e alle aree sicure.
+- Panchina sempre sotto il campo, anche a rosa completa: chi è già assegnato non compare tra i disponibili e ogni nuovo panchinaro viene portato subito in vista.
+- Tap sulla panchina non distruttivo: apre la gestione dell’ordine oppure scambia il giocatore con la posizione selezionata; rimozione esplicita e trascinamento conservati.
+- Verificati cambio modulo, cambi campo/panchina, svuota, annulla e salvataggio singolo; nessuna modifica ai dati delle formazioni salvate.
+
+# 0.29.39 — 2026-11-05
+
+- Il completamento dell'ultima rosa avvia automaticamente il campionato principale e chiude l'asta, senza azioni del presidente.
+- Avvio dalla prima giornata futura completa di Serie A, calendario fino alla 38ª, transazione unica con l'ultimo acquisto e nessun duplicato ai tentativi successivi.
+- Socket.IO comunica lo stato della competizione e aggiorna la home, sbloccando la preparazione della formazione.
+- Riparazione effettiva sul DB di La gravidanza: campionato attivo dalla giornata 11 e 28 giornate create, rose e acquisti conservati.
+
+# 0.29.38 — 2026-11-05
+
+- Socket.IO sul server Node.js: stanze autenticate per lega, snapshot personalizzati inviati dal server dopo il commit e riscontro di ricezione dei dispositivi collegati.
+- Timer dell'asta gestiti dal server anche senza pagine aperte; PostgreSQL LISTEN/NOTIFY evita polling DB per rilevare gli aggiornamenti.
+- Recupero automatico dopo disconnessione e polling soltanto come fallback; bundle Socket.IO servito dal proprio dominio.
+- Scelta e prima offerta 60 secondi, rilanci 30 secondi reali; impostazioni aggiornate anche sulle leghe esistenti con backup e script idempotente.
+- Correzione dell'orologio dei client per latenza e differenze tra dispositivi; stato del collegamento visibile nella sala.
+
+# 0.29.37 — 2026-11-05
+
+- Studio formazione mobile: nessuna zona vuota a rosa completa, panchina consultabile e ordinabile nel pannello inferiore e spazio adeguato ai moduli con cinque giocatori nel reparto.
+- Comandi su una riga, blocco dello scorrimento della pagina sottostante e controlli della panchina raggiungibili anche a 375×667.
+- L'ingresso automatico nell'asta avviene una volta per apertura; è possibile tornare alle altre schermate senza essere riportati continuamente nella sala.
+
+# 0.29.36 — 2026-11-05
+
+- Asta: rilevamento leggero ogni secondo per i partecipanti, ingresso automatico e polling anche da link diretto; bozze e campi in modifica preservati.
+- Notifica push all'apertura, accodata nella stessa transazione e inviata da una corsia worker dedicata, senza attendere i lavori sportivi.
+- Link della notifica verso la sala e lega corretta, anche quando la PWA è già aperta.
+- Invito nella home del presidente fino al completamento degli allenatori reali, con link Bar funzionante e WhatsApp.
+
+# 0.29.35 — 2026-11-05
+
+- Login social server-side Google/Facebook e predisposizione Apple, solo provider configurati e verificati.
+- Collegamento automatico della stessa Gmail verificata agli account esistenti, senza duplicati né perdita di storico.
+- Soprannome iniziale dal prefisso email per i nuovi account social, con avviso che scompare dopo la modifica.
+- Nuovi nomi ironici per le squadre generate e possibilità di completare con squadre al computer una lega Bar esistente.
+- Gravidi: rose equilibrate e assegnazioni persistite sul DB; nessuna modifica al motore voti.
+
+# 0.29.34 — 2026-11-05
+
+- Esportazione Microsoft Clarity collegata al backend e riepiloghi disponibili nella dashboard Admin.
+- Report aggregati di 72 ore, lettura ogni 12 ore, cache persistente e limite anche agli aggiornamenti manuali.
+- Segnali di usabilità spiegabili, campione minimo, dati mancanti espliciti e nessuna somma di finestre sovrapposte.
+- Token solo nella configurazione privata del server; nessuna modifica alle logiche di gioco.
+
+# 0.29.33 — 2026-11-05
+
+- Microsoft Clarity: progetto z8vq8o76ja, caricamento differito dopo consenso aggiornato che include Microsoft.
+- Mascheramento ereditato delle schermate, esclusione di Admin/account/profili e URL privati, consenso pubblicitario negato.
+- Revoca e riattivazione senza ricaricare la pagina; nessun polling o chiamata DB aggiuntiva.
+- Privacy aggiornata e stato dell’esportazione Clarity esplicito nella Admin.
+
+# 0.29.32 — 2026-11-05
+
+- Dashboard Admin con report Google Analytics verificati, attività del gioco e suggerimenti spiegabili.
+- Accesso Google di sola lettura e report condivisi in cache sul PC.
+- Priorità, note e monitoraggio delle modifiche, con confronti fra finestre complete e campioni minimi.
+- Nessuna modifica alle logiche di gioco o al motore dei voti.
+
 # 0.29.15 — 2026-11-03
 
 - Definitivi incompleti: diagnostica e ripresa oraria sulle sole partite pendenti, entro 48 ore.
@@ -18,6 +114,20 @@
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
 ## [Unreleased]
+
+- Generazione rose: le leghe automatiche distribuiscono tutti i crediti disponibili in costi interi proporzionali, conservando i migliori giocatori selezionati e l'equilibrio tra squadre. Le rose pilota reinvestono i residui in miglioramenti di pari ruolo alle quotazioni reali; nessuna rigenerazione delle rose esistenti.
+
+- Admin: report GA4 di sola lettura, riepilogo reale del gioco, grafico e dettaglio campagne/dispositivi/eventi.
+- Report in cache sul PC: Google ogni sei ore, aggregati DB ogni ora, nessun polling frontend o chiamata Google all’apertura.
+- Suggerimenti spiegabili con priorità, note e confronto prima/dopo; campioni insufficienti e dati mancanti espliciti.
+- Accesso riservato al solo amministratore MFA, credenziali fuori dal frontend e dal repository.
+
+- Demo con 240 calciatori reali e club verificati, voti e risultati archiviati della giornata 10, senza richieste al DB o ai provider durante la prova; dati caricati soltanto aprendo la demo, cache dei bundle e compressione Brotli/gzip.
+- Server Windows: servizi persistenti, controllo locale dei job e dei servizi con pannello eseguibile, log e risposte con segreti rimossi, DNS dinamico limitato ai record autorizzati. Nessuna modifica al motore dei voti.
+- Home pubblica attuale con accesso alla demo conservata; esempi con Éderson e Kenan Yıldız, con club verificati nell’anagrafica locale e dati dimostrativi indicati come tali.
+- Anteprima locale della pagina di acquisizione Fanta, due annunci coordinati e piano di test condiviso da 8,25 €/giorno; nessuna campagna pubblicata.
+- Ingresso esplicito nelle sole leghe pilota aperte alla prova, protetto da flag disattivato per default; assegnazione idempotente e rispetto dei partecipanti rimossi.
+- Intento Fanta conservato durante registrazione e conferma email; eventi Analytics successivi al consenso non si perdono durante il caricamento differito del tag.
 
 ## [0.29.30] - 2026-11-04
 

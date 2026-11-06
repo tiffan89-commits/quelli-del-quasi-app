@@ -2,9 +2,10 @@
 // Una cosa per schermata, il modulo subito in vista, errori sotto il campo mentre si scrive.
 import { esc } from '../fanta/formato.mjs';
 import { checkEmail, checkUsername, checkPassword, checkRequired, passwordStrength, mailboxFor, PASSWORD_MIN } from './convalida.mjs';
+import {socialButtons} from './social.mjs';
 
 export const FIELDS = {
-  register: { email: checkEmail, username: checkUsername, password: checkPassword },
+  register: { email: checkEmail, password: checkPassword },
   login: { identity: checkRequired('Scrivi username o email'), password: checkRequired('Scrivi la password') },
   forgot: { identity: checkRequired('Scrivi la tua email o lo username') },
   resend: { identity: checkRequired('Scrivi la tua email o lo username') },
@@ -53,7 +54,7 @@ function shell(s, title, sub, body) {
     </header>
     <main class="pb-auth-main">
       ${s.invite ? `<p class="pb-invite-chip">Invito${s.invite.info?.league ? ` in <b>${esc(s.invite.info.league)}</b>` : ''} · codice <code>${esc(s.invite.code)}</code>: entri appena hai l'account.</p>` : ''}
-      <h1>${title}</h1>
+      ${s.entry&&!s.invite?'<p class="pb-invite-chip">LA TUA PANCHINA TI ASPETTA · Crea l’account, conferma l’email, entra nella prova.</p>':''}<h1>${title}</h1>
       ${sub ? `<p class="pb-sub">${sub}</p>` : ''}
       ${body}
     </main>
@@ -70,13 +71,13 @@ const submit = (s, label, busyLabel) => `<button type="submit" class="pb-btn is-
 
 function register(s) {
   const v = s.values;
-  return shell(s, s.invite ? 'Crea l\'account ed entra' : 'Crea il tuo account', 'Un minuto. Il soprannome e il tuo Quasi li scegli dopo.', `
+  return shell(s, s.invite ? 'Crea l\'account ed entra' : 'Crea il tuo account', 'Bastano email e password. Il soprannome parte dalla tua email: puoi cambiarlo nel profilo.', `
     ${tabs(s)}
-    ${s.editRegistration?'<p class="pb-sub">Correggi l’email. Usa lo stesso username e la password appena scelta.</p>':''}
+    <section data-social-buttons>${socialButtons(s)}</section>
+    ${s.editRegistration?'<p class="pb-sub">Correggi l’email e conferma la password appena scelta.</p>':''}
     <form class="pb-form" data-pb-form="register" novalidate>
       ${formError(s)}
       ${field({ id: 'pb-email', name: 'email', label: 'Email', type: 'email', value: v.email, error: s.errors.email, autocomplete: 'email', inputmode: 'email', hint: 'Ti mandiamo un link per attivare l\'account.' })}
-      ${field({ id: 'pb-username', name: 'username', label: 'Username', value: v.username, error: s.errors.username, autocomplete: 'username', hint: 'Lo usi per accedere e lo vedono gli amici. Le maiuscole diventano minuscole.' })}
       ${passwordField(s, { autocomplete: 'new-password', meter: true })}
       ${submit(s, s.editRegistration?'Correggi l’email':'Crea l\'account', 'Invio in corso…')}
       <p class="pb-fine">Solo crediti virtuali: niente acquisti né premi in denaro. La password non viaggia mai per email.</p>
@@ -88,9 +89,10 @@ function login(s) {
   const v = s.values;
   return shell(s, 'Bentornato, mister', '', `
     ${tabs(s)}
+    <section data-social-buttons>${socialButtons(s)}</section>
     <form class="pb-form" data-pb-form="login" novalidate>
       ${formError(s)}
-      ${field({ id: 'pb-identity', name: 'identity', label: 'Username o email', value: v.identity, error: s.errors.identity, autocomplete: 'username' })}
+      ${field({ id: 'pb-identity', name: 'identity', label: 'Email (o username del vecchio account)', value: v.identity, error: s.errors.identity, autocomplete: 'username' })}
       ${passwordField(s, { autocomplete: 'current-password', extra: '<a class="pb-forgot" href="#recupera" data-go="forgot">Password dimenticata?</a>' })}
       ${submit(s, 'Accedi', 'Accesso in corso…')}
     </form>
@@ -124,7 +126,7 @@ function forgot(s) {
 }
 
 function verify(s) {
-  if (s.done) return shell(s, 'Account attivo!', 'Benvenuto nel bar. Ora accedi con username e password.', `
+  if (s.done) return shell(s, 'Account attivo!', 'Benvenuto nel bar. Ora accedi con email e password.', `
     <a class="pb-btn is-primary is-full" href="#accedi" data-go="login">Accedi <span aria-hidden="true">→</span></a>`);
   return shell(s, 'Conferma il tuo indirizzo', 'Un tocco e l\'account è attivo.', `
     <form class="pb-form" data-pb-form="verify">${formError(s)}${submit(s, 'Attiva l\'account', 'Attivazione in corso…')}</form>
@@ -152,6 +154,10 @@ function resend(s) {
     </form>`);
 }
 
+function social(s){
+ const info=s.social;
+ return shell(s,'Un ultimo passo',info?.requiresPassword?'Questa email ha già un account. Confermalo una volta con la sua password: conserverai tutti i tuoi dati.':info?.ready?'Ti riportiamo al bar.':'Scegli come ti chiameranno gli altri al bar.',`<form class="pb-form" data-pb-form="social" novalidate>${formError(s)}${!info?'<p role="status">Verifica dell’accesso in corso…</p>':`${info.email?`<p class="pb-sub">${esc(info.email)}</p>`:''}${info.requiresUsername?field({id:'pb-social-username',name:'username',label:'Username',value:s.values.username,error:s.errors.username,autocomplete:'username',hint:'Da 3 a 60 caratteri. Il soprannome lo puoi cambiare dopo.'}):''}${info.requiresEmail?field({id:'pb-social-email',name:'email',label:'Email',type:'email',value:s.values.email,error:s.errors.email,autocomplete:'email',hint:'Ti mandiamo un link per confermare l’indirizzo.'}):''}${info.requiresPassword?passwordField(s,{autocomplete:'current-password',extra:'<a href="#recupera" data-go="forgot">Password dimenticata?</a>'}):''}${submit(s,info.requiresPassword?'Collega e accedi':info.ready?'Accedi':'Entra nel bar','Accesso in corso…')}`}</form><button class="pb-link is-center" type="button" data-go="login">Torna all’accesso</button>`);
+}
 export function renderAuth(s, now = Date.now()) {
-  return ({ register, login, forgot, verify, reset, resend, 'check-email': x => checkEmailScreen(x, now) })[s.screen]?.(s) ?? login(s);
+  return ({ register, login, forgot, verify, reset, resend, social, 'check-email': x => checkEmailScreen(x, now) })[s.screen]?.(s) ?? login(s);
 }

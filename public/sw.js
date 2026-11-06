@@ -1,4 +1,4 @@
-const CACHE = "quellidelquasi-shell-v0.29.30";
+const CACHE = "quellidelquasi-shell-v0.29.45";
 self.addEventListener("install", (e) =>
   e.waitUntil(
     caches
@@ -67,7 +67,7 @@ self.addEventListener("notificationclick", (event) => {
       for (const client of windows) {
         if (new URL(client.url).origin === self.location.origin) {
           await client.focus();
-          client.postMessage({ type: fanta?'open-fanta':reminder?'open-slip':"open-chat", league,round:reminder?new URL(url).searchParams.get('round'):null });
+          client.postMessage({ type: fanta?'open-fanta':reminder?'open-slip':"open-chat", league,url:fanta?url:null,round:reminder?new URL(url).searchParams.get('round'):null });
           return;
         }
       }

@@ -1,0 +1,2 @@
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function nicknameNotice(user,{profile=false}={}){return user?.nicknameSuggested?`<aside class="notice nickname-notice" role="status">Ti abbiamo chiamato <b>${esc(user.name)}</b>, dalla tua email. Puoi cambiare il soprannome del tuo Quasi quando vuoi. ${profile?'<button type="button" class="secondary" id="edit-suggested-nickname">Scegli il tuo soprannome</button>':'<a href="#/bar/profilo">Scegli il tuo soprannome →</a>'}</aside>`:'';}

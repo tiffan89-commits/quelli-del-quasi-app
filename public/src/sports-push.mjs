@@ -1,0 +1,13 @@
+let scriptPromise;
+export function loadSportsClient(){if(typeof window.io==='function')return Promise.resolve(window.io);if(!scriptPromise)scriptPromise=new Promise((resolve,reject)=>{const script=document.createElement('script'),timer=setTimeout(()=>{script.remove();reject(Error('Socket.IO non disponibile'));},8000);script.src='/socket.io/socket.io.js';script.async=true;script.onload=()=>{clearTimeout(timer);typeof window.io==='function'?resolve(window.io):reject(Error('Socket.IO non disponibile'));};script.onerror=()=>{clearTimeout(timer);script.remove();reject(Error('Socket.IO non disponibile'));};document.head.append(script);}).catch(e=>{scriptPromise=null;throw e;});return scriptPromise;}
+// Context checks are local only. There is no HTTP poll or HTTP fallback.
+export function createSportsPush({context,apply,status=()=>{},factory=loadSportsClient,doc=globalThis.document,win=globalThis.window,setTimer=setInterval,clearTimer=clearInterval}={}){
+ let socket=null,key=null,starting=false,stopped=true,last=null,retryAt=0,generation=0;
+ function disconnect(){generation++;socket?.removeAllListeners();socket?.disconnect();socket=null;key=null;last=null;}
+ async function wake(){if(stopped)return;const c=!doc?.hidden&&context(),next=c?JSON.stringify(c):null;if(!next){if(socket)disconnect();return;}if(key===next&&socket)return;if(starting||Date.now()<retryAt)return;disconnect();starting=true;const version=generation;
+  try{const io=await factory();if(stopped||version!==generation||JSON.stringify(context())!==next)return;key=next;const current=socket=io('/sports',{path:'/socket.io',transports:['websocket'],auth:c,withCredentials:true,reconnection:true,reconnectionDelay:500,reconnectionDelayMax:10000,timeout:8000,forceNew:true});
+   current.on('sports:update',m=>{if(stopped||socket!==current||JSON.stringify(context())!==key||JSON.stringify(m.context)!==key||m.revision===last)return;try{apply(m.data);last=m.revision;status({state:'ready',at:m.at});}catch(error){status({state:'error',error});}});current.on('disconnect',()=>status({state:'error'}));current.on('connect_error',()=>status({state:'error'}));current.on('sports:unavailable',()=>status({state:'error'}));
+  }catch(error){retryAt=Date.now()+15000;status({state:'error',error});}finally{starting=false;}
+ }
+ let timer;return {start(){if(!stopped)return;stopped=false;doc?.addEventListener('visibilitychange',wake);win?.addEventListener('online',wake);timer=setTimer(wake,1000);void wake();},wake,stop(){stopped=true;clearTimer(timer);doc?.removeEventListener('visibilitychange',wake);win?.removeEventListener('online',wake);disconnect();}};
+}

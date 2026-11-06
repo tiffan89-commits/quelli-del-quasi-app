@@ -40,9 +40,9 @@ export function projectNativeBar(s,native,{now=Date.now()}={}){
 }
 
 // One targeted transaction after the shared calculation, never per client.
-export async function syncNativeBar({connect=connection,now=Date.now()}={}){
+export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagueIds=null}={}){
  const c=await connect();try{await c.query('BEGIN');await c.query('SELECT pg_advisory_xact_lock(826501)');
-  const links=(await c.query(`SELECT b.*,l.name,l.season,l.auto_lineups_from AS cutover FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id WHERE b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL`)).rows;if(!links.length){await c.query('COMMIT');return {changed:0};}
+  const links=(await c.query(`SELECT b.*,l.name,l.season,l.auto_lineups_from AS cutover FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id WHERE b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL AND ($1::text[] IS NULL OR l.id=ANY($1::text[]))`,[onlyLeagueIds])).rows;if(!links.length){await c.query('COMMIT');return {changed:0};}
   const leagueIds=links.map(l=>l.fanta_league_id),competitions=links.map(l=>l.competition_id),native={links};
   native.assets=(await c.query("SELECT league_id,competition_key,team_id,kind,data-'data' AS data FROM fanta.bar_assets WHERE league_id=ANY($1::text[])",[links.map(l=>l.bar_league_id)])).rows;
   for(const table of ['teams','rounds','matchups','lineups'])native[table]=(await c.query('SELECT * FROM fanta.'+table+' WHERE league_id=ANY($1::text[])',[leagueIds])).rows;

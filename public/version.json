@@ -1,6 +1,6 @@
 {
-  "version": "0.29.30",
-  "releasedAt": "2026-11-04T16:22:12.225Z",
+  "version": "0.29.45",
+  "releasedAt": "2026-11-06T15:06:33.634Z",
   "features": [
     "dedicated-admin-mfa",
     "admin-wipe-controls",
@@ -127,6 +127,27 @@
     "mobile-home-horizontal-lock",
     "centered-quasi-card",
     "floating-chat-fullscreen-guard",
-    "shared-matchday-frontier-excludes-future-closed-rounds"
+    "shared-matchday-frontier-excludes-future-closed-rounds",
+    "cached-admin-ga4-reports",
+    "explainable-admin-improvement-tracking",
+    "consent-gated-masked-clarity",
+    "cached-admin-clarity-export",
+    "server-social-login",
+    "email-prefix-quasi-nickname",
+    "unique-ironic-team-names",
+    "persistent-bench-two-column-studio",
+    "studio-only-lineup-editing",
+    "adaptive-shirts-surname-fantamedia",
+    "optional-unlimited-lineup-bench",
+    "compact-three-column-player-cards",
+    "email-only-registration",
+    "single-player-auction",
+    "server-push-results",
+    "keeper-pressure-model",
+    "official-pitch-coordinates",
+    "underdog-context-capped",
+    "probable-pitch-direction-preserved",
+    "single-row-automatic-studio-reserves",
+    "admin-identity-login-compatibility"
   ]
 }

@@ -1,4 +1,5 @@
 import {extremeClass} from './formato.mjs';
+import {renderLeagueInvite} from './league-invite.mjs';
 // Home del Fanta ("Oggi"): squadra, prossima mossa, sfida della giornata, ultimo risultato, classifica.
 // Funzione pura: riceve la risposta di api.home() e restituisce HTML. Nessun accesso a rete o stato globale.
 import { esc, pts, odd, countdown, dayTime, timeAgo, OUTCOME } from './formato.mjs';
@@ -161,10 +162,11 @@ function auctionCard(h, now) {
 }
 
 export function renderHome(h, now = Date.now()) {
-  if(h.competition?.status==='draft')return `<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>`;
+  if(h.competition?.status==='draft')return `${renderLeagueInvite(h.league,h.invite,{copied:h.inviteCopied})}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>`;
   return `<div class="fanta-home">
     ${auctionCard(h, now)}
     ${hero(h)}
+    ${renderLeagueInvite(h.league,h.invite,{copied:h.inviteCopied})}
     ${nextMove(h, now)}
 
     ${matchCard(h, now)}

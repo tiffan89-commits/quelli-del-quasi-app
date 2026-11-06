@@ -19,13 +19,13 @@ const FAQ = [
 function showcase() {
   return `<div class="pb-show" aria-hidden="true">
     <div class="pb-card pb-vote">
-      <div class="pb-vote-head"><span class="pb-shirt">${shirt('Lecce')}</span><div><b>S. Ferrara</b><small>C · Lecce vs Genoa · 2–1</small></div>
+      <div class="pb-vote-head"><span class="pb-shirt">${shirt('Atalanta')}</span><div><b>Éderson</b><small>C · Atalanta · esempio di voto</small></div>
         <div class="pb-vote-n"><small>Voto</small><strong>6,5</strong></div><div class="pb-vote-n is-fv"><small>FV</small><strong>9,5</strong></div></div>
-      <p class="pb-why"><b>Perché 6,5?</b> Una prova convincente: dà ritmo al Lecce e trova la rete contro il Genoa. Il gol dà sostanza alla sua partita.</p>
+      <p class="pb-why"><b>Perché 6,5?</b> Nell’esempio, Éderson dà ritmo all’Atalanta e trova la rete. Una prova convincente, con il gol a darle sostanza.</p>
     </div>
     <div class="pb-card pb-auction">
       <span class="pb-live">ASTA LIVE</span>
-      <div class="pb-auction-row"><span class="pb-shirt">${shirt('Juventus')}</span><div><b>E. Donati</b><small>A · valore 91</small></div>
+      <div class="pb-auction-row"><span class="pb-shirt">${shirt('Juventus')}</span><div><b>Kenan Yıldız</b><small>C · Juventus · esempio d’asta</small></div>
         <strong class="pb-bid">41</strong><span class="pb-ring"><i>7</i></span></div>
       <div class="pb-raises"><span>+1</span><span>+5</span><span>+10</span><span class="is-pass">Passo</span></div>
     </div>
@@ -108,7 +108,7 @@ export function renderLanding({ invite = null, barDemo = false } = {}) {
     <section class="pb-steps" aria-labelledby="pb-steps-title">
       <h2 id="pb-steps-title" class="pb-h2">Come si comincia</h2>
       <ol>
-        <li><b>Crea l'account</b><span>Email, username e password: un minuto.</span></li>
+        <li><b>Crea l'account</b><span>Email e password: un minuto.</span></li>
         <li><b>Crea la lega o entra con un invito</b><span>Fino a 12 amici. L'admin li invita con un link su WhatsApp.</span></li>
         <li><b>Gioca</b><span>Formazione, asta, schedine al Bar. Sul telefono, come un'app.</span></li>
       </ol>

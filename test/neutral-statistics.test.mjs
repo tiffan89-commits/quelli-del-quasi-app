@@ -22,9 +22,9 @@ test('all role metrics near the reference produce exactly six before other match
  const vote=calculateVote(input);assert.equal(vote.vote,6);assert.ok(vote.stats.every(s=>s.comparison==='near'&&s.score===0));
  const {document}=parseHTML(renderPlayerSheet(vote));assert.equal(document.querySelectorAll('.fanta-stat.is-neutral').length,vote.stats.length);assert.equal(document.querySelectorAll('.fanta-stat.is-down').length,0);
 });
-test('contributions restart continuously outside the neutral band, with existing short-minute shrinkage',()=>{
+test('negligible contributions remain zero outside the neutral band, with existing short-minute shrinkage',()=>{
  const at=value=>evaluateIndividual(player({passesTotal:value})).features.passesTotal;
- assert.equal(at(46).score,0);assert.ok(at(45.999).score<0&&at(45.999).score>-.0001);
+ const boundary=at(50).expected-at(50).neutralBand;assert.equal(at(boundary).score,0);assert.equal(at(boundary-.001).score,0);
  assert.ok(at(30).score<at(45).score);
  const rate=pct=>evaluateIndividual(player({passesTotal:50,passAccuracy:pct})).features.passAccuracy;
  assert.equal(rate(80.5).score,0);assert.equal(rate(85.5).score,0);

@@ -19,7 +19,7 @@ test('Fanta: concurrent bids have one winner; manual assignments/undo persist wi
   a=await(await call('auction/nominate',{playerId:'free',amount:1},caller)).json();const lotId=a.lot.id;
   const responses=await Promise.all([call('auction/bid',{lotId,amount:2},other),call('auction/bid',{lotId,amount:2},other)]);
   assert.deepEqual(responses.map(r=>r.status).sort(),[200,400]);
-  stamp+=13000;const snapshot=await(await call('auction?league=fanta-lucas-a')).json();assert.equal(snapshot.lastSale,undefined);a=await(await call('auction/tick',{},other)).json();assert.equal(a.lastSale.price,2);
+  stamp+=31000;const snapshot=await(await call('auction?league=fanta-lucas-a')).json();assert.equal(snapshot.lastSale,undefined);a=await(await call('auction/tick',{},other)).json();assert.equal(a.lastSale.price,2);
   assert.equal((await f.db.query("SELECT count(*)::int AS n FROM fanta.rosters WHERE player_id='free'")).rows[0].n,1);
   stamp+=3000;await call('auction/mode',{mode:'manual'});
   assert.equal((await call('auction/undo',{saleId:a.lastSale.id})).status,200);

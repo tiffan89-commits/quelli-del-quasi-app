@@ -18,6 +18,7 @@ lib/release-context.json
 /backups/
 /logs/
 /uploads/
+/outputs/
 *.log
 *.pid
 *.db

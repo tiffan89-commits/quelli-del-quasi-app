@@ -31,12 +31,31 @@ export function balancedPilotRosters(players,{teams=10,budget=500,slots=DEFAULT_
    }
   }
  }
+ // Spend remaining real list prices on strict, same-role improvements. Never
+ // inflate catalog prices just to exhaust a budget, or replace another team's player.
+ let changed;
+ do{
+  changed=false;
+  const order=roster.map((_,i)=>i).sort((a,b)=>spent[a]-spent[b]||a-b);
+  for(const i of order){
+   let best=null;
+   for(const [index,old]of roster[i].entries())for(const p of players){
+    if(p.role!==old.role||p.active===false||used.has(p.id)||!Number.isInteger(p.value)||p.value<=old.value||p.value-old.price>budget-spent[i])continue;
+    const gain=p.value-old.value;
+    if(!best||gain>best.gain||gain===best.gain&&tie(p).localeCompare(tie(best.player))<0)best={index,player:p,gain};
+   }
+   if(best){const old=roster[i][best.index];used.delete(old.id);used.add(best.player.id);spent[i]+=best.player.value-old.price;roster[i][best.index]={...best.player,price:best.player.value};changed=true;}
+  }
+ }while(changed);
  if(roster.some(r=>r.length!==Object.values(slots).reduce((a,b)=>a+b,0)||r.reduce((n,p)=>n+p.price,0)>budget))throw Error('Rose pilota fuori budget');return roster;
 }
 // Random leagues distribute the strongest available tier in each role. Prices
-// are synthetic assignment costs, scaled equally so no roster exceeds budget.
+// are synthetic assignment costs, proportionally apportioned to use the full
+// budget per team. Catalog values remain untouched; prices do not choose quality.
 export function balancedRandomRosters(players,{teams,budget=500,slots=DEFAULT_RULES.roster,seed=''}={}){
  if(!Number.isInteger(teams)||teams<2||teams>20)throw Error('Numero di squadre non valido');
+ const count=Object.values(slots).reduce((a,b)=>a+b,0);
+ if(!Number.isInteger(budget)||!Number.isInteger(count)||count<1||budget<count)throw Error('Budget insufficiente o non valido per completare le rose');
  const rosters=Array.from({length:teams},()=>[]),used=new Set(),rank=id=>createHash('sha256').update(seed+':'+id).digest('hex');
  for(const role of ['P','D','C','A']){
   const pool=players.filter(p=>p.role===role&&p.active!==false&&Number.isFinite(p.value)&&p.value>=1&&!used.has(p.id)).sort((a,b)=>b.value-a.value||rank(a.id).localeCompare(rank(b.id)));
@@ -47,6 +66,12 @@ export function balancedRandomRosters(players,{teams,budget=500,slots=DEFAULT_RU
    for(const i of order){const p=pool.find(p=>!used.has(p.id));used.add(p.id);rosters[i].push({...p});}
   }
  }
- const maximum=Math.max(...rosters.map(r=>r.reduce((n,p)=>n+p.value,0))),factor=Math.min(1,(budget-Object.values(slots).reduce((a,b)=>a+b,0))/maximum);
- return rosters.map(r=>r.map(p=>({...p,price:Math.max(1,Math.floor(p.value*factor))})));
+ return rosters.map(r=>{
+  const total=r.reduce((n,p)=>n+p.value,0),remaining=budget-count;
+  const parts=r.map((p,index)=>{const share=remaining*p.value/total;return {index,price:1+Math.floor(share),fraction:share-Math.floor(share)};});
+  const extra=budget-parts.reduce((n,p)=>n+p.price,0);
+  const order=[...parts].sort((a,b)=>b.fraction-a.fraction||rank(r[a.index].id).localeCompare(rank(r[b.index].id)));
+  for(let i=0;i<extra;i++)order[i].price++;
+  return r.map((p,i)=>({...p,price:parts[i].price}));
+ });
 }

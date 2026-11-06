@@ -80,10 +80,14 @@ http.createServer(async(req,res)=>{
   if(url.pathname==='/__preview/mail'&&process.env.PREVIEW_MAILBOX==='1'){
    res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify(previewMailbox));return;
   }
+  if(url.pathname==='/__preview/inbox'&&process.env.PREVIEW_MAILBOX==='1'){
+   const links=previewMailbox.map((m,i)=>{const raw=(m.html||'').match(/https:\/\/example\.test\/account\.html[^"\s<]+/g)?.find(x=>x.includes('action='));if(!raw)return '';const target=new URL(raw.replaceAll('&amp;','&'));return '<p><a href="'+target.pathname+target.search+target.hash+'">Apri email di prova '+(i+1)+' →</a></p>';}).join('');
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}).end('<!doctype html><html lang="it"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/acquisition.css"><main class="acq-entry"><p class="acq-eyebrow">SOLO ANTEPRIMA · NESSUNA EMAIL REALE INVIATA</p><h1>La posta<br>del mister.</h1>'+ (links||'<p>Non ci sono ancora email di prova.</p>')+'<a href="/prendi-squadra.html">Torna alla pagina →</a></main></html>');return;
+  }
   if(url.pathname==='/__preview/live'&&req.method==='POST'){
    const m=live.matches[0];if(url.searchParams.has('finish')){live.matches.forEach(x=>{x.status='FT';x.score=x.liveScore||x.score||[0,0];x.officialConfirmed=true;});}else{m.liveScore=[m.liveScore[0]+1,0];m.clock="25'";}res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({ok:true,score:m.liveScore}));return;
   }
-  if(url.pathname.startsWith('/fanta-api/')){await native.syncAuth();let body='';for await(const chunk of req)body+=chunk;const request=new Request(url,{method:req.method,headers:{...req.headers,...(process.env.PREVIEW_AUTO_AUTH==='1'?{cookie:'sid='+fixtureToken}:{})},...(body?{body}:{})}),response=await native.api(request);res.writeHead(response.status,Object.fromEntries(response.headers)).end(Buffer.from(await response.arrayBuffer()));return;}
+  if(url.pathname.startsWith('/fanta-api/')){await native.syncAuth();let body='';for await(const chunk of req)body+=chunk;const request=new Request(url,{method:req.method,headers:{...req.headers,...(process.env.PREVIEW_AUTO_AUTH==='1'?{cookie:'sid='+fixtureToken}:{})},...(body?{body}:{})}),response=await native.api(request);await native.syncGame();res.writeHead(response.status,Object.fromEntries(response.headers)).end(Buffer.from(await response.arrayBuffer()));return;}
  if(url.pathname.startsWith('/api/')){
    let data='';for await(const chunk of req)data+=chunk;
    const request=new Request(url,{method:req.method,headers:{...req.headers,...(port===8790||process.env.PREVIEW_AUTO_AUTH==='1'?{cookie:'sid='+fixtureToken}:{})},...(data?{body:data}:{})});

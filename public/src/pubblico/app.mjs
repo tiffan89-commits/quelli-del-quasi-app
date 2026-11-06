@@ -5,6 +5,9 @@
 import { renderLanding, renderDemoChooser } from './landing.mjs';
 import { renderAuth, errorsFor, isValid } from './accesso.mjs';
 import {passwordStrength,PASSWORD_MIN} from './convalida.mjs';
+import {checkEmail,checkUsername} from './convalida.mjs';
+import {socialButtons} from './social.mjs';
+import {rememberEntry,entryIntent,clearEntry} from '../acquisition-intent.mjs';
 
 const ROUTES = { '#accedi': 'login', '#registrati': 'register', '#recupera': 'forgot', '#conferma': 'resend', '#accesso': 'login', '#reinvia': 'resend' };
 const HASH_OF = { login: '#accedi', register: '#registrati', forgot: '#recupera', resend: '#conferma' };
@@ -13,6 +16,7 @@ const COOLDOWN = 60000;
 export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {} }) {
   const s = { view: 'landing', screen: 'login', values: {}, touched: {}, submitted: false, errors: {}, busy: false, showPassword: false, invite: null, sheet: null, barDemo:true };
   let tick = null, alive = true, epoch = 0; const lifecycle = new AbortController(), signal = lifecycle.signal;
+  if(new URLSearchParams(location.search).get('entry')==='fanta')rememberEntry(localStorage);
   const listen=(target,event,fn)=>target.addEventListener(event,fn,{signal});
   try { const saved=JSON.parse(localStorage.getItem('qdq:invite')||'null'); if(saved?.code&&Date.now()-saved.at<7*864e5) s.invite={code:saved.code,info:null};  } catch {}
 
@@ -22,6 +26,8 @@ export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {
     const path = location.pathname.match(/^\/invito\/([A-Za-z0-9_-]{3,40})\/?$/);
     const code = params.get('invito') || new URLSearchParams(location.search).get('invito') || path?.[1] || s.invite?.code;
     if (code) loadInvite(code);
+    if(h==='#social'){show('auth','social');loadSocial(epoch);return;}
+    if(params.has('social-error')){history.replaceState(null,'',location.pathname+location.search+'#accedi');return show('auth','login',{formError:params.get('social-error')==='cancelled'?'Accesso annullato. Puoi riprovare oppure usare email e password.':'Non siamo riusciti a completare l’accesso social. Riprova oppure usa email e password.'});}
     if (params.get('action') === 'verify' || params.get('action') === 'reset') {
       return show('auth', params.get('action'), { token: params.get('token') || '' });
     }
@@ -65,7 +71,7 @@ export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {
     if(!alive)return;
     const a = document.activeElement, id = root.contains(a) && a.id, sel = id && a.selectionStart;
     s.errors = s.view === 'auth' ? errorsFor(s.screen, s.values, s.touched, s.submitted) : {};
-    root.innerHTML = s.view === 'landing' ? renderLanding({ invite: s.invite, barDemo: s.barDemo }) : renderAuth(s);
+    s.entry=entryIntent(localStorage);root.innerHTML = s.view === 'landing' ? renderLanding({ invite: s.invite, barDemo: s.barDemo }) : renderAuth(s);
     if (id) { const el = document.getElementById(id); if (el) { el.focus(); try { el.setSelectionRange(sel ?? el.value.length, sel ?? el.value.length); } catch {} } }
     renderSheet();
     clearInterval(tick);
@@ -101,13 +107,21 @@ export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {
     // Autofill may not emit input; read the form itself before validating/submitting.
     for(const input of root.querySelectorAll('.pb-form input[name]'))s.values[input.name]=input.value;
     s.submitted = true;
-    if (kind !== 'verify' && !isValid(kind, s.values)) { render(); root.querySelector('[aria-invalid="true"]')?.focus(); return; }
+    if(kind==='social'){s.errors={};if(s.social?.requiresUsername)s.errors.username=checkUsername(s.values.username);if(s.social?.requiresEmail)s.errors.email=checkEmail(s.values.email);if(s.social?.requiresPassword&&!s.values.password)s.errors.password='Scrivi la password del tuo account';if(Object.values(s.errors).some(Boolean)){render();root.querySelector('[aria-invalid="true"]')?.focus();return;}}
+    else if (kind !== 'verify' && !isValid(kind, s.values)) { render(); root.querySelector('[aria-invalid="true"]')?.focus(); return; }
     s.busy = true; s.formError = null; s.formAction = ''; render();
     const v = {...s.values};
     try {
+      if(kind==='social'){
+        const result=await api.socialComplete({...(s.social?.requiresUsername?{username:v.username}:{}),...(s.social?.requiresEmail?{email:v.email}:{}),...(s.social?.requiresPassword?{password:v.password}:{})});
+        if(!alive||mine!==epoch)return;
+        if(result.needsLink){s.busy=false;s.social={...s.social,email:result.email,ready:false,requiresEmail:false,requiresPassword:true};render();return;}
+        if(result.pendingVerification)return show('auth','check-email',{sentTo:result.identity,values:{identity:result.identity},mailPurpose:'verify',cooldownUntil:Date.now()+COOLDOWN});
+        history.replaceState(null,'',location.pathname+location.search+'#accedi');return await onLoggedIn({...result,invite:result.invite||s.invite?.code});
+      }
       if (kind === 'register') {
-        const result = await api.register({ email: v.email, username: v.username, password: v.password,...(s.editRegistration?{correctEmail:true}:{}) }); if(!alive||mine!==epoch)return;
-        Object.assign(s, { editRegistration:false,sentTo: v.email.trim(), mailPurpose: 'verify', cooldownUntil: Date.now() + COOLDOWN, values: { ...v, password: '' } });
+        const result = await api.register({ email: v.email, password: v.password,...(s.entry?{entry:'fanta'}:{}),...(s.editRegistration?{correctEmail:true,previousEmail:s.registrationEmail}:{}) }); if(!alive||mine!==epoch)return;
+        Object.assign(s, { editRegistration:false,registrationEmail:v.email.trim(),sentTo: v.email.trim(), mailPurpose: 'verify', cooldownUntil: Date.now() + COOLDOWN, values: { ...v, password: '' } });
         history.pushState(null, '', '#email-inviata');
         return show('auth', 'check-email');
       }
@@ -136,6 +150,19 @@ export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {
     }
   }
 
+  let loadingSocial=false;
+  async function loadSocial(mine){
+    if(loadingSocial||!api.socialStatus)return;loadingSocial=true;s.busy=true;render();
+    try{const info=await api.socialStatus();if(!alive||mine!==epoch)return;s.social=info;s.busy=false;if(info.entry==='fanta')rememberEntry(localStorage);render();if(info.ready)await submitForm('social');}
+    catch(e){if(alive&&mine===epoch){s.busy=false;s.formError=e.message;render();}}
+    finally{loadingSocial=false;if(alive&&mine!==epoch&&location.hash==="#social")queueMicrotask(()=>loadSocial(epoch));}
+  }
+  async function startSocial(provider){
+    if(s.busy||!alive||!s.providers?.includes(provider))return;const mine=epoch;s.busy=true;s.socialStarting=provider;s.formError=null;render();
+    try{const out=await api.socialStart({provider,invite:s.invite?.code,entry:s.entry?'fanta':undefined});if(!alive||mine!==epoch)return;const url=new URL(out.authorizationUrl);if(url.protocol!=='https:'||!['accounts.google.com','www.facebook.com','appleid.apple.com'].includes(url.hostname))throw Error('Collegamento di accesso non valido');location.assign(url.href);}
+    catch(e){if(alive&&mine===epoch){s.busy=false;s.socialStarting=null;s.formError=e.message;render();}}
+  }
+
   async function resendMail() {
     if (!alive || s.resending || Date.now() < (s.cooldownUntil || 0)) return; const mine=epoch; s.resending=true;
     s.cooldownUntil = Date.now() + COOLDOWN; render();
@@ -147,14 +174,15 @@ export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {
   }
 
   function onClick(e) {
-    const t = e.target.closest('[data-go],[data-pb-eye],[data-pb-resend]');
+    const t = e.target.closest('[data-go],[data-pb-eye],[data-pb-resend],[data-social-provider]');
     if (!t) return;
+    if(t.dataset.socialProvider){e.preventDefault();startSocial(t.dataset.socialProvider);return;}
     if (t.dataset.pbEye) { e.preventDefault();s.showPassword = !s.showPassword;const input=root.querySelector('#'+t.dataset.pbEye),start=input?.selectionStart,end=input?.selectionEnd;if(input){input.type=s.showPassword?'text':'password';t.textContent=s.showPassword?'Nascondi':'Mostra';t.setAttribute('aria-label',(s.showPassword?'Nascondi':'Mostra')+' la password');t.setAttribute('aria-pressed',String(s.showPassword));input.focus({preventScroll:true});try{input.setSelectionRange(start,end);}catch{}}return; }
     if (t.dataset.pbResend !== undefined) { resendMail(); return; }
     const where = t.dataset.go;
     e.preventDefault();
     if (where === 'close') { s.sheet = null; if (location.hash === '#demo') history.replaceState(null, '', location.pathname); return renderSheet(); }
-    if (where === 'home') { epoch++;history.pushState(null, '', location.pathname + (s.invite ? '#invito=' + s.invite.code : '')); s.sheet = null; return show('landing'); }
+    if (where === 'home') { if(s.entry&&!s.invite){location.assign('/prendi-squadra.html'+location.search);return;}epoch++;history.pushState(null, '', location.pathname + (s.invite ? '#invito=' + s.invite.code : '')); s.sheet = null; return show('landing'); }
     if(where==='demo'){if(!s.barDemo)return onDemo('fanta');s.sheet='demo';return renderSheet();}
     if (where === 'demo-bar' && !s.barDemo)return;
     if (where === 'demo-fanta' || where === 'demo-bar') { s.sheet = null; renderSheet(); return onDemo(where.slice(5)); }
@@ -183,7 +211,7 @@ export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {
   listen(window,'popstate', route); listen(window,'hashchange',route);
   listen(window,'keydown', e => { if (e.key === 'Escape' && s.sheet) { s.sheet = null; renderSheet(); } });
 
-  api.features().then(f => { if(!alive)return; s.barDemo = f.barDemo!==false;if(s.view==='landing')render(); }).catch(()=>{});
+  api.features().then(f => { if(!alive)return; s.barDemo = f.barDemo!==false;s.providers=(f.socialProviders||[]).filter(p=>['google','facebook','apple'].includes(p));if(s.view==='landing')render();else{const slot=root.querySelector('[data-social-buttons]');if(slot)slot.innerHTML=socialButtons(s);} }).catch(()=>{});
   route();
   return {route, destroy(){alive=false;epoch++;lifecycle.abort();clearInterval(tick);document.getElementById('pb-sheet')?.remove();document.body.classList.remove('pb-sheet-open');}};
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
 import {presenceProbability} from '../public/src/fanta/presence-probability.mjs';
-import {playBadge,renderStudio} from '../public/src/fanta/formazione-studio.mjs';
-import {draftFrom,canDropOn,dropOn,nextLabel,lineupOf} from '../public/src/fanta/squadra.mjs';
+import {playBadge,renderStudio,studioDraft} from '../public/src/fanta/formazione-studio.mjs';
+import {draftFrom,canDropOn,dropOn,nextLabel,lineupOf,surname} from '../public/src/fanta/squadra.mjs';
 import {enableDrag} from '../public/src/fanta/trascina.mjs';
 import {readPresenceMinutes} from '../fanta/play-probabilities.mjs';import {createReadCache} from '../lib/read-cache.mjs';
 import {fixtureDb} from './fanta/helpers.mjs';import {mountFanta} from '../public/src/fanta/app.mjs';import {createDemoFantaApi} from '../public/src/fanta/demo-api.mjs';
@@ -22,9 +22,9 @@ test('compact editor shows opponent initials, roles and legal drop targets, neve
  const draft=draftFrom(null,roster);draft.slots.P0='p0';draft.bench=['p1'];
  const {document}=parseHTML(renderStudio({data:{roster,round:{number:12,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft,dirty:true},{role:'tutti'},0));
  assert.equal(nextLabel({opponent:'Inter',home:true}),'INT');assert.equal(nextLabel({opponent:'Inter',home:false}),'@ INT');assert.equal(nextLabel(null),'–');
- assert.equal(document.querySelectorAll('.fs-grid [data-st-player]').length,2);
+ assert.equal(document.querySelectorAll('.fs-grid [data-st-player]').length,3);
  assert.equal(document.querySelector('[data-drop="slot:P0"]').dataset.dragId,'p0');
- assert.equal(document.querySelectorAll('.fs-grid [data-drag-axis="up"]').length,2);
+ assert.equal(document.querySelectorAll('.fs-grid [data-drag-axis="up"]').length,3);
  assert.ok(!document.querySelector('.fs-grid').textContent.includes('2026-11-03'));
  assert.match(document.querySelector('.fs-legend').textContent,/Probabilità effettiva/);assert.match(document.querySelector('.fs-legend').textContent,/Stimata/);
 });
@@ -79,7 +79,7 @@ test('studio sheet handles real controller drops, retains horizontal position, s
   const event=(el,type,x,y)=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:x,clientY:y,pointerId:1,pointerType:'touch',button:0,isPrimary:true});el.dispatchEvent(e);};
   event(source,'pointerdown',20,250);event(window,'pointermove',20,150);event(window,'pointerup',20,50);
   assert.equal(document.querySelector('.fs [data-drop="slot:'+role+'0"]').dataset.dragId,id);assert.equal(document.querySelector('.fs-grid').scrollLeft,80);assert.equal(document.querySelector('.fs-tabs').scrollLeft,20);assert.equal(document.querySelectorAll('.fs-grid [data-drag-id="'+id+'"]').length,0);
-  click('.fs [data-lineup="best"]');click('.fs [data-lineup="save"]');click('.fs [data-lineup="save"]');await pause();assert.equal(saves,1);assert.match(document.querySelector('.fs-bar').textContent,/Salvata/);assert.ok((await api.team('lega-quasi')).lineup.starters.includes(id));
+  click('.fs [data-lineup="best"]');click('.fs [data-lineup="save"]');click('.fs [data-lineup="save"]');await pause();assert.equal(saves,1);assert.match(document.querySelector('.fs-bar').textContent,/Salvata/);const saved=(await api.team('lega-quasi')).lineup;assert.equal(saved.starters.length,11);assert.equal(new Set([...saved.starters,...saved.bench]).size,25);assert.ok([...saved.starters,...saved.bench].includes(id));
  }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
 
@@ -91,19 +91,19 @@ test('clear buttons and dragging down remove draft selections only, preserve the
  try{
   const api=createDemoFantaApi({delay:0}),root=document.getElementById('app');let writes=0;instance=mountFanta(root,{api:{...api,saveLineup:(...a)=>{writes++;return api.saveLineup(...a);}},initialTab:'squadra'});
   for(let i=0;i<30&&!root.querySelector('[data-studio="open"]');i++)await pause();click('[data-studio="open"]');assert.equal(document.querySelector('.fs [data-lineup="clear"]').disabled,true);
-  click('.fs [data-lineup="best"]');const occupied=()=>[...document.querySelectorAll('.fs-pitch [data-drag-id]')].map(e=>e.dataset.dragId);const starters=occupied();assert.equal(starters.length,11);assert.equal(document.querySelectorAll('.fs-bcell').length,14);
+  click('.fs [data-lineup="best"]');const occupied=()=>[...document.querySelectorAll('.fs-pitch [data-drag-id]')].map(e=>e.dataset.dragId);const starters=occupied();assert.equal(starters.length,11);assert.equal(document.querySelectorAll('.fs-top .fs-bcell,.fs-bench').length,0);assert.equal(document.querySelectorAll('.fs-reserve').length,14);assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,14);assert.equal(document.querySelectorAll('[data-bench-move]').length,28);
   const field=document.querySelector('.fs-pitch [data-drag-id]'),id=field.dataset.dragId,dock=document.querySelector('.fs-dock');field.getBoundingClientRect=()=>({left:0,top:100,width:60,height:40});document.elementFromPoint=()=>dock;
   const event=(target,type,y)=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:20,clientY:y,pointerId:7,pointerType:'touch',button:0,isPrimary:true});target.dispatchEvent(e);};
   event(field,'pointerdown',120);event(window,'pointermove',150);assert.ok(dock.classList.contains('is-droppable'));event(window,'pointermove',400);event(window,'pointerup',400);
-  assert.equal(occupied().length,10);assert.ok(!occupied().includes(id));assert.ok(document.querySelector('.fs-grid [data-drag-id="'+id+'"]'));assert.equal(document.querySelectorAll('.fs-bcell').length,14);
-  click('.fs [data-lineup="clear-bench"]');assert.equal(document.querySelectorAll('.fs-bcell').length,0);assert.equal(occupied().length,10);assert.equal(document.querySelector('.fs [data-lineup="clear-bench"]').disabled,true);
+  assert.equal(occupied().length,10);assert.ok(!occupied().includes(id));assert.ok(document.querySelector('.fs-grid [data-drag-id="'+id+'"]'));assert.equal(document.querySelectorAll('.fs-reserve').length,15);assert.equal(document.querySelectorAll('[data-bench-move]').length,0);
+  assert.equal(document.querySelector('[data-lineup="clear-bench"]'),null);
   click('.fs [data-lineup="clear"]');assert.equal(occupied().length,0);assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,25);assert.equal(document.querySelector('.fs-mod.is-active').textContent,'4-4-2');assert.equal(writes,0);assert.equal((await api.team('lega-quasi')).lineup,null);
   const data=await api.team('lega-quasi'),draft=draftFrom({formation:'4-4-2',starters:data.roster.map(p=>p.id)},data.roster),locked=parseHTML(renderStudio({data:{...data,round:{...data.round,locked:true}},draft,dirty:true,saving:true},{role:'tutti'})).document;
-  for(const action of ['clear','clear-bench','best'])assert.equal(locked.querySelector('[data-lineup="'+action+'"]').hasAttribute('disabled'),true);
+  for(const action of ['clear','best'])assert.equal(locked.querySelector('[data-lineup="'+action+'"]').hasAttribute('disabled'),true);
  }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
 
-test('undo restores the current-round saved lineup in both editors with no write or redundant save',async()=>{
+test('undo restores the saved lineup inside the studio; the outside overview has no editing controls',async()=>{
  const {window,document}=parseHTML('<html><head></head><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
  const keys=['window','document','location','history','localStorage','scrollTo','requestAnimationFrame','setInterval','clearInterval'],old=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
  Object.assign(globalThis,{window,document,location:{hash:'#/fanta/squadra',pathname:'/',search:''},history:{pushState(){},replaceState(){}},localStorage:{getItem:()=>null,setItem(){}},scrollTo(){},requestAnimationFrame:fn=>fn(),setInterval:()=>1,clearInterval(){}});
@@ -113,15 +113,14 @@ test('undo restores the current-round saved lineup in both editors with no write
   const saved=await api.saveLineup('lega-quasi',data.round.number,lineupOf(bestLineup(draftFrom(null,data.roster),data.roster,data.rules.benchMax)));
   instance=mountFanta(document.getElementById('app'),{api:{...api,saveLineup:(...a)=>{writes++;return api.saveLineup(...a);}},initialTab:'squadra'});await instance.ready;
   for(let i=0;i<30&&!document.querySelector('[data-studio="open"]');i++)await pause();
-  assert.equal(document.querySelector('[data-lineup="restore"]').disabled,true);
-  click('[data-lineup="clear"]');click('[data-lineup="restore"]');assert.equal(document.querySelector('[data-lineup="save"]').disabled,true);assert.equal(document.querySelector('[data-lineup="restore"]').disabled,true);
-  click('[data-studio="open"]');const occupied=()=>[...document.querySelectorAll('.fs-pitch [data-drag-id]')].map(el=>el.dataset.dragId).sort();
+  assert.equal(document.querySelector('[data-lineup]'),null);assert.equal(document.querySelector('[data-slot]'),null);assert.equal(document.querySelector('[data-drag-id]'),null);
+  click('[data-studio="open"]');assert.equal(document.querySelector('.fs [data-lineup="restore"]').disabled,true);const occupied=()=>[...document.querySelectorAll('.fs-pitch [data-drag-id]')].map(el=>el.dataset.dragId).sort();
   assert.deepEqual(occupied(),[...saved.starters].sort());click('.fs [data-lineup="clear"]');assert.equal(occupied().length,0);click('.fs [data-lineup="restore"]');assert.deepEqual(occupied(),[...saved.starters].sort());
-  assert.deepEqual([...document.querySelectorAll('.fs-bcell')].map(el=>el.dataset.stPlayer),saved.bench);assert.equal(document.querySelector('.fs [data-lineup="save"]').disabled,true);assert.equal(writes,0);assert.deepEqual((await api.team('lega-quasi')).lineup,saved);
+  assert.deepEqual([...document.querySelectorAll('.fs-grid [data-drag-id]')].map(el=>el.dataset.dragId),saved.bench);assert.equal(document.querySelector('.fs [data-lineup="save"]').disabled,true);assert.equal(writes,0);assert.deepEqual((await api.team('lega-quasi')).lineup,saved);
  }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
 
-test('both formation editors allow D → C → D with unfinished departments and no forced step backwards',async()=>{
+test('studio allows D → C → D freely; closing shows saved data and reopening preserves the draft',async()=>{
  const {window,document}=parseHTML('<html><head></head><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
  const keys=['window','document','location','history','localStorage','scrollTo','requestAnimationFrame','setInterval','clearInterval'],old=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
  Object.assign(globalThis,{window,document,location:{hash:'#/fanta/squadra',pathname:'/',search:''},history:{pushState(){},replaceState(){}},localStorage:{getItem:()=>null,setItem(){}},scrollTo(){},requestAnimationFrame:fn=>fn(),setInterval:()=>1,clearInterval(){}});let instance,writes=0;
@@ -129,8 +128,40 @@ test('both formation editors allow D → C → D with unfinished departments and
  try{
  const api=createDemoFantaApi({delay:0});instance=mountFanta(document.getElementById('app'),{api:{...api,saveLineup:()=>{writes++;}},initialTab:'squadra'});await instance.ready;click('[data-studio="open"]');await new Promise(r=>setTimeout(r,5));
  for(const role of ['D','C','D']){if(role==='C')click('[data-st-slot="C0"]');else click('[data-st-role="'+role+'"]');for(let i=0;i<2;i++)click('.fs-grid [data-st-player]');assert.equal(document.querySelector('.fs-tab.is-active').dataset.stRole,role);}
- assert.equal(document.querySelectorAll('.fs-col.is-D [data-drag-id]').length,4);assert.equal(document.querySelectorAll('.fs-col.is-C [data-drag-id]').length,2);click('[data-studio="close"]');click('[data-lineup="clear"]');click('[data-lineup="guided"]');
- for(const role of ['D','C','D']){click('[data-pick-role="'+role+'"]');for(let i=0;i<2;i++)click('.fanta-pick-list [data-pick]');assert.equal(document.querySelector('.fanta-pick-roles .is-active').dataset.pickRole,role);}
- click('button[data-action="close-sheet"]');assert.equal(document.querySelectorAll('[data-slot^="D"][data-drag-id]').length,4);assert.equal(document.querySelectorAll('[data-slot^="C"][data-drag-id]').length,2);assert.equal(writes,0);
+ assert.equal(document.querySelectorAll('.fs-col.is-D [data-drag-id]').length,4);assert.equal(document.querySelectorAll('.fs-col.is-C [data-drag-id]').length,2);click('[data-studio="close"]');assert.equal(document.querySelectorAll('.fanta-board [data-drag-id]').length,0);assert.equal(document.querySelectorAll('[data-lineup]').length,0);assert.equal(document.querySelectorAll('.fanta-board .fanta-token').length,0);assert.match(document.getElementById('app').textContent,/modifiche nello studio ancora da salvare/);click('[data-studio="open"]');assert.equal(document.querySelectorAll('.fs-col.is-D [data-drag-id]').length,4);assert.equal(document.querySelectorAll('.fs-col.is-C [data-drag-id]').length,2);assert.equal(writes,0);
  }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
+});
+
+test('one reserve shelf orders the saved bench, swaps by role, and never drops a reserve from the roster',async()=>{
+ const {window,document}=parseHTML('<html><head></head><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
+ const keys=['window','document','location','history','localStorage','scrollTo','requestAnimationFrame','setInterval','clearInterval'],old=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+ Object.assign(globalThis,{window,document,location:{hash:'#/fanta/squadra',pathname:'/',search:''},history:{pushState(){},replaceState(){}},localStorage:{getItem:()=>null,setItem(){}},scrollTo(){},requestAnimationFrame:fn=>fn(),setInterval:()=>1,clearInterval(){}});let instance,writes=0;
+ const click=q=>{const el=document.querySelector(q);assert.ok(el,q);assert.equal(el.disabled,false,q);el.dispatchEvent(new window.Event('click',{bubbles:true}));};
+ try{
+  const api=createDemoFantaApi({delay:0}),data=await api.team('lega-quasi');instance=mountFanta(document.getElementById('app'),{api:{...api,saveLineup:(...a)=>{writes++;return api.saveLineup(...a);}},initialTab:'squadra'});await instance.ready;
+  click('[data-studio="open"]');assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,25);assert.equal(document.querySelectorAll('[data-bench-move]').length,0);click('.fs [data-lineup="best"]');
+  const ids=()=>[...document.querySelectorAll('.fs-grid [data-drag-id]')].map(el=>el.dataset.dragId),before=ids(),id=before[0],role=data.roster.find(p=>p.id===id).role;
+  click('[data-bench-move="'+id+'"][data-step="1"]');assert.equal(ids()[1],id);assert.equal(ids()[0],before[1]);assert.equal(document.querySelectorAll('.fs-bench,.fs-blist').length,0);
+  const slot=role+'0',former=document.querySelector('[data-st-slot="'+slot+'"]').dataset.dragId;
+  click('[data-st-slot="'+slot+'"]');click('.fs-grid [data-st-player="'+id+'"]');click('[data-st-role="tutti"]');
+  assert.equal(document.querySelector('[data-st-slot="'+slot+'"]').dataset.dragId,id);assert.equal(ids().length,14);assert.equal(ids()[1],former);assert.ok(!ids().includes(id));
+  assert.equal(new Set([...document.querySelectorAll('.fs [data-drag-id]')].map(el=>el.dataset.dragId)).size,25);assert.equal(writes,0);
+  click('.fs [data-lineup="save"]');document.querySelector('.fs [data-lineup="save"]').dispatchEvent(new window.Event('click',{bubbles:true}));await new Promise(r=>setTimeout(r,5));const saved=(await api.team('lega-quasi')).lineup;assert.equal(writes,1);assert.deepEqual(saved.bench,ids());
+ }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
+});
+
+test('studio surnames and fantamedia stay available for field, bench and free players',()=>{
+ assert.equal(surname('Franco Mastantuono'),'Mastantuono');assert.equal(surname('F. Mastantuono'),'Mastantuono');assert.equal(surname('Randal Kolo Muani'),'Kolo Muani');assert.equal(surname('David de Gea'),'de Gea');assert.equal(surname('Juan Jesus'),'Juan Jesus');assert.equal(surname({name:'Full Display Name',surname:'Surname with space'}),'Surname with space');
+ const players=roster.map((p,i)=>({...p,name:['David de Gea','Franco Mastantuono','K. De Bruyne','Randal Kolo Muani'][i],stats:{...p.stats,avgFanta:i===2?null:6.5}}));
+ const d=draftFrom(null,players);d.slots.P0=players[0].id;d.slots.D0=players[1].id;d.bench=[players[2].id];
+ const {document}=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'tutti'},0));
+ assert.equal(document.querySelector('[data-st-slot="D0"] .fs-player-label>b').textContent,'Mastantuono');assert.equal(document.querySelectorAll('.fs-pitch .fs-fm').length,2);assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[2].id+'"] .fs-fm').textContent,'– FM');assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-fm').textContent,'6,50 FM');assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"]>b').textContent,'Kolo Muani');
+ const bench=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'panchina'},0)).document;assert.equal(bench.querySelector('.fs-grid .fs-tile>b').textContent,'De Bruyne');assert.ok(bench.querySelector('.fs-grid .fs-fm'));
+});
+
+
+test('automatic reserves preserve existing order, append only missing players and are stable across save/reload',()=>{
+ const raw=draftFrom(null,roster);raw.slots.P0='p0';raw.bench=['p2','p2','unknown','p0'];
+ const before=structuredClone(raw),one=studioDraft(raw,roster);assert.deepEqual(one.bench,['p2','p1','p3']);assert.deepEqual(studioDraft(one,roster),one);assert.deepEqual(raw,before);
+ const saved=lineupOf(one),reload=studioDraft(draftFrom(saved,roster),roster);assert.deepEqual(reload.bench,one.bench);assert.equal(new Set([...saved.starters,...saved.bench]).size,roster.length);
 });

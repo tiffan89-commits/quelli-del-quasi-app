@@ -1,0 +1,41 @@
+import {auctionClockOffset} from './auction-watch.mjs';
+let clientScript;
+function loadClient(){
+ if(typeof window.io==='function')return Promise.resolve(window.io);
+ if(!clientScript)clientScript=new Promise((resolve,reject)=>{
+  const script=document.createElement('script'),timeout=setTimeout(()=>{script.remove();reject(Error('Socket.IO non disponibile'));},8000);
+  script.src='/socket.io/socket.io.js';script.async=true;
+  script.onload=()=>{clearTimeout(timeout);typeof window.io==='function'?resolve(window.io):reject(Error('Client non disponibile'));};
+  script.onerror=()=>{clearTimeout(timeout);script.remove();reject(Error('Client non disponibile'));};document.head.append(script);
+ }).catch(error=>{clientScript=null;throw error;});return clientScript;
+}
+
+// A shared server snapshot is pushed to every participant; HTTP is recovery only.
+export function createAuctionSocket({context,onData,onConnection=()=>{},factory=loadClient,setTimer=setInterval,clearTimer=clearInterval}={}){
+ let socket=null,league=null,closed=false,opening=false,healthy=false,last=null,offset=null,retryAt=0;
+ function disconnect(){healthy=false;last=null;socket?.removeAllListeners();socket?.disconnect();socket=null;league=null;onConnection(false);}
+ function clock(){if(!socket?.connected)return;const started=Date.now();socket.timeout(3000).emit('auction:clock',(error,reply)=>{if(error){healthy=false;onConnection(false);return;}offset=auctionClockOffset(reply.serverTime,started);});}
+ async function check(){
+  if(closed)return;const c=context();
+  if(!c.active||!c.league){if(socket)disconnect();return;}
+  if(socket&&league===c.league)return;if(socket)disconnect();
+  if(opening||Date.now()<retryAt)return;opening=true;
+  try{
+   const io=await factory();if(closed||!context().active||context().league!==c.league)return;
+   league=c.league;socket=io({path:'/socket.io',transports:['websocket'],withCredentials:true,auth:{league},reconnection:true,reconnectionDelay:500,reconnectionDelayMax:5000,timeout:5000,forceNew:true});
+   socket.on('connect',()=>{healthy=false;onConnection(false);clock();});
+   socket.on('auction:update',(message,ack)=>{
+    if(closed||!context().active||context().league!==league||message.league!==league)return;
+    const data=message.data;if(!data||!Number.isInteger(data.version))return;
+    if(last&&data.version<last.version){ack?.({version:data.version,applied:false});return;}
+    last=data;healthy=true;onConnection(true);
+    try{onData(data,offset);ack?.({version:data.version,applied:true});}catch{ack?.({version:data.version,applied:false});}
+   });
+   socket.on('disconnect',()=>{healthy=false;onConnection(false);});
+   socket.on('connect_error',()=>{healthy=false;onConnection(false);});
+   socket.on('auction:unavailable',()=>{healthy=false;onConnection(false);});
+  }catch{retryAt=Date.now()+15000;onConnection(false);}finally{opening=false;}
+ }
+ const timer=setTimer(check,1000),clockTimer=setTimer(clock,5000);void check();
+ return {check,ready:id=>healthy&&league===id&&!!socket?.connected,last:()=>last,offset:()=>offset,async stop(){closed=true;clearTimer(timer);clearTimer(clockTimer);disconnect();}};
+}
