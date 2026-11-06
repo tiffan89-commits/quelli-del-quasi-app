@@ -1,6 +1,15 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
 import {renderPlayerSheet,events} from '../public/src/fanta/giornata.mjs';import {fixtureTime,pts,extremeClass} from '../public/src/fanta/formato.mjs';import {preferredFanta,barModeSwitch} from '../public/src/fanta-mode.mjs';
 import {renderLega} from '../public/src/fanta/lega.mjs';
+import {renderHome} from '../public/src/fanta/home.mjs';
+import {homeFor} from '../public/src/fanta/dati-finti.mjs';
+import {rosterView} from '../public/src/quasi-roster.mjs';
+
+test('empty recent form is omitted and gallery names are separate from character artwork',()=>{
+ const h=homeFor('lega-quasi','da-schierare');h.me.form=[];assert.doesNotMatch(renderHome(h),/Ultime cinque/);
+ const {document}=parseHTML(rosterView({members:[{uid:'a',name:'Il <Mister>',avatar:{}}]},'a'));
+ assert.equal(document.querySelector('.quasi-card-name').textContent,'Il <Mister>');assert.equal(document.querySelector('.quasi-card-name').closest('.quasi-scene'),null);assert.equal(document.querySelector('.quasi-card-title'),null);
+});
 test('standings show games played and highlight only fantasy points, never league points',()=>{
  const teams=[{id:'a',name:'Prima',manager:'Uno',color:'#abc'},{id:'b',name:'Seconda',manager:'Due',color:'#def'}],data={league:{name:'Test',season:'2026/27',maxMembers:2},members:teams.map((team,i)=>({team,isMe:i===0})),standings:teams.map((team,i)=>({team,position:i+1,played:2,points:i?0:6,fantapoints:i?130:150,won:i?0:2,drawn:0,lost:i?2:0,form:[]})),rules:{table:'Regole'},auction:{status:'none'}};
  const {document}=parseHTML('<html><body>'+renderLega(data,{sub:'classifica'})+'</body></html>');assert.equal(document.querySelector('[title="Partite giocate"]').textContent,'PG');assert.equal(document.querySelectorAll('td:last-child .is-best-score').length,1);assert.equal(document.querySelectorAll('td:last-child .is-worst-score').length,1);assert.equal(document.querySelectorAll('td:nth-last-child(2) .is-best-score,td:nth-last-child(2) .is-worst-score').length,0);

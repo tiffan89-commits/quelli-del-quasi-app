@@ -108,4 +108,31 @@ Entrambe le modalità hanno cinque voci: Oggi, Schedina, Classifica, Quasi/Squad
 
 La galleria è richiudibile; la personalizzazione resta accessibile dal proprio Quasi e dal Profilo, senza duplicare premi/guardaroba. 20 test pertinenti passati, inclusi distinzione tra rotte Oggi/Lega, cinque tab e assenza di strumenti sparsi nel selettore. Verificati percorsi in browser. File: `app.mjs`, `v2/tabs.mjs`, `v2/league-switcher.mjs`, `fanta/shell.mjs`, `ux-spacing.css`, test presidente. [Galleria](ux-0.29.46/blocco6-quasi-390.png).
 
-Segue il blocco 7 e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.
+## Blocco 7 — difetti visivi e desktop
+
+Nomi e titoli premio sotto le miniature, senza coprire il personaggio. Il titolo generico ripetuto non viene aggiunto sotto ogni carta. Badge TU/ADMIN compatti, parole dei nomi squadra non spezzate e massimo due righe. Nessuna etichetta «Ultime cinque» senza partite; font titoli esplicito. Campo Squadra allineato e nomi derivati dai dati esistenti (la fixture usa nomi numerati, che non sono dati reali). Avviso connessione limitato ai risultati e a errori ripetuti, con testo più tranquillo; nessun cambiamento al canale o alle frequenze. Stemmi della schedina verificati come SVG locali del catalogo disegnato, senza immagini o loghi caricati da servizi esterni.
+
+Desktop: barra di navigazione effettivamente 48 px, icone e testo affiancati; dashboard Bar/Fanta su due colonne. Corretta la targhetta di modifica del Quasi che, con la testata ridotta, si estendeva davanti al personaggio.
+
+| Vista | Viewport | Prima | Dopo |
+|---|---|---:|---:|
+| Bar Oggi | 390×844 | 1678 px | 1537 px |
+| Bar Quasi | 390×844 | 1323 px | 1409 px |
+| Fanta Oggi | 390×844 | 1906 px | 1892 px |
+| Fanta Squadra | 390×844 | 1975 px | 1962 px |
+| Bar Oggi | 1280×800 | 1889 px | 1372 px |
+| Bar Quasi | 1280×800 | 1416 px | 1384 px |
+| Fanta Oggi | 1280×800 | 1593 px | 1530 px |
+| Fanta Squadra | 1280×800 | 1533 px | 1488 px |
+
+La galleria mobile aumenta per tenere i nomi fuori dall’immagine e leggibili: è un compromesso intenzionale. Nessuna eccedenza orizzontale del documento nei formati verificati. 26 test UI pertinenti passati, inclusi avviso al primo errore nascosto, avviso dopo errori ripetuti, assenza su Oggi e miniature senza didascalia sovrapposta.
+
+File: `public/src/app.mjs`, `public/src/fanta/home.mjs`, `public/src/quasi-roster.mjs`, `public/ux-spacing.css`, test UI/interfaccia. [Oggi mobile](ux-0.29.46/blocco7-oggi-390.png), [Fanta desktop](ux-0.29.46/blocco7-fanta-1280.png).
+
+## Consegna
+
+Il proprietario ha successivamente annullato la prova pubblica («Non c’è bisogno della prova»): nessuna istanza pre, modifica DNS o configurazione server effettuata. Tutti i blocchi sono versionati sul branch di lavoro. Nessun merge su main e nessun deploy sul sito ufficiale; nessuna scrittura sui dati reali.
+
+Versione sorgenti e cache: 0.29.46, canale candidate. Build frontend riuscita (18 output). Verifica finale limitata ai test pertinenti: **33 passati**, con `--test-concurrency=2`; nessuna suite backend massiva ripetuta. Comando: `node --import ./test/setup-release-context.mjs --test --test-concurrency=2 test/ux-president.test.mjs test/ux-review-footer.test.mjs test/ux-review-slipbar.test.mjs test/interface-live.test.mjs test/ux-ux-core.test.mjs test/fanta-ui-regressions.test.mjs test/ux-formation-save.test.mjs`.
+
+Metadati di versione aggiornati in package.json, lockfile, public/version.json e cache del service worker. I file SEO generati dalla build preview sono stati riportati ai contenuti precedenti per non introdurre noindex nei sorgenti del sito ufficiale. Il sito installato è rimasto separato per tutta la revisione.

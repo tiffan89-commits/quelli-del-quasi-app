@@ -2424,10 +2424,14 @@ if ("serviceWorker" in navigator)
     }
   });
 let liveStatus=null;
+let liveDisplayFailures=0;
 function showLiveStatus(value){
-  liveStatus=value;const el=$('#live-channel-status');if(!el)return;
-  const text=value.state==='ready'?'Live · aggiornato alle '+new Date(value.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'}):'Connessione instabile, riprovo…';
-  if(el.textContent!==text)el.textContent=text;
+ if(value!==liveStatus)liveDisplayFailures=value.state==='ready'?0:liveDisplayFailures+1;
+ liveStatus=value;const el=$('#live-channel-status');if(!el)return;
+ const show=page==='schedina'&&(value.state==='ready'||liveDisplayFailures>=3);el.hidden=!show;
+ if(!show){el.textContent='';return;}
+ const text=value.state==='ready'?'Live · aggiornato alle '+new Date(value.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'}):'Aggiornamento in pausa. I risultati già caricati restano disponibili.';
+ if(el.textContent!==text)el.textContent=text;
 }
 function applyLive(data){
   if(L()?.id!==data.league)return;

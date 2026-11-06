@@ -27,7 +27,7 @@ function hero(h) {
       <div><dt>Punti</dt><dd>${me.points}</dd></div>
       <div><dt>Fantapunti</dt><dd>${pts(me.fantapoints)}</dd></div>
     </dl>
-    <div class="fanta-hero-form"><small>Ultime cinque</small>${formDots(me.form)}</div>
+    ${me.form?.length?'<div class="fanta-hero-form"><small>Ultime cinque</small>'+formDots(me.form)+'</div>':''}
   </section>`;
 }
 

@@ -1,5 +1,6 @@
-# Unreleased — anteprima UX 0.29.46
+# 0.29.46 — revisione UX · non pubblicata
 
+- Blocco 7: nomi e titoli dei Quasi sotto le miniature, badge partecipanti compatti, nomi squadra senza spezzare parole, nessuna etichetta vuota delle ultime partite, campo Fanta allineato e font coerenti. Barra desktop da 48 px e dashboard su due colonne. Avviso connessione solo nei risultati dopo più errori, senza cambiare aggiornamenti o frequenze.
 - Blocco 6: navigazione Bar/Fanta a cinque voci coerenti, pagina Lega informativa separata da Oggi, selettore superiore dedicato alle leghe. Quasi mostra soltanto la galleria; guardaroba e premi rimangono nel Profilo.
 - Blocco 5: titoli più compatti, testata Oggi mobile di 120 px e riepilogo unificato; mini-grafico in Oggi e grafico completo richiudibile in Classifica. Classifica con righe da 45 px, dettagli crediti espandibili e pulsanti Punti/Crediti. Sezioni schedina su una sola riga scorrevole.
 - Blocco 4: strumenti di gestione Fanta riuniti nel pannello del presidente, pagine Lega informative per tutti, squadre computer riconoscibili e percorso di attivazione Fanta dal Bar. Nessuna modifica alle API o alle regole.

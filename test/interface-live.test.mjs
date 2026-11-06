@@ -320,6 +320,13 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /Collega competizione/);
   vm.runInContext("page='classifiche';render()", ctx);
   assert.match(html, /data-ranking-metric="points"/);assert.doesNotMatch(html,/data-ranking=/);
+  vm.runInContext("page='schedina';showLiveStatus({state:'ready',at:Date.now()});showLiveStatus({state:'error'})",ctx);
+  assert.equal(nodes.get('#live-channel-status').hidden,true,'first channel failure must not alarm the user');
+  vm.runInContext("showLiveStatus({state:'error'});showLiveStatus({state:'error'})",ctx);
+  assert.equal(nodes.get('#live-channel-status').hidden,false);
+  assert.match(nodes.get('#live-channel-status').textContent,/Aggiornamento in pausa/);
+  vm.runInContext("page='lega';showLiveStatus(liveStatus)",ctx);
+  assert.equal(nodes.get('#live-channel-status').hidden,true,'connection notice is only relevant to results');
   vm.runInContext("state.leagues[0].admin='another-president';page='lega';render()",ctx);
   assert.doesNotMatch(html,/Invita nella tua lega|Invita con WhatsApp|id="copy"/);
   assert.doesNotMatch(html,/data-page="admin"/);
