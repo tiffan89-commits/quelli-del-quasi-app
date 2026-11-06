@@ -131,8 +131,10 @@ File: `public/src/app.mjs`, `public/src/fanta/home.mjs`, `public/src/quasi-roste
 
 ## Consegna
 
-Il proprietario ha successivamente annullato la prova pubblica («Non c’è bisogno della prova»): nessuna istanza pre, modifica DNS o configurazione server effettuata. Tutti i blocchi sono versionati sul branch di lavoro. Nessun merge su main e nessun deploy sul sito ufficiale; nessuna scrittura sui dati reali.
+Prova pubblica richiesta e attivata su **https://pre.quellidelquasi.com/**. Istanza e dati sintetici separati, nessuna scrittura sui dati reali. CNAME dedicato che segue il DDNS esistente e singolo host Caddy aggiunto, senza cambiare i puntamenti ufficiali. Configurazione e credenziali di prova soltanto in file locali privati esclusi da Git. [Isolamento e avvio](PRE-0.29.46.md). Nessun merge su main o deploy sul sito ufficiale.
 
 Versione sorgenti e cache: 0.29.46, canale candidate. Build frontend riuscita (18 output). Verifica finale limitata ai test pertinenti: **33 passati**, con `--test-concurrency=2`; nessuna suite backend massiva ripetuta. Comando: `node --import ./test/setup-release-context.mjs --test --test-concurrency=2 test/ux-president.test.mjs test/ux-review-footer.test.mjs test/ux-review-slipbar.test.mjs test/interface-live.test.mjs test/ux-ux-core.test.mjs test/fanta-ui-regressions.test.mjs test/ux-formation-save.test.mjs`.
 
 Metadati di versione aggiornati in package.json, lockfile, public/version.json e cache del service worker. I file SEO generati dalla build preview sono stati riportati ai contenuti precedenti per non introdurre noindex nei sorgenti del sito ufficiale. Il sito installato è rimasto separato per tutta la revisione.
+
+Verifiche della prova pubblica: HTTPS, login con password errata rifiutata, entrambi gli account sintetici autenticati, bootstrap Fanta disponibile, cookie Secure, robots e noindex. Verificati in browser ingresso, switch e pannello. Sito ufficiale ancora `0.29.45-selfhost`. [Screenshot della prova pubblica](ux-0.29.46/pre-0.29.46-pubblica.png).
