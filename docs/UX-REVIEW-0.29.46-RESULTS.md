@@ -63,4 +63,19 @@ La nuova sezione Persone comprende anche l’invito, prima separato e chiuso: il
 
 File principali: `public/src/president-panel.mjs`, `public/src/app.mjs`, `public/src/v2/league-switcher.mjs`, `public/src/v2/tabs.mjs`, `public/ux-spacing.css`; test `ux-president`, `interface-live`, `ux-ux-core`. [Screenshot telefono](ux-0.29.46/blocco3-presidente-390.png).
 
-Gli strumenti Fanta seguono nel blocco 4, poi le altre modifiche e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.
+## Blocco 4 — strumenti Fanta
+
+I form asta, schedina, associazioni, dimensione lega e competizioni sono nel pannello condiviso, disponibili ai soli presidenti. La Lega conserva le informazioni per tutti; le squadre computer sono etichettate chiaramente. Il vicolo cieco senza Fanta ora spiega lo stato e porta il presidente al pannello Bar. Payload e chiamate di salvataggio esistenti conservati.
+
+| Vista | Viewport | Prima | Dopo |
+|---|---|---:|---:|
+| Lega › Asta | 390×844 | 1861 px | 1350 px |
+| Lega › Partecipanti | 390×844 | 1457 px | 1461 px |
+| Lega › Asta | 1280×800 | 1786 px | 1312 px |
+| Lega › Partecipanti | 1280×800 | 1491 px | 1491 px |
+
+Il nuovo pannello chiuso misura 947 px a 390×844. Il prima Fanta è rilevato con gli asset del commit precedente su un processo isolato separato: stessa struttura sintetica (10 squadre, 1 umano), nomi delle squadre generati nuovamente. La pagina Partecipanti include la nuova spiegazione sulle squadre computer, quindi non è necessariamente più corta. Verificati percorsi, controlli esclusi per membri, pagine informative senza form admin e dettaglio rose; 19 test comuni + 5 regressioni UI Fanta passati.
+
+File: `public/src/fanta/app.mjs`, `shell.mjs`, `lega.mjs`, `competitions-ui.mjs`, `test/ux-ux-core.test.mjs`, rapporto e CHANGELOG. [Pannello Fanta](ux-0.29.46/blocco4-presidente-fanta-390.png).
+
+Seguono i blocchi 5–7 e la pre-produzione pubblica 0.29.46. Nessun merge su main o deploy sul sito ufficiale.

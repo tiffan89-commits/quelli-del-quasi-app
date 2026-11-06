@@ -1,3 +1,4 @@
+import {presidentEntry} from '../president-panel.mjs';
 import {leagueEmblem} from '../league-theme.mjs';
 // Cornice comune: barra in alto (lega + interruttore Bar | Fanta) e barra delle tab del Fanta.
 // Riusa le classi v2-* del sito; le aggiunte stanno in fanta.css con prefisso fanta-.
@@ -20,11 +21,11 @@ export function topBar({ mode, league, credits,slipCredits,user,hideCredits=fals
     ? `<button type="button" class="v2-league-chip fanta-league-chip" data-action="leagues" aria-haspopup="dialog">
         ${leagueEmblem(league)}
         <span class="v2-league-name">${esc(league.name.replace(/^Random League/i,'Lega pilota'))}</span>
-        ${league.role === 'admin' ? '<span class="v2-role is-admin">ADMIN</span>' : ''}
+        
         <span aria-hidden="true">▾</span>
       </button>`
     : '<span></span>';
-  return `<header class="v2-top fanta-top">${chip}<div class="ux-controls">${modeSwitch(mode)}<div class="ux-balances">${Number.isFinite(slipCredits)?`<div class="v2-credits"><b>${slipCredits}</b><span>crediti schedina</span></div>`:''}${Number.isFinite(credits)?`<div class="v2-credits"><b>${credits}</b><span>crediti asta</span></div>`:''}</div><button type="button" class="ux-profile" data-tab="io" aria-label="Apri profilo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button></div><p class="ux-mode-label">Fanta · la tua squadra e le sfide della lega</p></header>`;
+  return `<header class="v2-top fanta-top">${chip}<div class="ux-controls">${league?.role==='admin'?presidentEntry('data-tab="presidente"'):''}${modeSwitch(mode)}<div class="ux-balances">${Number.isFinite(slipCredits)?`<div class="v2-credits"><b>${slipCredits}</b><span>crediti schedina</span></div>`:''}${Number.isFinite(credits)?`<div class="v2-credits"><b>${credits}</b><span>crediti asta</span></div>`:''}</div><button type="button" class="ux-profile" data-tab="io" aria-label="Apri profilo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button></div><p class="ux-mode-label">Fanta · la tua squadra e le sfide della lega</p></header>`;
 }
 
 export function tabBar(active) {
