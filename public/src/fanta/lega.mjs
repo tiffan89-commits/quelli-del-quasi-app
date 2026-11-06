@@ -1,3 +1,5 @@
+import {renderIo} from './io.mjs';
+import {leagueActions} from '../league-actions.mjs';
 import {presidentPanel} from '../president-panel.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
@@ -134,8 +136,8 @@ function members(l, ui) {
       <span class="fanta-p-name"><button type="button" class="fanta-team-name" data-team-roster="${esc(m.team.id)}">${esc(m.team.name)}</button>${m.isMe ? ' <em class="is-me">tu</em>' : ''}${m.isAdmin ? ' <em>admin</em>' : ''}<small>${m.human?esc(m.team.manager):'<em class="computer-label">Computer</em>'} · dal ${esc(new Date(m.joinedAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }))}</small></span>
     </li>`).join('')}</ul>
     ${l.isAdmin&&ui.adminTools&&!pilot&&l.league.kind!=='random'?`<details class="fanta-block"><summary>Associa squadre e giocatori</summary><form class="fanta-lg-form" data-team-link-form><label>Squadra<select name="team">${l.members.map(m=>`<option value="${esc(m.team.id)}">${esc(m.team.name)}</option>`).join('')}</select></label><label>Email o vecchio username del giocatore<input name="username" required maxlength="254" autocapitalize="none" autocorrect="off" autocomplete="off"></label><button type="submit" class="primary">Associa account</button>${ui.linkError?`<p class="fanta-note is-alert" role="alert">${esc(ui.linkError)}</p>`:''}</form></details>`:''}
-    ${full ? `<p class="fanta-note">La lega è al completo: ${max} partecipanti.</p>` : `<p class="fanta-note">${max-n} squadre sono guidate dal computer finché non entrano amici.</p>`+(l.isAdmin?(ui.adminTools?renderLeagueInvite(l.league,ui.invite,{copied:ui.copied}):'<button type="button" class="secondary" data-go="presidente" data-president-group="persone">Invita dalla sezione Persone</button>'):'')}
-  </section>${ui.adminTools?'':renderAppInvite()}`;
+    ${full ? `<p class="fanta-note">La lega è al completo: ${max} partecipanti.</p>` : `<p class="fanta-note">${max-n} squadre sono guidate dal computer finché non entrano amici.</p>`}
+  </section>${ui.inSettings?renderLeagueInvite(l.league,ui.invite,{copied:ui.copied,always:true}):'<button type="button" class="secondary" data-go="presidente" data-president-group="persone">Invita nella tua lega</button>'+renderAppInvite()}`;
 }
 
 export function renderLega(l, ui = {}, now = Date.now()) {
@@ -146,6 +148,7 @@ export function renderLega(l, ui = {}, now = Date.now()) {
     <header class="fanta-sq-head"><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1>${esc(l.league.name.replace(/^Random League/i,'Lega pilota'))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
     <div class="v2-chips fanta-lg-tabs" role="tablist">${tabs.map(([k, label]) => `<button type="button" role="tab" class="v2-chip${sub === k ? ' is-active' : ''}" data-lega-sub="${k}" aria-selected="${sub === k}">${label}${k === 'asta' && l.auction.status === 'running' ? ' <i class="fanta-lg-live"></i>' : ''}</button>`).join('')}</div>
     ${body}
+    ${group==='lega'?leagueActions({bridge:true}):''}
     ${l.isAdmin && l.importReview?.length ? `<details class="fanta-block"><summary>Import · ${l.importReview.length} elementi da controllare</summary><ul class="fanta-rule-list">${l.importReview.map(p=>`<li><span>${esc(p.team)}${p.name?' · '+esc(p.name):''}${p.round?' · Giornata '+p.round:''}</span><small>${esc(p.issue)}</small></li>`).join('')}</ul></details>` : ''}
   </div>`;
 }
@@ -160,12 +163,14 @@ export function fantaPresidentTasks(l){
 }
 export function renderFantaPresident(l,ui={},now=Date.now()){
  if(!l)return '<div class="fanta-loading" role="status">Carichiamo il pannello…</div>';
- if(!l.isAdmin)return '<p>Il pannello è riservato al presidente.</p>';
- const a={...ui,adminTools:true},count=l.members.filter(m=>m.human).length,bar=ui.bar;
+ const a={...ui,adminTools:!!l.isAdmin,inSettings:true},count=l.members.filter(m=>m.human).length,bar=ui.bar;
  return presidentPanel({name:l.league.name,mode:'fanta',open:ui.presidentGroup,tasks:fantaPresidentTasks(l),other:bar?'<button type="button" data-mode="bar" data-bar-page="admin">Bar →</button>':'',groups:{
  persone:{summary:count+'/'+l.league.maxMembers+' allenatori · '+(l.league.maxMembers-count)+' computer',html:members(l,a)},
  regole:{summary:l.rules.budget+' crediti · '+(l.league.slipsEnabled!==false?'schedina attiva':'schedina disattivata'),html:rules(l,a)},
+ ...(l.isAdmin?{
  calendario:{summary:(l.competitions?.length||1)+' competizioni · '+({running:'asta in corso',scheduled:'asta programmata',ended:'asta conclusa'}[l.auction.status]||'nessuna asta programmata'),html:auctionSection(l,a,now)+(l.league.kind==='pilot'?'':renderCompetitions(l,a))},
  identita:{summary:bar?'Colori e simbolo condivisi con il Bar':'Identità della lega',html:bar?'<p>Il simbolo, il colore e il motto sono comuni a Bar e Fanta.</p><button type="button" class="secondary" data-mode="bar" data-bar-page="admin">Modifica identità nel Bar</button>':'<p>Lo stemma della tua squadra si modifica dalla pagina Oggi.</p>'}
+ }:{}),
+ account:{summary:'Il tuo account, avvisi e assistenza',html:renderIo(ui.me,[],null,{...ui.io,settingsOnly:true,pilot:l.league.kind==='pilot'},ui.demo)+(ui.accountHtml||'<button type="button" class="secondary" data-mode="bar" data-bar-page="profilo">Gestisci account e assistenza</button>')}
  }});
 }

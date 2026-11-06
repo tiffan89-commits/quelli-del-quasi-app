@@ -1,6 +1,7 @@
+import {leagueActions} from '../public/src/league-actions.mjs';
 import {pointTerms} from '../public/scoring.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
-import {presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
+import {presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
@@ -110,7 +111,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
-    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
+    ...v2Tabs, leagueActions,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },
@@ -199,9 +200,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   try{
     for(const target of ['profilo','classifiche','calendario','quasi','storico','regolamento','admin','lega','schedina']){
       vm.runInContext('navigatePage('+JSON.stringify(target)+')',ctx);
-      assert.equal(vm.runInContext('page',ctx),target);
+      assert.equal(vm.runInContext('page',ctx),target==='profilo'?'admin':target);
       assert.match(html,/aria-current="page"/);
-      if(target==='profilo')assert.match(html,/IL TUO PROFILO/);
+      if(target==='profilo')assert.match(html,/Impostazioni/);
       if(target==='lega')assert.match(html,/class="dash-hero"/);
     }
     assert.equal(requestCount,beforeNavigation,'menus must render synchronously without requesting state, even when the server cannot respond');
@@ -217,7 +218,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html, /id="open-chat"/);
   const nav = html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1];
   assert.equal(nav.includes("Movimenti"), false);
-  assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.match(html,/class="ux-profile" data-bar-page="profilo"/);
+  assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.match(html,/aria-label="Apri impostazioni"/);assert.doesNotMatch(html,/class="ux-profile"/);
   assert.equal(nav.includes("Regolamento"), false);
   assert.equal(nav.includes('data-page="altri"'), false);
   assert.match(html, /La mia schedina/);
@@ -331,7 +332,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html,/Invita nella tua lega|Invita con WhatsApp|id="copy"/);
   assert.doesNotMatch(html,/data-page="admin"/);
   vm.runInContext("page='admin';render()",ctx);
-  assert.equal(vm.runInContext('page',ctx),'lega');
+  assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita nella tua lega/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);
   vm.runInContext("page='profilo';render()",ctx);
   assert.ok(html.indexOf('inline-support')<html.indexOf('profile-logout'));
   assert.ok(html.indexOf('inline-support')>html.indexOf('profile-reminder-settings'));

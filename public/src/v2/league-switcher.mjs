@@ -1,4 +1,5 @@
 import {presidentEntry} from '../president-panel.mjs';
+import {leagueActions} from '../league-actions.mjs';
 import {leagueEmblem} from '../league-theme.mjs';
 import {leagueCreationFields,leagueCreationPayload} from '../league-create-form.mjs';
 // Selettore lega v2: chip in alto con ruolo e crediti, bottom sheet con tutte le leghe.
@@ -24,10 +25,9 @@ export function renderLeagueChip(league, uid, esc, fmt, mode='', account=null, c
   return '<header class="v2-top"><button type="button" class="v2-league-chip" id="v2-open-leagues" aria-haspopup="dialog">' +
     leagueEmblem(league) +
     '<span class="v2-league-name">' + esc(league.name) + '</span>' +
-    (!admin?'<span class="v2-role">MEMBRO</span>':'') +
-    '<span aria-hidden="true">▾</span></button><div class="ux-controls">' + (admin?presidentEntry():'')+mode +
+    '</button><button type="button" class="league-add" data-open-leagues aria-label="Entra o crea una lega" aria-haspopup="dialog">+</button><div class="ux-controls">' + mode +
     (me ? '<div class="v2-credits"><b>' + fmt(me.credits ?? 0) + '</b><span>'+esc(caption)+'</span></div>' : '') +
-    '<button type="button" class="ux-profile" data-bar-page="profilo" aria-label="Apri profilo"'+(profileActive?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button></div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
+    presidentEntry()+'</div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
 }
 
 export function renderLeagueSheet(leagues, activeId, uid, esc) {
@@ -42,8 +42,7 @@ export function renderLeagueSheet(leagues, activeId, uid, esc) {
         ((l.members?.length || 0) === 1 ? '1 membro' : (l.members?.length || 0) + ' membri') + ' · ' + esc(a.text) + '</small></span>' +
         '<span class="v2-role' + (admin ? ' is-admin' : '') + '">' + (admin ? 'ADMIN' : 'MEMBRO') + '</span></button>';
     }).join('') +
-    '<div class="v2-sheet-actions"><button type="button" class="secondary" data-v2-action="join" aria-expanded="false" aria-controls="v2-form-join">Entra con codice</button>' +
-    '<button type="button" class="secondary" data-v2-action="create" aria-expanded="false" aria-controls="v2-form-create">Crea una nuova lega · Bar + Fanta</button></div>' +
+    leagueActions({sheet:true}) +
     (leagues.some(l=>l.id===activeId&&isLeagueAdmin(l,uid)&&!l.nativeFantaLink)?'<button type="button" hidden class="secondary" data-v2-action="create" data-existing-bar="'+esc(leagues.find(l=>l.id===activeId).name)+'" data-existing-size="'+Math.max(2,leagues.find(l=>l.id===activeId).members?.length||2)+'">Attiva il Fanta di questa lega</button>':'') +
     '<form class="v2-sheet-form" id="v2-form-join" data-kind="join" hidden><label class="field">Codice lega<input name="code" required placeholder="ABC123" autocomplete="off" autocapitalize="characters"></label><button class="primary">Entra nella lega</button></form>' +
     '<form class="v2-sheet-form" id="v2-form-create" data-kind="create" hidden>' + leagueCreationFields() + '<button type="submit" class="primary">Crea Bar e Fanta</button><p data-create-error role="alert"></p></form></div>';
@@ -53,8 +52,7 @@ export function renderLeagueSheet(leagues, activeId, uid, esc) {
 export function bindLeagueSwitcher({ leagues, activeId, uid, esc, onSelect, onSubmit }) {
   const root = document.getElementById('v2-sheet-root');
   const close = () => { root.innerHTML = ''; root.hidden = true; };
-  const open = document.getElementById('v2-open-leagues');
-  if (open) open.onclick = () => {
+  const openSheet = () => {
     root.hidden = false;
     root.innerHTML = renderLeagueSheet(leagues, activeId, uid, esc);
     root.querySelector('#v2-sheet-close').onclick = close;
@@ -76,4 +74,5 @@ export function bindLeagueSwitcher({ leagues, activeId, uid, esc, onSelect, onSu
     });
     addEventListener('keydown', function esc_(e) { if (e.key === 'Escape') { close(); removeEventListener('keydown', esc_); } });
   };
+  document.querySelectorAll('#v2-open-leagues,[data-open-leagues]').forEach(button=>button.onclick=openSheet);
 }

@@ -144,3 +144,27 @@ Verifiche della prova pubblica: HTTPS, login con password errata rifiutata, entr
 La selezione di un esito ricreava il DOM della pagina, inclusi gli stemmi con caricamento lazy/decodifica asincrona. Il codice era condiviso con l’app normale; nella prova il comportamento era amplificato dalla risposta no-store delle immagini. Le scelte e l’espansione dei mercati ora aggiornano solo controlli, quote e riepilogo, lasciando intatti header, immagini e dettagli aperti. Stesso intervento nelle schedine Fanta, anche per l’importo.
 
 32 test pertinenti passati, con due regressioni che verificano identità degli stessi elementi img/header/input dopo più scelte e nessun ridisegno completo del Fanta. Build riuscita; in browser sei stemmi caricati e visibili dopo scelta ed espansione dei mercati. I soli tre moduli FE sono stati copiati nella prova senza riavvio o reset dei dati. [Screenshot](ux-0.29.46/stemmi-stabili-schedina.png). Sito ufficiale invariato.
+
+## Ritocco successivo — Impostazioni, premi e leghe
+
+Titolo visibile «Impostazioni» per tutti, con ingranaggio SVG cartoon centrato. Il presidente vede anche gestione, calendario/asta e identità; i membri vedono inviti, partecipanti, regolamento e account, senza form amministrativi. Dati personali, sicurezza, avvisi, assistenza e logout sono nello stesso pannello in Bar e Fanta, tramite i medesimi binding e API dell'account. Il salvataggio del soprannome dal Fanta è stato provato con successo sul solo account sintetico. I premi sono in Quasi, con raccolta chiusa a ogni ingresso; la personalizzazione esistente è conservata.
+
+Selettori della stessa larghezza nei due prodotti: 117,1 px al viewport 390 e 440 px a 1280. Pulsante «+» separato, senza freccia giù. «Entra in una lega» e «Crea lega · Bar + Fanta» compaiono nei selettori e in fondo alla pagina Lega e aprono gli stessi moduli della madre. Verificato in browser il passaggio dal selettore Fanta al form comune di ingresso con codice. Icona Lega del Bar distinta dal Quasi.
+
+Inviti leggibili da tutti i membri correnti: il DTO Bar espone il codice solo dopo il filtro di appartenenza già esistente. Nessuna autorizzazione di modifica aggiunta ai membri; estranei/rimossi non ricevono la lega. Il Fanta usa il collegamento Bar già autorizzato. La home continua a mostrare l'invito soltanto se ci sono posti; nelle Impostazioni resta consultabile anche a lega piena. Nessun nuovo polling o accesso DB all'apertura di queste sezioni.
+
+Misure correnti della prova pubblica (accordion chiusi, salvo la galleria Quasi):
+
+| Vista | Viewport | Altezza documento |
+|---|---|---:|
+| Impostazioni Bar · membro | 390×844 | 844 px |
+| Impostazioni Bar · membro | 1280×800 | 800 px |
+| Impostazioni Fanta · presidente | 390×844 | 1036 px |
+| Quasi · 18 partecipanti e premi chiusi | 390×844 | 1509 px |
+| Lega Bar · membro | 390×844 | 941 px |
+
+Controllati anche i due saldi Fanta a 320×844: ingranaggio interamente entro il bordo (298,8 px su 305 px utili, incluso scrollbar), nessuna eccedenza orizzontale; selettore ridotto a 72 px su entrambi i prodotti. A 390 e 1280 la larghezza è identica tra le due app. La prova sintetica ora collega Bar e Fanta anche nei dati RAM, senza dati reali.
+
+31 controlli mirati passati: impostazioni/ruoli, confini di appartenenza del DTO, inviti, moduli comuni, premi chiusi, navigazione senza richieste bloccanti, live, stemmi stabili, bozze e doppi salvataggi. Build riuscita (18 output). File principali: `public/src/president-panel.mjs`, `league-actions.mjs`, `app.mjs`, `v2/league-switcher.mjs`, `v2/tabs.mjs`, `fanta/{shell,app,io,lega,league-invite}.mjs`, `fanta-mode.mjs`, `progression-ui.mjs`, `ux-spacing.css`; unica modifica backend al DTO in `lib/game.mjs`. Launcher della prova aggiornato in `scripts/preproduction.mjs`. Nessuna modifica a punteggi, saldi, voti, dati reali o sito ufficiale.
+
+[Pagina Lega mobile con +, Entra e Crea](ux-0.29.46/lega-entra-crea-390.png). [Impostazioni Fanta desktop](ux-0.29.46/impostazioni-fanta-1280.png).

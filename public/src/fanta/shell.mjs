@@ -1,4 +1,5 @@
 import {presidentEntry} from '../president-panel.mjs';
+import {leagueActions} from '../league-actions.mjs';
 import {leagueEmblem} from '../league-theme.mjs';
 // Cornice comune: barra in alto (lega + interruttore Bar | Fanta) e barra delle tab del Fanta.
 // Riusa le classi v2-* del sito; le aggiunte stanno in fanta.css con prefisso fanta-.
@@ -22,10 +23,9 @@ export function topBar({ mode, league, credits,slipCredits,user,hideCredits=fals
         ${leagueEmblem(league)}
         <span class="v2-league-name">${esc(league.name.replace(/^Random League/i,'Lega pilota'))}</span>
 
-        <span aria-hidden="true">▾</span>
       </button>`
     : '<span></span>';
-  return `<header class="v2-top fanta-top">${chip}<div class="ux-controls">${league?.role==='admin'?presidentEntry('data-tab="presidente"'):''}${modeSwitch(mode)}<div class="ux-balances">${Number.isFinite(slipCredits)?`<div class="v2-credits"><b>${slipCredits}</b><span>crediti schedina</span></div>`:''}${Number.isFinite(credits)?`<div class="v2-credits"><b>${credits}</b><span>crediti asta</span></div>`:''}</div><button type="button" class="ux-profile" data-tab="io" aria-label="Apri profilo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button></div><p class="ux-mode-label">Fanta · la tua squadra e le sfide della lega</p></header>`;
+  return `<header class="v2-top fanta-top">${chip}${league?'<button type="button" class="league-add" data-action="leagues" aria-label="Entra o crea una lega" aria-haspopup="dialog">+</button>':''}<div class="ux-controls">${modeSwitch(mode)}<div class="ux-balances">${Number.isFinite(slipCredits)?`<div class="v2-credits"><b>${slipCredits}</b><span>crediti schedina</span></div>`:''}${Number.isFinite(credits)?`<div class="v2-credits"><b>${credits}</b><span>crediti asta</span></div>`:''}</div>${presidentEntry('data-tab="presidente"')}</div><p class="ux-mode-label">Fanta · la tua squadra e le sfide della lega</p></header>`;
 }
 
 export function tabBar(active) {
@@ -45,6 +45,6 @@ export function leagueSheet(leagues, activeId) {
       <span class="v2-league-info"><b>${esc(/^Random League/i.test(l.name)?l.name.replace(/^Random League/i,'Lega pilota'):l.name)}</b><small>${esc(l.teamName)} · ${esc(l.season)}</small></span>
       ${l.role === 'admin' ? '<span class="v2-role is-admin">ADMIN</span>' : ''}
     </button>`).join('')}
-    <div class="v2-sheet-actions"><button type="button" class="primary" data-mode="bar" data-bar-page="create-league">Crea una nuova lega · Bar + Fanta</button></div>
+    ${leagueActions({bridge:true})}
   </div>`;
 }

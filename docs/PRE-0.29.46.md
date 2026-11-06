@@ -10,6 +10,7 @@ Indirizzo: https://pre.quellidelquasi.com/.
 - Account `anteprima` per il presidente Bar e `frankwood` per il presidente Fanta. Password privata generata per questa prova, assente dal repository, dai log e dalla directory pubblica.
 - Credenziali e configurazione sono in `outputs/pre-0.29.46/ACCESSO-PRIVATO.txt` e `private.env`, esclusi da Git e limitati all’utente Windows e SYSTEM.
 - I dati della prova si azzerano al riavvio del processo. Le credenziali dell’app reale non valgono qui.
+- Il Bar sintetico è collegato alla lega Fanta nativa di prova: sono verificabili inviti condivisi e barra con entrambi i saldi. Il collegamento viene creato soltanto nel database RAM di questa istanza.
 
 ## Isolamento
 
