@@ -29,6 +29,23 @@ Il blocco analytics passa da 166 a 34 px e viene incluso nel footer, senza un se
 
 Screenshot: [footer a 390 px](ux-0.29.46/blocco1-footer-390.png).
 
+## Blocco 2 — barra schedina e chat
+
+Barra ridotta da 171 a 64 px, con riepilogo a sinistra e conferma a destra. L’importo si modifica da un pannello sopra la barra; importi rapidi, personalizzato e chiusura con Escape conservano la bozza. La chat flottante viene nascosta quando la barra è presente. Nessuna modifica a payload, saldi, limiti o calcoli.
+
+| Vista | Viewport | Prima (dopo blocco 1) | Dopo | Riduzione |
+|---|---|---:|---:|---:|
+| bar-schedina | 390×844 | 1436 px | 1331 px | 105 px |
+| bar-schedina | 1280×800 | 1352 px | 1245 px | 107 px |
+
+Verificati graficamente entrambi i formati, apertura del pannello importo, scelta rapida, importo personalizzato e conservazione della bozza. La fixture Fanta non espone una schedina collegata: nessuna misura visiva dichiarata per quella vista. Il componente è condiviso e i test coprono anche il percorso di salvataggio Fanta.
+
+Test pertinenti: **23 passati**, comando `node --import ./test/setup-release-context.mjs --test --test-concurrency=2 test/ux-review-slipbar.test.mjs test/ux-review-footer.test.mjs test/ux-ux-core.test.mjs test/interface-live.test.mjs test/ux-formation-save.test.mjs`. Un tentativo di suite completa ha esaurito la memoria con la concorrenza predefinita; il tentativo limitato ha evidenziato un metodo mancante nel DOM simulato del test, corretto senza modifiche al backend. Non è un esito positivo della suite completa; per questi interventi frontend la verifica finale resta quella mirata.
+
+File del blocco: `public/src/v2/slip-v2.mjs`, `public/src/app.mjs`, `public/src/app-footer.mjs`, `public/ux-spacing.css`, `scripts/ux-viewport.mjs`, `test/ux-review-slipbar.test.mjs`, `test/ux-review-footer.test.mjs`, `test/interface-live.test.mjs`, questo rapporto e CHANGELOG.
+
+Screenshot: [barra a 390 px](ux-0.29.46/blocco2-barra-390.png), [modifica importo](ux-0.29.46/blocco2-importo-390.png).
+
 ## Passaggi successivi
 
-Blocco 2 in lavorazione. Il pannello del presidente (blocco 3) richiede proposta e OK del proprietario prima dell’implementazione. Le altre modifiche e la pre-produzione pubblica 0.29.46 seguono nell’ordine richiesto. Nessun merge su main o deploy sul sito ufficiale.
+Il pannello del presidente (blocco 3) richiede proposta e OK del proprietario prima dell’implementazione. Le altre modifiche e la pre-produzione pubblica 0.29.46 seguono nell’ordine richiesto. Nessun merge su main o deploy sul sito ufficiale.

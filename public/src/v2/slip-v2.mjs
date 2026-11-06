@@ -61,21 +61,22 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
     '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><p class="v2-sub">' + chosen + ' / ' + (round.matches?.length || 0) + ' esiti · ' +
     (availability==='non ancora aperta'?'non ancora aperta':closed ? 'chiusa' : 'chiude ' + esc(date(round.deadline || round.kickoff))) + ' · una scelta per partita</p>' + rows +
     '<p class="tiny muted">Punti per gli esiti indovinati, crediti per la puntata moltiplicata per la quota totale. Quote uguali per tutti. <a href="#" data-v2-go="regolamento">Regolamento</a></p></section>' +
-    (!ready ? '' : '<div class="v2-slipbar"><p class="v2-state ' + state[0] + '" role="status">' + esc(state[1]) + '</p>' +
-      (pointsOnly ? '' : '<div class="v2-stakes">' + quick.map(v =>
+    (!ready ? '' : '<div class="v2-slipbar"><div class="v2-slip-summary"><p class="v2-state ' + state[0] + '" role="status" title="'+esc(state[1])+'">' + esc(left>0?'Mancano '+left+(left===1?' partita':' partite'):hint?'Controlla puntata e saldo':saved?'Confermata ✓':state[1]) + '</p>' +
+      (pointsOnly ? '' : '<div class="v2-slip-meta"><details class="v2-stake-picker"><summary data-v2-stake-menu aria-label="Modifica la puntata in crediti"><b data-v2-stake-current>'+fmt(stake)+' cr</b><span aria-hidden="true">⌃</span></summary><div class="v2-stake-panel"><p>Quanto metti sul bancone?</p><div class="v2-stakes">' + quick.map(v =>
         '<button type="button" class="v2-stake' + (Number(stake) === v ? ' is-on' : '') + '" data-v2-stake="' + v + '">' + v + (v === max ? ' max' : '') + '</button>').join('') +
-        '<input id="stake" class="v2-stake-input" type="number" inputmode="decimal" min="1" max="' + max + '" value="' + esc(stakeInputValue(stake, max)) + '" placeholder="Altro" aria-label="Puntata personalizzata in crediti"></div>') +
+        '<input id="stake" class="v2-stake-input" type="number" inputmode="decimal" min="1" max="' + max + '" value="' + esc(stakeInputValue(stake, max)) + '" placeholder="Altro" aria-label="Puntata personalizzata in crediti"></div><small>Da 1 a '+fmt(max)+' crediti</small></div></details><span data-v2-slip-total title="Quota '+(tot?fmt(tot):'–')+' · ritorno '+(tot?fmt(Math.round(stake*tot)):0)+' crediti">Quota '+(tot?fmt(tot):'–')+' · '+(tot?fmt(Math.round(stake*tot)):0)+' cr</span></div>') + '</div>' +
       '<button type="button" class="v2-save' + (saved ? ' is-done' : '') + '" id="save-slip"' + (sum.canSave && !saved ? '' : ' disabled') + '><span>' + label + (pointsOnly || saved ? '' : ' · ' + fmt(stake) + ' cr') + '</span>' +
-      (pointsOnly ? '' : '<span>quota ' + (tot ? fmt(tot) : '–') + ' · ' + (tot ? fmt(Math.round(stake * tot)) : 0) + ' cr</span>') + '</button>' +
-      (hint ? '<p class="' + hint[0] + '" role="' + hint[1] + '">' + hint[2] + '</p>' : '') + '</div>');
+      '</button>' +
+      (hint ? '<p class="' + hint[0] + ' sr-only" role="' + hint[1] + '">' + hint[2] + '</p>' : '') + '</div>');
 }
 
 // handlers: onPick(matchId, value), onToggle(matchId), onStake(n), onSave(), onGo(page)
 export function bindSlipV2(root, { onPick, onToggle, onStake, onSave, onGo }) {
   root.querySelectorAll('.v2-odd[data-pick]').forEach(b => b.onclick = () => onPick(b.dataset.pick, b.dataset.value));
   root.querySelectorAll('[data-v2-more]').forEach(b => b.onclick = () => onToggle(b.dataset.v2More));
-  root.querySelectorAll('[data-v2-stake]').forEach(b => b.onclick = () => onStake(Number(b.dataset.v2Stake)));
+  root.querySelectorAll('[data-v2-stake]').forEach(b => b.onclick = () => {onStake(Number(b.dataset.v2Stake));root.querySelector('.v2-stake-picker')?.removeAttribute('open');});
   const input = root.querySelector('#stake'); if (input) input.oninput = () => onStake(Number(input.value));
-  const save = root.querySelector('#save-slip'); if (save) save.onclick = onSave;
+  const save = root.querySelector('#save-slip'); if (save) save.onclick = () => {root.querySelector('.v2-stake-picker')?.removeAttribute('open');return onSave();};
+  root.querySelector('.v2-stake-picker')?.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.currentTarget.removeAttribute('open');e.currentTarget.querySelector('summary')?.focus();}});
   root.querySelectorAll('[data-v2-go]').forEach(a => a.onclick = (e) => { e.preventDefault(); onGo(a.dataset.v2Go); });
 }

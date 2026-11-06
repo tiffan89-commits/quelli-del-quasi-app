@@ -5,7 +5,7 @@ import {applySlipReceipt} from './slip-receipt.mjs';
 import {loadAppStyles} from './app-styles.mjs';
 import {saveOnce,identifySlipSave} from './save-guard.mjs';
 import {readAppRoute,writeAppRoute} from './routes.mjs';
-import {placeAppFooter} from './app-footer.mjs';
+import {placeAppFooter,restoreAppFooter} from './app-footer.mjs';
 import {leagueCreationFields,leagueCreationPayload} from './league-create-form.mjs';
 import {displayCache,clearDisplayCaches} from './display-cache.mjs';
 import {randomLeagueControls,bindRandomLeagues} from './random-leagues.mjs';
@@ -692,6 +692,7 @@ async function returnToLanding(button,push=true){
 }
 let publicUi=null;
 function renderAuth(){
+ restoreAppFooter(document);
  syncChatLauncher(null);
  hideLanding();document.getElementById('landing')?.remove();document.body.classList.add('public-area');if(publicUi)return;
  publicUi=mountPublic($('#app'),{api:createPublicApi(),onDemo:async mode=>{
@@ -2117,6 +2118,8 @@ function bindNew(l, r) {
       if(busy){save.innerHTML='<span>Salvataggio in corso…</span>';save.setAttribute('aria-busy','true');}else save.removeAttribute('aria-busy');
       const state = bar.querySelector(".v2-state"), nextState = fresh.querySelector(".v2-state");
       if (state && nextState) { state.className = nextState.className; state.textContent = nextState.textContent; }
+      if(state&&nextState)state.title=nextState.title;
+      for(const selector of ['[data-v2-stake-current]','[data-v2-slip-total]']){const current=bar.querySelector(selector),next=fresh.querySelector(selector);if(current&&next){current.textContent=next.textContent;current.title=next.title;}}
       bar.querySelectorAll("[data-v2-stake]").forEach(b => b.classList.toggle("is-on", Number(b.dataset.v2Stake) === stake));
       const stakeInput = bar.querySelector("#stake");
       if (stakeInput && stakeInput !== document.activeElement) stakeInput.value = stakeInputValue(stake, Number(R()?.rules?.maxStake || 20));

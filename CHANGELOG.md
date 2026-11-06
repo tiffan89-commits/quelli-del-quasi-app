@@ -1,5 +1,6 @@
 # Unreleased — anteprima UX 0.29.46
 
+- Blocco 2: barra schedina compatta di 64 px, importo modificabile in un pannello richiudibile e chat nascosta mentre la barra è attiva. Conservati bozza, limiti, stato e comportamento del salvataggio; controlli privacy ripristinati anche tornando alla login.
 - Blocco 1: footer unico per Bar/Fanta, controlli privacy e statistiche senza duplicazioni, un solo margine finale calcolato sulle barre effettivamente fisse. Misure prima/dopo su 390×844 e 1280×800 nel rapporto UX.
 
 # 0.29.45 — 2026-11-06

@@ -1,4 +1,10 @@
 const contexts=new WeakMap();
+export function restoreAppFooter(doc=globalThis.document){
+ const context=doc&&contexts.get(doc);context?.observer?.disconnect();
+ if(context?.links)doc.body.append(context.links);
+ if(doc?.body)delete doc.body.dataset.gameMode;
+ doc?.documentElement?.style.removeProperty('--app-bottom-space');doc?.documentElement?.style.removeProperty('--app-tabbar-height');
+}
 // Move the existing controls rather than cloning them: consent handlers and
 // disabled state survive navigation between Bar and Fanta.
 export function placeAppFooter(root){
@@ -12,6 +18,7 @@ export function placeAppFooter(root){
  if(context.links){const control=context.links.querySelector('[data-analytics-preferences]');if(control){control.textContent='Statistiche';control.setAttribute('aria-label','Preferenze statistiche');}footer.append(context.links);}
  const measure=()=>{
   const win=doc.defaultView;if(!Number.isFinite(win?.innerHeight)||!win.getComputedStyle)return;
+  const nav=doc.querySelector('.v2-tabbar');doc.documentElement.style.setProperty('--app-tabbar-height',nav&&win.getComputedStyle(nav).position==='fixed'?Math.ceil(nav.getBoundingClientRect().height)+'px':'0px');
   let inset=12;
   for(const bar of doc.querySelectorAll('.v2-tabbar,.v2-slipbar'))if(win.getComputedStyle(bar).position==='fixed')inset=Math.max(inset,win.innerHeight-bar.getBoundingClientRect().top+12);
   doc.documentElement.style.setProperty('--app-bottom-space',Math.ceil(inset)+'px');

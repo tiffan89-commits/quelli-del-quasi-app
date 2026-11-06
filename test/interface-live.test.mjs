@@ -1,5 +1,5 @@
 import {pointTerms} from '../public/scoring.mjs';
-import {placeAppFooter} from '../public/src/app-footer.mjs';
+import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
@@ -108,7 +108,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
-    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,placeAppFooter,
+    ...v2Tabs, renderLeagueChip, isLeagueAdmin, renderSlipV2,placeAppFooter,restoreAppFooter,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },
@@ -159,7 +159,7 @@ test("live results render inside the slip, calendar remains clickable, standings
       getElementById(id){return this.querySelector("#"+id);},
       addEventListener(){},
       body:{dataset:{},classList:{add(){},remove(){}}},
-      documentElement: { style: { setProperty() {} } },
+      documentElement: { style: { setProperty() {},removeProperty() {} } },
       querySelector(q) {
         if(q==='.auth')return null; // This lightweight harness models IDs; the mobile browser verifies the real back button.
         if (q === "#app") return app;
