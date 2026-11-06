@@ -1,3 +1,10 @@
+# 0.29.48 — 2026-11-06
+
+- Campo delle partite esteso fino alla barra inferiore, maglie fino a 84 px e cognomi più grandi; spazio riservato ai metadati. Per chi gioca, voto al posto di probabilità, avversario e club; push Fanta dei voti e degli eventi nel dettaglio senza ricreare la pagina.
+- Corretto il conflitto tra la funzione dello storico e window.history dopo un invito con Google. L’invito usa il normale ingresso idempotente e seleziona la lega, anche per utenti già collegati.
+- Installazione PWA proposta con consenso, guida iPhone e launch_handler per i browser compatibili; nessuna installazione o apertura iOS forzata.
+- Descrizione breve e rischio salvati nella schedina nella stessa scrittura; ricalcolati a ogni modifica, invariati sul replay. Lettura in cache per le schedine precedenti prive di profilo, senza ricalcoli o scritture di gioco alla consultazione. Eliminata la frase di errore ripetuta su ogni scheda.
+
 # 0.29.47 — 2026-11-06
 
 - Switch Bar/Fanta centrato nella barra comune; «Il mio Quasi» dalla home apre direttamente lo studio.

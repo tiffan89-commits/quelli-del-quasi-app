@@ -36,7 +36,7 @@ import { submitFantasyWaitlist } from "../../lib/fanta-interest.mjs";
 import { chatAction } from "../../lib/league-chat.mjs";
 import {fantasyRanking} from '../../lib/bar-fanta-rankings.mjs';
 import { accountTotals,enhanceState, updateLeagueProfile } from "../../lib/community.mjs";
-import { analysisFor, analysisRoundSummary } from "../../lib/player-analysis.mjs";
+import { analysisFor, analysisRoundSummary, previewRoundProfiles, describeSavedSlip } from "../../lib/player-analysis.mjs";
 import { deliverPendingMail } from "../../lib/mail-delivery.mjs";
 import {dispatchAccountMail} from '../../lib/account-mail.mjs';
 import {
@@ -336,7 +336,7 @@ export function createApi({
         );
       }
       if (route === "analysis" && req.method === "GET") {
-        // Read-only: no write lock, no calendar rebuild. Falls back to the write path only when a profile is not stored yet.
+        // Read-only: derive a cached preview from the compact slip when final profiles are not stored yet.
         const leagueId = url.searchParams.get("league"),
           roundId = url.searchParams.get("round"),
           wanted = url.searchParams.get("uid");
@@ -360,8 +360,9 @@ export function createApi({
             fail("Giocatore non trovato", 404);
           const slipUids = (r.slipUids || r.slips?.map((x) => x.uid) || []).filter((uid) => !wanted || uid === wanted);
           if (wanted && !slipUids.length) fail("Nessuna schedina salvata per questa giornata", 404);
-          const players = analysisRoundSummary(s, l.id, r.id, slipUids);
-          if (players.length < slipUids.length && !fresh) return null;
+          let players = analysisRoundSummary(s, l.id, r.id, slipUids);
+          if(players.length<slipUids.length)players=previewRoundProfiles(s,l.id,r.id,slipUids);
+
           return wanted ? players[0] : { round: r.id, title: r.title, players };
         };
         let data = await read((s) => build(s, false), {
@@ -630,7 +631,7 @@ export function createApi({
         if (route === "slip") {if(r?.source==='fantacalcio'){
           if(!r.nativeFanta||l.fantaSlipsEnabled===false)fail('Questa schedina Fanta non è abilitata.',403);
           if(!c||(await c.query(`SELECT 1 FROM fanta.leagues fl JOIN fanta.bar_links b ON b.fanta_league_id=fl.id WHERE fl.id=$1 AND b.bar_league_id=$2 AND b.active AND fl.source_key IS NULL AND fl.slips_enabled AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=fl.id AND t.user_id=$3)`,[r.nativeFanta.leagueId,l.id,u.id])).rows.length!==1)fail('Devi allenare una squadra di questa lega Fanta',403);
-        }placeSlip(s,l,r,u,p);syncRoundRewards(s);
+        }const previousPortrait=r?.slips?.find(x=>x.uid===u.id)?.portrait;placeSlip(s,l,r,u,p);if(r.source!=='fantacalcio'){const slip=r.slips.find(x=>x.uid===u.id);slip.portrait=describeSavedSlip(r,slip,{name:u.name,previous:previousPortrait});}syncRoundRewards(s);
           const member=l.members.find(m=>m.uid===u.id);
           return {data:{ok:true,receipt:{...objectiveReceipt(s,l,r,u.id),uid:u.id,league:l.id,round:r.id,slip:r.slips.find(x=>x.uid===u.id),user:{avatar:normalizeAvatar(u.avatar,ownedRewardIds(s,u.id)),rewards:s.playerRewards?.[u.id]||[]},fantasyRanking:fantasyRanking(s,l),member:{...accountTotals(s,l,member),credits:member.credits,initial:member.initial,points:member.points,...(member.fantasyWallets?{fantasyWallets:member.fantasyWallets}:{}),...(member.fantasyWallet?{fantasyWallet:member.fantasyWallet}:{})},ledger:s.ledger.filter(x=>x.league===l.id&&x.uid===u.id).slice(-100).reverse()}}};
         }

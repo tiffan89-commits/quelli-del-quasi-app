@@ -23,7 +23,7 @@ export function pendingInvite() {
   try {
     if (code) {
       localStorage.setItem(INVITE_KEY, JSON.stringify({ code, at: Date.now() }));
-      if (path) history.replaceState(null, '', '/');
+      if (path) window.history.replaceState(null, '', '/'+location.search+location.hash);
       return code;
     }
     const saved = JSON.parse(localStorage.getItem(INVITE_KEY) || 'null');

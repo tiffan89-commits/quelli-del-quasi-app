@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {barSlipsView,barProfileView,teamCode,pickCode,correctCount} from '../public/src/bar-slips.mjs';
-import {updatePlayerProfiles,analysisRoundSummary,analysisFor} from '../lib/player-analysis.mjs';
+import {updatePlayerProfiles,analysisRoundSummary,analysisFor,previewRoundProfiles} from '../lib/player-analysis.mjs';
 const odds={'1':2,'X':3,'2':3.5,'1X':1.3,Goal:1.8};
 const fmt=n=>String(n);
 function fixture(){
@@ -48,3 +48,5 @@ test('profile popup shows verdict, stats and evolution without long text',()=>{
  const html=barProfileView(p,{name:'Anna',avatar:{},slip:{stake:10},fmt});
  assert.match(html,/Anna/);assert.match(html,/Puntata/);assert.match(html,/bar-dossier-quip/);assert.ok(html.replace(/<svg[\s\S]*?<\/svg>/g,'').length<6000);assert.ok(html.length<16000);
 });
+
+test('an active round gets distinct cached read-only profiles before settlement, without mutating game data',()=>{const s=fixture();s.rounds[0].settled=false;s.rounds[0].matches.forEach(m=>{m.status='NS';m.score=null;});delete s.playerProfiles;const before=JSON.stringify(s),first=previewRoundProfiles(s,'l','r',['a','b']),again=previewRoundProfiles(s,'l','r',['a','b']);assert.equal(first.length,2);assert.notEqual(first[0].headline,first[1].headline);assert.deepEqual(again,first);assert.equal(JSON.stringify(s),before);assert.ok(first.every(p=>p.pending===2));});

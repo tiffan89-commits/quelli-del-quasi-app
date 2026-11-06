@@ -19,7 +19,7 @@ if(publicPreview&&(previewPassword.length<20||process.env.PREVIEW_AUTO_AUTH==='1
 const state=emptyState();ensureCalendar(state);
 const u={id:'v2-local-player',username:'anteprima',name:'Il Quasi di prova',email:'anteprima@example.test',emailVerified:true,salt:'local-v2-salt',password:hash(previewPassword,'local-v2-salt')};
 const rival={id:'v2-local-rival',username:'geometra',name:'Il Geometra',emailVerified:true};state.users.push(u,rival);
-const a=newLeague(state,u,'Il Bar v2 · Anteprima',true),b=newLeague(state,rival,'Il Bar degli Ospiti',true);a.code='V2LOCAL';b.members.push({uid:u.id,initial:350,credits:350,points:2});
+const a=newLeague(state,u,'Il Bar v2 · Anteprima',true),b=newLeague(state,rival,'Il Bar degli Ospiti',true);a.code='V2LOCAL';const invitationLeague=newLeague(state,rival,'Gli invitati del Bar',true);invitationLeague.demo=false;invitationLeague.code='V2INVITO';b.members.push({uid:u.id,initial:350,credits:350,points:2});
 a.members.push({uid:rival.id,initial:500,credits:500,points:5});
 a.branding={emblem:'BQ',accent:'#d6f77b',motto:'Qui si prova tutto in locale.'};
 const odds={'1':2.1,'X':3.2,'2':3.4,'1X':1.3,'12':1.25,'X2':1.7,'Goal':1.8,'No Goal':1.9,'Under 2.5':1.8,'Over 2.5':1.95};

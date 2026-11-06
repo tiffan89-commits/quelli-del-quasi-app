@@ -63,3 +63,10 @@ test('one-credit save immediately acknowledges the reward and objective, includi
   assert.equal(client.user.rewards.filter(a=>a.achievement==='minimum').length,1);assert.equal(client.leagues[0].progression.objectives.find(g=>g.round===r.id).goals.find(g=>g.id==='minimum').earned,true);assert.equal(client.leagues[0].progression.objectives.length,2);
  }finally{await f.close();}
 });
+
+test('each changed Serie A draft atomically persists its own risk and joke; retry does not debit or rewrite them',async()=>{
+ const f=await fixtureDb();try{const s=emptyState(),u={id:'u1',name:'Il Mister',emailVerified:true};s.users.push(u);const l=newLeague(s,u,'Rischio test'),token=session(s,u.id),r={id:'portrait-round',league:l.id,source:'seriea',number:12,title:'Giornata 12',kickoff:'2099-01-01T15:00Z',rules:l.rules,slips:[],matches:[{id:'m',home:'Milan',away:'Inter',odds:{1:2,X:3,2:5}}]};s.rounds.push(r);await f.db.query('UPDATE fanta_state SET payload=$1 WHERE id=1',[JSON.stringify(s)]);
+ const input={league:l.id,round:r.id,picks:{m:'1'},stake:1,baseSavedAt:null},first=await saveBarSlip(token,input,{connect:f.connect});assert.ok(first.receipt.slip.portrait.headline);const second=await saveBarSlip(token,{...input,stake:20,baseSavedAt:first.receipt.slip.savedAt},{connect:f.connect});assert.ok(second.receipt.slip.portrait.risk>first.receipt.slip.portrait.risk);assert.notEqual(second.receipt.slip.portrait.short,first.receipt.slip.portrait.short);
+ const changed={...input,picks:{m:'2'},stake:20,baseSavedAt:second.receipt.slip.savedAt},third=await saveBarSlip(token,changed,{connect:f.connect});assert.ok(third.receipt.slip.portrait.risk>second.receipt.slip.portrait.risk);const saved=(await f.db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload;assert.deepEqual(saved.rounds[0].slips[0].portrait,third.receipt.slip.portrait);await saveBarSlip(token,changed,{connect:f.connect});assert.deepEqual((await f.db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload,saved);assert.equal(saved.leagues[0].members[0].credits,480);
+ }finally{await f.close();}
+});
