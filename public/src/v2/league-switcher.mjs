@@ -22,10 +22,10 @@ export function renderLeagueChip(league, uid, esc, fmt, mode='', account=null, c
   if (!league) return '';
   const admin = isLeagueAdmin(league, uid);
   const me = account || (league.members || []).find(m => m.uid === uid);
-  return '<header class="v2-top"><button type="button" class="v2-league-chip" id="v2-open-leagues" aria-haspopup="dialog">' +
+  return '<header class="v2-top"><button type="button" class="v2-league-chip" id="v2-open-leagues" aria-haspopup="dialog" title="Cambia lega, entra o crea una lega">' +
     leagueEmblem(league) +
     '<span class="v2-league-name">' + esc(league.name) + '</span>' +
-    '</button><button type="button" class="league-add" data-open-leagues aria-label="Entra o crea una lega" aria-haspopup="dialog">+</button><div class="ux-controls">' + mode +
+    '<span class="league-add" aria-hidden="true">+</span></button><div class="ux-controls">' + mode +
     (me ? '<div class="v2-credits"><b>' + fmt(me.credits ?? 0) + '</b><span>'+esc(caption)+'</span></div>' : '') +
     presidentEntry()+'</div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
 }

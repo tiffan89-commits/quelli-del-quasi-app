@@ -44,16 +44,16 @@ body details.rankrow{display:block;padding:0;border-bottom:1px solid var(--line)
 @media(max-width:699px){body .dash-hero{height:120px;border-radius:16px}body .dash-hero-copy{left:16px;bottom:18px;max-width:65%}body .dash-hero-copy h1{font-size:25px;line-height:1.05;margin:6px 0}body .dash-hero-copy p{font-size:10px;max-width:210px}body .dash-hero-copy .eyebrow{font-size:9px;letter-spacing:1px}body .dash-scene-person{width:36%;right:0;bottom:-10%;height:110%}body .dash-scene-edit{font-size:8px;right:8px;bottom:6px;padding:4px 6px}body .dash-next{padding:15px;gap:8px;margin:12px 0}body .dash-next h2{font-size:23px}body .dash-next p{font-size:12px}body .dash-next .dash-clock strong{font-size:22px}body .dash-next .dash-cta{margin-top:4px;min-height:42px;padding:9px 12px}.fanta-hero{padding:16px!important}.fanta-hero .fanta-hero-crest{width:90px;height:90px}.fanta-hero h1{font-size:clamp(25px,7.2vw,34px);line-height:1.05}}
 
 /* Shared settings and league actions: identical one-row header in Bar/Fanta. */
-#app-header .v2-top{--league-chip-width:clamp(180px,36vw,440px);justify-content:flex-start}
+#app-header .v2-top{--league-chip-width:clamp(180px,40vw,480px);justify-content:flex-start}
 #app-header .v2-top>.v2-league-chip{flex:0 0 var(--league-chip-width)!important;width:var(--league-chip-width)!important;max-width:var(--league-chip-width)!important;box-sizing:border-box}
 #app-header .v2-top>.ux-controls{margin-left:auto;gap:7px!important}
 #app-header .v2-top .ux-balances{margin-left:0;gap:7px}
 #app-header .settings-entry{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;min-width:36px;min-height:36px;padding:4px;box-sizing:border-box;border-radius:50%;line-height:0;background:var(--panel);color:var(--lime)}
 #app-header .settings-entry>svg{display:block;width:26px;height:26px;margin:0;flex:none}
-#app-header .league-add{display:grid;place-items:center;flex:0 0 32px;width:32px;height:36px;min-height:36px;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--lime);font:700 24px/1 'DM Sans',sans-serif}
+#app-header .v2-league-chip .league-add{display:inline-block;flex:0 0 auto;margin-left:auto;padding:0;border:0;background:none;color:var(--lime);font:700 22px/1 'DM Sans',sans-serif}
 .league-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.league-actions>button{flex:1;min-width:130px;min-height:44px;font-size:12px}
 @media(max-width:699px){
- #app-header .v2-top{--league-chip-width:clamp(72px,30vw,170px);gap:4px!important}
+ #app-header .v2-top{--league-chip-width:calc(clamp(72px,30vw,170px) + 30px);gap:4px!important}
  #app-header .v2-top>.ux-controls{gap:4px!important}
  #app-header .v2-top .ux-balances{gap:5px}
  #app-header .v2-top .v2-credits{min-width:0!important;flex:none}
@@ -61,16 +61,16 @@ body details.rankrow{display:block;padding:0;border-bottom:1px solid var(--line)
  #app-header .v2-top .v2-credits span{font-size:7px!important}
  #app-header .v2-top .settings-entry{flex-basis:32px;width:32px;height:34px;min-width:32px;min-height:34px;padding:3px}
  #app-header .v2-top .settings-entry>svg{width:24px;height:24px}
- #app-header .v2-top .league-add{flex-basis:26px;width:26px;height:34px;min-height:34px;font-size:22px}
  #app-header .v2-top .fanta-mode-btn{padding-inline:6px;font-size:11px}
  #app-header .v2-top .v2-league-chip .league-emblem{width:24px;height:28px;flex-basis:24px;font-size:8px}
 }
 @media(max-width:360px){
- #app-header .v2-top{--league-chip-width:72px}
+ #app-header .v2-top{--league-chip-width:98px}
  #app-header .v2-top .settings-entry{flex-basis:28px;width:28px;min-width:28px;padding:2px}
  #app-header .v2-top .settings-entry>svg{width:22px;height:22px}
- #app-header .v2-top .league-add{flex-basis:23px;width:23px}
  #app-header .v2-top .fanta-mode-btn{padding-inline:4px}
  #app-header .v2-top .v2-credits b{font-size:14px!important}
  #app-header .v2-top .v2-credits span{font-size:6px!important}
 }
+
+.bar-home-invite{padding:16px;margin:12px 0;border:1px solid var(--line);border-left:3px solid var(--lime);border-radius:14px;background:var(--panel)}.bar-home-invite h2{font-size:23px;margin:5px 0}.bar-home-invite p{font-size:12px;color:var(--muted);margin:6px 0 12px}.bar-home-invite .league-invite-actions{display:flex;flex-wrap:wrap;gap:8px}.bar-home-invite .league-invite-actions>*{min-height:40px;font-size:12px}.president-panel>.profile-logout{margin-top:20px}

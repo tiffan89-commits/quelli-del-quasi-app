@@ -1,7 +1,7 @@
 {
   "version": "0.29.46",
-  "channel": "candidate",
-  "releasedAt": "2026-11-06T15:06:33.634Z",
+  "channel": "stable",
+  "releasedAt": "2026-11-06T19:27:00.416Z",
   "features": [
     "dedicated-admin-mfa",
     "admin-wipe-controls",
@@ -149,6 +149,11 @@
     "underdog-context-capped",
     "probable-pitch-direction-preserved",
     "single-row-automatic-studio-reserves",
-    "admin-identity-login-compatibility"
+    "admin-identity-login-compatibility",
+    "shared-member-settings",
+    "inline-league-add",
+    "bar-home-member-invites",
+    "instant-saved-objective-receipt",
+    "official-lineups-t30-five-minute-retry"
   ]
 }

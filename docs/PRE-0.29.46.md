@@ -2,7 +2,7 @@
 
 Indirizzo: https://pre.quellidelquasi.com/.
 
-È una copia separata dei sorgenti, sul PC Windows, servita da un processo dedicato su `127.0.0.1:8995`. Il dominio ufficiale continua a usare il servizio e i dati precedenti. Il CNAME `pre` segue `server.quellidelquasi.com`, già gestito dal DDNS: non sono stati cambiati i record del sito ufficiale.
+È una copia separata dei sorgenti, sul PC Windows, servita da un processo dedicato su `127.0.0.1:8995`. Il dominio ufficiale usa un servizio e dati di produzione separati; il 6 novembre è stato aggiornato alla stessa versione dopo autorizzazione. Il CNAME `pre` segue `server.quellidelquasi.com`, già gestito dal DDNS: non sono stati cambiati i record del sito ufficiale.
 
 ## Dati e accessi
 

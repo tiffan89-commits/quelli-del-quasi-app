@@ -1,7 +1,8 @@
+import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
 import {pointTerms} from '../public/scoring.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
-import {presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
+import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
@@ -111,7 +112,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
-    ...v2Tabs, leagueActions,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
+    ...v2Tabs, leagueActions,barHomeInvite,settingsLogout,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },
@@ -243,7 +244,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html, /class="dash-hero"/);
   assert.match(html, /id="day-objectives"/);
   assert.match(html, /class="dash-summary"/);
-  assert.match(html, /Il Fantacalcio del Quasi/);
+  assert.doesNotMatch(html, /Il Fantacalcio del Quasi|Scegli la tua squadra/);
   assert.doesNotMatch(html,/id="portfolio-lazy"/);
   vm.runInContext("page='regolamento';render()", ctx);
   assert.match(html, /IL REGOLAMENTO/);
@@ -256,7 +257,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html, /Il fantacalcio che si gioca al bar/);
   assert.match(html, /Cosa ci troverai/);
   vm.runInContext("page='lega';render()", ctx);
-  assert.doesNotMatch(html, /aria-label="Invita con WhatsApp"/);
+  assert.match(html, /data-home-league-invite/);
   vm.runInContext("page='classifiche';render()",ctx);
   assert.doesNotMatch(html,/data-v2-lega="admin"/);
   vm.runInContext("page='lega';render()",ctx);
@@ -329,7 +330,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='lega';showLiveStatus(liveStatus)",ctx);
   assert.equal(nodes.get('#live-channel-status').hidden,true,'connection notice is only relevant to results');
   vm.runInContext("state.leagues[0].admin='another-president';page='lega';render()",ctx);
-  assert.doesNotMatch(html,/Invita nella tua lega|Invita con WhatsApp|id="copy"/);
+  assert.match(html,/data-home-league-invite/);assert.doesNotMatch(html,/id="copy"/);
   assert.doesNotMatch(html,/data-page="admin"/);
   vm.runInContext("page='admin';render()",ctx);
   assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita nella tua lega/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);

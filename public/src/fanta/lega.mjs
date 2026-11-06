@@ -1,6 +1,6 @@
 import {renderIo} from './io.mjs';
 import {leagueActions} from '../league-actions.mjs';
-import {presidentPanel} from '../president-panel.mjs';
+import {settingsLogout,presidentPanel} from '../president-panel.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
 import { esc, pts, countdown, dayTime, OUTCOME, extremeClass, orderRounds } from './formato.mjs';
@@ -164,7 +164,7 @@ export function fantaPresidentTasks(l){
 export function renderFantaPresident(l,ui={},now=Date.now()){
  if(!l)return '<div class="fanta-loading" role="status">Carichiamo il pannello…</div>';
  const a={...ui,adminTools:!!l.isAdmin,inSettings:true},count=l.members.filter(m=>m.human).length,bar=ui.bar;
- return presidentPanel({name:l.league.name,mode:'fanta',open:ui.presidentGroup,tasks:fantaPresidentTasks(l),other:bar?'<button type="button" data-mode="bar" data-bar-page="admin">Bar →</button>':'',groups:{
+ return presidentPanel({name:l.league.name,mode:'fanta',footer:settingsLogout({bridge:true}),open:ui.presidentGroup,tasks:fantaPresidentTasks(l),other:bar?'<button type="button" data-mode="bar" data-bar-page="admin">Bar →</button>':'',groups:{
  persone:{summary:count+'/'+l.league.maxMembers+' allenatori · '+(l.league.maxMembers-count)+' computer',html:members(l,a)},
  regole:{summary:l.rules.budget+' crediti · '+(l.league.slipsEnabled!==false?'schedina attiva':'schedina disattivata'),html:rules(l,a)},
  ...(l.isAdmin?{

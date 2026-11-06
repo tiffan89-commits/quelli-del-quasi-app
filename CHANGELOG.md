@@ -1,4 +1,6 @@
-# 0.29.46 — revisione UX · non pubblicata
+# 0.29.46 — 2026-11-06
+
+- Ritocchi finali: «+» integrato nel nome della lega, logout esterno agli accordion in Impostazioni, inviti per tutti nella home Bar fino a lega piena e rimozione della promozione Fanta. Corretto il riscontro immediato degli obiettivi dopo il salvataggio: premi già persistenti, spunta e guardaroba aggiornati dalla ricevuta compatta. Formazioni ufficiali API-FOOTBALL a T−30 con retry server ogni 5 minuti solo finché incomplete; cache definitiva nel DB.
 
 - Ritocco della prova: Impostazioni accessibili a tutti con ingranaggio cartoon, account e assistenza integrati e comandi riservati al presidente nascosti ai membri. Premi trasferiti in Quasi, inizialmente chiusi; inviti nella lega disponibili a tutti i membri. Selettore Bar/Fanta della stessa larghezza, «+» separato, nessuna icona Profilo e voce Lega con icona gruppo. «Entra in una lega» e «Crea lega · Bar + Fanta» usano gli stessi moduli nei due prodotti. Barra verificata anche a 320 px con entrambi i saldi.
 - Correzione nella prova: esiti, importo e mercati della schedina aggiornano solo i controlli, conservando gli stemmi e le testate partita già caricati. Verificati Bar/Fanta, bozze e salvataggio protetto; nessun aggiornamento del sito ufficiale.
