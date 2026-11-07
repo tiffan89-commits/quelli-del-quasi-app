@@ -175,6 +175,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.31.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.30.0...v0.31.0) (2026-11-07)
+
+
+### Features
+
+* **fanta:** aggiorna la sala aste e la capienza della lega ([6ea3f91](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/6ea3f91b709ce8db15356829ca805be30cb0f4f6))
+* **fanta:** unify auction setup and league capacity ([ffaa445](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/ffaa4457d93ae958560b0fec8b3940d05ebc9e8b))
+
 ## [0.30.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.29.52...v0.30.0) (2026-11-07)
 
 
