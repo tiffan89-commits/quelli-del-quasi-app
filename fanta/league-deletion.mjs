@@ -51,4 +51,5 @@ export async function deleteFantaLeagues(c, {leagueIds, barIds}) {
     await c.query('DELETE FROM fanta.' + table + ' WHERE league_id=ANY($1::text[])', [leagueIds]);
   }
   await c.query('DELETE FROM fanta.leagues WHERE id=ANY($1::text[])', [leagueIds]);
+  if(process.env.SELFHOST_RUNTIME==='true')for(const league of leagueIds)await c.query("SELECT pg_notify('quasi_auction',$1)",[JSON.stringify({league,deleted:true})]);
 }

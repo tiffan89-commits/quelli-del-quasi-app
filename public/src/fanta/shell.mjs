@@ -22,6 +22,7 @@ export function topBar({ mode, league, credits,slipCredits,user,hideCredits=fals
     ? `<button type="button" class="v2-league-chip fanta-league-chip" data-action="leagues" aria-haspopup="dialog" title="Cambia lega, entra o crea una lega">
         ${leagueEmblem(league)}
         <span class="v2-league-name">${esc(league.name.replace(/^Random League/i,'Lega pilota'))}</span>
+        <span class="auction-index-dot" data-auction-indicator="*" aria-label="Asta in corso" hidden></span>
         <span class="league-add" aria-hidden="true">+</span>
       </button>`
     : '<span></span>';
@@ -42,7 +43,7 @@ export function leagueSheet(leagues, activeId) {
 <h2 id="fanta-sheet-title">Le tue leghe Fanta</h2>
     ${leagues.map(l => `<button type="button" class="v2-league-row${l.id === activeId ? ' is-active' : ''}" data-league="${esc(l.id)}">
       ${leagueEmblem(l)}
-      <span class="v2-league-info"><b>${esc(/^Random League/i.test(l.name)?l.name.replace(/^Random League/i,'Lega pilota'):l.name)}</b><small>${esc(l.teamName)} · ${esc(l.season)}</small></span>
+      <span class="v2-league-info"><b>${esc(/^Random League/i.test(l.name)?l.name.replace(/^Random League/i,'Lega pilota'):l.name)}<span class="auction-index-tag" data-auction-indicator="${esc(l.id)}" hidden>ASTA</span></b><small>${esc(l.teamName)} · ${esc(l.season)}</small></span>
       ${l.role === 'admin' ? '<span class="v2-role is-admin">ADMIN</span>' : ''}
     </button>`).join('')}
     ${leagueActions({bridge:true})}

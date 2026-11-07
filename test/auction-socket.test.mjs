@@ -18,17 +18,28 @@ test('Socket.IO pushes committed snapshots, isolates rooms, acknowledges all pee
   const api=createFantaApi({store}),call=async(route,input={})=>{const r=await api(new Request(origin+'/fanta-api/'+route,{method:'POST',headers:{cookie:'sid=token1'},body:JSON.stringify({league:'fanta-lucas-a',...input})}));assert.equal(r.status,200,await r.clone().text());return r.json();};
   const connect=(token,league='fanta-lucas-a',site=origin)=>{const s=client(origin,{transports:['websocket'],auth:{league},extraHeaders:{Origin:site,Cookie:'sid='+token},forceNew:true,reconnection:false});s.last=null;s.on('auction:update',(msg,ack)=>{s.last=msg.data;ack({version:msg.data.version});});s.on('auction:presence',ids=>{s.present=ids;});sockets.push(s);return s;};
   const peers=Array.from({length:6},(_,i)=>connect('token'+(i+1))),[a,b]=peers;await waitFor(()=>peers.every(s=>s.last));assert.equal(a.last.me,'t1');assert.equal(b.last.me,'t2');assert.ok(peers.every(s=>s.last.version===a.last.version));
+  const index=client(origin+'/auction-index',{transports:['websocket'],extraHeaders:{Origin:origin,Cookie:'sid=token1'},forceNew:true,reconnection:false});
+  const passive=client(origin,{transports:['websocket'],auth:{league:'fanta-lucas-a',passive:true},extraHeaders:{Origin:origin,Cookie:'sid=token2'},forceNew:true,reconnection:false});
+  const changes=[],statuses=[],snapshots=[];let initialIndex;
+  sockets.push(index,passive);index.on('auction:index',ids=>{initialIndex=ids;});index.on('auction:index-change',msg=>changes.push(msg));
+  passive.on('auction:status',msg=>statuses.push(msg.data));passive.on('auction:update',(msg,ack)=>{snapshots.push(msg.data);ack({version:msg.data.version});});
+  await waitFor(()=>initialIndex&&statuses.length===1);assert.deepEqual(initialIndex,[]);assert.equal(statuses[0].status,'none');
   a.emit('auction:room',true);b.emit('auction:room',true);await waitFor(()=>peers.every(s=>s.present?.length===2));assert.deepEqual(a.present,['t1','t2']);
   const denied=connect('invalid');await new Promise(r=>denied.once('connect_error',r));assert.equal(denied.connected,false);
   const wrong=connect('token2','another-league');await new Promise(r=>wrong.once('connect_error',r));assert.equal(wrong.connected,false);
   const hostile=connect('token1','fanta-lucas-a','https://hostile.test');await new Promise(r=>hostile.once('connect_error',r));assert.equal(hostile.connected,false);
   let state=await call('auction/start-now',{mode:'manual',type:'iniziale'});await waitFor(()=>peers.every(s=>s.last.version===state.version));
+  await waitFor(()=>changes.length===1&&statuses.length===2);assert.deepEqual(changes,[{league:'fanta-lucas-a',running:true}]);assert.equal(statuses[1].status,'running');
   state=await call('auction/table',{playerId:'free'});await waitFor(()=>peers.every(s=>s.last.table?.id==='free'));assert.ok(peers.every(s=>s.last.version===a.last.version));assert.equal(b.last.isAdmin,false);
+  assert.equal(statuses.length,2);assert.deepEqual(snapshots,[]);assert.equal(changes.length,1);
+  passive.emit('auction:room',true);await waitFor(()=>snapshots.length===1);assert.equal(snapshots[0].table.id,'free');
+  passive.emit('auction:room',false);await waitFor(()=>hub.stats()[0]?.acknowledged===6);
   await waitFor(()=>hub.stats()[0]?.acknowledged===6);
   b.disconnect();await waitFor(()=>a.present?.length===1);assert.deepEqual(a.present,['t1']);
   state=await call('auction/assign',{playerId:'free',teamId:'t1',price:5});await waitFor(()=>a.last.version===state.version);
   b.last=null;b.connect();await waitFor(()=>b.last?.version===state.version);assert.equal(b.last.teams.find(t=>t.team.id==='t1').spent,a.last.teams.find(t=>t.team.id==='t1').spent);assert.equal(b.last.lastSale.player.id,'free');
   const stamp=await new Promise((resolve,reject)=>a.timeout(1000).emit('auction:clock',(err,data)=>err?reject(err):resolve(data)));assert.ok(Math.abs(Date.now()-Date.parse(stamp.serverTime))<500);
+  await call('auction/close');await waitFor(()=>changes.length===2&&statuses.length===3);assert.deepEqual(changes[1],{league:'fanta-lucas-a',running:false});assert.equal(snapshots.length,1);
  }finally{for(const s of sockets)s.disconnect();if(hub)await hub.close();else await new Promise(r=>server.close(r));await f.close();}
 });
 

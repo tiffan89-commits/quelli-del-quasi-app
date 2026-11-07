@@ -25,7 +25,7 @@ import {
 import {provisionSystemAdmin,beginAdminLogin,finishAdminLogin,isSystemAdmin,requireSystemAdmin} from '../../lib/system-admin-auth.mjs';
 import {createSocialAuth} from '../../lib/social-auth.mjs';
 import {socialProviders} from '../../lib/social-providers.mjs';
-import {adminLeagues,forceAllFantasy,planPlatformWipe,executePlatformWipe,runAdminProbe} from '../../lib/system-admin-operations.mjs';
+import {adminLeagues,forceAllFantasy,planPlatformWipe,executePlatformWipe,runAdminProbe,deleteOwnedLeague} from '../../lib/system-admin-operations.mjs';
 import {
   removeLeagueMember,
   restoreLeagueMember,
@@ -387,7 +387,7 @@ export function createApi({
       }
       if(req.method==='GET')return reply({error:'Rotta non disponibile'},404);
       const out = await transact(async (s, c) => {
-        if(!authRoute&&!membershipRoute&&!profileRoute){updateCalendarRounds(s);syncRoundRewards(s);}
+        if(!authRoute&&!membershipRoute&&!profileRoute&&route!=='league-delete'){updateCalendarRounds(s);syncRoundRewards(s);}
         let u = userFor(s, token);
         let setCookie;
         if(route==='state'&&req.method==='GET'&&isSystemAdmin(u))return {data:{user:{id:u.id,username:u.username,name:u.name,adminOnly:true},adminOnly:true,creator:false,leagues:[]}};
@@ -627,6 +627,7 @@ export function createApi({
           (x) => x.id === p.league && x.members.some((m) => m.uid === u.id),
         );
         if (!l) fail("Lega non accessibile", 403);
+        if(route==='league-delete')return {data:await deleteOwnedLeague(s,c,u,l,p.phrase)};
         const r = s.rounds.find((x) => x.id === p.round && x.league === l.id);
         if (route === "slip") {if(r?.source==='fantacalcio'){
           if(!r.nativeFanta||l.fantaSlipsEnabled===false)fail('Questa schedina Fanta non è abilitata.',403);

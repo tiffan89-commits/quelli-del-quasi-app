@@ -60,7 +60,7 @@ body.fanta-auction-page .fanta-main{
 .auction-lobby h2,.auction-lobby h3{margin:0 0 6px}
 .auction-lobby p{margin:4px 0 8px;color:var(--muted)}
 .auction-lobby-members{list-style:none;padding:0;margin:0 0 10px}
-.auction-lobby-members li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.auction-lobby-members li{display:grid;grid-template-columns:10px 36px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
 .auction-lobby-members small{display:block;color:var(--muted);font-size:11px}
 .auction-lobby-members i{width:8px;height:8px;border-radius:50%;background:#ff776b}
 .auction-lobby-members i.is-online{background:#8be4a0}
@@ -79,7 +79,22 @@ body.fanta-auction-page .fanta-main{
 .auction-bidder-avatar svg{width:100%;height:100%}
 .is-new-offer .auction-bidder{animation:auction-offer .8s ease-out}
 @keyframes auction-offer{from{border-color:var(--lime);background:var(--panel)}}
-@media(prefers-reduced-motion:reduce){.is-new-offer .auction-bidder{animation:none}}
+.auction-pane .fanta-a-bid.is-outbid{background:#51371c;border:2px solid #ffcd76;border-radius:12px;padding:5px 8px;color:#fff1cf;animation:auction-outbid .55s ease-out 3}
+.auction-pane .fanta-a-bid.is-outbid>span{color:#ffe0a5;font-weight:900}
+@keyframes auction-outbid{50%{box-shadow:0 0 18px #ffc15da0,inset 0 0 22px #ffc15d58}}
+.fanta-a-teams .auction-passed{display:inline-block;color:#ff9b91;background:#682d2d;border-radius:5px;padding:1px 5px;font-weight:800}
+.auction-team-name{border:0;padding:0;background:none;color:inherit;font:inherit;text-align:left;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;cursor:pointer}
+.auction-countdown-overlay:not([hidden]){position:fixed;inset:0;z-index:1200;display:grid;place-items:center;pointer-events:none;background:#080f0c55;text-align:center}
+.auction-countdown-overlay.is-start{background:#080f0cbb}
+.auction-countdown-overlay>div{display:grid;justify-items:center;padding:8px 24px 12px;border:2px solid #ffcd76;border-radius:22px;background:var(--panel);color:#ffe0a5;box-shadow:0 0 30px #ffcd7655}
+.auction-countdown-overlay.is-start>div{padding:16px 32px 22px;color:var(--lime);border-color:var(--lime)}
+.auction-countdown-overlay small{font-weight:800;font-size:14px}
+.auction-countdown-overlay strong{font:800 clamp(62px,19vw,100px)/1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.auction-index-dot:not([hidden]){display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:#ff817a;box-shadow:0 0 8px #ff817a88}
+.auction-index-tag:not([hidden]){display:inline-block;margin-inline-start:6px;padding:1px 4px;border-radius:4px;background:#652b2b;color:#ffb0a8;font-size:9px;font-weight:900;vertical-align:middle}
+.v2-league-row.has-auction>*{animation:auction-index-pulse 1.8s ease-in-out infinite}
+@keyframes auction-index-pulse{50%{opacity:.56}}
+@media(prefers-reduced-motion:reduce){.is-new-offer .auction-bidder,.auction-pane .fanta-a-bid.is-outbid,.v2-league-row.has-auction>*{animation:none}}
 .auction-wizard-form{display:flex;flex-direction:column;min-height:0;flex:1;gap:8px;margin:0}
 .auction-wizard-fields{overflow:auto;min-height:0;flex:1;display:grid;align-content:start;gap:10px;padding:3px}
 .auction-wizard-fields fieldset{border:0;padding:0;margin:0;min-width:0}

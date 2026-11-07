@@ -4,6 +4,7 @@ import {barHomeInvite} from './bar-home-invite.mjs';
 import {leagueActions} from './league-actions.mjs';
 import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
+import {paintAuctionBadges,trackAuctionBadges} from './auction-index.mjs';
 import {nicknameNotice} from './nickname-notice.mjs';
 import {pointTerms} from '../scoring.mjs';
 import {applySlipReceipt} from './slip-receipt.mjs';
@@ -288,7 +289,7 @@ async function api(path, data, options = {}) {
   if(data&&account&&path!=='login'&&path!=='logout'){
     const signature=path+'\n'+JSON.stringify(data),prior=accountAttempts.get(signature);if(prior&&Date.now()-prior.at<60000)data={...data,requestId:prior.id};else{const id=crypto.randomUUID();accountAttempts.clear();accountAttempts.set(signature,{id,at:Date.now()});data={...data,requestId:id};}
   }
-  return saveOnce((data?'write:':'read:')+path+(data?':'+JSON.stringify(data):''),()=>requestJson('/api/'+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},...(data?{body:JSON.stringify(data)}:{}),...(account?{timeoutMs:25000}:path==='slip'?{timeoutMs:20000}:{}),...options}));
+  return saveOnce((data?'write:':'read:')+path+(data?':'+JSON.stringify(data):''),()=>requestJson('/api/'+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},...(data?{body:JSON.stringify(data)}:{}),...(account||path==='league-delete'?{timeoutMs:25000}:path==='slip'?{timeoutMs:20000}:{}),...options}));
 }
 
 function L() {
@@ -605,6 +606,7 @@ function fantasyEmpty(l) {
 }
 function render() {
   closeStyledSelect();
+  trackAuctionBadges(accountAction?null:state.user,state.leagues);
   if(!state.user||accountAction)document.getElementById('app-header')?.remove();
   if(state.user&&!accountAction){markSession(true);hideLanding();publicUi?.destroy();publicUi=null;document.body.classList.remove('public-area');}
   if (state.user && !accountAction && (preferredFanta()||readAppRoute()?.mode==='fanta')) {
@@ -659,10 +661,28 @@ function render() {
 
   displayedSlipRoundId=page==='schedina'?r?.id:null;
   retainAppHeader($('#app'));
+  paintAuctionBadges();
   placeAppFooter($('#app'));
   syncChatLauncher(l);
   bind(l, r);
   bindPresidentPanel($('#app'));
+  const deleteLeagueForm=$('#president-delete-league');
+  if(deleteLeagueForm?.elements&&l){
+    const field=deleteLeagueForm.elements.phrase,button=deleteLeagueForm.querySelector('button'),error=deleteLeagueForm.querySelector('[role=alert]');
+    const phrase='ELIMINA LEGA E STORICO';
+    field.oninput=()=>{button.disabled=field.value!==phrase;};
+    deleteLeagueForm.onsubmit=async e=>{
+      e.preventDefault();
+      if(field.disabled||field.value!==phrase)return;
+      field.disabled=button.disabled=true;button.textContent='Eliminazione…';error.textContent='';
+      try{await api('league-delete',{league:l.id,phrase});}
+      catch(err){error.textContent=err.message;field.disabled=button.disabled=false;button.textContent='Elimina la lega';return;}
+      closeLeagueChat();clearFantaSessions();
+      state.leagues=state.leagues.filter(item=>item.id!==l.id);leagueId=state.leagues[0]?.id;selectedRoundId=null;presidentGroup=null;page='lega';hydrateDraft();
+      writeAppRoute({mode:'bar',page:'oggi',league:leagueId});render();notify('Lega eliminata.');
+      void refresh(true);
+    };
+  }
   document.querySelectorAll('[data-president-group]').forEach(b=>b.addEventListener('click',()=>{presidentGroup=b.dataset.presidentGroup;}));
   document.querySelector('[data-president-copy-link]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/invito/'+encodeURIComponent(l.code));notify('Link copiato.');}catch{notify('Copia il codice della lega.');}});
   document.querySelector('[data-president-activate]')?.addEventListener('click',()=>{document.getElementById('v2-open-leagues')?.click();document.querySelector('[data-existing-bar]')?.click();});
@@ -1247,7 +1267,8 @@ function leagueAdmin(l){
  calendario:{summary:l.nativeFantaLink?'Fanta attivo · competizioni e asta':l.fantaCreation?'Fanta in preparazione':'Il Fanta non è attivo',html:l.nativeFantaLink?'<p>Competizioni, rose e asta si gestiscono dal Fanta della stessa lega.</p>'+fanta:randomLeagueControls(l,state.user)||activate},
  identita:{summary:'Simbolo '+(l.branding?.emblem||'Q')+' · '+color,html:brandingForm(l)}
  }:{}),
- account:{summary:'Soprannome, email, avvisi e assistenza',html:profile({embedded:true})}
+ account:{summary:'Soprannome, email, avvisi e assistenza',html:profile({embedded:true})},
+ ...(l.admin===state.user.id&&state.user.emailVerified&&!state.user.demo?{elimina:{summary:'Bar, Fanta e storico',html:'<form id="president-delete-league"><p>Eliminerai definitivamente <b>'+esc(l.name)+'</b>, il suo Bar, il Fanta collegato e lo storico di gioco. Gli account dei partecipanti restano attivi.</p><label class="field">Scrivi <strong>ELIMINA LEGA E STORICO</strong><input name="phrase" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label><button class="secondary league-delete-action" disabled>Elimina la lega</button><p role="alert"></p></form>'}}:{})
  }});
 }
 
@@ -1479,6 +1500,7 @@ function openNativeSlips(target=L()){
 function openBarTarget(target) {
   if(state.user?.demo&&barDemo)state=structuredClone(barDemo.state);
   if(target?.page==='logout'){void returnToLanding();return;}
+  if(target?.group)presidentGroup=target.group;
   if (target?.league && state.leagues.some(l=>l.id===target.league)) {leagueId=target.league;try{localStorage.setItem('quasi-active-league:'+state.user.id,leagueId);}catch{}sourceScope='seriea';dashboardSource='seriea';competitionScope=null;selectedRoundId=null;hydrateDraft();}
   const round=target?.round && L()?.rounds.find(r=>r.id===target.round);
   if (target?.sourceScope || round) {

@@ -160,11 +160,12 @@ export function auctionCard(h, now) {
   return '';
 }
 
+const auctionHomeSlot=(h,now)=>`<div data-fanta-auction-banner>${auctionCard(h,now)}</div>`;
 export function renderHome(h, now = Date.now()) {
   const invite=renderLeagueInvite(h.league,h.invite);
-  if(h.competition?.status==='draft')return `${auctionCard(h,now)}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>${invite}`;
+  if(h.competition?.status==='draft')return `${auctionHomeSlot(h,now)}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>${invite}`;
   return `<div class="fanta-home">
-    ${auctionCard(h, now)}
+    ${auctionHomeSlot(h,now)}
     ${hero(h)}
     ${nextMove(h, now)}
 
