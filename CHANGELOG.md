@@ -181,6 +181,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.31.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.31.0...v0.31.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* **fanta:** synchronize auction lobby and restore auction dialogs ([5fe297e](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/5fe297eb3c8541610cc7420afd5adbca5897cd28))
+* **fanta:** synchronize auction lobby and restore auction dialogs ([1d199fb](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/1d199fbb727cfc62519e798d7e62bb68fad6e610))
+
 ## [0.31.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.30.0...v0.31.0) (2026-11-07)
 
 
