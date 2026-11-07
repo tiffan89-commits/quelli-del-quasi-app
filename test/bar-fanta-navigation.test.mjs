@@ -45,7 +45,7 @@ test('live fantasy score and player votes patch in place, preserving formations 
  patchFantasyMatch(root,updated);
  assert.equal(root.querySelector('.lineup-section'),section);assert.equal(root.querySelector('.pitch-slides'),pitch);assert.equal(accordion.open,true);
  assert.equal(root.querySelector('.live-score').textContent,'2 – 0');assert.match(root.querySelector('[data-fantasy-points]').textContent,/74 – 60/);
- assert.match(root.querySelector('[data-fantasy-grade="pitch"]').textContent,/7 · FV 10/);assert.equal(root.querySelector('[data-fantasy-events]').textContent,'Gol ×2');
+ assert.equal(root.querySelector('[data-fantasy-grade="pitch"]').textContent,'10');assert.equal(root.querySelector('[data-fantasy-events]').textContent,'Gol ×2');
 });
 test('DB-only minute snapshot carries fantasy points and revisions without downloading all formations',async()=>{
  const f=await fixtureDb();try{

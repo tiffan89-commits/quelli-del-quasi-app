@@ -8,6 +8,7 @@ import {teamLogo} from './team-logo.mjs';
 import {renderCompetitions} from './competitions-ui.mjs';
 import {renderAppInvite} from '../app-invite.mjs';
 import {renderLeagueInvite} from './league-invite.mjs';
+import {computerAuctionNote,computerAuctionOption} from './asta.mjs';
 
 export const LEGA_GROUPS={classifica:['classifica','calendario','schedine'],lega:['asta','regole','partecipanti','competizioni']};
 export const groupOf=sub=>LEGA_GROUPS.classifica.includes(sub)?'classifica':'lega';
@@ -61,7 +62,6 @@ function calendar(l, ui) {
 
 export function auctionSection(l, ui, now) {
   const a = l.auction, admin = l.isAdmin&&ui.adminTools;
-  const singleNote=a.singlePlayer||a.singlePlayerAvailable?'<p class="fanta-note">Single player: le altre squadre sono guidate dal computer, con chiamate e rilanci automatici basati su valore, forma, infortuni e crediti.</p>':'';
   let card;
   if (a.status === 'running') {
     card = `<div class="fanta-lg-card is-live">
@@ -97,7 +97,8 @@ export function auctionSection(l, ui, now) {
     </form>` : (ui.auctionError ? `<p class="fanta-note is-alert">${esc(ui.auctionError)}</p>` : '');
   const r = l.rules;
   return `<section class="fanta-block is-first">
-    ${singleNote}${card}
+    ${computerAuctionNote(a)}${card}
+    ${admin&&a.status!=='running'?computerAuctionOption(a,ui.computerTeams):''}
     ${admin&&a.status!=='running'?'<div class="fanta-start-now"><button type="button" class="primary" data-lega-auction="now-manual">Apri subito · dal vivo</button><button type="button" class="secondary" data-lega-auction="now-live">Apri subito · online</button></div>':''}${form}
     <div class="dash-section-head fanta-lg-sub"><div><h2>Crediti e rose</h2><small>${r.budget} crediti a testa · rosa ${Object.entries(r.roster).map(([k, v]) => `${v} ${ROLE_PLURAL[k]}`).join(', ')}</small></div></div>
     <ul class="fanta-a-teams">${a.teams.map(t => `<li>

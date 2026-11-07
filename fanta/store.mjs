@@ -10,8 +10,16 @@ import {DEFAULT_RULES,fail} from './rules.mjs';
 import {teamBudget} from './auction.mjs';
 import {currentRound,currentRoundNumberSQL} from './round-selection.mjs';
 const iso=x=>x instanceof Date?x.toISOString():x;
+// A team's name is shared by every competition in the league.
+const FIRST_TEAM_KICKOFF=`(SELECT min(coalesce(
+ (SELECT min(f.kickoff) FROM fanta.fixtures f WHERE f.season=l.season AND f.round=coalesce(first_round.seriea_round,c.start_round)),
+ first_round.deadline))
+ FROM fanta.competitions c LEFT JOIN LATERAL(
+  SELECT r.seriea_round,r.deadline FROM fanta.rounds r WHERE r.competition_id=c.id ORDER BY r.number LIMIT 1
+ ) first_round ON true
+ WHERE c.league_id=l.id AND (c.status<>'draft' OR first_round.deadline IS NOT NULL)) AS team_name_deadline`;
 // One consistent read replaces a transaction with a round trip for every table.
-const READ_LEAGUE_SQL=`SELECT l.*,row_to_json(selected) AS competition,(SELECT data->>'key' FROM fanta.jobs WHERE id='votes:active-model') AS vote_model_key,
+const READ_LEAGUE_SQL=`SELECT l.*,row_to_json(selected) AS competition,${FIRST_TEAM_KICKOFF},(SELECT data->>'key' FROM fanta.jobs WHERE id='votes:active-model') AS vote_model_key,
  (SELECT coalesce(jsonb_agg(c ORDER BY c.created_at,c.id),'[]') FROM fanta.competitions c WHERE c.league_id=l.id) AS competitions,
  (SELECT coalesce(jsonb_agg(t ORDER BY t.id),'[]') FROM fanta.teams t WHERE t.league_id=l.id) AS teams,
  (SELECT coalesce(jsonb_agg(p.data||jsonb_build_object('id',p.id,'name',p.name,'role',p.role,'club',c.name,'clubId',p.club_id)),'[]') FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id WHERE $5::boolean OR p.id IN(SELECT player_id FROM fanta.rosters WHERE league_id=$1 UNION SELECT player_id FROM fanta.roster_entries WHERE league_id=$1 AND player_id IS NOT NULL UNION SELECT player_id FROM fanta.player_bindings WHERE league_id=$1 UNION SELECT jsonb_array_elements_text(starters||bench) FROM fanta.lineups WHERE league_id=$1)) AS players,
@@ -32,7 +40,7 @@ function readState(l){
  const teams=l.teams.map(t=>({id:t.id,name:t.name,manager:t.manager,color:t.color,branding:t.branding||{},creditAdjustment:t.credit_adjustment||0,coachName:t.coach_name,userId:t.user_id,joinedAt:t.joined_at,roster:[]})),byId=new Map(l.players.map(p=>[p.id,p]));
  for(const r of l.rosters)teams.find(t=>t.id===r.team_id)?.roster.push({...byId.get(r.player_id),price:r.price});
  applyEntries(teams,byId,l.entries||[]);
- return {voteModel:l.vote_model_key,league:{id:l.id,name:l.name,season:l.season,kind:l.kind,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,maxMembers:l.max_members,inviteCode:l.invite_code},competition:l.competition,competitions:l.competitions,rules:{...DEFAULT_RULES,...l.rules,benchMax:null},teams,players:l.players,auction:{status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null,...l.auction},rounds:l.rounds,matchups:l.matchups,results:l.results,references:l.references,lineups:l.lineups,fixtures:l.fixtures,votes:l.votes,importReview:l.review};
+ return {voteModel:l.vote_model_key,teamNameDeadline:iso(l.team_name_deadline),league:{id:l.id,name:l.name,season:l.season,kind:l.kind,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,maxMembers:l.max_members,inviteCode:l.invite_code},competition:l.competition,competitions:l.competitions,rules:{...DEFAULT_RULES,...l.rules,benchMax:null},teams,players:l.players,auction:{status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null,...l.auction},rounds:l.rounds,matchups:l.matchups,results:l.results,references:l.references,lineups:l.lineups,fixtures:l.fixtures,votes:l.votes,importReview:l.review};
 }
 function applyEntries(teams,byId,entries){for(const t of teams){const own=entries.filter(e=>e.team_id===t.id);if(!own.length)continue;const extra=t.roster.filter(p=>!own.some(e=>e.player_id===p.id));t.roster=[...own.map(e=>({...byId.get(e.player_id),id:e.player_id||e.source_id,name:e.name,role:e.role,club:byId.get(e.player_id)?.club||e.data.club||'',price:e.price,unmapped:!e.player_id})),...extra];}}
 export const AUTH_SQL=`SELECT u->>'id' AS id,u->>'username' AS username,u->>'name' AS name,(u->>'emailVerified')::boolean AS verified,(u->>'demo')::boolean AS demo,(u->>'adminOnly')::boolean AS admin_only FROM fanta_state s CROSS JOIN LATERAL jsonb_array_elements(s.payload->'sessions') a JOIN LATERAL jsonb_array_elements(s.payload->'users') u ON u->>'id'=a->>'uid' WHERE a->>'token'=$1 AND (a->>'expires')::numeric>$2 LIMIT 1`;
@@ -47,7 +55,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
   logo:(uid,league,team)=>use(async c=>(await c.query('SELECT a.data,a.mime,a.digest FROM fanta.team_logos a JOIN fanta.teams t ON t.id=a.team_id WHERE t.id=$3 AND t.league_id=$2 AND EXISTS(SELECT 1 FROM fanta.teams own WHERE own.league_id=$2 AND own.user_id=$1)',[uid,league,team])).rows[0]||null),
   leagues:uid=>use(async c=>(await c.query(`SELECT l.*,t.id AS team_id,t.name AS team_name FROM fanta.leagues l JOIN fanta.teams t ON t.league_id=l.id AND t.user_id=$1 WHERE l.rules->>'disabledAt' IS NULL ORDER BY l.id`,[uid])).rows.map(x=>({id:x.id,name:x.name,season:x.season+'/'+String(x.season+1).slice(-2),role:x.admin_uid===uid?'admin':'member',accent:x.accent,teamName:x.team_name,teamId:x.team_id,kind:x.kind,sourceKey:x.source_key,slipsEnabled:x.slips_enabled!==false}))),
   settings:(uid,next)=>use(async c=>{if(next)await c.query('INSERT INTO fanta.notification_settings VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET data=EXCLUDED.data',[uid,JSON.stringify(next)]);return (await c.query('SELECT data FROM fanta.notification_settings WHERE user_id=$1',[uid])).rows[0]?.data||{notify:{lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true}};}),
-  async league(uid,id,fn,{write=false,auction=false,number,competition,catalog=true,detailedVotes=true}={}){return use(async c=>{
+  async league(uid,id,fn,{write=false,auction=false,number,competition,catalog=true,detailedVotes=true,teamIdentity=false}={}){return use(async c=>{
    if(!write&&!auction){
     const load=async()=>(await c.query(READ_LEAGUE_SQL,[id,uid,number?Number(number):null,competition||null,catalog,detailedVotes])).rows[0];let l;
     if(readCache){const access=(await c.query(`SELECT l.admin_uid,r.revision::text AS revision FROM fanta.leagues l CROSS JOIN fanta.cache_revision r WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND r.id=1 AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`,[id,uid])).rows[0];if(!access)fail('Lega non accessibile',403);l=await readCache.read(JSON.stringify(['fanta-read-v3',id,number||null,competition||null,catalog,detailedVotes]),access.revision,load,{ttl:60000});}
@@ -55,6 +63,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
    }
    await c.query('BEGIN');try{
     const l=(await c.query(`SELECT l.* FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)${write?' FOR UPDATE':''}`,[id,uid])).rows[0];if(!l)fail('Lega non accessibile',403);
+    const teamNameDeadline=teamIdentity?iso((await c.query(`SELECT ${FIRST_TEAM_KICKOFF} FROM fanta.leagues l WHERE l.id=$1`,[id])).rows[0].team_name_deadline):null;
     const league={id:l.id,name:l.name,season:l.season,kind:l.kind,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,maxMembers:l.max_members,inviteCode:l.invite_code};
     const rules={...DEFAULT_RULES,...l.rules,benchMax:null};
     const competitions=(await c.query('SELECT * FROM fanta.competitions WHERE league_id=$1 ORDER BY created_at,id',[id])).rows,selected=competitions.find(x=>x.id===(competition||id+':main'))||(!competition?competitions[0]:null);if(!selected)fail('Competizione non accessibile',403);
@@ -65,7 +74,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
     let row=(await c.query(`SELECT * FROM fanta.auctions WHERE league_id=$1${auction?' FOR UPDATE':''}`,[id])).rows[0];
     if(!row&&auction){await c.query(`INSERT INTO fanta.auctions(id,league_id,data) VALUES($1,$1,$2) ON CONFLICT(league_id) DO NOTHING`,[id,JSON.stringify({status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null})]);row=(await c.query('SELECT * FROM fanta.auctions WHERE league_id=$1 FOR UPDATE',[id])).rows[0];}
     const a={status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null,...row?.data};if(auction&&a.lot)await c.query('SELECT id FROM fanta.lots WHERE id=$1 FOR UPDATE',[a.lot.id]);
-    const state={voteModel:(await c.query("SELECT data->>'key' AS key FROM fanta.jobs WHERE id='votes:active-model'")).rows[0]?.key,league,rules,teams,players,competition:selected,competitions,auction:a,rounds:[],matchups:[],results:[],lineups:[],fixtures:[],votes:[]};
+    const state={voteModel:(await c.query("SELECT data->>'key' AS key FROM fanta.jobs WHERE id='votes:active-model'")).rows[0]?.key,teamNameDeadline,league,rules,teams,players,competition:selected,competitions,auction:a,rounds:[],matchups:[],results:[],lineups:[],fixtures:[],votes:[]};
     if(l.admin_uid===uid&&!auction)state.importReview=(await c.query('SELECT data FROM fanta.import_issues WHERE league_id=$1 ORDER BY id',[id])).rows.map(x=>x.data);
     if(!auction){
      state.rounds=(await c.query('SELECT * FROM fanta.rounds WHERE league_id=$1 AND competition_id=$2 ORDER BY number',[id,selected.id])).rows.map(r=>({...r,deadline:iso(r.deadline)}));

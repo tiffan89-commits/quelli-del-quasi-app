@@ -87,7 +87,12 @@ test('clear buttons and dragging down remove draft selections only, preserve the
  const {window,document}=parseHTML('<html><head></head><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
  const keys=['window','document','location','history','localStorage','scrollTo','requestAnimationFrame','setInterval','clearInterval'],old=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
  Object.assign(globalThis,{window,document,location:{hash:'#/fanta/squadra',pathname:'/',search:''},history:{pushState(){},replaceState(){}},localStorage:{getItem:()=>null,setItem(){}},scrollTo(){},requestAnimationFrame:fn=>fn(),setInterval:()=>1,clearInterval(){}});let instance;
- const pause=()=>new Promise(r=>setTimeout(r,5)),click=q=>document.querySelector(q).dispatchEvent(new window.Event('click',{bubbles:true}));
+ const pause=()=>new Promise(r=>setTimeout(r,5));
+ const click=(q,time)=>{
+  const event=new window.Event('click',{bubbles:true});
+  if(time!=null)Object.defineProperties(event,{detail:{value:1},timeStamp:{value:time}});
+  document.querySelector(q).dispatchEvent(event);
+ };
  try{
   const api=createDemoFantaApi({delay:0}),root=document.getElementById('app');let writes=0;instance=mountFanta(root,{api:{...api,saveLineup:(...a)=>{writes++;return api.saveLineup(...a);}},initialTab:'squadra'});
   for(let i=0;i<30&&!root.querySelector('[data-studio="open"]');i++)await pause();click('[data-studio="open"]');assert.equal(document.querySelector('.fs [data-lineup="clear"]').disabled,true);
@@ -97,6 +102,19 @@ test('clear buttons and dragging down remove draft selections only, preserve the
   event(field,'pointerdown',120);event(window,'pointermove',150);assert.ok(dock.classList.contains('is-droppable'));event(window,'pointermove',400);event(window,'pointerup',400);
   assert.equal(occupied().length,10);assert.ok(!occupied().includes(id));assert.ok(document.querySelector('.fs-grid [data-drag-id="'+id+'"]'));assert.equal(document.querySelectorAll('.fs-reserve').length,15);assert.equal(document.querySelectorAll('[data-bench-move]').length,0);
   assert.equal(document.querySelector('[data-lineup="clear-bench"]'),null);
+  click('.fs [data-lineup="best"]');
+  const slot='.fs-pitch [data-st-slot="D0"]',defender=document.querySelector(slot).dataset.dragId;
+  click(slot,1000);
+  assert.ok(document.querySelector(slot).classList.contains('is-selected'));
+  assert.equal(document.querySelector(slot).dataset.dragId,defender);
+  click(slot,1600);
+  assert.equal(document.querySelector(slot).dataset.dragId,defender);
+  click(slot,1820);
+  assert.equal(document.querySelector(slot).dataset.dragId,undefined);
+  assert.equal(document.querySelectorAll('.fs-grid [data-drag-id="'+defender+'"]').length,1);
+  assert.equal(document.querySelector('.fs [data-lineup="save"]').disabled,true);
+  click(slot,1950);click(slot,2050);
+  assert.equal(occupied().length,10);
   click('.fs [data-lineup="clear"]');assert.equal(occupied().length,0);assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,25);assert.equal(document.querySelector('.fs-mod.is-active').textContent,'4-4-2');assert.equal(writes,0);assert.equal((await api.team('lega-quasi')).lineup,null);
   const data=await api.team('lega-quasi'),draft=draftFrom({formation:'4-4-2',starters:data.roster.map(p=>p.id)},data.roster),locked=parseHTML(renderStudio({data:{...data,round:{...data.round,locked:true}},draft,dirty:true,saving:true},{role:'tutti'})).document;
   for(const action of ['clear','best'])assert.equal(locked.querySelector('[data-lineup="'+action+'"]').hasAttribute('disabled'),true);
@@ -155,8 +173,13 @@ test('studio surnames and fantamedia stay available for field, bench and free pl
  const players=roster.map((p,i)=>({...p,name:['David de Gea','Franco Mastantuono','K. De Bruyne','Randal Kolo Muani'][i],stats:{...p.stats,avgFanta:i===2?null:6.5}}));
  const d=draftFrom(null,players);d.slots.P0=players[0].id;d.slots.D0=players[1].id;d.bench=[players[2].id];
  const {document}=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'tutti'},0));
- assert.equal(document.querySelector('[data-st-slot="D0"] .fs-player-label>b').textContent,'Mastantuono');assert.equal(document.querySelectorAll('.fs-pitch .fs-fm').length,2);assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[2].id+'"] .fs-fm').textContent,'– FM');assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-fm').textContent,'6,50 FM');assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"]>b').textContent,'Kolo Muani');
- const bench=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'panchina'},0)).document;assert.equal(bench.querySelector('.fs-grid .fs-tile>b').textContent,'De Bruyne');assert.ok(bench.querySelector('.fs-grid .fs-fm'));
+ assert.equal(document.querySelector('[data-st-slot="D0"] .fs-shirt svg text').textContent,'MASTANTUONO');
+ assert.equal(document.querySelector('[data-st-slot="P0"] .fs-shirt svg text').textContent,'DE GEA');
+ assert.equal(document.querySelectorAll('.fs-pitch .fs-fm').length,2);
+ assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[2].id+'"] .fs-fm').textContent,'– FM');
+ assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-fm').textContent,'6,50 FM');
+ assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO MUANI');
+ const bench=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'panchina'},0)).document;assert.equal(bench.querySelector('.fs-grid .fs-tile .fs-shirt svg text').textContent,'DE BRUYNE');assert.ok(bench.querySelector('.fs-grid .fs-fm'));
 });
 
 

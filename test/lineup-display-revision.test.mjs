@@ -5,6 +5,7 @@ import {presenceProbability} from '../public/src/fanta/presence-probability.mjs'
 import {footballStatistics,bindFootballStatistics} from '../public/src/football-statistics.mjs';
 import {renderSlipV2} from '../public/src/v2/slip-v2.mjs';import {renderTabBar} from '../public/src/v2/tabs.mjs';import {renderLeagueChip} from '../public/src/v2/league-switcher.mjs';
 import {renderFantasyLineup,renderLineup} from '../public/src/lineup-pitch.mjs';
+import {KITS} from '../public/src/fanta/maglie.mjs';
 import {PGlite} from '@electric-sql/pglite';import {patchSports} from '../lib/operations/sports-db.mjs';
 const esc=x=>String(x??'').replaceAll('<','&lt;'),fmt=String;
 const raw={teams:{home:{id:1,name:'Milan'},away:{id:2,name:'Inter'}},lineups:[1,2].map(id=>({team:{id},formation:'4-4-2',startXI:Array.from({length:11},(_,i)=>({player:{id:id*100+i,name:'Firstname Surname'+i,number:i+1,pos:i===0?'G':i<5?'D':i<9?'M':'F'}})),substitutes:[{player:{id:id*100+99,name:'Backup Keeper',number:99,pos:'G'}}]}))};
@@ -14,7 +15,7 @@ test('jerseys show surnames only, preserve compound family names and recover num
  assert.equal(playerSurname({name:'Jacobo Ramón Naveros',surname:'Ramón'}),'Ramón');assert.equal(playerJersey({jersey:'',seasonStats:{games:{number:32}}}),32);
  assert.equal(opponentLabel({opponent:'AC Milan',home:false}),'@ MIL');assert.equal(opponentLabel({opponent:'Juventus',home:true}),'JUV');
  const html=renderFantasyLineup({teams:[{name:'Fantasy Club',formation:'4-4-2',players:[{name:'Albert Guðmundsson',club:'Inter',starter:true,jersey:11,role:'A',next:{opponent:'Juventus',home:false}}]}]});
- assert.match(html,/>GUÐMUNDSSON<\/text>/);assert.doesNotMatch(html,/>ALBERT GUÐM/);assert.match(html,/@ JUV/);assert.match(html,/>11<\/text>/);
+ assert.match(html,/>GUÐMUNDSSON<\/text>/);assert.doesNotMatch(html,/>ALBERT GUÐM/);assert.match(html,/@JUV/);assert.match(html,/>11<\/text>/);
 });
 
 test('a complete official XI supersedes probable percentages, gives 100/0 and rejects incomplete payloads',()=>{
@@ -48,10 +49,25 @@ test('available-player panel includes the club roster once, sorted by independen
  const official=enrichPresence({...lineup,kind:'official'},catalog);assert.equal(official.teams[0].players[0].probability,100);assert.deepEqual(official.teams[0].bench.map(p=>p.playerId),['af:2']);assert.equal(official.teams[0].bench[0].probability,0);
 });
 
-test('Bar slip uses supplied crests and puts the shared settings control in the mother header',()=>{
- const round={number:11,kickoff:'2099-01-01',matches:[{id:'m',home:'Milan',away:'Inter',odds:{1:2,X:3,2:4}}],rules:{maxStake:20}};
- const html=renderSlipV2({round,esc,fmt,date:String});assert.match(html,/stemma-milan.svg/);assert.match(html,/stemma-inter.svg/);assert.doesNotMatch(renderTabBar('profilo'),/data-v2-tab="profilo"/);
+test('Bar slip uses plain home shirts and changes only the away shirt if the home kits clash',()=>{
+ const round={number:11,kickoff:'2099-01-01',matches:[{id:'m',home:'Internazionale',away:'Atalanta',odds:{1:2,X:3,2:4}},{id:'n',home:'Napoli',away:'Juventus',odds:{1:2,X:3,2:4}}],rules:{maxStake:20}};
+ const html=renderSlipV2({round,esc,fmt,date:String}),{document}=parseHTML(html);
+ const clash=document.querySelectorAll('[data-match-card="m"] .club-kit svg'),contrast=document.querySelectorAll('[data-match-card="n"] .club-kit svg');
+ assert.equal(clash.length,2);assert.equal(clash[0].querySelector('rect').getAttribute('fill'),KITS.Inter.home.a);
+ assert.equal(clash[1].querySelector('rect').getAttribute('fill'),KITS.Atalanta.away.a);
+ assert.equal(contrast[1].querySelector('rect').getAttribute('fill'),KITS.Juventus.home.a);
+ assert.equal(document.querySelectorAll('.club-kit text,.club-kit img').length,0);
+ assert.doesNotMatch(renderTabBar('profilo'),/data-v2-tab="profilo"/);
  assert.match(renderLeagueChip({name:'Bar',members:[]},'u',esc,fmt,'',null,'crediti Bar',true),/data-bar-page="admin"[^>]+aria-label="Apri impostazioni"/);
+});
+
+test('lineups share fixture kits without removing the player surname and number',()=>{
+ const lineups={kind:'official',teams:[{team:'Atalanta',players:[{id:'a',name:'Marco Rossi',jersey:19,role:'D'}]},{team:'Inter',players:[{id:'b',name:'Luca Verdi',jersey:9,role:'A'}]}]};
+ const {document}=parseHTML(renderLineup({home:'Internazionale',away:'Atalanta',lineups}));
+ const away=document.querySelector('[data-fantasy-player="a"] svg'),home=document.querySelector('[data-fantasy-player="b"] svg');
+ assert.equal(away.querySelector('rect').getAttribute('fill'),KITS.Atalanta.away.a);
+ assert.equal(home.querySelector('rect').getAttribute('fill'),KITS.Inter.home.a);
+ assert.deepEqual([...away.querySelectorAll('text')].map(t=>t.textContent),['ROSSI','19']);
 });
 
 test('shared sports persistence copies official lineups to Bar rounds while leaving existing slips intact',async()=>{

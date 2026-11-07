@@ -1,7 +1,7 @@
 // Pointer dragging: horizontal swipes browse the studio; an upward gesture places a player.
 // The older vertical roster keeps its hold gesture. Mouse and field slots drag immediately.
 const MOVE_PX=8,HOLD_MS=220;
-export function enableDrag(root,{canDrop,onDrop,signal}){
+export function enableDrag(root,{canDrop,onStart,onDrop,signal}){
  const on=(target,type,fn,options={})=>target.addEventListener(type,fn,{...(typeof options==='boolean'?{capture:options}:options),signal});
  let pending=null,drag=null,suppressClick=false,clickTimer;
  const targetAt=(x,y)=>{const t=document.elementFromPoint(x,y)?.closest('[data-drop]');return t&&root.contains(t)?t:null;};
@@ -15,6 +15,7 @@ export function enableDrag(root,{canDrop,onDrop,signal}){
   const candidate={id:p.el.dataset.dragId,from:p.el.dataset.dragFrom};
   const targets=[...root.querySelectorAll('[data-drop]')].filter(t=>canDrop(candidate,t.dataset.drop));
   if(!targets.length)return;
+  onStart?.();
   const rect=p.el.getBoundingClientRect(),ghost=p.el.cloneNode(true);ghost.classList.add('fanta-ghost');ghost.setAttribute('aria-hidden','true');ghost.style.width=rect.width+'px';document.body.append(ghost);
   drag={...candidate,el:p.el,ghost,pointerId:p.pointerId,dx:p.x-rect.left,dy:p.y-rect.top,over:null};
   try{p.el.setPointerCapture?.(p.pointerId);}catch{}

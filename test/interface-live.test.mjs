@@ -1,3 +1,4 @@
+import {clubShirt} from '../public/src/club-crest.mjs';
 import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
 import {pointTerms} from '../public/scoring.mjs';
@@ -152,7 +153,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     },
     groupMatches,
     predictionStatus,inlineResultView,patchSlipResults,nicknameNotice,
-    TEAM_LOGOS: {},
+    clubShirt,
     location: { hash: "", pathname: "/", search: "" },
     history: { replaceState() {} },
     navigator: {serviceWorker:{register:()=>Promise.resolve(),addEventListener:(event,handler)=>{if(event==='message')workerMessage=handler;}}},

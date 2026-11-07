@@ -12,7 +12,7 @@ import {sqlFantaStore} from './store.mjs';
 import {fail,validateLineup} from './rules.mjs';
 import {currentRound,homeView,teamView,roundView,matchupView,leagueView} from './views.mjs';
 import {auctionAction,auctionView,auctionTickDue} from './auction.mjs';
-import {saveTeamLogo} from './team-logo.mjs';
+import {saveTeamIdentity} from './team-logo.mjs';
 import {competitionAction} from './competitions.mjs';
 import {teamChoices} from './team-choices.mjs';
 import {entryStatus,claimEntry} from './acquisition.mjs';
@@ -71,7 +71,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(route==='league/configure'&&isWrite)return competitionAction(s,c,p,u.id,'configure',now());
     if(route==='competition/create'&&isWrite){const created=await competitionAction(s,c,p,u.id,'create',now());await saveCompetitionSummary(s,c,{competition:created.id,empty:true});return created;}
     if(route==='competition/start'&&isWrite){const started=await competitionAction(s,c,p,u.id,'start',now());await saveCompetitionSummary(s,c);return started;}
-    if(route==='team/logo'&&isWrite){const mine=s.teams.find(t=>t.userId===u.id);if(!mine||p.team&&p.team!==mine.id)fail('Puoi modificare solo il logo della tua squadra',403);return {team:mine.id,branding:await saveTeamLogo(c,mine,p,id)};}
+    if(route==='team/logo'&&isWrite){const mine=s.teams.find(t=>t.userId===u.id);if(!mine||p.team&&p.team!==mine.id)fail('Puoi modificare solo la tua squadra',403);return saveTeamIdentity(c,s,mine,p,u.id,now);}
     if(route==='team/link'&&isWrite){
      if(s.league.adminUid!==u.id)fail('Solo il presidente può associare le squadre',403);
      const team=s.teams.find(t=>t.id===p.team),username=typeof (p.identity||p.username)==='string'?(p.identity||p.username).trim().toLowerCase():'';
@@ -101,7 +101,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(route==='home')return homeView(s,u.id,now());if(route==='team'){const r=lineupRound(s,now());s.probables=await readPlayProbabilities(c,r?.seriea_round,s.league.season);const target=s.teams.find(t=>url.searchParams.has('team')?t.id===url.searchParams.get('team'):t.userId===u.id);s.presenceMinutes=await readPresenceMinutes(c,(target?.roster||[]).filter(p=>probabilityFor(p,s.probables,r?.seriea_round)?.source!=='official'&&!['injured','suspended'].includes(p.status?.type)),s.league.season,{cache:presenceCache,now:now()});return teamView(s,u.id,now(),url.searchParams.get('team'));}if(route==='league')return leagueView(s,u.id,now());
     const n=Number(url.searchParams.get('number')),r=s.rounds.find(r=>r.number===n)||(!url.searchParams.has('number')?currentRound(s):null);if(!r)fail('Giornata non trovata',404);
     if(route==='round')return roundView(s,r,u.id,now());if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}fail('Pagina non trovata',404);
-   },{write:isWrite,auction:isAuction&&isWrite,catalog:isAuction||route==='roster/players',detailedVotes:route==='matchup',number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
+   },{write:isWrite,auction:isAuction&&isWrite,catalog:isAuction||route==='roster/players',detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
    if(auctionNotice)try{await dispatchFanta('auction-notify:'+auctionNotice,env);}catch{/* Durable notifications remain queued if dispatch needs a retry. */}
    return reply(route==='home'?await withFinalVerification(result,{now:now()}):result);
   }catch(e){return reply({error:e.status?e.message:'Il Fanta non è temporaneamente disponibile. Riprova tra poco.'},e.status||503);}

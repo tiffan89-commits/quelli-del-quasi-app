@@ -1,3 +1,35 @@
+# 0.29.52 — 2026-11-07
+
+- Le squadre generate dal Fanta ricevono nomi ironici di due parole, con una selezione di nomi in stile Atletico Poco e Hellas Madonna.
+- L’allenatore può cambiare il nome della propria squadra dall’editor dello stemma fino al primo calcio d’inizio fra le competizioni della lega.
+- Nelle aste online il presidente può far giocare il computer per le squadre senza allenatore, anche con più partecipanti umani. Chiamate, rilanci e passaggi automatici seguono le regole dell’asta e vengono registrati e inviati ai dispositivi come quelli dei partecipanti.
+
+# 0.29.51 — 2026-11-07
+
+- Maglie senza scritte al posto degli stemmi Serie A nella schedina, nel calendario, nei dettagli e in classifica.
+- Negli scontri la squadra ospite usa la seconda maglia quando le prime divise si confondono. La stessa scelta si applica alle figurine di movimento nei campi delle formazioni.
+
+# 0.29.50 — 2026-11-07
+
+- Maglie del Fanta aggiornate per la stagione 2026/27, con varianti da trasferta in caso di contrasto insufficiente e retro numerato sul campo.
+- Mantenuti fantavoto, icone evento e informazioni sull’avversario nelle viste live e nelle schedine.
+- La cancellazione dal pannello di sistema rimuove insieme le due metà della lega Bar e Fanta.
+
+# 0.29.49 — 2026-11-07
+
+- Gol e autogol condividono lo stesso pallone; per gli autogol i pannelli chiari diventano rossi.
+- Eventi sotto la maglia in ordine gol, autogol, rigori parati, assist, cartellini e sostituzioni; nessuna sovrapposizione con cognome o numero.
+- Nei campi e nei riepiloghi Live si mostra solo il fantavoto, senza etichette V/FV; voto base conservato nel dettaglio della prestazione e del calcolo. Aggiornamenti incrementali allineati al rendering iniziale.
+- Nessun cambiamento a motore, voti salvati, punti, saldi o frequenze.
+
+# Emergenza temporanea Netlify — 2026-11-07
+
+- Recuperati dal backend i voti mancanti di Venezia–Udinese e Bologna–Monza con due esecuzioni mirate del motore invariato; verificati risultati nelle viste Fanta e retry orario della verifica ancora incompleta.
+
+- Build opzionale per letture live dal DB ogni minuto quando Socket.IO non è disponibile; asta sul recupero HTTP esistente. Nessuna modifica alla build normale.
+- Manutenzione del server domestico: blocco API/socket e worker anche al riavvio, per evitare scritture divergenti durante il passaggio temporaneo al cloud.
+- Ripristino cloud ridotto ai voti definitivi e ai dati di gioco; documentate verifica e procedura di ritorno con riallineamento dei nuovi salvataggi.
+
 # 0.29.48 — 2026-11-06
 
 - Campo delle partite esteso fino alla barra inferiore, maglie fino a 84 px e cognomi più grandi; spazio riservato ai metadati. Per chi gioca, voto al posto di probabilità, avversario e club; push Fanta dei voti e degli eventi nel dettaglio senza ricreare la pagina.
@@ -144,6 +176,9 @@
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
 ## [Unreleased]
+
+- Schedina Fanta e Giornata live mostrano avversario e orario italiano sotto la maglia fino all'arrivo del fantavoto e delle icone evento.
+- La cancellazione dal pannello di sistema rimuove insieme il Bar, il Fanta collegato e i rispettivi dati di lega.
 
 - Generazione rose: le leghe automatiche distribuiscono tutti i crediti disponibili in costi interi proporzionali, conservando i migliori giocatori selezionati e l'equilibrio tra squadre. Le rose pilota reinvestono i residui in miglioramenti di pari ruolo alle quotazioni reali; nessuna rigenerazione delle rose esistenti.
 

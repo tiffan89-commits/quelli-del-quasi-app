@@ -5,7 +5,12 @@ import path from 'node:path';
 import {installRuntimeLogging} from './observability.mjs';
 import {syncDns} from './ddns.mjs';
 import {refreshInsights} from '../lib/admin-insights/service.mjs';
-configure();installRuntimeLogging('worker');const network=globalThis.fetch;
+configure();installRuntimeLogging('worker');
+if(process.env.SELFHOST_MAINTENANCE==='true'){
+ console.info('QUASI_WORKER_PAUSED_FOR_FAILOVER');const hold=setInterval(()=>{},60000);
+ await new Promise(resolve=>{process.once('SIGTERM',resolve);process.once('SIGINT',resolve);});clearInterval(hold);process.exit(0);
+}
+const network=globalThis.fetch;
 const {installInternalDispatch,executeJob}=await import('./dispatch.mjs');installInternalDispatch();
 const [{default:dispatch},{closeDatabase}]=await Promise.all([import('../netlify/functions/operational-dispatch.mjs'),import('../lib/db.mjs')]);
 if(process.env.SELFHOST_SCHEDULER_ENABLED==='true'){

@@ -21,14 +21,14 @@ test('confirmed, points-only and closed slips keep their original action rules',
  const closed=make({closed:true});assert.equal(parseHTML(render(closed,picks)).document.querySelector('.v2-slipbar'),null);
 });
 
-test('choices and extra markets preserve the exact loaded crests, headers, input and surrounding detail',()=>{
+test('choices and extra markets preserve the same shirt elements, headers, input and surrounding detail',()=>{
  const round=make();round.matches.forEach(m=>{m.home='Inter';m.away='Juventus';});const options={round,picks:{},stake:10,credits:500,esc:String,fmt:String,date:()=> 'domani'};
  const {document}=parseHTML('<html><body><main>'+renderSlipV2(options)+'</main><section id="detail"><details open><summary>Formazione</summary></details></section></body></html>');
- const root=document.querySelector('main'),images=[...root.querySelectorAll('img')],headers=[...root.querySelectorAll('.v2-match-head')],input=root.querySelector('#stake'),detail=document.querySelector('#detail');assert.equal(images.length,6);
- for(const picks of [{m1:'1'},{m1:'X'},{m1:'1X',m2:'2'}]){assert.equal(patchSlipV2(root,{...options,picks,openMatch:'m1'}),true);assert.deepEqual([...root.querySelectorAll('img')],images);assert.deepEqual([...root.querySelectorAll('.v2-match-head')],headers);assert.equal(root.querySelector('#stake'),input);assert.equal(document.querySelector('#detail'),detail);assert.ok(detail.querySelector('details[open]'));}
+ const root=document.querySelector('main'),shirts=[...root.querySelectorAll('.club-kit svg')],headers=[...root.querySelectorAll('.v2-match-head')],input=root.querySelector('#stake'),detail=document.querySelector('#detail');assert.equal(shirts.length,6);
+ for(const picks of [{m1:'1'},{m1:'X'},{m1:'1X',m2:'2'}]){assert.equal(patchSlipV2(root,{...options,picks,openMatch:'m1'}),true);assert.deepEqual([...root.querySelectorAll('.club-kit svg')],shirts);assert.deepEqual([...root.querySelectorAll('.v2-match-head')],headers);assert.equal(root.querySelector('#stake'),input);assert.equal(document.querySelector('#detail'),detail);assert.ok(detail.querySelector('details[open]'));}
  assert.equal(root.querySelector('[data-pick="m1"][data-value="1X"]').getAttribute('aria-pressed'),'true');
- patchSlipV2(root,{...options,picks:{m1:'2'},openMatch:null});assert.equal(root.querySelector('.v2-odds-extra'),null);assert.deepEqual([...root.querySelectorAll('img')],images);
- assert.equal(patchSlipV2(root,{...options,round:{...round,id:'different-round'}}),false);assert.deepEqual([...root.querySelectorAll('img')],images);
+ patchSlipV2(root,{...options,picks:{m1:'2'},openMatch:null});assert.equal(root.querySelector('.v2-odds-extra'),null);assert.deepEqual([...root.querySelectorAll('.club-kit svg')],shirts);
+ assert.equal(patchSlipV2(root,{...options,round:{...round,id:'different-round'}}),false);assert.deepEqual([...root.querySelectorAll('.club-kit svg')],shirts);
 });
 
 test('Fanta picking, expanding markets and changing stake do not redraw the app or recreate team images',()=>{

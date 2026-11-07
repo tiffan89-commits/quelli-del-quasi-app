@@ -148,7 +148,7 @@ function slotToken(slot, p, locked) {
     return `<div class="fanta-slot" aria-label="${ROLE_NAMES[slot[0]]}: posto vuoto"><span class="fanta-slot-ring"><b>–</b></span><small>${ROLE_NAMES[slot[0]]}</small></div>`;
   }
   return `<div class="fanta-token${p.status?.type && p.status.type !== 'ok' ? ' is-warn' : ''}" title="${esc(p.name)}">
-    <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}">${p.role}</span></span>
+    <span class="fanta-token-shirt">${playerVisual(p,{back:true})}<span class="fanta-role is-${p.role}">${p.role}</span></span>
     ${statusBadge(p.status)}<b>${esc(surname(p))}</b><em class="is-when">${esc(nextLabel(p.next))}</em><small class="fanta-view-fm">${avg(p.stats?.avgFanta)} FM</small>
   </div>`;
 }
@@ -187,7 +187,7 @@ function benchStrip(d, byId, max, locked) {
   const cells = d.bench.map((id, i) => {
     const p = byId.get(id);
     return `<div class="fanta-bench-cell" data-drop="bench:${i}"${locked ? '' : ` data-drag-id="${esc(id)}" data-drag-from="bench"`} title="${esc(p.name)}">
-      <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}">${p.role}</span></span>
+      <span class="fanta-token-shirt">${playerVisual(p,{back:true})}<span class="fanta-role is-${p.role}">${p.role}</span></span>
       <b>${i + 1}. ${esc(surname(p.name))}</b>
       ${locked ? '' : `<button type="button" class="fanta-bench-x" data-bench-remove="${esc(id)}" aria-label="Togli ${esc(p.name)} dalla panchina">×</button>`}
     </div>`;
