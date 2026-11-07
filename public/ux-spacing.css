@@ -130,10 +130,9 @@ body.match-page-active main.match-page{max-width:650px!important;margin-inline:a
 .match-page .lineup-source,.match-page .lineup-method{display:none}
 .match-page .player-sticker{width:clamp(44px,calc((var(--match-pitch-height) - 18px)/var(--pitch-lines,4) - 20px),84px);height:auto;aspect-ratio:1;max-width:100%}
 .match-page .row-5 .player-sticker{max-width:min(100%,68px);max-height:none}
-.match-page .pitch-player-grades,.match-page .pitch-next-opponent,.match-page .pitch-player-club{font-size:11px;font-weight:700}
-.match-page .pitch-player:has(.pitch-next-opponent):not(:has(.pitch-player-grades:not([hidden]))) .player-sticker{width:clamp(44px,calc((var(--match-pitch-height) - 18px)/var(--pitch-lines,4) - 42px),84px)}
+.match-page .pitch-next-opponent,.match-page .pitch-player-club{font-size:12px;font-weight:700}
 .pitch-player:has(.pitch-player-grades:not([hidden])) .pitch-next-opponent,.pitch-player:has(.pitch-player-grades:not([hidden])) .pitch-player-club,.pitch-player:has(.pitch-player-grades:not([hidden])) .player-probability{display:none}
-.match-page .pitch-player-grades{flex:none;position:relative;z-index:2;white-space:nowrap;max-width:100%;box-sizing:border-box;font-size:10px;line-height:1.2;padding:2px 4px}
+.match-page .pitch-player-grades{flex:none;position:relative;z-index:2;white-space:nowrap;max-width:100%;box-sizing:border-box;font-size:13px;line-height:1.2}
 .bar-quip[hidden]{display:none}
 
 /* Events belong below the kit; reserve their own row below the fantasy grade. */

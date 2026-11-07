@@ -15,6 +15,11 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 
 .lineup-accuracy{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.5}.lineup-accuracy strong{color:var(--text)}
 .pitch-player-grades[hidden]{display:none}
+.pitch-fixture{display:grid;justify-items:center;gap:2px;line-height:1.15;white-space:nowrap}
+.pitch-fixture[hidden],.pitch-player .player-probability[hidden]{display:none}
+.pitch-next-opponent{font-size:12px;font-weight:800;color:#f4f3e8}
+.pitch-next-kickoff{font-size:11px;color:#d6dfcd}
+.fanta-p-name .pitch-fixture{justify-items:start}
 
 .lineup-role-tabs{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:10px 0 3px}.lineup-role-tabs::-webkit-scrollbar{display:none}.lineup-role-tabs button{flex:none;min-height:42px;padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap}.lineup-role-tabs button[aria-pressed=true]{background:var(--lime,#cfbc83);border-color:transparent;color:#0c1915}.lineup-role-tabs small{font:inherit;font-size:10px;opacity:.8}.bench-stickers [data-available-role][hidden],.lineup-role-empty[hidden]{display:none}.lineup-role-empty{font-size:12px;padding:12px 0;margin:0}
 

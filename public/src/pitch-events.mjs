@@ -21,6 +21,10 @@ export const assistBootIcon=()=>`<svg viewBox="0 0 24 24" aria-hidden="true" str
  <path d="M2 16.1c6.7 1.4 14.1 1.2 20.3-.5l-.6 2.2c-5.8 1.9-12.7 1.8-19.4.5-.8-.2-1.1-.7-.9-1.5Z" fill="#f0cc8b"/>
  </svg>`;
 export const fantasyGradeText=p=>Number.isFinite(p.fantagrade??p.fantavote)?String(p.fantagrade??p.fantavote).replace('.',','):p.status==='sv'?'s.v.':'—';
+export const hasPitchPerformance=p=>['playing','voted','sv'].includes(p.status)||[p.grade,p.vote,p.fantagrade,p.fantavote].some(Number.isFinite);
+export function pitchPerformance(p,visible=hasPitchPerformance(p)){
+ return `<small class="pitch-player-grades" data-fantasy-grade="pitch"${visible?'':' hidden'}>${visible?fantasyGradeText(p):''}</small>${visible?pitchEvents(p):'<span data-pitch-events></span>'}`;
+}
 export const substitutionMark=label=>`<span class="pitch-event is-sub" role="img" aria-label="${esc(label||'Sostituzione')}" title="${esc(label||'Sostituzione')}"><b>↑</b><b>↓</b></span>`;
 export function pitchEvents(p){
  const e=eventCounts(p.events),out=[];

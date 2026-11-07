@@ -1,10 +1,11 @@
-import {pitchEvents,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
+import {pitchPerformance,hasPitchPerformance,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
+import {pitchFixture} from '../player-label.mjs';
 import {statNumber,formatStatNumber} from './stat-number.mjs';
 import {playerVisual} from './player-visual.mjs';
 // Pagina "Giornata": scelta della giornata e della sfida, formazioni con voti e fantavoti,
 // modificatore difesa, totale; scheda del singolo giocatore con la scomposizione del voto.
 // Funzioni pure: ricevono le risposte di api.round() / api.matchup() e restituiscono HTML.
-import { esc, pts, timeAgo, fixtureTime } from './formato.mjs';
+import { esc, pts, timeAgo } from './formato.mjs';
 import { shirt } from './maglie.mjs';
 import {compareStat} from './stat-comparison.mjs';
 
@@ -68,9 +69,9 @@ export function events(e = {}) {
 }
 
 function playerRow(p) {
-  const matchInfo = `${esc(p.club)} · ${p.home ? 'vs' : '@'} ${esc(p.opponent)}`;
+  const playing = hasPitchPerformance(p);
   let right;
-  if (p.status === 'to-play') right = `<span class="fanta-p-when">${esc(fixtureTime(p.kickoff))}</span>`;
+  if (!playing) right = '';
   else if (p.status === 'sv') right = '<span class="fanta-p-fv">s.v.</span>';
   else right = `<span class="fanta-p-fv">${vote(p.fantavote)}</span>`;
   const note = p.replacedBy ? `<small class="fanta-p-sub is-out">Senza voto · entra ${esc(p.replacedBy)}</small>`
@@ -80,7 +81,7 @@ function playerRow(p) {
   const tag = clickable ? 'button type="button"' : 'div';
   return `<${tag} class="fanta-p is-${p.status}${p.enteredFor ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}>
     <span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>
-    <span class="fanta-p-name"><b><span>${esc(p.name)}</span>${events(p.events)}</b><small>${matchInfo}</small>${note}</span>
+    <span class="fanta-p-name"><b><span>${esc(p.name)}</span>${events(p.events)}</b>${playing?'':pitchFixture(p)}${note}</span>
     ${right}
   </${tag.split(' ')[0]}>`;
 }
@@ -90,13 +91,12 @@ function token(p, replaced) {
   const clickable = p.status === 'voted' || p.status === 'playing' || p.status === 'sv';
   const tag = clickable ? 'button' : 'div';
   const surname = p.name.includes('. ') ? p.name.split('. ').slice(1).join('. ') : p.name;
-  const value = p.status === 'to-play' ? `<em class="is-when">${esc(fixtureTime(p.kickoff))}</em>`
-    : p.status === 'sv' ? '<em class="is-sv">s.v.</em>'
-    : `<em class="${p.status === 'playing' ? 'is-live' : ''}">${vote(p.fantavote)}</em>`;
+  const performance = replaced ? {...p,enteredFor:replaced} : p;
+  const playing = hasPitchPerformance(performance);
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
     <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
-    <b>${esc(surname)}</b>${value}${pitchEvents(replaced?{...p,enteredFor:replaced}:p)}
+    <b>${esc(surname)}</b>${playing?'':pitchFixture(p)}${pitchPerformance(performance,playing)}
   </${tag}>`;
 }
 

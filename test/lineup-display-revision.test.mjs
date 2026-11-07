@@ -14,7 +14,7 @@ test('jerseys show surnames only, preserve compound family names and recover num
  assert.equal(playerSurname({name:'Jacobo Ramón Naveros',surname:'Ramón'}),'Ramón');assert.equal(playerJersey({jersey:'',seasonStats:{games:{number:32}}}),32);
  assert.equal(opponentLabel({opponent:'AC Milan',home:false}),'@ MIL');assert.equal(opponentLabel({opponent:'Juventus',home:true}),'JUV');
  const html=renderFantasyLineup({teams:[{name:'Fantasy Club',formation:'4-4-2',players:[{name:'Albert Guðmundsson',club:'Inter',starter:true,jersey:11,role:'A',next:{opponent:'Juventus',home:false}}]}]});
- assert.match(html,/>GUÐMUNDSSON<\/text>/);assert.doesNotMatch(html,/>ALBERT GUÐM/);assert.match(html,/@ JUV/);assert.match(html,/>11<\/text>/);
+ assert.match(html,/>GUÐMUNDSSON<\/text>/);assert.doesNotMatch(html,/>ALBERT GUÐM/);assert.match(html,/@JUV/);assert.match(html,/>11<\/text>/);
 });
 
 test('a complete official XI supersedes probable percentages, gives 100/0 and rejects incomplete payloads',()=>{

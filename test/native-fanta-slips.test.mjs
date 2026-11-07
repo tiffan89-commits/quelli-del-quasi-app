@@ -2,6 +2,7 @@ import test,{before,after} from 'node:test';import assert from 'node:assert/stri
 import {createFantaSlips,fantaSlipContext} from '../public/src/fanta/schedine.mjs';
 import {FANTA_TABS} from '../public/src/fanta/shell.mjs';
 import {competitionSwitcher} from '../public/src/fanta/competitions-ui.mjs';
+import {renderGiornata} from '../public/src/fanta/giornata.mjs';
 const now=Date.parse('2026-11-03T12:00:00Z');
 before(t=>t.mock.timers.enable({apis:['Date'],now}));after(t=>t.mock.timers.reset());
 function fixture({loadMatchup}={}){
@@ -64,7 +65,23 @@ test('a changed saved version keeps the local draft but blocks overwrite until t
 test('opening a native slip match reads saved XIs once, renders club jerseys and next opponents, handles an unsaved side',async()=>{
  let calls=0,resolve;const f=fixture({loadMatchup:async(context,round,match)=>{calls++;assert.equal(context.leagueId,'a');assert.equal(round.number,11);return new Promise(r=>resolve=r);}});
  const pending=f.root.querySelector('[data-detail]').onclick();await f.root.querySelector('[data-detail]').onclick();assert.equal(calls,1);
- resolve({official:false,home:{team:{name:'Casa'},formation:'4-4-2',starters:[{id:'p',name:'Mario Rossi',role:'A',jersey:11,club:'Inter',opponent:'Juventus',home:false,events:{goals:2,yellow:1},vote:7,fantavote:12.5}],bench:[]},away:{team:{name:'Ospite'},starters:[],bench:[]}});await pending;
- assert.match(f.root.ownerDocument.getElementById('match-page-root').innerHTML,/>ROSSI<\/text>/);assert.doesNotMatch(f.root.ownerDocument.body.textContent,/@ JUV/);assert.match(f.root.ownerDocument.body.textContent,/Gol ×2/);assert.equal(f.root.ownerDocument.querySelector('[data-fantasy-grade="pitch"]').textContent,'12,5');assert.match(f.root.ownerDocument.body.textContent,/Formazione non ancora salvata/);assert.equal(f.root.ownerDocument.querySelectorAll('[data-slip-detail] .fanta-shirt-back').length,1);
+ const fixturePlayer={id:'maldini',name:'Maldini',role:'A',club:'Cagliari',status:'to-play',opponent:'Frosinone',home:true,kickoff:'2026-11-07T14:00:00Z'};
+ const livePlayer={id:'p',name:'Mario Rossi',role:'A',jersey:11,club:'Inter',status:'playing',opponent:'Juventus',home:false,kickoff:'2026-11-07T14:00:00Z',events:{goals:2,yellow:1},vote:7,fantavote:12.5};
+ const matchup={official:false,state:'in-corso',home:{team:{name:'Casa'},formation:'4-4-2',starters:[livePlayer,fixturePlayer],bench:[],modifier:{applies:false}},away:{team:{name:'Ospite'},starters:[],bench:[]}};
+ resolve(matchup);await pending;
+ const page=f.root.ownerDocument.getElementById('match-page-root');
+ assert.match(page.innerHTML,/>ROSSI<\/text>/);
+ assert.match(page.textContent,/Gol ×2/);
+ assert.match(page.textContent,/Formazione non ancora salvata/);
+ assert.equal(page.querySelectorAll('.fanta-shirt-back').length,2);
+ const {document:giornata}=parseHTML(renderGiornata({round:{round:{number:11,state:'in-corso'},rounds:[],matchups:[]},matchup,side:'home',view:'campo'}));
+ for(const view of [page,giornata]){
+  assert.equal(view.querySelector('.pitch-next-opponent').textContent,'FRO');
+  assert.equal(view.querySelector('.pitch-next-kickoff').textContent,'sab 15:00');
+  assert.equal(view.querySelector('.pitch-player-club'),null);
+  const marker=view.querySelector('.is-goals').parentElement;
+  assert.equal(marker.previousElementSibling.textContent,'12,5');
+  assert.equal(marker.parentElement.querySelector('[data-pitch-fixture]'),null);
+ }
  await f.root.querySelector('[data-detail]').onclick();assert.equal(calls,1);f.root.ownerDocument.getElementById('match-page-root').close();
 });
