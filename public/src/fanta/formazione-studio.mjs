@@ -1,11 +1,8 @@
-import {goalkeeperShirt,shirtBack} from './maglie-portieri.mjs';
+import { shirtBack } from './maglie-portieri.mjs';
 // Studio formazione: schermo intero come lo studio del Quasi.
-// In alto il campo in orizzontale (portiere a sinistra, attacco a destra);
-// sotto, i giocatori per ruolo da toccare. Ogni maglia porta un'iconcina: infortunato, squalificato
-// o probabilità di giocare (dalle probabili formazioni, altrimenti stimata dai minuti).
+// Campo verticale su smartphone e orizzontale sugli schermi più larghi.
 import {presenceProbability} from './presence-probability.mjs';
 import { esc, pts, countdown } from './formato.mjs';
-import { shirt } from './maglie.mjs';
 import { assign, unassign, quickAdd, missingOf, countsOf, surname, nextLabel } from './squadra.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
@@ -46,26 +43,30 @@ export function playBadge(p) {
 
 // ---------- Pezzi ----------
 function fantamedia(p){const n=p.stats?.avgFanta;return `<small class="fs-fm" aria-label="${n==null?'Fantamedia non disponibile':'Fantamedia '+pts(n,2)}"><span>${pts(n,2)}</span> <span>FM</span></small>`;}
+function studioShirt(p) {
+  return shirtBack(p.club, p.jersey, surname(p), { goalkeeper: p.role === 'P', wideName: true, vs: p.next?.opponent, home: p.next?.home });
+}
 function token(slot, p, selected) {
   const cls = `fs-token${selected ? ' is-selected' : ''}${p ? '' : ' is-empty'}`;
-  if (!p) return `<button type="button" class="${cls}" data-st-slot="${slot}" data-drop="slot:${slot}" aria-label="Scegli ${ROLE_NAMES[slot[0]].toLowerCase()}">
-    <span class="fs-ring">${ROLE_SHORT[slot[0]]}</span></button>`;
+  if (!p) return `<button type="button" class="${cls}" data-st-slot="${slot}" data-drop="slot:${slot}" aria-pressed="${selected}" aria-label="Scegli ${ROLE_NAMES[slot[0]].toLowerCase()}">
+    <span class="fs-ring" aria-hidden="true">${ROLE_SHORT[slot[0]]}</span></button>`;
   return `<button type="button" class="${cls}" data-st-slot="${slot}" data-drop="slot:${slot}" data-drag-id="${esc(p.id)}" data-drag-from="slot:${slot}" title="${esc(p.name)}">
-    <span class="fs-shirt">${p.role==='P'?shirtBack(p.club,p.jersey??'','',{goalkeeper:true}):shirt(p.club,{back:true,number:p.jersey??'',vs:p.next?.opponent,home:p.next?.home})}${playBadge(p)}</span><span class="fs-player-label"><b>${esc(surname(p))}</b>${fantamedia(p)}</span></button>`;
+    <span class="fs-shirt">${studioShirt(p)}</span><span class="fs-stats">${fantamedia(p)}${playBadge(p)}</span></button>`;
 }
 
 function pitch(d, byId, sel) {
-  const cols = 'PDCA'.split('').map(role => `<div class="fs-col is-${role}" style="--fs-count:${countsOf(d.formation)[role]}">${Object.keys(d.slots).filter(s => s[0] === role)
+  const counts = countsOf(d.formation), maxLine = Math.max(...Object.values(counts));
+  const cols = 'PDCA'.split('').map(role => `<div class="fs-col is-${role}" data-count="${counts[role]}" style="--fs-count:${counts[role]}">${Object.keys(d.slots).filter(s => s[0] === role)
     .map(s => token(s, byId.get(d.slots[s]), sel === s)).join('')}</div>`).join('');
-  return `<div class="fs-pitch${Math.max(...Object.values(countsOf(d.formation)))>=5?' is-crowded':''}" aria-label="Campo, ${esc(d.formation)}: portiere a sinistra, attacco a destra"><div class="fs-lines" aria-hidden="true"><i></i></div>${cols}</div>`;
+  return `<div class="fs-pitch" style="--fs-max-line:${maxLine}" role="group" aria-label="Campo, modulo ${esc(d.formation)}"><div class="fs-lines" aria-hidden="true"><i></i></div>${cols}</div>`;
 }
 
 function reserveTile(p,d,index,{complete,blocked}) {
   return `<article class="fs-reserve" data-drop="bench:${index}" aria-label="${esc(surname(p))}, riserva ${index+1}">
     <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" data-drag-axis="up" ${blocked?'disabled':''}>
-      <span class="fs-shirt">${p.role==='P'?goalkeeperShirt(p.club):shirt(p.club,{vs:p.next?.opponent,home:p.next?.home})}${playBadge(p)}</span>
-      <b title="${esc(p.name)}">${esc(surname(p))}</b><span class="fs-tile-foot">${fantamedia(p)}</span>
-      <small class="fs-tile-next">${esc(nextLabel(p.next))}</small><em class="fanta-role is-${p.role}">${p.role}</em>
+      <span class="fs-shirt" title="${esc(p.name)}">${studioShirt(p)}</span>${playBadge(p)}
+      <span class="fs-tile-foot">${fantamedia(p)}<small class="fs-tile-next">${esc(nextLabel(p.next))}</small></span>
+      <em class="fanta-role is-${p.role}">${p.role}</em>
     </button>
     ${complete?`<div class="fs-reserve-order" aria-label="Ordine in panchina">
       <button type="button" data-no-drag data-bench-move="${esc(p.id)}" data-step="-1" ${blocked||index===0?'disabled':''} aria-label="Anticipa ${esc(surname(p))} in panchina">←</button>
@@ -90,7 +91,7 @@ export function renderStudio(sq, st, now = Date.now()) {
   const cur = sel && byId.get(d.slots[sel]);
   const hint = sel ? `<div class="fs-hint is-pick"><span>${cur ? `Al posto di <b>${esc(surname(cur))}</b>:` : `Scegli il <b>${ROLE_NAMES[sel[0]].toLowerCase()}</b>:`}</span>
       <span>${cur ? `<button type="button" class="fanta-link" data-st-clear="${sel}">Lascia vuoto</button>` : ''}<button type="button" class="fanta-link is-muted" data-st-slot="${sel}">Annulla</button></span></div>`
-    : complete?'<p class="fs-hint">Panchina · Le frecce decidono l’ordine d’ingresso. Trascina una riserva sul campo per un cambio.</p>':'<p class="fs-hint">Tocca o trascina sul campo. Chi resta qui sarà in panchina.</p>';
+    : complete?'<p class="fs-hint">Panchina · Usa le frecce per l’ordine. Tocca due volte un titolare per spostarlo qui.</p>':'<p class="fs-hint">Tocca o trascina per schierare. Tocca due volte un titolare per rimuoverlo.</p>';
   const left = countdown(r.deadline, now);
 
   return `<div class="fs${complete?' is-complete':''}" role="dialog" aria-modal="true" aria-label="Studio formazione">

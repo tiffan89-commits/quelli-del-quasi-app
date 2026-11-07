@@ -10,7 +10,13 @@ import {LEAGUE_COLORS,leagueAccent,linkedLeagueIdentity,leagueEmblem} from '../p
 import {updateLeagueProfile} from '../lib/community.mjs';
 
 test('supplied jerseys retain their design, readable names, number, goalkeeper kit and safe text',async()=>{
- assert.equal(await fs.readFile(new URL('../public/src/fanta/maglie-portieri.mjs',import.meta.url),'utf8'),await fs.readFile(new URL('../docs/maglie-figurine/maglie-portieri.mjs',import.meta.url),'utf8'));
+ const source=await fs.readFile(new URL('../docs/maglie-figurine/maglie-portieri.mjs',import.meta.url),'utf8');
+ const reference=await import('data:text/javascript,'+encodeURIComponent(source.replace(/'\.\/(formato|maglie)\.mjs'/g,(_,module)=>JSON.stringify(new URL(`../public/src/fanta/${module}.mjs`,import.meta.url).href))));
+ const stable=svg=>svg.replace(/\b(?:gk|bk)\d+\b/g,'shirt-id');
+ for(const club of Object.keys(GOALKEEPER_KITS)){
+  assert.equal(stable(goalkeeperShirt(club)),stable(reference.goalkeeperShirt(club)));
+  assert.equal(stable(shirtBack(club,1,'Rossi',{goalkeeper:true})),stable(reference.shirtBack(club,1,'Rossi',{goalkeeper:true})));
+ }
  const back=shirtBack('Udinese',32,'Ekkelenkamp',{nameSize:5});
  assert.match(back,/>EKKELENKAMP</);assert.match(back,/>32</);assert.match(back,/textLength="24"/);assert.match(back,/fill-opacity=".8"/);
  assert.doesNotMatch(shirtBack('Venezia',9,'Adams'),/fill-opacity=".8"/);

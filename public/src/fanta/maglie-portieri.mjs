@@ -2,7 +2,7 @@
 // Portiere: maniche lunghe, colore unico che non si confonde con i compagni, colletto e polsini
 // nel colore principale del club, stessa sigla nel riquadro scuro.
 import { esc } from './formato.mjs';
-import { KITS, shirt } from './maglie.mjs';
+import { KITS, shirt, shirtSurname } from './maglie.mjs';
 
 // Colore della maglia del portiere per club (scelto per staccare dai colori sociali).
 const GK = { giallo: '#f2c230', arancio: '#f28c28', lime: '#8cc63f', grafite: '#4b5563', acqua: '#2bb3a3', nero: '#1c1c1c', rosa: '#e86fa2' };
@@ -55,20 +55,17 @@ export function goalkeeperShirt(club) {
 // I giocatori di movimento usano il retro della maglia vera 2026/27 disegnato in maglie.mjs (con il pannello scuro
 // sulle maglie a righe, metà o croce); con vs e home, chi gioca fuori indossa la trasferta se si confonde.
 // I portieri tengono la loro maglia a maniche lunghe.
-export function shirtBack(club, number, surname, { goalkeeper = false, nameSize = 0, vs, home } = {}) {
-  if (!goalkeeper) return shirt(club, { back: true, number: number ?? '', surname: surname || '', nameSize, vs, home });
+export function shirtBack(club, number, surname, { goalkeeper = false, nameSize = 0, wideName = false, vs, home } = {}) {
+  if (!goalkeeper) return shirt(club, { back: true, number: number ?? '', surname: surname || '', nameSize, wideName, vs, home });
   const name = ALIASES[club] || club, gk = GOALKEEPER_KITS[name] || FALLBACK, body = GK_BODY.replace('Q20 9 14 4', 'Q20 5.5 14 4'), id = 'bk' + (++uid);
-  const base = gk.a, trim = gk.trim, n = String(number ?? '').slice(0, 2), s = String(surname || '').toUpperCase().slice(0, 12);
-  const size = nameSize || (s.length > 9 ? 3 : s.length > 6 ? 3.6 : 4.2);
-  // Cognomi lunghi: stretti per stare tra le spalle (circa 24 unità su 40).
-  const fit = s.length * size * 0.58 > 24 ? ' textLength="24" lengthAdjust="spacingAndGlyphs"' : '';
+  const base = gk.a, trim = gk.trim, n = String(number ?? '').slice(0, 2);
   return `<svg class="fanta-shirt fanta-shirt-back" viewBox="0 0 40 40" role="img" aria-label="${esc(surname)}, numero ${esc(n)}">
     <defs><clipPath id="${id}"><path d="${body}"/></clipPath></defs>
     <g clip-path="url(#${id})"><rect width="40" height="40" fill="${base}"/></g>
     <path d="${body}" fill="none" stroke="#0007" stroke-width="1"/>
     <path d="M14 4 Q20 5.5 26 4" fill="none" stroke="${trim}" stroke-width="2.2" stroke-linecap="round"/>
     <path d="M2.6 26.6 L7.6 26.6 M32.4 26.6 L37.4 26.6" stroke="${trim}" stroke-width="2.4" stroke-linecap="round"/>
-    <text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="${size}" letter-spacing=".25" fill="#ffffff" stroke="#0c1815" stroke-width=".9" paint-order="stroke"${fit}>${esc(s)}</text>
+    ${shirtSurname(surname, { nameSize, wideName, ink: '#ffffff' })}
     <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="#ffffff" stroke="#0c1815" stroke-width="1.4" paint-order="stroke">${esc(n)}</text>
   </svg>`;
 }

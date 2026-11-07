@@ -225,14 +225,20 @@ const BUSY = ['stripes', 'halves', 'cross', 'panels', 'camo'];
 
 // Retro: stessa maglia vista da dietro (metà, maniche e bande diagonali specchiate), girocollo basso, niente scudetto.
 // Con il cognome (figurine delle formazioni): cognome in alto e numero grande. Senza: solo il numero, o la sigla se manca.
-function backOf(k, number, code, club, surname = '', nameSize = 0) {
-  const id = 'kit' + (++uid), n = number == null ? '' : String(number).slice(0, 2), s = String(surname || '').toUpperCase().slice(0, 12);
+export function shirtSurname(surname, {nameSize = 0, wideName = false, ink = '#fff', edge = '#0c1815'} = {}) {
+  const full = String(surname || '').toUpperCase();
+  const name = wideName ? full : full.slice(0, 12);
+  const size = wideName ? 6.4 : nameSize || (name.length > 9 ? 3 : name.length > 6 ? 3.6 : 4.2);
+  const fit = wideName ? (name.length >= 9 ? 28 : name.length >= 7 ? 25 : 0) : (name.length * size * 0.58 > 24 ? 24 : 0);
+  return `<text x="20" y="${wideName ? 13.3 : 13.6}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="${size}" letter-spacing="${wideName ? '0' : '.25'}" fill="${wideName ? '#fff' : ink}" stroke="${wideName ? '#0c1815' : edge}" stroke-width="${wideName ? '1.15' : '.9'}" paint-order="stroke"${fit ? ` textLength="${fit}" lengthAdjust="spacingAndGlyphs"` : ''}>${esc(name)}</text>`;
+}
+
+function backOf(k, number, code, club, surname = '', nameSize = 0, wideName = false) {
+  const id = 'kit' + (++uid), n = number == null ? '' : String(number).slice(0, 2), s = String(surname || '');
   const busy = BUSY.includes(k.pattern) && (n || s);
   const ink = busy ? '#ffffff' : k.ink || (lum(k.main || k.a) > 150 ? '#141414' : '#ffffff'), edge = ink === '#ffffff' ? '#0c1815' : '#ffffff';
-  const size = nameSize || (s.length > 9 ? 3 : s.length > 6 ? 3.6 : 4.2);
-  const fit = s.length * size * 0.58 > 24 ? ' textLength="24" lengthAdjust="spacingAndGlyphs"' : ''; // cognomi lunghi stretti tra le spalle
   const label = s
-    ? `<text x="20" y="13.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="${size}" letter-spacing=".25" fill="${ink}" stroke="${edge}" stroke-width=".9" paint-order="stroke"${fit}>${esc(s)}</text>
+    ? `${shirtSurname(s, { nameSize, wideName, ink, edge })}
     <text x="20" y="31.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="${ink}" stroke="${edge}" stroke-width="1.4" paint-order="stroke">${esc(n)}</text>`
     : n ? `<text x="20" y="29.5" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="16" fill="${ink}" stroke="${edge}" stroke-width="1.1" paint-order="stroke">${esc(n)}</text>`
     : code ? `<rect x="11.6" y="19" width="16.8" height="8.6" rx="2.2" fill="#0c1815" fill-opacity=".8"/><text x="20" y="25.6" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="7.6" fill="#ffffff">${esc(code)}</text>` : '';
@@ -257,10 +263,10 @@ function backOf(k, number, code, club, surname = '', nameSize = 0) {
 //   kit: 'away'  → maglia da trasferta
 //   vs, home     → maglia della partita: chi gioca fuori (home === false) usa la trasferta se si confonde con l'avversario
 //   back: true   → vista da dietro, con `number` (numero di maglia) e, per le figurine, `surname` e `nameSize`
-export function shirt(club, { code = true, kit, vs, home, back = false, number, surname, nameSize } = {}) {
+export function shirt(club, { code = true, kit, vs, home, back = false, number, surname, nameSize, wideName } = {}) {
   const c = clubOf(club), useAway = kit === 'away' || (kit == null && home === false && vs && c.away && clash(club, vs));
   const front = (useAway && c.away) || c.home;
-  if (back) return backOf({ ...front, ...(front.back || {}) }, number, code && c.code, club, surname, nameSize);
+  if (back) return backOf({ ...front, ...(front.back || {}) }, number, code && c.code, club, surname, nameSize, wideName);
   const k = front, id = 'kit' + (++uid), label = code && c.code;
   const sides = k.sides ? `<path d="M9 16.5h1.6V38.5H9zM29.4 16.5H31V38.5h-1.6z" fill="${k.sides}"/>` : '';
   const crest = k.crest ? `<path d="M24.2 9.6h4.4v2.4q0 2.6-2.2 3.6q-2.2-1-2.2-3.6z" fill="${k.crest}" stroke="#0004" stroke-width=".35"/>` : '';
