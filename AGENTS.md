@@ -11,6 +11,7 @@
 Il 6 novembre 2026 il proprietario ha chiesto che ogni modifica completata sia committata e caricata su GitHub senza doverlo richiedere ogni volta.
 
 - Dopo ogni blocco coerente di modifiche completato, eseguire le verifiche appropriate, controllare il diff e creare un commit descrittivo, quindi fare push sul branch di lavoro.
+- Usare Conventional Commits per i titoli dei commit e delle PR. Release Please propone su `main` versioni SemVer, changelog e tag `vX.Y.Z` a partire dalla baseline `v0.29.52`. Per i dettagli vedi `docs/RILASCIO.md`.
 - Usare branch di funzionalità/correzione o di rilascio; rispettare le protezioni esistenti e aprire una PR quando utile. Questa autorizzazione a commit/push non autorizza ad aggirare protezioni, eseguire merge su main o attivare deploy.
 - Riportare branch e collegamento al commit o alla PR. Se il push fallisce, indicarlo chiaramente e mantenere il commit locale.
 - Non caricare file .env, credenziali, chiavi private, token, dati DB, backup, log, sessioni o report con dati personali. Verificare sempre i file nuovi prima di aggiungerli all'indice; outputs/ è locale e ignorata.
@@ -24,4 +25,5 @@ Il 6 novembre 2026 il proprietario ha chiesto che ogni modifica completata sia c
 - Verificare l'interfaccia mobile per modifiche grafiche, compreso lo studio formazione e gli stati di salvataggio.
 - I rilasci di produzione vanno eseguiti soltanto sul server Windows di casa. Per il dominio ufficiale Netlify gestisce unicamente il DNS verso il server Windows. Qualsiasi ritorno temporaneo all'hosting Netlify richiede una richiesta esplicita e attuale del proprietario. Se il dominio risponde da Netlify durante un rilascio, verificare DNS e server Windows prima di procedere.
 - GitHub versiona i sorgenti. Il sito ufficiale è attualmente sul server Windows; un push non deve attivare automaticamente un deploy, un ricalcolo o una modifica al DB.
+- Per un rilascio autorizzato usare il commit del tag pubblicato da Release Please. Verificare che il tag e la versione sul server corrispondano.
 - Pubblicazione e operazioni sui dati devono restare nel perimetro esplicitamente autorizzato per il lavoro in corso.
