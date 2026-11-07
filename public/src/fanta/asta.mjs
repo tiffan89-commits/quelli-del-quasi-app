@@ -5,6 +5,7 @@ import { esc, pts } from './formato.mjs';
 import { shirt } from './maglie.mjs';
 import {auctionWhen} from './auction-wizard.mjs';
 import {renderReleases} from './mercato.mjs';
+import {avatarSvg} from '../avatar.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const RAISES = [1, 5, 10];
@@ -56,6 +57,8 @@ function ring(endsAt, total, label, rules) {
 
 function lotCard(a, ui) {
   const lot = a.lot, p = lot.player, leader = teamOf(a, lot.leader), st = bidState(a);
+  const member=ui.members?.find(m=>leader?.team.userId&&m.uid===leader.team.userId);
+  const bidder=leader?.computer?'Computer':member?.name||leader?.team.manager||leader?.team.name;
   const raise = RAISES.map(n => {
     const amount = lot.bid + n;
     const ok = st.can && amount <= st.max;
@@ -69,8 +72,8 @@ function lotCard(a, ui) {
         <small>${esc(p.club)} · valore ${p.value??'–'} · FM ${fm(p.fm)} · ${p.played??'–'} pres.</small></div>
     </div>
     <div class="fanta-a-bidrow">
-      <div class="fanta-a-bid"><span>Offerta</span><strong>${lot.bid}</strong>
-        ${leader?`<em style="--c:${esc(leader.team.color)}">${lot.leader === a.me ? 'Tu' : esc(leader.team.name)}</em>`:'<em>Prima offerta libera</em>'}</div>
+      <div class="fanta-a-bid${ui.offerUntil>Date.now()?' is-new-offer':''}"><span>Offerta</span><strong>${lot.bid}</strong>
+        ${leader?`<div class="auction-bidder"><span class="auction-bidder-avatar" aria-hidden="true">${leader.computer?'🤖':avatarSvg(member?.avatar)}</span><span><b>${esc(bidder)}</b><small>${esc(leader.team.name)}${lot.leader===a.me?' · Tu':''}</small></span></div>`:'<em>Prima offerta libera</em>'}</div>
     </div>
     <p class="fanta-a-final" aria-hidden="true">Sta per scadere!</p>
     <div class="fanta-a-raises">${raise}</div>
@@ -87,18 +90,33 @@ function lotCard(a, ui) {
   </section>`;
 }
 
-// Ordine di chiamata deciso a caso dall'app: chi tocca adesso e quando tocca a me.
+const human=t=>t.human??(!t.computer&&!!t.team.userId);
+const orderedTeams=a=>(a.order||[]).map(id=>teamOf(a,id)).filter(t=>t&&(human(t)||t.computer));
+
 function orderStrip(a) {
-  if(!a.order?.length||a.config?.nomination==='random')return '';
-  const pos = a.order.indexOf(a.caller), mine = a.order.indexOf(a.me), wait = (mine - pos + a.order.length) % a.order.length;
-  return `<div class="fanta-a-order" aria-label="Ordine di chiamata">
-    <span class="fanta-a-order-label">Ordine di chiamata · ${mine<0?'segui i turni':wait === 0 ? 'tocca a te' : wait === 1 ? 'tu sei il prossimo' : `tocca a te tra ${wait} turni`}</span>
-    <ol>${a.order.map((id, i) => {
-      const t = teamOf(a, id);
-      return `<li class="${id === a.caller ? 'is-now' : ''}${id === a.me ? ' is-me' : ''}${t.slotsLeft === 0 ? ' is-done' : ''}" title="${esc(t.team.name)}">
-        <b>${i + 1}</b><i style="background:${esc(t.team.color)}"></i><span>${id === a.me ? 'Tu' : esc(t.team.name)}</span></li>`;
-    }).join('')}</ol>
-  </div>`;
+  const current=teamOf(a,a.caller);
+  if(!current||a.config?.nomination==='random')return '';
+  const teams=orderedTeams(a),index=teams.indexOf(current);
+  const next=[...teams.slice(index+1),...teams.slice(0,Math.max(0,index))]
+    .find(t=>t!==current&&t.slotsLeft>0&&t.maxBid>0&&(!a.currentRole||t.roles[a.currentRole]?.have<t.roles[a.currentRole]?.max));
+  const name=t=>t?.team.id===a.me?'Tu':t?.team.name||'—';
+  return `<div class="fanta-a-order auction-current-next" aria-label="Ordine di chiamata">
+    <span><small>Chiama ora</small><b>${esc(name(current))}</b></span><span><small>Prossimo</small><b>${esc(name(next))}</b></span></div>`;
+}
+
+function lobbyCard(a,ui){
+  const people=a.teams.filter(human);
+  const connected=new Set(ui.presence??people.filter(t=>t.online).map(t=>t.team.id));
+  const allHere=people.length>0&&people.every(t=>connected.has(t.team.id));
+  return `<section class="auction-lobby"><h2>${a.lobbyEndsAt?'Si parte!':'Sala d’attesa'}</h2>
+    <p>${people.filter(t=>connected.has(t.team.id)).length}/${people.length} allenatori in sala</p>
+    <ul class="auction-lobby-members">${people.map(t=>{
+      const here=connected.has(t.team.id);
+      return `<li><i class="${here?'is-online':''}"></i><span><b>${esc(t.team.manager||t.team.name)}</b><small>${esc(t.team.name)}</small></span><small>${here?'Connesso':'Disconnesso'}</small></li>`;
+    }).join('')}</ul>
+    ${allHere||a.lobbyEndsAt?a.config?.nomination==='random'?'<p>Chiamata automatica a estrazione.</p>':`<h3>Ordine di chiamata</h3><ol class="auction-lobby-order">${orderedTeams(a).map(t=>`<li>${esc(t.team.name)}</li>`).join('')}</ol>`:''}
+    ${ui.error?`<p class="fanta-note is-alert" role="alert">${esc(ui.error)}</p>`:''}
+    ${a.isAdmin&&!a.lobbyEndsAt?`<button type="button" class="primary" data-auction-lobby-start="1" ${ui.startingLobby?'disabled':''}>${ui.startingLobby?'Avvio…':'Start · 10 secondi'}</button>`:''}</section>`;
 }
 
 function waitingCard(a) {
@@ -141,12 +159,13 @@ function lotTag(a, id) {
   return '';
 }
 
-function teamsList(a) {
+function teamsList(a,ui) {
   const order=a.order?.length&&a.config?.nomination!=='random'?a.order.map(id=>teamOf(a,id)).filter(Boolean):a.teams;
+  const connected=new Set(ui.presence??a.teams.filter(t=>t.online).map(t=>t.team.id));
   return `<section class="fanta-block"><div class="dash-section-head"><div><h2>Partecipanti</h2><small>crediti · puntata max · posti da riempire</small></div></div>
     <ul class="fanta-a-teams">${order.map((t, i) => `<li class="${t.team.id === a.me ? 'is-me' : ''}${t.team.id === a.caller ? ' is-caller' : ''}">
       <i class="fanta-dot" style="background:${esc(t.team.color)}"></i>
-      <span class="fanta-p-name"><b>${a.mode === 'manual' ? '' : `${i + 1}. `}${esc(t.team.name)}${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':esc(t.team.manager)+(t.online?'':' · non collegato')}</small></span>
+      <span class="fanta-p-name"><b>${a.mode === 'manual' ? '' : `${i + 1}. `}${esc(t.team.name)}${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':human(t)?esc(t.team.manager)+(connected.has(t.team.id)?' · connesso':' · disconnesso'):'Senza allenatore'}</small></span>
       <span class="fanta-a-num"><b>${t.credits}</b><small>cr</small></span>
       <span class="fanta-a-num"><b>${t.maxBid}</b><small>max</small></span>
       <span class="fanta-a-num"><b>${t.slotsLeft}</b><small>posti</small></span>
@@ -264,12 +283,14 @@ function lastSaleBanner(a) {
 const roomPanels=['Tavolo','Partecipanti','La tua rosa'];
 export function renderAsta(a, ui = {}, players = null) {
   const phase=a?.phase==='releases'&&a.status==='running';
+  const lobby=a?.phase==='lobby'&&a.status==='running';
   const online=a?.status==='running'&&a.mode==='live'&&!phase;
-  const timer=online?(a.lot?ring(a.lot.endsAt,a.lot.timerSeconds,'sec',a.rules):a.callDeadline?ring(a.callDeadline,a.rules.callSeconds,'sec',a.rules):'<span class="auction-clock-label">Prossimo lotto</span>'):a?.status==='scheduled'?`<span class="auction-clock-label" data-countdown="${esc(a.startsAt)}">In attesa</span>`:a?.status==='running'?`<span class="auction-clock-label">${phase?'Svincoli':'Dal vivo'}</span>`:'';
+  const timer=lobby?(a.lobbyEndsAt?ring(a.lobbyEndsAt,10,'sec',{finalSeconds:3,finalStretch:3}):'<span class="auction-clock-label">In attesa</span>'):online?(a.lot?ring(a.lot.endsAt,a.lot.timerSeconds,'sec',a.rules):a.callDeadline?ring(a.callDeadline,a.rules.callSeconds,'sec',a.rules):'<span class="auction-clock-label">Prossimo lotto</span>'):a?.status==='scheduled'?`<span class="auction-clock-label" data-countdown="${esc(a.startsAt)}">In attesa</span>`:a?.status==='running'?`<span class="auction-clock-label">${phase?'Svincoli':'Dal vivo'}</span>`:'';
   const label=a?.status==='scheduled'?'Asta programmata':a?.status==='ended'?'Asta chiusa':phase?'Svincoli':a?.mode==='manual'?'Asta dal vivo':'Sala d’asta';
   let center;
   if(!a)center='<p class="fanta-loading" role="status">Entriamo nella sala d’asta…</p>';
   else if(phase)center=renderReleases(a,ui);
+  else if(lobby)center=lobbyCard(a,ui)+adminControls(a);
   else if(a.status==='running')center=`${adminControls(a)}${a.mode==='manual'?modeSwitch(a):''}${myBar(a)}
     ${a.mode==='manual'?`${a.config&&a.caller?orderStrip(a):''}${a.isAdmin?manualConsole(a,ui,players):manualTable(a)}`:`${orderStrip(a)}${a.lot?lotCard(a,ui):waitingCard(a)}`}
     ${a.mode==='manual'?lastSaleBanner(a):''}`;
@@ -277,7 +298,7 @@ export function renderAsta(a, ui = {}, players = null) {
     ${a.status==='scheduled'?'<p>La sala si apre automaticamente all’orario programmato.</p>':''}
     ${a.status==='ended'&&(a.competition?.status==='active'||a.competitionActivation?.status==='active')?'<p>La competizione è avviata.</p><button type="button" class="primary" data-go="formazione">Schiera la formazione →</button>':''}
     ${a.isAdmin?'<button type="button" class="primary" data-auction-manage="1">Gestisci asta →</button>':''}</section>`;
-  const panes=[center,a?teamsList(a)+logList(a):'',a?myRoster(a):''];
+  const panes=[center,a?teamsList(a,ui)+logList(a):'',a?myRoster(a):''];
   const panel=ui.panel||0;
   return `<section class="fanta-asta auction-room" aria-label="Sala d’asta">
     <header class="auction-page-head"><button type="button" class="secondary" data-auction-exit="1">Esci ×</button><div><span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1><p data-auction-connection role="status"></p></div>${timer}${online?`<button type="button" class="auction-sound secondary" data-auction-sound="1" aria-pressed="${!!ui.sound}" aria-label="${ui.sound?'Disattiva audio':'Attiva audio'}">${ui.sound?'♫':'♪'}</button>`:''}</header>
@@ -289,7 +310,7 @@ export function renderAsta(a, ui = {}, players = null) {
 
 export function renderListoneRows(players, a, { query = '', role = 'tutti', picking } = {}) {
   const me = teamOf(a, a.me), q = query.trim().toLowerCase();
-  const list = players.filter(p => (a.currentRole?p.role===a.currentRole:role === 'tutti' || p.role === role) && (!q || p.name.toLowerCase().includes(q) || p.club.toLowerCase().includes(q))).slice(0, 80);
+  const list = players.filter(p => (a.currentRole?p.role===a.currentRole:role === 'tutti' || p.role === role) && (!q || [p.name,p.club].some(value=>String(value??'').toLowerCase().includes(q)))).slice(0, 80);
   if (!list.length) return '<p class="fanta-note">Nessun giocatore trovato.</p>';
   return list.map(p => {
     const full = me.roles[p.role].have >= me.roles[p.role].max;
@@ -305,7 +326,7 @@ export function renderListoneSheet(players, a, ui) {
   const me = teamOf(a, a.me), picked = ui.picking && players.find(p => p.id === ui.picking);
   const roles = [['tutti', 'Tutti'], ['P', 'P'], ['D', 'D'], ['C', 'C'], ['A', 'A']].map(([k, l]) =>
     `<button type="button" class="v2-chip${(ui.role || 'tutti') === k ? ' is-active' : ''}" data-asta-role="${k}">${l}</button>`).join('');
-  const amount = ui.callAmount ?? (picked ? Math.max(1, Math.min(me.maxBid, Math.round(picked.value * 0.3))) : 1);
+  const amount = ui.callAmount ?? (picked ? Math.max(1, Math.min(me.maxBid, Math.round((picked.value||1) * 0.3))) : 1);
   return `<div class="fanta-ps-head"><div><h2 id="fanta-sheet-title">Il listone</h2><small>${players.length} giocatori liberi · ordinati per valore</small></div>
       ${a.callDeadline ? `<div class="fanta-a-timer is-small" data-ends="${esc(a.callDeadline)}" data-total="${a.rules.callSeconds}" data-final="${a.rules.finalSeconds}" data-stretch="${a.rules.finalStretch}" title="Tempo per chiamare">
         <svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="26" class="track"/><circle cx="30" cy="30" r="26" class="bar" stroke-dasharray="${RING}" stroke-dashoffset="0"/></svg><b data-seconds>–</b></div>` : ''}
@@ -347,6 +368,13 @@ let vibratedFor = null;
 
 export function auctionAudio(win){
   let context, enabled=false, playedFor;
+  function play(frequency,next,duration){
+    if(!enabled||context?.state!=='running')return;
+    const tone=context.createOscillator(),volume=context.createGain(),at=context.currentTime;
+    tone.frequency.setValueAtTime(frequency,at);tone.frequency.setValueAtTime(next,at+duration/2);
+    volume.gain.setValueAtTime(.12,at);volume.gain.exponentialRampToValueAtTime(.001,at+duration);
+    tone.connect(volume);volume.connect(context.destination);tone.start(at);tone.stop(at+duration+.02);
+  }
   return {
     get enabled(){return enabled;},
     async set(value){
@@ -359,11 +387,9 @@ export function auctionAudio(win){
     alert(deadline){
       if(!enabled||context?.state!=='running'||playedFor===deadline)return;
       playedFor=deadline;
-      const tone=context.createOscillator(),volume=context.createGain(),at=context.currentTime;
-      tone.frequency.setValueAtTime(740,at);tone.frequency.setValueAtTime(980,at+.12);
-      volume.gain.setValueAtTime(.12,at);volume.gain.exponentialRampToValueAtTime(.001,at+.28);
-      tone.connect(volume);volume.connect(context.destination);tone.start(at);tone.stop(at+.3);
+      play(740,980,.28);
     },
+    offer(){play(420,630,.18);},
     close(){if(context&&context.state!=='closed')void context.close().catch(()=>{});}
   };
 }

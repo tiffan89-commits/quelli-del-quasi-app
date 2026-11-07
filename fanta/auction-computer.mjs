@@ -13,7 +13,7 @@ export function computerValuation(s,team,p,{now=Date.now()}={}){
 }
 function computerTurn(s){
  const a=s.auction,lot=a.lot;
- if(!computerTeamsActive(s)||a.status!=='running'||a.phase==='releases'||a.pausedUntil||lot?.closing)return null;
+ if(!computerTeamsActive(s)||a.status!=='running'||['releases','lobby'].includes(a.phase)||a.pausedUntil||lot?.closing)return null;
  const deadline=Date.parse(lot?.endsAt||a.callDeadline);
  const since=lot?(Date.parse(lot.history.at(-1)?.at)||deadline-(s.rules.openSeconds-s.rules.finalSeconds+s.rules.finalStretch)*1000):deadline-s.rules.callSeconds*1000;
  if(!Number.isFinite(since)||!Number.isFinite(deadline))return null;
