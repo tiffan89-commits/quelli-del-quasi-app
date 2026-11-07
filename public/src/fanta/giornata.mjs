@@ -1,4 +1,4 @@
-import {pitchEvents,eventCounts,ballIcon} from '../pitch-events.mjs';
+import {pitchEvents,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
 import {statNumber,formatStatNumber} from './stat-number.mjs';
 import {playerVisual} from './player-visual.mjs';
 // Pagina "Giornata": scelta della giornata e della sfida, formazioni con voti e fantavoti,
@@ -57,7 +57,7 @@ export function events(e = {}) {
   e=eventCounts(e);
   const out = [];
   for (let i = 0; i < e.goals; i++) out.push('<i class="ev ev-goal" role="img" aria-label="Gol" title="Gol">'+ballIcon()+'</i>');
-  for(let i=0;i<Math.min(20,Number(e.assists)||0);i++)out.push('<i class="ev ev-assist" role="img" aria-label="Assist" title="Assist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6l2 7 8 3c2 1 2 3 0 3H4c-2 0-3-1-2-3l2-5z"/><path d="m10 11 3-1m-2 4 3-1M5 19v2m5-2v2m6-2v2"/></svg></i>');
+  for(let i=0;i<Math.min(20,Number(e.assists)||0);i++)out.push('<i class="ev ev-assist" role="img" aria-label="Assist" title="Assist">'+assistBootIcon()+'</i>');
   if (e.yellow) out.push('<i class="ev ev-yellow" role="img" aria-label="Cartellino giallo" title="Ammonizione"></i>');
   if (e.red) out.push('<i class="ev ev-red" role="img" aria-label="Cartellino rosso" title="Espulsione"></i>');
   if(e.ownGoals)out.push('<i class="ev ev-own" role="img" aria-label="Autogol" title="Autogol">'+ballIcon(true)+'</i>');
@@ -96,7 +96,7 @@ function token(p, replaced) {
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
     <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
-    <b>${esc(surname)}</b>${pitchEvents(replaced?{...p,enteredFor:replaced}:p)}${value}
+    <b>${esc(surname)}</b>${value}${pitchEvents(replaced?{...p,enteredFor:replaced}:p)}
   </${tag}>`;
 }
 
