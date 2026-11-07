@@ -1,3 +1,9 @@
+# 0.29.50 — 2026-11-07
+
+- Maglie del Fanta aggiornate per la stagione 2026/27, con varianti da trasferta in caso di contrasto insufficiente e retro numerato sul campo.
+- Mantenuti fantavoto, icone evento e informazioni sull’avversario nelle viste live e nelle schedine.
+- La cancellazione dal pannello di sistema rimuove insieme le due metà della lega Bar e Fanta.
+
 # 0.29.49 — 2026-11-07
 
 - Gol e autogol condividono lo stesso pallone; per gli autogol i pannelli chiari diventano rossi.

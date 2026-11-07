@@ -1,7 +1,7 @@
 {
-  "version": "0.29.49",
+  "version": "0.29.50",
   "channel": "stable",
-  "releasedAt": "2026-11-07T03:26:24.755Z",
+  "releasedAt": "2026-11-07T06:00:20.249Z",
   "features": [
     "dedicated-admin-mfa",
     "admin-wipe-controls",
@@ -163,6 +163,8 @@
     "consent-based-pwa-install",
     "maximized-readable-match-pitch",
     "ordered-player-events-below-shirts",
-    "fantasy-grade-only-match-pitches"
+    "fantasy-grade-only-match-pitches",
+    "fanta-match-kits-home-away-back",
+    "atomic-bar-fanta-league-wipe"
   ]
 }
