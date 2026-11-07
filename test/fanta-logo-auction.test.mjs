@@ -7,9 +7,32 @@ test('team logos persist designs and optimized images, enforce size/type and own
   r=await call('team/logo',{type:'image',image:'data:image/png;base64,'+'a'.repeat(350000)});assert.equal(r.status,413);
   assert.equal((await call('team/logo',{type:'image',image:'data:image/svg+xml;base64,PHN2Zz4='})).status,400);
   const png=await fs.readFile(new URL('../public/assets/icons/icon-192.png',import.meta.url));assert.ok(png.length<250*1024);r=await call('team/logo',{type:'image',image:'data:image/png;base64,'+png.toString('base64')});assert.equal(r.status,200);branding=(await r.json()).branding;
+  r=await call('team/logo',{name:'Real Divano'});assert.equal(r.status,200);assert.deepEqual((await r.json()).branding,branding);
   const image=await call(branding.imageUrl.replace('/fanta-api/',''));assert.equal(image.status,200);assert.ok(Number(image.headers.get('content-length')||1)>0);assert.match(image.headers.get('content-type'),/^image\//);
   assert.equal((await call(branding.imageUrl.replace('/fanta-api/',''),null,'unknown')).status,403);assert.match(teamLogo({name:'Team',branding}),/loading="lazy"/);assert.ok(!JSON.stringify(branding).includes(png.toString('base64')));
   await call('team/logo',{type:'design',design:{shape:'circle'}});assert.equal((await f.db.query('SELECT count(*)::int AS n FROM fanta.team_logos')).rows[0].n,0);
+ }finally{await f.close();}
+});
+test('members can rename only their own team before the first kickoff across league competitions',async()=>{
+ const f=await fixtureDb();
+ try{
+  const kickoff='2026-11-07T14:00:00.000Z',deadline=Date.parse(kickoff);let clock=deadline-1;
+  const api=createFantaApi({store:sqlFantaStore(f),now:()=>clock});
+  const call=(path,body)=>api(new Request('https://example.test/fanta-api/'+path,{method:body?'POST':'GET',headers:{cookie:'sid=token2'},body:body?JSON.stringify({league:'fanta-lucas-a',...body}):undefined}));
+  await f.db.query("INSERT INTO fanta.competitions(id,league_id,name,kind,status,start_round) VALUES('cup','fanta-lucas-a','Coppa','knockout','active',2)");
+  await f.db.query("INSERT INTO fanta.fixtures(id,api_id,season,round,kickoff) VALUES('first-cup',901,2026,2,$1)",[kickoff]);
+  const home=await (await call('home?league=fanta-lucas-a')).json();assert.equal(home.teamNameDeadline,kickoff);
+  assert.equal((await call('team/logo',{team:'t1',name:'Altro Nome'})).status,403);
+  assert.equal((await call('team/logo',{name:'squàdra 1'})).status,409);
+  assert.equal((await call('team/logo',{name:'x'})).status,400);
+  const renamed=await call('team/logo',{name:'  Atlético   Poco  ',type:'design',design:{shape:'circle'}});
+  assert.equal(renamed.status,200);assert.equal((await renamed.json()).name,'Atlético Poco');
+  clock=deadline;
+  assert.equal((await call('team/logo',{name:'Nuovo Nome',type:'design',design:{shape:'hexagon'}})).status,409);
+  const row=(await f.db.query("SELECT name,branding FROM fanta.teams WHERE id='t2'")).rows[0];
+  assert.equal(row.name,'Atlético Poco');assert.equal(row.branding.design.shape,'circle');
+  const logoOnly=await call('team/logo',{type:'design',design:{shape:'hexagon'}});
+  assert.equal(logoOnly.status,200);assert.equal((await logoOnly.json()).branding.design.shape,'hexagon');
  }finally{await f.close();}
 });
 test('a president can open a physical auction immediately with complete rosters; every linked player can watch, but cannot assign',async()=>{

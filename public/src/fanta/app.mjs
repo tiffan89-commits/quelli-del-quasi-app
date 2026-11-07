@@ -470,7 +470,15 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   async function openRoster(id){ui.sheet={roster:id};renderSheet();try{const data=await api.team(league()?.id,id);if(ui.sheet?.roster===id){ui.sheet.data=data;if(data.canManageRoster){if(!ui.lega.data)ui.lega.data=await api.league(league()?.id);ui.lega.rosterAudit=await api.rosterAudit(league()?.id);}renderSheet();}}catch(err){if(ui.sheet?.roster===id){ui.sheet.error=err.message;renderSheet();}}}
   async function editLogo(){
     const team=ui.home?homeTeam(ui.home):ui.squadra.data?.team;if(!team?.id)return;const id=league()?.id,{openLogoEditor}=await import('./logo-editor.mjs');if(destroyed||league()?.id!==id)return;
-    openLogoEditor({team,onSave:async logo=>{const result=await api.saveLogo(id,logo);if(destroyed||league()?.id!==id)return;const patch=obj=>{if(!obj||typeof obj!=='object')return;if(obj.id===team.id&&obj.name)obj.branding=result.branding;for(const value of Object.values(obj))if(value&&typeof value==='object')patch(value);};[ui.home,ui.lega.data,ui.squadra.data,ui.round,ui.matchup].forEach(patch);if(ui.home?.me)ui.home.me.branding=result.branding;render();toast('Il tuo stemma è pronto.');}});
+    openLogoEditor({team,teamNameDeadline:ui.home?.teamNameDeadline??ui.squadra.data?.teamNameDeadline,onSave:async input=>{
+      const result=await api.saveLogo(id,{team:team.id,...input});if(destroyed||league()?.id!==id)return;
+      const identity={name:result.name??team.name,branding:result.branding};
+      const patch=obj=>{if(!obj||typeof obj!=='object')return;if(obj.id===team.id&&obj.name)Object.assign(obj,identity);for(const value of Object.values(obj))if(value&&typeof value==='object')patch(value);};
+      [ui.home,ui.lega.data,ui.squadra.data,ui.round,ui.matchup,ui.asta.data].forEach(patch);
+      if(ui.home?.me)Object.assign(ui.home.me,{teamName:identity.name,branding:identity.branding});
+      if(league()?.teamId===team.id)league().teamName=identity.name;
+      render();toast(input.name?'Identità della squadra salvata.':'Il tuo stemma è pronto.');
+    }});
   }
   on(root,'change',e=>{if(e.target.id==='ranking-metric'){ui.lega.metric=e.target.value;render();}if(e.target.matches('[data-competition-switch]'))void switchCompetition(e.target.value);});
 
