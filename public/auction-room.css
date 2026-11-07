@@ -1,0 +1,81 @@
+html:has(.fanta-auction-page),body.fanta-auction-page{overflow:hidden;overscroll-behavior:none}
+body.fanta-auction-page .fanta-main{
+  position:fixed;inset:var(--ux-header-height,70px) 0 var(--app-tabbar-height,76px);
+  width:100%;max-width:840px!important;min-height:0;padding:8px 10px!important;overflow:hidden;
+}
+.fanta-auction-page [data-app-footer],body.fanta-auction-page #open-chat.chat-fab,.fanta-auction-page .league-chat-widget{display:none!important}
+@media(min-width:1024px){
+  body.fanta-auction-page .v2-tabbar{position:fixed!important;inset:auto 0 0!important;transform:none!important;width:min(100%,840px)!important}
+}
+.auction-room,.auction-wizard{display:flex;flex-direction:column;gap:8px;height:100%;min-height:0;overflow:hidden}
+.auction-page-head{display:flex;align-items:center;gap:8px;min-height:60px;padding:4px 0;border-bottom:1px solid var(--line);flex:none}
+.auction-page-head>div:not(.fanta-a-timer){flex:1;min-width:0}
+.auction-page-head h1{margin:0;font:800 clamp(22px,5.5vw,32px)/1 'Barlow Condensed',sans-serif}
+.auction-page-head .eyebrow{font-size:9px;display:block}
+.auction-page-head [data-auction-connection]{margin:2px 0 0;font-size:9px;color:var(--muted)}
+.auction-page-head .secondary{min-height:36px;padding:0 9px;white-space:nowrap;font-size:12px}
+.auction-page-head .fanta-a-timer{width:51px;height:51px}
+.auction-page-head .fanta-a-timer b{font-size:25px}
+.auction-page-head .fanta-a-timer small{display:none}
+.auction-clock-label{font-weight:700;font-size:12px;color:var(--lime);white-space:nowrap}
+.auction-room-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;flex:none;order:0}
+.auction-room-tabs .v2-chip{min-height:34px;margin:0;padding:4px;white-space:nowrap;font-size:12px}
+.auction-panels{display:flex;flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
+.auction-panels::-webkit-scrollbar{display:none}
+.auction-pane{flex:0 0 100%;width:100%;min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;scroll-snap-align:start;overscroll-behavior-y:contain;padding:1px 1px 5px}
+.auction-pane .fanta-asta{max-width:none;margin:0}
+.auction-pane .fanta-block{margin:0 0 10px;padding:6px 0}
+.auction-pane .dash-section-head{margin:0 0 6px}
+.auction-pane .fanta-a-admin-controls{margin:3px 0 6px;gap:5px}
+.auction-pane .fanta-a-admin-controls button{flex:1 1 120px;min-height:33px;padding:4px 7px;font-size:11px}
+.auction-pane .fanta-a-me{grid-template-columns:auto auto 1fr;margin:0 0 6px;padding:5px 8px;gap:4px 9px}
+.auction-pane .fanta-a-me strong{font-size:23px}
+.auction-pane .fanta-a-roles{grid-column:auto;justify-content:flex-end;gap:3px}
+.auction-pane .fanta-a-roles span{font-size:10px;gap:2px}
+.auction-pane .fanta-a-roles .fanta-role{width:15px;height:15px;font-size:8px}
+.auction-pane .fanta-a-order{margin:0 0 6px;padding:4px 6px}
+.auction-pane .fanta-a-order ol{margin:2px 0 0}
+.auction-pane .fanta-a-lot{padding:9px;border-radius:16px;gap:5px}
+.auction-pane .fanta-a-lot h2{font-size:25px;margin:0}
+.auction-pane .fanta-a-player{gap:8px}
+.auction-pane .fanta-a-shirt{width:48px;height:48px}
+.auction-pane .fanta-a-player .fanta-role{margin-bottom:2px}
+.auction-pane .fanta-a-player small{margin-top:2px;font-size:11px}
+.auction-pane .fanta-a-bid{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.auction-pane .fanta-a-bid strong{font-size:38px}
+.auction-pane .fanta-a-bid em{margin-top:0;font-size:12px}
+.auction-pane .fanta-a-raise{min-height:40px;border-radius:9px}
+.auction-pane .fanta-a-raise b{font-size:20px}
+.auction-pane .fanta-a-custom input,.auction-pane .fanta-a-custom button,.auction-pane .fanta-a-pass{min-height:36px;padding-block:3px}
+.auction-pane .fanta-a-pass small,.auction-pane .fanta-a-final{display:none}
+.auction-pane .fanta-a-history{gap:0;padding:3px 0 0}
+.auction-history-label{color:var(--muted);font-size:10px;line-height:1}
+.auction-pane .fanta-a-history li{height:18px;font-size:11px}
+.auction-pane .fanta-a-history li b{font-size:14px}
+.auction-wizard-form{display:flex;flex-direction:column;min-height:0;flex:1;gap:8px;margin:0}
+.auction-wizard-fields{overflow:auto;min-height:0;flex:1;display:grid;align-content:start;gap:10px;padding:3px}
+.auction-wizard-fields fieldset{border:0;padding:0;margin:0;min-width:0}
+.auction-wizard-fields legend,.auction-field{font-weight:750;font-size:13px}
+.auction-field{display:grid;gap:5px}
+.auction-field input,.auction-field select{min-height:44px;width:100%;color:var(--white);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:16px}
+.auction-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:4px}
+.auction-choices label,.auction-bots{display:flex;gap:7px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:12px;cursor:pointer}
+.auction-choices label:has(input:checked){border-color:var(--lime)}
+.auction-choices input,.auction-bots input{width:16px;height:16px;margin:0;flex:none;accent-color:var(--lime)}
+.auction-choices small,.auction-bots small,.auction-help{color:var(--muted);font-size:11px;line-height:1.3}
+.auction-choices small{display:block;margin-top:2px}
+.auction-bots{flex-wrap:wrap}
+.auction-bots small{flex-basis:100%}
+.auction-team-order{margin:0;padding:0;list-style:none}
+.auction-team-order li{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;border-top:1px solid var(--line);padding:3px 0}
+.auction-team-order button{min-width:40px;min-height:32px;border:1px solid var(--line);border-radius:8px;color:var(--white);background:var(--panel)}
+.auction-team-order button:disabled{opacity:.35}
+.auction-wizard-actions{display:flex;justify-content:flex-end;flex:none;gap:8px;padding:4px 0}
+.auction-wizard-actions button{min-height:44px}
+@media(max-height:760px){
+  .auction-room{gap:5px}
+  .auction-room .auction-page-head{min-height:54px}
+  .auction-pane .fanta-a-lot{gap:4px}
+  .auction-pane .fanta-a-player .fanta-role{display:none}
+  .auction-pane .fanta-a-history li{height:16px}
+}

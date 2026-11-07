@@ -612,6 +612,7 @@ export function createApi({
               "Il presidente deve riattivare la tua partecipazione alla lega",
               403,
             );
+          const team = c ? await joinLinkedTeam(c,l,u) : undefined;
           if (!l.members.some((x) => x.uid === u.id))
             l.members.push({
               uid: u.id,
@@ -620,8 +621,7 @@ export function createApi({
               points: 0,
               joinedAt: new Date().toISOString(),
             });
-          if(c)await joinLinkedTeam(c,l,u);
-          return { data: { ok: true,league:l.id } };
+          return { data: { ok: true,league:l.id,...(team?{team}: {}) } };
         }
         const l = s.leagues.find(
           (x) => x.id === p.league && x.members.some((m) => m.uid === u.id),

@@ -46,11 +46,18 @@ function buildListone() {
 
 const owned = t => A.players.filter(p => p.soldTo === t);
 const roleCount = (t, role) => owned(t).filter(p => p.role === role).length;
-const credits = t => AUCTION_RULES.budget + (A.adjustments?.[t]||0) - owned(t).reduce((s, p) => s + p.price, 0);
+const credits = t => (A.budget??AUCTION_RULES.budget) + (A.adjustments?.[t]||0) - owned(t).reduce((s, p) => s + p.price, 0);
 const slotsLeft = t => SLOTS - owned(t).length;
 // Puntata massima: deve restare almeno 1 credito per ogni posto ancora da riempire.
 const maxBid = t => slotsLeft(t) > 0 ? credits(t) - (slotsLeft(t) - 1) : 0;
 const roleOpen = (t, role) => roleCount(t, role) < AUCTION_RULES.roster[role];
+function availablePlayers(){
+ const roles=new Set(),skipped=new Set(A.randomSkipped||[]);
+ for(const t of A.order)if(maxBid(t)>0)for(const role of Object.keys(AUCTION_RULES.roster))if(roleOpen(t,role))roles.add(role);
+ return A.players.filter(p=>!p.soldTo&&!skipped.has(p.id)&&roles.has(p.role));
+}
+const currentRole=(players)=>A.config?.playerOrder==='roles'?Object.keys(AUCTION_RULES.roster).find(r=>(players||availablePlayers()).some(p=>p.role===r))||null:null;
+const drawPlayer=()=>{const players=availablePlayers(),role=currentRole(players);return pick(players.filter(p=>!role||p.role===role));};
 
 function init(now) {
   const order = Object.keys(TEAMS);
@@ -79,6 +86,7 @@ function autoPassReason(t, lot) {
 
 function sell(now) {
   const { lot } = A, p = A.players.find(x => x.id === lot.playerId);
+  if(!lot.leader){A.randomSkipped.push(p.id);A.skipped={player:p.name,at:now};A.lot=null;A.pauseUntil=now+2500;changed();return;}
   p.soldTo = lot.leader; p.price = lot.bid;
   A.lastSale = { id: 'sale-' + A.version, playerId: p.id, team: lot.leader, price: lot.bid, at: now };
   A.log.unshift(A.lastSale);
@@ -100,7 +108,7 @@ function openLot(caller, playerId, amount, now) {
   const p = A.players.find(x => x.id === playerId);
   // Quanto vuole spendere ogni squadra finta per questo giocatore (metà circa non è interessata).
   const wills = Object.fromEntries(A.order.filter(t => t !== MY_TEAM).map(t => [t, rand() < 0.5 ? 0 : Math.round(p.value * (0.7 + rand() * 0.7))]));
-  A.lot = { id: 'lot-' + A.version, playerId, bid: amount, leader: caller, endsAt: now + realMs(AUCTION_RULES.openSeconds), history: [{ team: caller, amount, at: now, call: true }], wills, passed: {} };
+  A.lot = { id: 'lot-' + A.version, playerId, bid: amount, leader: caller, endsAt: now + realMs(AUCTION_RULES.openSeconds), history: caller?[{ team: caller, amount, at: now, call: true }]:[], wills, passed: {} };
   A.callSince = null; A.skipped = null;
   changed();
   checkAllPassed(now);
@@ -135,7 +143,7 @@ function bots(now) {
 function botCall(t, now) {
   if (!A.callSince) { A.callSince = now; A.botDelay = 3000 + rand() * 9000; changed(); return; }
   if (now - A.callSince < A.botDelay) return;
-  const needs = Object.keys(AUCTION_RULES.roster).filter(r => roleOpen(t, r));
+  const need=currentRole(),needs = Object.keys(AUCTION_RULES.roster).filter(r => (!need||r===need)&&roleOpen(t, r));
   const role = pick(needs), free = A.players.filter(p => !p.soldTo && p.role === role).sort((a, b) => b.value - a.value).slice(0, 12);
   if (!free.length) { nextCaller(); changed(); return; }
   const p = pick(free);
@@ -146,7 +154,7 @@ function botCall(t, now) {
 function tick(now) {
   if (!A) init(now);
   // All'orario programmato la sala si apre da sola.
-  if (A.phase === 'scheduled' && now >= Date.parse(A.startsAt)) Object.assign(A, { phase: 'running', pauseUntil: now + 2500, lastTick: now, callerIdx: 0, callSince: null, version: A.version + 1 });
+  if (A.phase === 'scheduled' && now >= Date.parse(A.startsAt)) startRoom(now);
   if (A.mode === 'manual' || A.releasePhase || A.phase !== 'running') { A.lastTick = now; return; } // dal vivo o sala chiusa: niente timer
   let t = Math.max(A.lastTick, now - 120000);
   while (t < now) {
@@ -157,6 +165,10 @@ function tick(now) {
       continue;
     }
     if (t < A.pauseUntil) continue;
+    if(A.config?.nomination==='random'){const p=drawPlayer();if(!p){A.phase='ended';changed();break;}openLot(null,p.id,0,t);continue;}
+    const available=A.config?availablePlayers():null,need=currentRole(available);
+    if(available&&!available.length){A.phase='ended';changed();break;}
+    if(need)for(let i=0;i<A.order.length&&(!roleOpen(A.order[A.callerIdx],need)||maxBid(A.order[A.callerIdx])<1);i++)nextCaller();
     for (let i = 0; i < A.order.length && slotsLeft(A.order[A.callerIdx]) === 0; i++) nextCaller(); // rosa completa: si salta
     const caller = A.order[A.callerIdx];
     if (slotsLeft(caller) === 0) break; // asta finita
@@ -181,7 +193,7 @@ function auctionFor(leagueId, now = Date.now()) {
     closing: !!L.closing,
     passed: Object.keys(L.passed),
     autoPassed: Object.fromEntries(A.order.map(t => [t, t === L.leader ? null : autoPassReason(t, L)]).filter(([, r]) => r)),
-    history: L.history.slice(0, 10).map(h => ({ ...h, at: new Date(h.at).toISOString() })),
+    history: L.history.filter(h=>!h.pass).slice(0,5).map(h => ({ ...h, at: new Date(h.at).toISOString() })),
   };
   return {
     version: A.version,
@@ -189,26 +201,27 @@ function auctionFor(leagueId, now = Date.now()) {
     status: finished&&!A.releasePhase || A.phase === 'ended' ? 'ended' : A.phase,
  phase:A.releasePhase?'releases':'bidding',releaseBatchId:A.releaseBatchId,releases:A.releases||[],
     type: A.type,
+    config:A.config,currentRole:currentRole(),computerTeams:A.computerTeams,computerTeamsAvailable:true,singlePlayerAvailable:true,
     startsAt: A.startsAt,
     mode: A.mode,
     computerTeamsActive: A.mode==='live',
     isAdmin: isAdmin(leagueId),
     auctioneer: team(MY_TEAM).manager, // nell'anteprima il banditore è l'admin della lega
     table: A.mode === 'manual' && A.table ? (()=>{const p=A.players.find(p=>p.id===A.table);return {...playerView(p),...(A.releasePhase&&p.soldTo?{ownerTeam:team(p.soldTo),price:p.price}: {})};})() : null,
-    rules: AUCTION_RULES,
+    rules: {...AUCTION_RULES,budget:A.budget??AUCTION_RULES.budget},
     me: MY_TEAM,
     order: A.order,
-    caller,
+    caller:A.config?.nomination==='random'?null:caller,
     callDeadline: !L && A.callSince && now >= A.pauseUntil ? new Date(A.callSince + realMs(AUCTION_RULES.callSeconds)).toISOString() : null,
     pausedUntil: !L && now < A.pauseUntil ? new Date(A.pauseUntil).toISOString() : null,
-    skipped: A.skipped && now < A.pauseUntil ? { team: A.skipped.team } : null,
+    skipped: A.skipped && now < A.pauseUntil ? { team: A.skipped.team,player:A.skipped.player } : null,
     teams: A.order.map(t => ({
       team: team(t), credits: credits(t), maxBid: maxBid(t), slotsLeft: slotsLeft(t), online: t === MY_TEAM || hashNum('online:' + t) % 5 !== 0,computer:A.mode==='live'&&t!==MY_TEAM,
       roles: Object.fromEntries(Object.entries(AUCTION_RULES.roster).map(([r, max]) => [r, { have: roleCount(t, r), max }])),
     })),
     lot,
     lastSale: A.lastSale && { player: playerView(A.players.find(p => p.id === A.lastSale.playerId)), team: A.lastSale.team, price: A.lastSale.price, at: new Date(A.lastSale.at).toISOString() },
-    log: A.log.slice(0, A.mode === 'manual' ? 30 : 10).map(s => ({ id: s.id, manual: !!s.manual, player: playerView(A.players.find(p => p.id === s.playerId)), team: s.team, price: s.price })),
+    log: A.log.slice(0,5).map(s => ({ id: s.id, manual: !!s.manual, player: playerView(A.players.find(p => p.id === s.playerId)), team: s.team, price: s.price })),
     myRoster: owned(MY_TEAM).map(p => ({ ...playerView(p), price: p.price })),
   };
 }
@@ -308,23 +321,28 @@ function undoFake(leagueId, { saleId }, now = Date.now()) {
 // ---------- Programmazione dell'asta (admin) ----------
 
 
-function scheduleFake(leagueId, { type, mode, startsAt }, now = Date.now()) {
+function scheduleFake(leagueId, { type, mode, startsAt, config, computerTeams }, now = Date.now()) {
  select(leagueId);
   needAdmin(leagueId); tick(now);
   if (A.phase === 'running') throw Error('C\'è già un\'asta in corso: chiudila prima');
   if (!AUCTION_TYPES[type] || !['live', 'manual'].includes(mode)) throw Error('Dati dell\'asta non validi');
   if (!(Date.parse(startsAt) > now - 60000)) throw Error('Scegli una data futura');
-  Object.assign(A, { phase: 'scheduled', type, mode, startsAt, lot: null, table: null, callSince: null, skipped: null,releasePhase:type==='riparazione',releaseBatchId:'release-'+A.version,releases:[] });
+  Object.assign(A, { phase: 'scheduled', type, mode, startsAt, config, computerTeams, lot: null, table: null, callSince: null, skipped: null,releasePhase:type==='riparazione',releaseBatchId:'release-'+A.version,releases:[] });
   changed();
   return auctionFor(leagueId, now);
 }
 
+function startRoom(now){
+  if(A.config?.teamOrder)A.order=[...A.config.teamOrder];
+  A.budget=A.config?.budget??A.budget;
+  Object.assign(A, { phase:'running',pauseUntil:now+2500,lastTick:now,callerIdx:0,callSince:null,randomSkipped:[] });
+  changed();
+}
 function startFake(leagueId, now = Date.now()) {
  select(leagueId);
   needAdmin(leagueId); tick(now);
   if (A.phase === 'running') throw Error('L\'asta è già aperta');
-  Object.assign(A, { phase: 'running', startsAt: new Date(now).toISOString(), pauseUntil: now + 2500, lastTick: now, callerIdx: 0, callSince: null });
-  changed();
+  A.startsAt=new Date(now).toISOString();startRoom(now);
   return auctionFor(leagueId, now);
 }
 
@@ -348,8 +366,8 @@ function nominateFake(leagueId, { playerId, amount }, now = Date.now()) {
   tick(now);
   const p = A.players.find(x => x.id === playerId);
   needOpen();
-  if (A.lot || A.order[A.callerIdx] !== MY_TEAM || now < A.pauseUntil) throw Error('Non è il tuo turno di chiamata');
-  if (!p || p.soldTo) throw Error('Giocatore non disponibile');
+  if (A.lot || A.order[A.callerIdx] !== MY_TEAM || now < A.pauseUntil || A.config?.nomination==='random') throw Error('Non è il tuo turno di chiamata');
+  if (!p || p.soldTo || currentRole()&&p.role!==currentRole()) throw Error('Giocatore non disponibile');
   if (!roleOpen(MY_TEAM, p.role)) throw Error('Hai già tutti i giocatori di questo ruolo');
   if (amount < 1 || amount > maxBid(MY_TEAM)) throw Error(`Offerta tra 1 e ${maxBid(MY_TEAM)}`);
   openLot(MY_TEAM, playerId, amount, now);
@@ -371,7 +389,8 @@ function correctRoster(leagueId,kind,{teamId,playerId,price,toTeamId}){
  const target=kind==='move'?toTeamId:teamId,available=credits(target)+(kind==='price'?p.price:0);if(kind!=='remove'&&price>available)throw Error('Crediti insufficienti');
  if(kind==='remove'){p.soldTo=null;p.price=null;}else if(['add','price','move'].includes(kind)){p.soldTo=target;p.price=price;}else throw Error('Operazione non valida');changed();return {ok:true};
 }
-return {correctRoster,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,closeFake,cancelLotFake,auctionAssigned,release,releaseUndo,releasesDone};
+function drawFake(leagueId){select(leagueId);needAdmin(leagueId);needOpen();if(A.mode!=='manual'||A.config?.nomination!=='random'||A.releasePhase||A.table)throw Error('Estrazione non disponibile');const player=drawPlayer();if(!player)throw Error('Nessun giocatore disponibile');A.table=player.id;changed();return auctionFor(leagueId);}
+return {correctRoster,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,closeFake,cancelLotFake,drawFake,auctionAssigned,release,releaseUndo,releasesDone};
 }
 const defaultEngine=createDemoAuctionEngine();
 export const {correctRoster,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,closeFake,cancelLotFake,auctionAssigned,release,releaseUndo,releasesDone}=defaultEngine;

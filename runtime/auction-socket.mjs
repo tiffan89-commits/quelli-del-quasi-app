@@ -2,7 +2,7 @@ import {computerActionAt,computerDecision} from '../fanta/auction-computer.mjs';
 import {Server} from 'socket.io';
 import {connection} from '../lib/db.mjs';
 import {sqlFantaStore} from '../fanta/store.mjs';
-import {auctionView,auctionAction,auctionTickDue} from '../fanta/auction.mjs';
+import {auctionView,auctionAction,auctionTickDue,auctionTickNeedsCatalog} from '../fanta/auction.mjs';
 import {queueAuctionOpened} from '../fanta/notifications.mjs';
 import {dispatchFanta} from '../fanta/jobs.mjs';
 
@@ -80,7 +80,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
     // A caller without eligible players can only wait for the normal deadline.
     room.attemptedComputerTurn=planned;
    }
-  },{write:true,auction:true,catalog:!!room.state&&computerActionAt(room.state)!=null&&!room.state.auction.lot});
+  },{write:true,auction:true,catalog:!!room.state&&(auctionTickNeedsCatalog(room.state.auction)||computerActionAt(room.state)!=null&&!room.state.auction.lot)});
   if(notice)try{await dispatchFanta('auction-notify:'+notice);}catch{}
   }catch{log('AUCTION_TIMER_RETRY',{league:room.league});}
   await refresh(room);

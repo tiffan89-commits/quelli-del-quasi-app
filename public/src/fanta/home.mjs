@@ -137,8 +137,7 @@ function standings(h) {
 }
 
 // Quando l'asta è aperta è la cosa più urgente: un invito in cima, sopra la squadra.
-// Compare solo con l'asta aperta, o programmata entro 24 ore (allora porta alla sezione Asta della Lega).
-function auctionCard(h, now) {
+export function auctionCard(h, now) {
   const a = h.auction;
   if (!a) return '';
   if (a.status === 'running') {
@@ -150,11 +149,11 @@ function auctionCard(h, now) {
     </button>`;
   }
   const left = Date.parse(a.startsAt) - now;
-  if (a.status === 'scheduled' && left > 0 && left < 24 * 3600000) {
-    return `<button type="button" class="fanta-auction-card is-soon" data-tab="lega" data-lega-open="asta">
+  if (a.status === 'scheduled') {
+    return `<button type="button" class="fanta-auction-card is-soon" data-go="asta">
       <span class="eyebrow">Asta in arrivo</span>
       <b>${esc(a.title)}</b>
-      <small>${esc(dayTime(a.startsAt))} · ${a.mode === 'manual' ? 'dal vivo' : 'online'} · si apre tra <span data-countdown="${esc(a.startsAt)}">${countdown(a.startsAt, now)}</span></small>
+      <small>${esc(dayTime(a.startsAt))} · ${a.mode === 'manual' ? 'dal vivo' : 'online'}${left>0?` · si apre tra <span data-countdown="${esc(a.startsAt)}">${countdown(a.startsAt, now)}</span>`:''}</small>
       <span class="fanta-auction-cta">Vedi i dettagli <span aria-hidden="true">→</span></span>
     </button>`;
   }
@@ -162,15 +161,16 @@ function auctionCard(h, now) {
 }
 
 export function renderHome(h, now = Date.now()) {
-  if(h.competition?.status==='draft')return `${renderLeagueInvite(h.league,h.invite,{copied:h.inviteCopied})}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>`;
+  const invite=renderLeagueInvite(h.league,h.invite);
+  if(h.competition?.status==='draft')return `${auctionCard(h,now)}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>${invite}`;
   return `<div class="fanta-home">
     ${auctionCard(h, now)}
     ${hero(h)}
-    ${renderLeagueInvite(h.league,h.invite,{copied:h.inviteCopied})}
     ${nextMove(h, now)}
 
     ${matchCard(h, now)}
     ${lastResult(h)}
+    ${invite}
     ${standings(h)}
   </div>`;
 }

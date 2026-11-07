@@ -1,6 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
 import {mountFanta} from '../public/src/fanta/app.mjs';import {createDemoFantaApi} from '../public/src/fanta/demo-api.mjs';
 import {auctionAction,auctionView,teamBudget} from '../fanta/auction.mjs';import {DEFAULT_RULES} from '../fanta/rules.mjs';
+import {auctionAudio,renderAsta} from '../public/src/fanta/asta.mjs';
 const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 test('release dialog survives refund clicks, live refresh and failed submission; close exits the release screen and stale polls cannot reopen it',async()=>{
  const demo=createDemoFantaApi({delay:0}),leagues=await demo.leagues(),home=await demo.home(leagues[0].id),original=await demo.auction(leagues[0].id);
@@ -23,6 +24,29 @@ test('release dialog survives refund clicks, live refresh and failed submission;
  state={...a,version:1};await poll();assert.match(root.textContent,/Asta chiusa/,'stale in-flight snapshot must not undo close');
  }finally{app?.destroy();for(const [k,d]of saved)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
+test('wizard choices independently control draw mode, role order and team order, and offers stay limited in the room',()=>{
+ const state={league:{adminUid:'u1'},rules:{...DEFAULT_RULES,roster:{P:1,D:1,C:1,A:1}},teams:['t1','t2'].map((id,i)=>({id,name:id,userId:'u'+(i+1),roster:[]})),players:[{id:'striker',name:'Punta',role:'A'},{id:'keeper',name:'Portiere',role:'P'}],auction:{status:'none',version:1,log:[],order:[]}};
+ const opts={admin:true,now:1000,rng:()=>0,id:()=> 'lot'};
+ const start=(nomination,playerOrder,teamOrder)=>auctionAction(state,'start-now',{mode:'live',type:'iniziale',config:{budget:650,nomination,playerOrder,teamOrder}},'u1',opts);
+ const personal=start('personal','roles',['t2','t1']);assert.equal(personal.auction.caller,'t2');assert.equal(personal.auction.currentRole,'P');
+ assert.throws(()=>auctionAction(personal,'nominate',{playerId:'striker'},'u2',opts),/ruolo/);
+ assert.throws(()=>start('personal','roles',['t1','t1']),/ordine/);
+ const random=start('random','mixed',null);assert.equal(random.auction.lot.player.id,'striker');assert.equal(random.auction.lot.leader,null);assert.equal(random.auction.lot.bid,0);assert.equal(teamBudget(random.teams[0],random.rules).credits,650);
+ let next=start('random','roles',null);assert.equal(next.auction.lot.player.id,'keeper');
+ for(let i=1;i<=7;i++)next=auctionAction(next,'bid',{lotId:'lot',amount:i},i%2?'u1':'u2',{...opts,now:1000+i});
+ assert.equal(next.auction.lot.history.length,7);const view=auctionView(next,'u1');assert.deepEqual(view.lot.history.map(h=>h.amount),[3,4,5,6,7]);
+ const {document}=parseHTML(renderAsta(view));assert.deepEqual([...document.querySelectorAll('.fanta-a-history li b')].map(x=>Number(x.textContent)),[7,6,5,4,3]);
+ assert.equal(document.querySelectorAll('[data-auction-panel]').length,3);assert.equal(document.querySelectorAll('.auction-page-head [data-ends]').length,1);
+});
+
+test('auction audio alerts once per deadline and respects mute',async()=>{
+ let played=0;
+ class Audio {state='running';currentTime=0;resume(){return Promise.resolve();}createOscillator(){return {frequency:{setValueAtTime(){}},connect(){},start(){played++;},stop(){}};}createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){}};}}
+ const sound=auctionAudio({AudioContext:Audio});sound.alert('first');assert.equal(played,0);
+ await sound.set(true);sound.alert('first');sound.alert('first');sound.alert('second');assert.equal(played,2);
+ await sound.set(false);sound.alert('third');assert.equal(played,2);
+});
+
 test('release auction closes safely in both modes, refunds and undo persist exact budgets, and restart creates a new release batch',()=>{
  for(const mode of ['manual','live']){
  let s={league:{adminUid:'u1'},rules:structuredClone(DEFAULT_RULES),players:[{id:'p',role:'A',name:'Calciatore'}],teams:[{id:'t1',userId:'u1',creditAdjustment:0,roster:[{id:'p',role:'A',name:'Calciatore',price:10}]},{id:'t2',userId:'u2',roster:[]}],auction:{status:'none',version:1,log:[],order:[]}};
