@@ -63,3 +63,23 @@ test('admin wipe atomically removes a Bar and its Fanta, and refuses a changed l
  }
  assert.ok((await db.query("SELECT count(*)::int AS n FROM fanta.players")).rows[0].n>0);
 });
+
+test('only the verified president can delete their Bar and linked Fanta with the exact phrase',async t=>{
+ const {db,connect,close}=await fixtureDb();t.after(close);
+ const migration=await readFile(new URL('../netlify/database/migrations/012_random_leagues.sql',import.meta.url),'utf8');await db.exec('BEGIN;'+migration+'COMMIT;');
+ const {s,p,l}=fixture(),member={id:'member',name:'Membro',emailVerified:true},fanta='fanta-lucas-a';
+ s.users.push(member);l.demo=false;l.members.push({uid:member.id});l.nativeFantaLink={leagueId:fanta};const other=newLeague(s,member,'Altro Bar',true);
+ const presidentToken=session(s,p.id),memberToken=session(s,member.id),phrase='ELIMINA LEGA E STORICO';
+ await db.query('UPDATE fanta_state SET payload=$1 WHERE id=1',[s]);
+ await db.query("INSERT INTO fanta.competitions(id,league_id,name,kind,status) VALUES('owned-comp',$1,'Coppa','league','draft')",[fanta]);
+ await db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key) VALUES($1,$2,'owned-comp','native:owned')",[l.id,fanta]);
+ const api=createApi({transact:fn=>transaction(fn,{connect}),env});
+ const remove=(token,confirmation)=>api(new Request('https://example.test/api/league-delete',{method:'POST',headers:{cookie:'sid='+token,'content-type':'application/json'},body:JSON.stringify({league:l.id,phrase:confirmation})}));
+ assert.equal((await remove(memberToken,phrase)).status,403);
+ assert.equal((await remove(presidentToken,'elimina')).status,409);
+ assert.equal((await db.query('SELECT count(*)::int n FROM fanta.leagues')).rows[0].n,1);
+ const response=await remove(presidentToken,phrase);assert.equal(response.status,200,await response.clone().text());
+ assert.equal((await db.query('SELECT count(*)::int n FROM fanta.leagues')).rows[0].n,0);
+ const {payload}= (await db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0];
+ assert.deepEqual(payload.leagues.map(l=>l.id),[other.id]);assert.ok(payload.users.some(u=>u.id===member.id));
+});

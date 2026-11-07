@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
 import {mountFanta} from '../public/src/fanta/app.mjs';import {createDemoFantaApi} from '../public/src/fanta/demo-api.mjs';
 import {auctionAction,auctionView,teamBudget} from '../fanta/auction.mjs';import {DEFAULT_RULES} from '../fanta/rules.mjs';
-import {auctionAudio,renderAsta} from '../public/src/fanta/asta.mjs';
+import {auctionAudio,renderAsta,shownSeconds} from '../public/src/fanta/asta.mjs';
 const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 test('release dialog survives refund clicks, live refresh and failed submission; close exits the release screen and stale polls cannot reopen it',async()=>{
  const demo=createDemoFantaApi({delay:0}),leagues=await demo.leagues(),home=await demo.home(leagues[0].id),original=await demo.auction(leagues[0].id);
@@ -49,13 +49,14 @@ test('wizard choices independently control draw mode, role order and team order,
  assert.equal(document.querySelectorAll('[data-auction-panel]').length,3);assert.equal(document.querySelectorAll('.auction-page-head [data-ends]').length,1);
 });
 
-test('auction audio alerts once per deadline and respects mute',async()=>{
+test('the last five displayed seconds span three real seconds and each of them beeps once',async()=>{
  let played=0;
  class Audio {state='running';currentTime=0;resume(){return Promise.resolve();}createOscillator(){return {frequency:{setValueAtTime(){}},connect(){},start(){played++;},stop(){}};}createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){}};}}
  const sound=auctionAudio({AudioContext:Audio});sound.alert('first');assert.equal(played,0);
- await sound.set(true);sound.alert('first');sound.alert('first');sound.alert('second');assert.equal(played,2);
- sound.offer();assert.equal(played,3);
- await sound.set(false);sound.alert('third');sound.offer();assert.equal(played,3);
+ assert.equal(shownSeconds(3000,5,3,30),5);assert.equal(shownSeconds(30000,5,3,30),30);
+ await sound.set(true);for(const n of [3,3,2,2,1,1])sound.alert('first',n);assert.equal(played,3);
+ sound.offer();assert.equal(played,4);
+ await sound.set(false);sound.alert('third');sound.offer();assert.equal(played,4);
 });
 
 test('initial and repair auctions depend on roster completion; disabled computers never enter the caller rotation',()=>{

@@ -4,6 +4,7 @@ import {leagueEmblem} from '../league-theme.mjs';
 import {leagueCreationFields,leagueCreationPayload} from '../league-create-form.mjs';
 // Selettore lega v2: chip in alto con ruolo e crediti, bottom sheet con tutte le leghe.
 import { sourceOf, isClosed } from '../slip-state.mjs';
+import {paintAuctionBadges} from '../auction-index.mjs';
 
 export const isLeagueAdmin = (league, uid) =>
   league?.admin === uid || (Array.isArray(league?.admins) && league.admins.includes(uid)); // admins[]: co-admin, lato backend
@@ -25,7 +26,7 @@ export function renderLeagueChip(league, uid, esc, fmt, mode='', account=null, c
   return '<header class="v2-top"><button type="button" class="v2-league-chip" id="v2-open-leagues" aria-haspopup="dialog" title="Cambia lega, entra o crea una lega">' +
     leagueEmblem(league) +
     '<span class="v2-league-name">' + esc(league.name) + '</span>' +
-    '<span class="league-add" aria-hidden="true">+</span></button><div class="ux-controls">' + mode +
+    '<span class="auction-index-dot" data-auction-indicator="*" aria-label="Asta in corso" hidden></span><span class="league-add" aria-hidden="true">+</span></button><div class="ux-controls">' + mode +
     (me ? '<div class="v2-credits"><b>' + fmt(me.credits ?? 0) + '</b><span>'+esc(caption)+'</span></div>' : '') +
     presidentEntry()+'</div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
 }
@@ -38,7 +39,7 @@ export function renderLeagueSheet(leagues, activeId, uid, esc) {
       const a = attentionOf(l, uid), admin = isLeagueAdmin(l, uid);
       return '<button type="button" class="v2-league-row' + (l.id === activeId ? ' is-active' : '') + '" data-v2-league="' + esc(l.id) + '">' +
         leagueEmblem(l) +
-        '<span class="v2-league-info"><b>' + esc(l.name) + '</b><small class="' + (a.level === 'warn' ? 'orange' : '') + '">' +
+        '<span class="v2-league-info"><b>' + esc(l.name) + (l.nativeFantaLink?.leagueId?'<span class="auction-index-tag" data-auction-indicator="'+esc(l.nativeFantaLink.leagueId)+'" hidden>ASTA</span>':'') + '</b><small class="' + (a.level === 'warn' ? 'orange' : '') + '">' +
         ((l.members?.length || 0) === 1 ? '1 membro' : (l.members?.length || 0) + ' membri') + ' · ' + esc(a.text) + '</small></span>' +
         '<span class="v2-role' + (admin ? ' is-admin' : '') + '">' + (admin ? 'ADMIN' : 'MEMBRO') + '</span></button>';
     }).join('') +
@@ -55,6 +56,7 @@ export function bindLeagueSwitcher({ leagues, activeId, uid, esc, onSelect, onSu
   const openSheet = () => {
     root.hidden = false;
     root.innerHTML = renderLeagueSheet(leagues, activeId, uid, esc);
+    paintAuctionBadges(root);
     root.querySelector('#v2-sheet-close').onclick = close;
     root.querySelectorAll('[data-v2-league]').forEach(b => b.onclick = () => { close(); onSelect(b.dataset.v2League); });
     const forms = [...root.querySelectorAll('.v2-sheet-form')];

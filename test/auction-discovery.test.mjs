@@ -39,17 +39,22 @@ test('discovery starts immediately, polls every second, resumes and drops stale 
  ctx.active=true;const final=watch.check();watch.stop();resolve({status:'running',version:3});await final;assert.equal(opened,1);assert.equal(stopped,true);
 });
 
-test('participant auto-enters a newly opened auction once, can leave it, and direct links start polling',async()=>{
+test('an auction only updates its banner; unrelated versions preserve the page and entry requires a click',async()=>{
  const {window,document}=parseHTML('<html><head></head><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
  const keys=['Event','window','document','location','history','localStorage','scrollTo','requestAnimationFrame','setInterval','clearInterval'],old=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)])),checks=[];
  Object.assign(globalThis,{Event:window.Event,window,document,location:{hash:'',pathname:'/',search:''},history:{pushState(){},replaceState(){}},localStorage:{getItem:()=>null,setItem(){}},scrollTo(){},requestAnimationFrame:fn=>fn(),setInterval:(fn,ms)=>{if(fn.name==='check')checks.push(fn);return 1;},clearInterval(){}});
  let instance;const settle=()=>new Promise(r=>setImmediate(r));
  try{
-  const base=createDemoFantaApi({delay:0});await base.auctionClose('lega-quasi');let reads=0;
+  const base=createDemoFantaApi({delay:0,fullRosters:false});await base.auctionClose('lega-quasi');let reads=0;
   const api={...base,auctionStatus:async id=>{const a=await base.auction(id);return {status:a.status,startsAt:a.startsAt,version:a.version};},auction:async id=>{reads++;return {...await base.auction(id),isAdmin:false};}},root=document.getElementById('app');
   instance=mountFanta(root,{api,initialTab:'oggi'});await instance.ready;await settle();assert.ok(root.querySelector('.fanta-home'));
-  await base.auctionStartNow('lega-quasi','manual');await checks[0]();await settle();assert.ok(root.querySelector('.fanta-asta'));assert.ok(reads>0);
-  root.querySelector('[data-tab="oggi"]').dispatchEvent(new window.Event('click',{bubbles:true}));await checks[0]();await settle();assert.ok(root.querySelector('.fanta-home'));
+  const home=root.querySelector('.fanta-home');
+  await base.auctionStartNow('lega-quasi','manual',undefined,{type:'iniziale'});await checks[0]();await settle();
+  assert.equal(root.querySelector('.fanta-home'),home);assert.equal(reads,0);
+  const banner=home.querySelector('[data-go="asta"]');assert.ok(banner);assert.equal(home.querySelectorAll('[data-go="asta"]').length,1);
+  const players=await base.auctionPlayers('lega-quasi');await base.auctionTable('lega-quasi',players[0].id);await checks[0]();
+  assert.equal(home.querySelector('[data-go="asta"]'),banner);assert.equal(reads,0);
+  banner.dispatchEvent(new window.Event('click',{bubbles:true}));await settle();assert.ok(root.querySelector('.fanta-asta'));assert.ok(reads>0);
   instance.destroy();location.hash='#/fanta/asta';reads=0;instance=mountFanta(root,{api});await instance.ready;await settle();assert.ok(reads>0);assert.ok(root.querySelector('.fanta-asta'));
  }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });

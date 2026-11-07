@@ -14,9 +14,8 @@ export function watchAuction({read,context,onRunning,onStatus=()=>{},setTimer=se
    if(lastLeague!==before.league){lastLeague=before.league;lastVersion=null;}
    const key=data.status+':'+data.version;
    if(key!==lastVersion){lastVersion=key;onStatus(data);}
-   // Retry delivery after an editor closes, even when the version is unchanged.
-   if(data.status==='running')onRunning(data);
-   else if(data.status==='scheduled'&&Date.parse(data.startsAt)<=Date.now())onRunning({...data,due:true});
+   if(data.status==='running')onRunning?.(data);
+   else if(data.status==='scheduled'&&Date.parse(data.startsAt)<=Date.now())onRunning?.({...data,due:true});
   }catch{}finally{busy=false;}
  }
  const timer=setTimer(check,1000);void check();

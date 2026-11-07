@@ -132,6 +132,7 @@ export function renderFantaPresident(l,ui={},now=Date.now()){
  }),
  identita:{summary:bar?'Colori e simbolo condivisi con il Bar':'Identità della lega',html:bar?'<p>Il simbolo, il colore e il motto sono comuni a Bar e Fanta.</p><button type="button" class="secondary" data-mode="bar" data-bar-page="admin">Modifica identità nel Bar</button>':'<p>Lo stemma della tua squadra si modifica dalla pagina Oggi.</p>'}
  }:{}),
- account:{summary:'Il tuo account, avvisi e assistenza',html:renderIo(ui.me,[],null,{...ui.io,settingsOnly:true,pilot:l.league.kind==='pilot'},ui.demo)+(ui.accountHtml||'<button type="button" class="secondary" data-mode="bar" data-bar-page="profilo">Gestisci account e assistenza</button>')}
+ account:{summary:'Il tuo account, avvisi e assistenza',html:renderIo(ui.me,[],null,{...ui.io,settingsOnly:true,pilot:l.league.kind==='pilot'},ui.demo)+(ui.accountHtml||'<button type="button" class="secondary" data-mode="bar" data-bar-page="profilo">Gestisci account e assistenza</button>')},
+ ...(l.isAdmin&&bar?.admin===ui.me?.id&&!ui.demo?{elimina:{summary:'Bar, Fanta e storico',html:'<button type="button" class="secondary league-delete-action" data-mode="bar" data-bar-page="admin" data-president-group="elimina">Apri conferma di eliminazione</button>'}}:{})
  }});
 }

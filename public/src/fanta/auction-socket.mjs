@@ -1,21 +1,12 @@
 import {auctionClockOffset} from './auction-watch.mjs';
-let clientScript;
-function loadClient(){
- if(typeof window.io==='function')return Promise.resolve(window.io);
- if(!clientScript)clientScript=new Promise((resolve,reject)=>{
-  const script=document.createElement('script'),timeout=setTimeout(()=>{script.remove();reject(Error('Socket.IO non disponibile'));},8000);
-  script.src='/socket.io/socket.io.js';script.async=true;
-  script.onload=()=>{clearTimeout(timeout);typeof window.io==='function'?resolve(window.io):reject(Error('Client non disponibile'));};
-  script.onerror=()=>{clearTimeout(timeout);script.remove();reject(Error('Client non disponibile'));};document.head.append(script);
- }).catch(error=>{clientScript=null;throw error;});return clientScript;
-}
+import {loadSportsClient} from '../sports-push.mjs';
 
 // A shared server snapshot is pushed to every participant; HTTP is recovery only.
-export function createAuctionSocket({context,onData,onPresence=()=>{},onConnection=()=>{},factory=loadClient,setTimer=setInterval,clearTimer=clearInterval}={}){
+export function createAuctionSocket({context,onData,onStatus=()=>{},onPresence=()=>{},onConnection=()=>{},factory=loadSportsClient,setTimer=setInterval,clearTimer=clearInterval}={}){
  let socket=null,league=null,closed=false,opening=false,healthy=false,last=null,offset=null,retryAt=0,roomSent=null;
- function updateRoom(){if(socket?.connected){const inRoom=!!context().inRoom;if(roomSent!==inRoom){roomSent=inRoom;socket.emit('auction:room',inRoom);}}}
+ function updateRoom(){if(socket?.connected){const inRoom=!!context().inRoom;if(roomSent!==inRoom){roomSent=inRoom;if(!inRoom){last=null;healthy=false;}socket.emit('auction:room',inRoom);}}}
  function disconnect(){healthy=false;last=null;socket?.removeAllListeners();socket?.disconnect();socket=null;league=null;onPresence([]);onConnection(false);}
- function clock(){if(!socket?.connected)return;const started=Date.now();socket.timeout(3000).emit('auction:clock',(error,reply)=>{if(error){healthy=false;onConnection(false);return;}offset=auctionClockOffset(reply.serverTime,started);});}
+ function clock(){if(!socket?.connected||!context().inRoom)return;const started=Date.now();socket.timeout(3000).emit('auction:clock',(error,reply)=>{if(error){healthy=false;onConnection(false);return;}offset=auctionClockOffset(reply.serverTime,started);});}
  async function check(){
   if(closed)return;const c=context();
   if(!c.active||!c.league){if(socket)disconnect();return;}
@@ -23,11 +14,12 @@ export function createAuctionSocket({context,onData,onPresence=()=>{},onConnecti
   if(opening||Date.now()<retryAt)return;opening=true;
   try{
    const io=await factory();if(closed||!context().active||context().league!==c.league)return;
-   league=c.league;socket=io({path:'/socket.io',transports:['websocket'],withCredentials:true,auth:{league},reconnection:true,reconnectionDelay:500,reconnectionDelayMax:5000,timeout:5000,forceNew:true});
+   league=c.league;socket=io({path:'/socket.io',transports:['websocket'],withCredentials:true,auth:{league,passive:true},reconnection:true,reconnectionDelay:500,reconnectionDelayMax:5000,timeout:5000});
    socket.on('connect',()=>{healthy=false;roomSent=null;onConnection(false);updateRoom();clock();});
+   socket.on('auction:status',message=>{if(!closed&&context().league===league&&message.league===league)onStatus(message.data);});
    socket.on('auction:presence',ids=>{if(Array.isArray(ids)&&context().league===league)onPresence(ids);});
    socket.on('auction:update',(message,ack)=>{
-    if(closed||!context().active||context().league!==league||message.league!==league)return;
+    if(closed||!context().active||!context().inRoom||context().league!==league||message.league!==league)return;
     const data=message.data;if(!data||!Number.isInteger(data.version))return;
     if(last&&data.version<last.version){ack?.({version:data.version,applied:false});return;}
     last=data;healthy=true;onConnection(true);

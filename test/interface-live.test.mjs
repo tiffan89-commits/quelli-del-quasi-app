@@ -108,7 +108,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   const ctx = {
     mountPublic(root){root.innerHTML='<main>PUBLIC-AREA</main>';return {destroy(){},route(){}};},createPublicApi(){return {};},
     readAppRoute,writeAppRoute,saveOnce,applySlipReceipt,loadAppStyles(){},displayCache,clearDisplayCaches,retainAppHeader(){},barModeSwitch,preferredFanta:()=>false,leaveFanta(){},clearFantaSessions(){},enterFanta(){fantaEntries++;},
-    createSportsPush(){return {start(){},wake(){},stop(){}};},
+    createSportsPush(){return {start(){},wake(){},stop(){}};},trackAuctionBadges(){},paintAuctionBadges(){},
     createLiveChannel(){return {start(){},wake(){},stop(){}};},requestJson:async()=>{requestCount++;if(blockRequests)return new Promise(resolve=>pendingRequests.push(resolve));return state;},
     barSlipsView,barVerdictPatch,barProfileView,
     randomLeagueControls,bindRandomLeagues,

@@ -12,6 +12,7 @@ const RAISES = [1, 5, 10];
 const RING = 2 * Math.PI * 26;
 
 const teamOf = (a, id) => a.teams.find(t => t.team.id === id);
+const memberOf=(ui,t)=>ui.members?.find(m=>t?.team.userId&&m.uid===t.team.userId);
 const fm = n => n == null ? '–' : pts(n, 2);
 
 const ROLE_PLURAL = { P: 'portieri', D: 'difensori', C: 'centrocampisti', A: 'attaccanti' };
@@ -31,9 +32,9 @@ export function bidState(a) {
 }
 
 // Il timer mostra `total` secondi ma gli ultimi `final` durano `stretch` secondi veri.
-export function shownSeconds(leftMs, final, stretch) {
+export function shownSeconds(leftMs, final, stretch, total=60) {
   const s = leftMs / 1000;
-  return s > stretch ? s - (stretch - final) : s * final / stretch;
+  return s > stretch ? final+(total-final)*(s-stretch)/Math.max(1,total-stretch) : s * final / stretch;
 }
 
 function myBar(a) {
@@ -57,7 +58,7 @@ function ring(endsAt, total, label, rules) {
 
 function lotCard(a, ui) {
   const lot = a.lot, p = lot.player, leader = teamOf(a, lot.leader), st = bidState(a);
-  const member=ui.members?.find(m=>leader?.team.userId&&m.uid===leader.team.userId);
+  const member=memberOf(ui,leader),outbid=ui.outbid&&ui.offerUntil>Date.now();
   const bidder=leader?.computer?'Computer':member?.name||leader?.team.manager||leader?.team.name;
   const raise = RAISES.map(n => {
     const amount = lot.bid + n;
@@ -72,7 +73,7 @@ function lotCard(a, ui) {
         <small>${esc(p.club)} · valore ${p.value??'–'} · FM ${fm(p.fm)} · ${p.played??'–'} pres.</small></div>
     </div>
     <div class="fanta-a-bidrow">
-      <div class="fanta-a-bid${ui.offerUntil>Date.now()?' is-new-offer':''}"><span>Offerta</span><strong>${lot.bid}</strong>
+      <div class="fanta-a-bid${ui.offerUntil>Date.now()?' is-new-offer':''}${outbid?' is-outbid':''}"><span>${outbid?'Ti hanno superato!':'Offerta'}</span><strong>${lot.bid}</strong>
         ${leader?`<div class="auction-bidder"><span class="auction-bidder-avatar" aria-hidden="true">${leader.computer?'🤖':avatarSvg(member?.avatar)}</span><span><b>${esc(bidder)}</b><small>${esc(leader.team.name)}${lot.leader===a.me?' · Tu':''}</small></span></div>`:'<em>Prima offerta libera</em>'}</div>
     </div>
     <p class="fanta-a-final" aria-hidden="true">Sta per scadere!</p>
@@ -91,7 +92,7 @@ function lotCard(a, ui) {
 }
 
 const human=t=>t.human??(!t.computer&&!!t.team.userId);
-const orderedTeams=a=>(a.order||[]).map(id=>teamOf(a,id)).filter(t=>t&&(human(t)||t.computer));
+const orderedTeams=a=>(a.order||[]).map(id=>teamOf(a,id)).filter(t=>t&&(a.mode==='manual'||human(t)||t.computer));
 
 function orderStrip(a) {
   const current=teamOf(a,a.caller);
@@ -111,8 +112,8 @@ function lobbyCard(a,ui){
   return `<section class="auction-lobby"><h2>${a.lobbyEndsAt?'Si parte!':'Sala d’attesa'}</h2>
     <p>${people.filter(t=>connected.has(t.team.id)).length}/${people.length} allenatori in sala</p>
     <ul class="auction-lobby-members">${people.map(t=>{
-      const here=connected.has(t.team.id);
-      return `<li><i class="${here?'is-online':''}"></i><span><b>${esc(t.team.manager||t.team.name)}</b><small>${esc(t.team.name)}</small></span><small>${here?'Connesso':'Disconnesso'}</small></li>`;
+      const here=connected.has(t.team.id),member=memberOf(ui,t);
+      return `<li><i class="${here?'is-online':''}"></i><span class="auction-bidder-avatar" aria-hidden="true">${avatarSvg(member?.avatar)}</span><span><b>${esc(member?.name||t.team.manager||t.team.name)}</b><small>${esc(t.team.name)}</small></span><small>${here?'Connesso':'Disconnesso'}</small></li>`;
     }).join('')}</ul>
     ${allHere||a.lobbyEndsAt?a.config?.nomination==='random'?'<p>Chiamata automatica a estrazione.</p>':`<h3>Ordine di chiamata</h3><ol class="auction-lobby-order">${orderedTeams(a).map(t=>`<li>${esc(t.team.name)}</li>`).join('')}</ol>`:''}
     ${ui.error?`<p class="fanta-note is-alert" role="alert">${esc(ui.error)}</p>`:''}
@@ -154,7 +155,7 @@ function lotTag(a, id) {
   const lot = a.lot;
   if (!lot) return a.mode !== 'manual' && id === a.caller ? ' <em>chiama</em>' : '';
   if (lot.leader === id) return ' <em>in testa</em>';
-  if (lot.passed.includes(id)) return ' <em class="is-pass">passa</em>';
+  if (lot.passed.includes(id)) return ' <em class="is-pass auction-passed">Passa</em>';
   if (lot.autoPassed[id]) return ` <em class="is-pass">${lot.autoPassed[id] === 'role' ? 'ruolo pieno' : 'senza crediti'}</em>`;
   return '';
 }
@@ -165,7 +166,7 @@ function teamsList(a,ui) {
   return `<section class="fanta-block"><div class="dash-section-head"><div><h2>Partecipanti</h2><small>crediti · puntata max · posti da riempire</small></div></div>
     <ul class="fanta-a-teams">${order.map((t, i) => `<li class="${t.team.id === a.me ? 'is-me' : ''}${t.team.id === a.caller ? ' is-caller' : ''}">
       <i class="fanta-dot" style="background:${esc(t.team.color)}"></i>
-      <span class="fanta-p-name"><b>${a.mode === 'manual' ? '' : `${i + 1}. `}${esc(t.team.name)}${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':human(t)?esc(t.team.manager)+(connected.has(t.team.id)?' · connesso':' · disconnesso'):'Senza allenatore'}</small></span>
+      <span class="fanta-p-name"><b><button type="button" class="auction-team-name" data-auction-team="${esc(t.team.id)}" aria-haspopup="dialog">${a.mode === 'manual' ? '' : `${i + 1}. `}${esc(t.team.name)}</button>${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':human(t)?esc(t.team.manager)+(connected.has(t.team.id)?' · connesso':' · disconnesso'):'Senza allenatore'}</small></span>
       <span class="fanta-a-num"><b>${t.credits}</b><small>cr</small></span>
       <span class="fanta-a-num"><b>${t.maxBid}</b><small>max</small></span>
       <span class="fanta-a-num"><b>${t.slotsLeft}</b><small>posti</small></span>
@@ -301,9 +302,10 @@ export function renderAsta(a, ui = {}, players = null) {
   const panes=[center,a?teamsList(a,ui)+logList(a):'',a?myRoster(a):''];
   const panel=ui.panel||0;
   return `<section class="fanta-asta auction-room" aria-label="Sala d’asta">
-    <header class="auction-page-head"><button type="button" class="secondary" data-auction-exit="1">Esci ×</button><div><span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1><p data-auction-connection role="status"></p></div>${timer}${online?`<button type="button" class="auction-sound secondary" data-auction-sound="1" aria-pressed="${!!ui.sound}" aria-label="${ui.sound?'Disattiva audio':'Attiva audio'}">${ui.sound?'♫':'♪'}</button>`:''}</header>
+    <header class="auction-page-head"><button type="button" class="secondary" data-auction-exit="1">Esci ×</button><div><span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1><p data-auction-connection role="status"></p></div>${timer}</header>
     <nav class="auction-room-tabs" aria-label="Schede dell’asta">${roomPanels.map((text,i)=>`<button type="button" class="v2-chip${i===panel?' is-active':''}" aria-pressed="${i===panel}" data-auction-panel="${i}">${text}</button>`).join('')}</nav>
     <div class="auction-panels" data-auction-panels>${panes.map((html,i)=>`<section class="auction-pane" aria-label="${roomPanels[i]}">${html}</section>`).join('')}</div>
+    ${online?`<div class="auction-countdown-overlay${lobby?' is-start':''}" data-auction-countdown-overlay hidden><div><small>${lobby?'L’asta inizia tra':'Tempo in scadenza'}</small><strong data-overlay-seconds>–</strong></div></div>`:''}
   </section>`;
 }
 // ---------- Listone per la chiamata ----------
@@ -351,18 +353,22 @@ export function renderListoneSheet(players, a, ui) {
 // Negli ultimi secondi (rallentati) il timer e la card del giocatore vanno in "allarme".
 export function tickAuction(root, offset = 0, onFinal) {
   const now = Date.now() + offset;
+  const overlay=root.querySelector('[data-auction-countdown-overlay]');
+  let overlaySeconds=null;
   for (const el of root.querySelectorAll('[data-ends]')) {
-    const final = Number(el.dataset.final || 3), stretch = Number(el.dataset.stretch || 3), total = Number(el.dataset.total);
-    const shown = Math.max(0, shownSeconds(Math.max(0, Date.parse(el.dataset.ends) - now), final, stretch));
-    const inFinal = shown > 0 && shown <= final;
+    const lobby=overlay?.classList.contains('is-start'),total=Number(el.dataset.total),left=Math.max(0,Date.parse(el.dataset.ends)-now);
+    const shown=lobby||total<=5?left/1000:shownSeconds(left,5,3,total);
+    const inFinal=left>0&&left<=3000;
     el.querySelector('[data-seconds]').textContent = Math.ceil(shown);
     el.querySelector('.bar')?.setAttribute('stroke-dashoffset', String(RING * (1 - Math.min(1, shown / total))));
     el.classList.toggle('is-final', inFinal);
     el.closest('.fanta-a-lot')?.classList.toggle('is-final', inFinal);
-    if(inFinal)onFinal?.(el.dataset.ends);
+    if(left>0&&el.closest('.auction-page-head')&&(lobby||inFinal))overlaySeconds=Math.ceil(shown);
+    if(inFinal)onFinal?.(el.dataset.ends,Math.ceil(left/1000));
     // Una volta sola per timer, e solo dopo che l'utente ha toccato la pagina (il browser lo richiede).
     if (inFinal && vibratedFor !== el.dataset.ends) { vibratedFor = el.dataset.ends; if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.([40, 60, 40]); }
   }
+  if(overlay){overlay.hidden=overlaySeconds===null;if(overlaySeconds!==null)overlay.querySelector('[data-overlay-seconds]').textContent=overlaySeconds;}
 }
 let vibratedFor = null;
 
@@ -384,9 +390,10 @@ export function auctionAudio(win){
       if(!Audio){enabled=false;return;}
       try{context??=new Audio();await context.resume();}catch{enabled=false;}
     },
-    alert(deadline){
-      if(!enabled||context?.state!=='running'||playedFor===deadline)return;
-      playedFor=deadline;
+    alert(deadline,second=1){
+      const key=deadline+':'+second;
+      if(!enabled||context?.state!=='running'||playedFor===key)return;
+      playedFor=key;
       play(740,980,.28);
     },
     offer(){play(420,630,.18);},

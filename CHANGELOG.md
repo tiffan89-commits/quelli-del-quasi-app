@@ -1,5 +1,9 @@
 # Unreleased
 
+- L’asta si segnala con un banner stabile e un indicatore nelle leghe, aggiornati in push. La sala si apre quando il partecipante lo sceglie.
+- Countdown in sovraimpressione, Quasi in sala d’attesa, evidenza del sorpasso, avvisi acustici di fine tempo e rose apribili dai partecipanti.
+- Il presidente può eliminare la propria lega Bar e Fanta con conferma testuale.
+
 - Sala d’attesa dell’asta online con presenze in tempo reale, ordine di chiamata e conto alla rovescia condiviso di 10 secondi avviato dal presidente.
 - Listone, svincoli e conferme tornano in primo piano. Il timer è più leggibile e le nuove offerte mostrano il Quasi e il nome dell’offerente, con un segnale audio.
 - Il wizard distingue asta iniziale e riparazione in base alle rose. I computer restano esclusi se disattivati, anche in demo.
