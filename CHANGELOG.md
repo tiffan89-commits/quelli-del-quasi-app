@@ -161,6 +161,7 @@ Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e 
 ## [Unreleased]
 
 - Schedina Fanta e Giornata live mostrano avversario e orario italiano sotto la maglia fino all'arrivo del fantavoto e delle icone evento.
+- La cancellazione dal pannello di sistema rimuove insieme il Bar, il Fanta collegato e i rispettivi dati di lega.
 
 - Generazione rose: le leghe automatiche distribuiscono tutti i crediti disponibili in costi interi proporzionali, conservando i migliori giocatori selezionati e l'equilibrio tra squadre. Le rose pilota reinvestono i residui in miglioramenti di pari ruolo alle quotazioni reali; nessuna rigenerazione delle rose esistenti.
 

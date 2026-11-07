@@ -25,7 +25,7 @@ import {
 import {provisionSystemAdmin,beginAdminLogin,finishAdminLogin,isSystemAdmin,requireSystemAdmin} from '../../lib/system-admin-auth.mjs';
 import {createSocialAuth} from '../../lib/social-auth.mjs';
 import {socialProviders} from '../../lib/social-providers.mjs';
-import {adminLeagues,forceAllFantasy,planWipe,executeWipe,runAdminProbe} from '../../lib/system-admin-operations.mjs';
+import {adminLeagues,forceAllFantasy,planPlatformWipe,executePlatformWipe,runAdminProbe} from '../../lib/system-admin-operations.mjs';
 import {
   removeLeagueMember,
   restoreLeagueMember,
@@ -248,8 +248,8 @@ export function createApi({
         const result=await transact(async(s,c)=>{
           const u=userFor(s,token);requireSystemAdmin(s,u);
           if(route==='platform-force-sync')return forceAllFantasy(s,u);
-          if(route==='platform-wipe-plan')return planWipe(s,u,p,token);
-          if(route==='platform-wipe'){const r=executeWipe(s,u,p,token,env);if(r.scope==='all'&&c)await c.query('DELETE FROM fanta_login_limits');return r;}
+          if(route==='platform-wipe-plan')return planPlatformWipe(s,c,u,p,token);
+          if(route==='platform-wipe')return executePlatformWipe(s,c,u,p,token,env);
           fail('Operazione amministrativa sconosciuta',404);
         });
         if(route==='platform-force-sync'&&baseTransact===transaction){const {enqueueOperation}=await import('../../lib/operations/store.mjs');await enqueueOperation({id:'native-refresh:'+Math.floor(Date.now()/60000),kind:'maintenance',operation:'native-pilot-setup',at:new Date().toISOString()});result.dispatched=true;}
