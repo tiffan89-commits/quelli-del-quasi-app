@@ -21,7 +21,7 @@ import { renderHome,auctionCard,homeTeam,tickCountdowns } from './home.mjs';
 import { renderGiornata, renderPlayerSheet, findPlayer } from './giornata.mjs';
 import { renderSquadra, renderTeamRoster, renderPickSheet, renderBenchSheet, draftFrom, lineupOf, sameLineup, withFormation, assign, unassign, benchAdd, benchRemove, benchMove, missingOf, canDropOn, dropOn, quickAdd, benchAll } from './squadra.mjs';
 import { enableDrag } from './trascina.mjs';
-import { renderAsta, renderListoneSheet, renderListoneRows, renderAssignConfirm, tickAuction, auctionAudio } from './asta.mjs';
+import { renderAsta, renderListoneSheet, renderListoneRows, renderAssignConfirm, tickAuction, auctionAudio, bidState, bidAmount } from './asta.mjs';
 import { auctionWizard, renderAuctionWizard } from './auction-wizard.mjs';
 import { renderLega,renderFantaPresident,fantaPresidentTasks } from './lega.mjs';
 import { renderIo, renderDemoInfo } from './io.mjs';
@@ -62,7 +62,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     // Squadra: dati dal server + bozza della formazione non ancora salvata
     squadra: { data: null, draft: null, sub: 'formazione', dirty: false, saving: false, error: null, moved: null },
     // Asta: stato letto ogni secondo, scarto d'orologio col server, cosa sta scrivendo/scegliendo l'utente
-    asta: { data: null, players: null, offset: 0, amount: '', error: null, query: '', role: 'tutti', picking: null, callAmount: null },
+    asta: { data: null, players: null, offset: 0, amount: null, error: null, query: '', role: 'tutti', picking: null, callAmount: null },
     // Lega: sezione aperta, giornata aperta nel calendario, modulo "nuova asta" dell'admin
     lega: { data: null, sub: 'classifica', openRound: null, copied: false },
     // Giornata
@@ -275,12 +275,20 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     document.body.classList.toggle('fanta-auction-page',ui.tab==='asta');
     applyLeagueTheme(linkedLeagueIdentity(league(),barLeagues));
     closeStyledSelect();
-    // Chi sta scrivendo (offerta libera) non deve perdere il campo a ogni aggiornamento live.
     const active = document.activeElement, focusId = root.contains(active) && active.id, sel = focusId && active.selectionStart;
     const paneScroll=[...root.querySelectorAll('.auction-pane')].map(el=>el.scrollTop);
     const wizardScroll=root.querySelector('.auction-wizard-fields')?.scrollTop;
-    root.innerHTML = `${topBar({user:ui.me,slipCredits:(()=>{const d=slips.context(slipContext());return d.league?.members?.find(m=>m.uid===d.uid)?.fantasyWallets?.[d.league.fantasyWalletScopes?.[d.round?.competitionKey]]?.credits??d.league?.members?.find(m=>m.uid===d.uid)?.fantasyWallet?.credits;})(),hideCredits:false,mode:ui.mode, league: ui.mode === 'fanta' ? linkedLeagueIdentity(league(),barLeagues) : null, credits:ui.asta.data?.teams?.find(t=>t.team.id===ui.home?.me.teamId)?.credits??ui.home?.auction?.credits })}${demoBar()}
-      <main class="fanta-main">${ui.tab==='asta'?'':competitionSwitcher(ui.home?.competitions||ui.lega.data?.competitions,ui.home?.competition?.id||ui.lega.data?.competition?.id)}${page()}</main>
+    const mainHtml=`<main class="fanta-main">${ui.tab==='asta'?'':competitionSwitcher(ui.home?.competitions||ui.lega.data?.competitions,ui.home?.competition?.id||ui.lega.data?.competition?.id)}${page()}</main>`;
+    const offer=ui.tab==='asta'&&!ui.asta.wizard&&root.querySelector('[data-bid-form]');
+    const lot=ui.asta.data?.lot;
+    if(offer&&lot?.id===offer.dataset.lot&&bidState(ui.asta.data).can){
+      // Keep the native slider alive while a pass or a counteroffer arrives.
+      patchRegion(root.querySelector('main.fanta-main'),mainHtml);
+      const input=root.querySelector('[data-auction-bid-range]'),st=bidState(ui.asta.data);
+      input.setAttribute('min',String(st.min));input.setAttribute('max',String(st.max));input.disabled=!!ui.asta.bidPending||st.min===st.max;
+      syncOffer(input,ui.asta.amount);
+    }else root.innerHTML = `${topBar({user:ui.me,slipCredits:(()=>{const d=slips.context(slipContext());return d.league?.members?.find(m=>m.uid===d.uid)?.fantasyWallets?.[d.league.fantasyWalletScopes?.[d.round?.competitionKey]]?.credits??d.league?.members?.find(m=>m.uid===d.uid)?.fantasyWallet?.credits;})(),hideCredits:false,mode:ui.mode, league: ui.mode === 'fanta' ? linkedLeagueIdentity(league(),barLeagues) : null, credits:ui.asta.data?.teams?.find(t=>t.team.id===ui.home?.me.teamId)?.credits??ui.home?.auction?.credits })}${demoBar()}
+      ${mainHtml}
       ${ui.mode === 'fanta'&&!ui.choiceLeagueId&&ui.leagues.length ? tabBar(FANTA_TABS.some(([id]) => id === ui.tab) ? ui.tab : (ui.tab==='presidente'?null:TAB_OF[ui.tab] || 'oggi')) : ''}`;
     if(ui.tab==='presidente')for(const d of root.querySelectorAll('.president-panel details')){const saved=settingsOpen.find(([key])=>key===(d.dataset.presidentSection||d.querySelector('summary')?.textContent));if(saved)d.open=saved[1];}
     retainAppHeader(root);
@@ -331,6 +339,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   function showAuctionConnection(){
     const note=root.querySelector('[data-auction-connection]');if(!note)return;
     note.textContent=ui.asta.syncError?'Connessione in ritardo…':auctionStream?.ready(league()?.id)?'● Sincronizzata':ui.asta.lastSync?'● Collegata':'Collegamento…';note.classList.toggle('is-alert',!!ui.asta.syncError);
+    if(note.classList.contains('auction-compact-connection'))note.hidden=!ui.asta.syncError;
   }
   function applyAuction(a,{requestStartedAt,clockOffset}={}) {
     const s = ui.asta;
@@ -345,7 +354,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       s.offerUntil=now+(s.outbid?1900:900);
       if(ui.tab==='asta')auctionSound.offer();
     }
-    if (s.data?.lot?.id !== a.lot?.id) { s.amount = ''; s.error = null; } // nuovo giocatore in tavola
+    if (s.data?.lot?.id !== a.lot?.id) { s.amount = null; s.error = null; } // nuovo giocatore in tavola
     if (s.data?.table?.id !== a.table?.id) { s.mprice = ''; s.error = null; } // dal vivo: nuovo giocatore sul tavolo
     const reloadListone = a.status==='running'&&a.phase!=='releases' && a.mode === 'manual' && a.isAdmin && (!s.players || s.data?.phase!==a.phase || s.data?.log?.[0]?.id !== a.log[0]?.id || s.data?.log?.length !== a.log.length);
     if(a.status==='running'&&a.phase==='releases'&&a.isAdmin&&(!s.releasePlayers||JSON.stringify(a.releases||[])!==JSON.stringify(s.data?.releases||[]))){const id=league()?.id,batch=a.releaseBatchId,releases=JSON.stringify(a.releases||[]);api.auctionAssigned(id).then(players=>{if(destroyed||league()?.id!==id||s.data?.status!=='running'||s.data?.phase!=='releases'||s.data?.releaseBatchId!==batch||JSON.stringify(s.data?.releases||[])!==releases)return;s.releasePlayers=players;if(ui.tab==='asta')render();}).catch(()=>{});}
@@ -371,11 +380,33 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     try { const data=await api.auction(id);if(!destroyed&&!suspended&&ui.tab==='asta'&&league()?.id===id){ui.asta.lastSync=Date.now();ui.asta.syncError=false;applyAuction(data,{requestStartedAt:startedAt});showAuctionConnection();} } catch {if(!destroyed&&!suspended&&ui.tab==='asta'&&league()?.id===id){ui.asta.syncError=true;showAuctionConnection();}} finally{auctionPolling=false;}
   }
 
-  async function placeBid(amount) {
-    const s = ui.asta, lot = s.data?.lot,id=league()?.id;
-    if (!lot || !(amount > 0)) return;
-    try { const a=await api.bid(id,lot.id,amount);if(destroyed||league()?.id!==id)return;applyAuction(a); s.amount = ''; s.error = null; render(); demoNote('auction', 'In demo giochi contro squadre finte: niente resta salvato.'); }
-    catch (e) { if(destroyed||league()?.id!==id)return;s.error = e.message; render(); }
+  function syncOffer(input,value){
+    const min=Number(input.getAttribute('min')),max=Number(input.getAttribute('max')),amount=bidAmount(value,min,max),form=input.closest('form');
+    ui.asta.amount=amount;
+    input.value=String(amount);input.style.setProperty('--offer-fill',100*(amount-min)/Math.max(1,max-min)+'%');
+    input.setAttribute('aria-valuetext',amount+' crediti');
+    form.querySelector('output').textContent=amount+' cr';
+    form.querySelector('[data-auction-bid-delta]').textContent='(+'+(amount-Number(form.dataset.best))+')';
+    form.querySelector('[data-bid-step="-1"]').disabled=!!ui.asta.bidPending||amount<=min;
+    form.querySelector('[data-bid-step="1"]').disabled=!!ui.asta.bidPending||amount>=max;
+  }
+
+  async function submitOffer(kind,form){
+    const s=ui.asta,lot=s.data?.lot,id=league()?.id;
+    if(!lot||s.bidPending||form?.dataset.lot!==lot.id||Number(form.dataset.best)!==lot.bid)return;
+    const st=bidState(s.data),amount=Number(form.querySelector('[data-auction-bid-range]').value);
+    if(!st.can||kind==='bid'&&(!Number.isInteger(amount)||amount<st.min||amount>st.max))return;
+    s.bidPending=kind;s.error=null;render();
+    try{
+      const next=await (kind==='bid'?api.bid(id,lot.id,amount):api.pass(id,lot.id));
+      if(destroyed||league()?.id!==id)return;
+      s.amount=null;applyAuction(next);
+      if(kind==='bid')demoNote('auction','In demo giochi contro squadre finte: niente resta salvato.');
+    }catch(error){
+      if(!destroyed&&league()?.id===id&&s.data?.lot?.id===lot.id)s.error=error.message;
+    }finally{
+      s.bidPending=null;if(!destroyed&&!suspended&&ui.tab==='asta')render();
+    }
   }
 
   async function openListone() {
@@ -418,12 +449,8 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       return true;
     }
     if (d.mUndo) { admin(api.undoSale(id, d.mUndo)); return true; }
-    if (d.bid) { placeBid(Number(d.bid)); return true; }
-    if (d.astaPass) {
-      const lot = s.data?.lot;
-      if (lot) api.pass(id, lot.id).then(a => { if(destroyed||league()?.id!==id)return;s.error = null; applyAuction(a); render(); }).catch(e => { if(destroyed||league()?.id!==id)return;s.error = e.message; render(); });
-      return true;
-    }
+    if (d.bidStep!==undefined) {const input=root.querySelector('[data-auction-bid-range]');if(input)syncOffer(input,Number(input.value)+Number(d.bidStep));return true;}
+    if (d.astaPass) {void submitOffer('pass',root.querySelector('[data-bid-form]'));return true;}
     if (d.astaListone) { openListone(); return true; }
     if (d.astaRole) { s.role = d.astaRole; renderSheet(); return true; }
     if (d.astaPick) { s.picking = d.astaPick; s.callAmount = null; s.error = null; renderSheet(); document.querySelector('.fanta-sheet')?.scrollTo(0, 0); return true; }
@@ -458,14 +485,14 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(e.target.matches('[data-auction-wizard]')){e.preventDefault();void submitAuctionWizard();return;}
     if (!e.target.matches('[data-bid-form]')) return;
     e.preventDefault();
-    placeBid(Number(new FormData(e.target).get('amount') ?? e.target.querySelector('input').value));
+    void submitOffer('bid',e.target);
   });
   on(root,'input', e => {
     if(ui.asta.wizard&&e.target.closest('[data-auction-wizard]')&&['budget','startsAt'].includes(e.target.name))ui.asta.wizard[e.target.name]=e.target.value;
     const id = e.target.id;
     // Campi numerici: solo cifre (sono di tipo testo perché il cursore resti dove si scrive).
-    if (id === 'fanta-a-amount' || id === 'fanta-m-price') e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (id === 'fanta-a-amount') ui.asta.amount = e.target.value;
+    if (id === 'fanta-m-price') e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (id === 'fanta-a-amount') syncOffer(e.target,Number(e.target.value));
     if(id==='fanta-release-query'){ui.asta.releaseQuery=e.target.value;render();return;}
     if (id === 'fanta-m-q') { ui.asta.mq = e.target.value; render(); }
     if (id === 'fanta-m-price') { ui.asta.mprice = e.target.value; render(); }
@@ -766,7 +793,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       + '[data-pick-role],[data-studio],[data-st-role],[data-st-slot],[data-st-player],[data-st-clear],[data-sq-sub],[data-sq-filter],[data-formation],[data-slot],[data-pick],[data-unpick],[data-bench-add],[data-bench-pick],[data-bench-remove],[data-bench-move],[data-lineup],[data-list-add],'
       + '[data-lega-sub],[data-lega-round],[data-lega-invite],[data-auction-manage],[data-auction-exit],[data-auction-exit-confirm],[data-auction-close-confirm],[data-auction-lobby-start],[data-auction-panel],[data-auction-team],[data-auction-prev],[data-auction-order],'
       + '[data-asta-mode],[data-asta-cancel],[data-asta-close],[data-asta-draw],[data-m-role],[data-m-table],[data-m-clear],[data-m-team],[data-m-confirm],[data-m-undo],'
-      + '[data-bid],[data-asta-pass],[data-asta-listone],[data-asta-role],[data-asta-pick],[data-asta-amount],[data-asta-call]');
+      + '[data-bid-step],[data-asta-pass],[data-asta-listone],[data-asta-role],[data-asta-pick],[data-asta-amount],[data-asta-call]');
     if(!el?.dataset.stSlot)lastStudioTap=null;
     if (!el || el.disabled||el.getAttribute('aria-busy')==='true') return;
     const d = el.dataset;
