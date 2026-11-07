@@ -8,7 +8,6 @@ import {renderReleases} from './mercato.mjs';
 import {avatarSvg} from '../avatar.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
-const RAISES = [1, 5, 10];
 const RING = 2 * Math.PI * 26;
 
 const teamOf = (a, id) => a.teams.find(t => t.team.id === id);
@@ -28,8 +27,11 @@ export function bidState(a) {
   if (lot.passed?.includes(a.me)) return { can: false, why: 'Hai passato: non puoi più rientrare su questo giocatore', min, max: me.maxBid, passed: true };
   if (auto === 'role') return { can: false, why: `Passo automatico: hai già tutti i ${ROLE_PLURAL[lot.player.role]}`, min, max: me.maxBid, passed: true };
   if (auto === 'credits') return { can: false, why: `Passo automatico: puoi offrire al massimo ${me.maxBid}`, min, max: me.maxBid, passed: true };
+  if(me.maxBid<min)return {can:false,min,max:me.maxBid,why:'Non hai crediti sufficienti per rilanciare'};
   return { can: true, min, max: me.maxBid };
 }
+
+export const bidAmount=(selected,min,max)=>Math.min(max,Math.max(min,Number.isInteger(selected)?selected:min));
 
 // Il timer mostra `total` secondi ma gli ultimi `final` durano `stretch` secondi veri.
 export function shownSeconds(leftMs, final, stretch, total=60) {
@@ -49,50 +51,69 @@ function myBar(a) {
 }
 const adminControls=a=>a.isAdmin?`<div class="fanta-a-admin-controls">${a.lot||a.table?'<button type="button" class="secondary" data-asta-cancel="1">Annulla giocatore sul tavolo</button>':''}<button type="button" class="secondary" data-asta-close="1">Chiudi asta</button></div>`:'';
 
-function ring(endsAt, total, label, rules) {
-  return `<div class="fanta-a-timer" data-ends="${esc(endsAt)}" data-total="${total}" data-final="${rules.finalSeconds}" data-stretch="${rules.finalStretch}">
+function ring(endsAt,total,label,rules,{compact=false,main=false}={}) {
+  return `<div class="fanta-a-timer${compact?' auction-compact-clock':''}" role="timer" aria-label="Tempo residuo" ${main?'data-auction-main-clock':''} data-ends="${esc(endsAt)}" data-total="${total}" data-final="${rules.finalSeconds}" data-stretch="${rules.finalStretch}">
     <svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="26" class="track"/><circle cx="30" cy="30" r="26" class="bar" stroke-dasharray="${RING}" stroke-dashoffset="0"/></svg>
     <b data-seconds>–</b><small>${label}</small>
   </div>`;
 }
 
-function lotCard(a, ui) {
+function bidderCard(row,ui,{credits=row.credits,projected=false,leading=false}={}){
+  const member=memberOf(ui,row),name=row.computer?'Computer':member?.name||row.team.manager||row.team.name;
+  return `<div class="auction-bidder auction-bidder-card${leading?' is-leading':''}">
+    <span class="auction-bidder-avatar" aria-hidden="true">${row.computer?'🤖':avatarSvg(member?.avatar)}</span>
+    <span class="auction-bidder-name"><b>${esc(name)}</b><small>${esc(row.team.name)}</small></span>
+    <span class="auction-bidder-credits${projected?' is-projected':''}" aria-label="${credits} crediti${projected?' se si aggiudica il calciatore':' residui'}" ${projected?'title="Crediti se si aggiudica il calciatore"':''}><b>${credits}</b><small>cr</small></span>
+  </div>`;
+}
+
+function offerControls(lot,st,ui){
+  const amount=bidAmount(ui.amount,st.min,st.max),busy=!!ui.bidPending;
+  return `<form class="auction-offer-controls" data-bid-form data-lot="${esc(lot.id)}" data-best="${lot.bid}" aria-label="Scegli il rilancio">
+    <div class="auction-offer-amount">
+      <button type="button" class="secondary auction-offer-step" data-bid-step="-1" aria-label="Diminuisci di un credito" ${busy||amount<=st.min?'disabled':''}>−</button>
+      <div class="auction-offer-slider">
+        <input id="fanta-a-amount" name="amount" data-auction-bid-range type="range" min="${st.min}" max="${st.max}" step="1" value="${amount}" style="--offer-fill:${100*(amount-st.min)/Math.max(1,st.max-st.min)}%" aria-label="Importo del rilancio" aria-valuetext="${amount} crediti" ${busy||st.min===st.max?'disabled':''}>
+        <div class="auction-offer-bounds"><span>Min <b>${st.min}</b></span><span>Max <b>${st.max}</b></span></div>
+      </div>
+      <button type="button" class="secondary auction-offer-step" data-bid-step="1" aria-label="Aumenta di un credito" ${busy||amount>=st.max?'disabled':''}>+</button>
+    </div>
+    <div class="auction-offer-actions">
+      <button type="button" class="secondary auction-offer-pass" data-asta-pass="1" ${busy?'disabled':''}>${ui.bidPending==='pass'?'Invio…':'Passo'}</button>
+      <button type="submit" class="primary auction-offer-confirm" ${busy?'disabled':''}><span>${ui.bidPending==='bid'?'Invio…':'Rilancia'}</span><output for="fanta-a-amount">${amount} cr</output><span data-auction-bid-delta>(+${amount-lot.bid})</span></button>
+    </div>
+  </form>`;
+}
+
+function lotCard(a, ui, timer) {
   const lot = a.lot, p = lot.player, leader = teamOf(a, lot.leader), st = bidState(a);
-  const member=memberOf(ui,leader),outbid=ui.outbid&&ui.offerUntil>Date.now();
-  const bidder=leader?.computer?'Computer':member?.name||leader?.team.manager||leader?.team.name;
-  const raise = RAISES.map(n => {
-    const amount = lot.bid + n;
-    const ok = st.can && amount <= st.max;
-    return `<button type="button" class="fanta-a-raise" data-bid="${amount}" ${ok ? '' : 'disabled'}><small>+${n}</small><b>${amount}</b></button>`;
-  }).join('');
+  const outbid=ui.outbid&&ui.offerUntil>Date.now();
   return `<section class="fanta-a-lot${lot.leader === a.me ? ' is-mine' : ''}" aria-live="polite">
     <div class="fanta-a-player">
       <span class="fanta-a-shirt">${shirt(p.club)}</span>
       <div><span class="fanta-role is-${p.role}">${p.role}</span>
         <h2>${esc(p.name)}</h2>
-        <small>${esc(p.club)} · valore ${p.value??'–'} · FM ${fm(p.fm)} · ${p.played??'–'} pres.</small></div>
+        <small>${esc(p.club)} · valore ${p.value??'–'} · FM ${fm(p.fm)} · ${p.played??'–'} pres.</small></div>${timer}
     </div>
     <div class="fanta-a-bidrow">
-      <div class="fanta-a-bid${ui.offerUntil>Date.now()?' is-new-offer':''}${outbid?' is-outbid':''}"><span>${outbid?'Ti hanno superato!':'Offerta'}</span><strong>${lot.bid}</strong>
-        ${leader?`<div class="auction-bidder"><span class="auction-bidder-avatar" aria-hidden="true">${leader.computer?'🤖':avatarSvg(member?.avatar)}</span><span><b>${esc(bidder)}</b><small>${esc(leader.team.name)}${lot.leader===a.me?' · Tu':''}</small></span></div>`:'<em>Prima offerta libera</em>'}</div>
+      <div class="fanta-a-bid${ui.offerUntil>Date.now()?' is-new-offer':''}${outbid?' is-outbid':''}"><span class="auction-best-label">${outbid?'Ti hanno<br>superato!':'Offerta<br>migliore'}</span><strong class="auction-best-value">${lot.bid}</strong>
+        ${leader?bidderCard(leader,ui,{credits:leader.credits-lot.bid,projected:true,leading:true}):'<em>Prima offerta libera</em>'}</div>
     </div>
     <p class="fanta-a-final" aria-hidden="true">Sta per scadere!</p>
-    <div class="fanta-a-raises">${raise}</div>
-    <form class="fanta-a-custom" data-bid-form>
-      <input id="fanta-a-amount" name="amount" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Altra cifra" value="${esc(ui.amount ?? '')}" ${st.can ? '' : 'disabled'} aria-label="Offerta libera">
-      <button type="submit" class="primary" ${st.can ? '' : 'disabled'}>Offri</button>
-    </form>
-    ${st.can ? '<button type="button" class="secondary fanta-a-pass" data-asta-pass="1">Passo <small>non mi interessa, esco da questo giocatore</small></button>' : ''}
-    <p class="fanta-a-why${st.leading ? ' is-ok' : st.passed ? ' is-passed' : ''}">${st.why ? esc(st.why) : `Minimo ${st.min} · massimo ${st.max}`}${ui.error ? ` · <b>${esc(ui.error)}</b>` : ''}</p>
-    ${lot.history.length ? `<small class="auction-history-label">Ultime offerte</small><ol class="fanta-a-history" aria-label="Ultime offerte">${lot.history.filter(h=>!h.pass).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,5).map(h => {
-      const t = teamOf(a, h.team), who = h.team === a.me ? 'Tu' : esc(t.team.name);
-      return `<li><i style="background:${esc(t.team.color)}"></i>${who}<span>${h.call ? 'chiama a' : 'rilancia a'}</span><b>${h.amount}</b></li>`;
-    }).join('')}</ol>` : ''}
+    ${st.can?offerControls(lot,st,ui):''}
+    ${st.why||ui.error?`<p class="fanta-a-why${st.leading?' is-ok':st.passed?' is-passed':''}">${esc(st.why||'')}${ui.error?` <b role="alert">${esc(ui.error)}</b>`:''}</p>`:''}
   </section>`;
 }
 
 const human=t=>t.human??(!t.computer&&!!t.team.userId);
 const orderedTeams=a=>(a.order||[]).map(id=>teamOf(a,id)).filter(t=>t&&(a.mode==='manual'||human(t)||t.computer));
+
+function activeBidders(a,ui){
+  const order=orderedTeams(a),turn=Math.max(0,order.findIndex(t=>t.team.id===a.caller)),lot=a.lot;
+  const remaining=[...order.slice(turn),...order.slice(0,turn)].filter(t=>!lot.passed?.includes(t.team.id)&&!lot.autoPassed?.[t.team.id]);
+  return `<section class="auction-active-bidders" aria-label="Ancora in asta"><h2>Ancora in asta <span>${remaining.length}</span></h2>
+    <ol aria-label="Partecipanti in ordine di chiamata">${remaining.map(t=>`<li data-active-auction-team="${esc(t.team.id)}">${bidderCard(t,ui,{leading:t.team.id===lot.leader})}</li>`).join('')}</ol></section>`;
+}
 
 function orderStrip(a) {
   const current=teamOf(a,a.caller);
@@ -120,7 +141,7 @@ function lobbyCard(a,ui){
     ${a.isAdmin&&!a.lobbyEndsAt?`<button type="button" class="primary" data-auction-lobby-start="1" ${ui.startingLobby?'disabled':''}>${ui.startingLobby?'Avvio…':'Start · 10 secondi'}</button>`:''}</section>`;
 }
 
-function waitingCard(a) {
+function waitingCard(a,timer='') {
   if (a.status === 'ended') return `<section class="fanta-a-lot is-idle"><h2>Asta finita</h2><p>Tutte le rose sono complete. Buon campionato!</p></section>`;
   const sale = a.lastSale;
   if (a.pausedUntil && sale && !a.skipped) {
@@ -140,14 +161,14 @@ function waitingCard(a) {
   if (a.caller && a.caller === a.me) {
     return `<section class="fanta-a-lot is-call" aria-live="polite">
       <div class="fanta-a-bidrow"><div><span class="eyebrow">Tocca a te</span><h2>Chiama un giocatore</h2>
-        <p>Scegli dal listone e fai la prima offerta. Se il tempo scade, salti il turno.</p></div></div>
+        <p>Scegli dal listone e fai la prima offerta. Se il tempo scade, salti il turno.</p></div>${timer}</div>
       <button type="button" class="primary fanta-a-callbtn" data-asta-listone="1">Apri il listone</button>
     </section>`;
   }
   const c = teamOf(a, a.caller);
   if(!c)return '<section class="fanta-a-lot is-idle"><h2>Prepariamo il prossimo giocatore…</h2></section>';
   return `<section class="fanta-a-lot is-idle"><div class="fanta-a-bidrow"><div><span class="eyebrow">In attesa</span><h2>Sta chiamando ${esc(c.team.manager)}</h2>
-    <p>${esc(c.team.name)} sceglie il prossimo giocatore dal listone…</p></div></div></section>`;
+    <p>${esc(c.team.name)} sceglie il prossimo giocatore dal listone…</p></div>${timer}</div></section>`;
 }
 
 // Stato di ogni squadra sul giocatore in tavola.
@@ -160,10 +181,10 @@ function lotTag(a, id) {
   return '';
 }
 
-function teamsList(a,ui) {
+function teamsList(a,ui,timer='') {
   const order=a.order?.length&&a.config?.nomination!=='random'?a.order.map(id=>teamOf(a,id)).filter(Boolean):a.teams;
   const connected=new Set(ui.presence??a.teams.filter(t=>t.online).map(t=>t.team.id));
-  return `<section class="fanta-block"><div class="dash-section-head"><div><h2>Partecipanti</h2><small>crediti · puntata max · posti da riempire</small></div></div>
+  return `<section class="fanta-block"><div class="dash-section-head auction-clock-heading"><div><h2>Partecipanti</h2><small>crediti · puntata max · posti da riempire</small></div>${timer}</div>
     <ul class="fanta-a-teams">${order.map((t, i) => `<li class="${t.team.id === a.me ? 'is-me' : ''}${t.team.id === a.caller ? ' is-caller' : ''}">
       <i class="fanta-dot" style="background:${esc(t.team.color)}"></i>
       <span class="fanta-p-name"><b><button type="button" class="auction-team-name" data-auction-team="${esc(t.team.id)}" aria-haspopup="dialog">${a.mode === 'manual' ? '' : `${i + 1}. `}${esc(t.team.name)}</button>${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':human(t)?esc(t.team.manager)+(connected.has(t.team.id)?' · connesso':' · disconnesso'):'Senza allenatore'}</small></span>
@@ -185,9 +206,9 @@ function logList(a) {
     }).join('')}</ul></section>`;
 }
 
-function myRoster(a) {
+function myRoster(a,timer='') {
   const by = r => a.myRoster.filter(p => p.role === r);
-  return `<section class="fanta-block"><div class="dash-section-head"><div><h2>La tua rosa</h2><small>${a.myRoster.length} di ${Object.values(a.rules.roster).reduce((x, y) => x + y, 0)}</small></div></div>
+  return `<section class="fanta-block"><div class="dash-section-head auction-clock-heading"><div><h2>La tua rosa</h2><small>${a.myRoster.length} di ${Object.values(a.rules.roster).reduce((x, y) => x + y, 0)}</small></div>${timer}</div>
     ${'PDCA'.split('').map(r => `<div class="fanta-a-myrole"><span class="fanta-role is-${r}">${r}</span><span>${by(r).map(p => `${esc(p.name)} <b>${p.price}</b>`).join(' · ') || '<i>nessuno</i>'}</span></div>`).join('')}
   </section>`;
 }
@@ -286,23 +307,25 @@ export function renderAsta(a, ui = {}, players = null) {
   const phase=a?.phase==='releases'&&a.status==='running';
   const lobby=a?.phase==='lobby'&&a.status==='running';
   const online=a?.status==='running'&&a.mode==='live'&&!phase;
-  const timer=lobby?(a.lobbyEndsAt?ring(a.lobbyEndsAt,10,'sec',{finalSeconds:3,finalStretch:3}):'<span class="auction-clock-label">In attesa</span>'):online?(a.lot?ring(a.lot.endsAt,a.lot.timerSeconds,'sec',a.rules):a.callDeadline?ring(a.callDeadline,a.rules.callSeconds,'sec',a.rules):'<span class="auction-clock-label">Prossimo lotto</span>'):a?.status==='scheduled'?`<span class="auction-clock-label" data-countdown="${esc(a.startsAt)}">In attesa</span>`:a?.status==='running'?`<span class="auction-clock-label">${phase?'Svincoli':'Dal vivo'}</span>`:'';
+  const compact=online&&!lobby,deadline=compact&&(a.lot?.endsAt||a.callDeadline);
+  const compactClock=(main=false)=>deadline?ring(deadline,a.lot?.timerSeconds||a.rules.callSeconds,'sec',a.rules,{compact:true,main}):'';
+  const timer=lobby?(a.lobbyEndsAt?ring(a.lobbyEndsAt,10,'sec',{finalSeconds:3,finalStretch:3},{main:true}):'<span class="auction-clock-label">In attesa</span>'):a?.status==='scheduled'?`<span class="auction-clock-label" data-countdown="${esc(a.startsAt)}">In attesa</span>`:a?.status==='running'?`<span class="auction-clock-label">${phase?'Svincoli':'Dal vivo'}</span>`:'';
   const label=a?.status==='scheduled'?'Asta programmata':a?.status==='ended'?'Asta chiusa':phase?'Svincoli':a?.mode==='manual'?'Asta dal vivo':'Sala d’asta';
   let center;
   if(!a)center='<p class="fanta-loading" role="status">Entriamo nella sala d’asta…</p>';
   else if(phase)center=renderReleases(a,ui);
   else if(lobby)center=lobbyCard(a,ui)+adminControls(a);
   else if(a.status==='running')center=`${adminControls(a)}${a.mode==='manual'?modeSwitch(a):''}${myBar(a)}
-    ${a.mode==='manual'?`${a.config&&a.caller?orderStrip(a):''}${a.isAdmin?manualConsole(a,ui,players):manualTable(a)}`:`${orderStrip(a)}${a.lot?lotCard(a,ui):waitingCard(a)}`}
+    ${a.mode==='manual'?`${a.config&&a.caller?orderStrip(a):''}${a.isAdmin?manualConsole(a,ui,players):manualTable(a)}`:`${orderStrip(a)}${a.lot?lotCard(a,ui,compactClock(true))+activeBidders(a,ui):waitingCard(a,compactClock(true))}`}
     ${a.mode==='manual'?lastSaleBanner(a):''}`;
   else center=`<section class="fanta-a-lot is-idle"><h2>${a.status==='scheduled'?esc(auctionWhen(a.startsAt)):a.status==='ended'?'L’asta è finita':'Nessuna asta in programma'}</h2>
     ${a.status==='scheduled'?'<p>La sala si apre automaticamente all’orario programmato.</p>':''}
     ${a.status==='ended'&&(a.competition?.status==='active'||a.competitionActivation?.status==='active')?'<p>La competizione è avviata.</p><button type="button" class="primary" data-go="formazione">Schiera la formazione →</button>':''}
     ${a.isAdmin?'<button type="button" class="primary" data-auction-manage="1">Gestisci asta →</button>':''}</section>`;
-  const panes=[center,a?teamsList(a,ui)+logList(a):'',a?myRoster(a):''];
+  const panes=[center,a?teamsList(a,ui,compactClock())+logList(a):'',a?myRoster(a,compactClock()):''];
   const panel=ui.panel||0;
-  return `<section class="fanta-asta auction-room" aria-label="Sala d’asta">
-    <header class="auction-page-head"><button type="button" class="secondary" data-auction-exit="1">Esci ×</button><div><span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1><p data-auction-connection role="status"></p></div>${timer}</header>
+  return `<section class="fanta-asta auction-room${compact?' is-compact':''}" aria-label="Sala d’asta">
+    ${compact?'<p class="auction-compact-connection" data-auction-connection role="status" hidden></p>':`<header class="auction-page-head"><button type="button" class="secondary" data-auction-exit="1">Esci ×</button><div><span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1><p data-auction-connection role="status"></p></div>${timer}</header>`}
     <nav class="auction-room-tabs" aria-label="Schede dell’asta">${roomPanels.map((text,i)=>`<button type="button" class="v2-chip${i===panel?' is-active':''}" aria-pressed="${i===panel}" data-auction-panel="${i}">${text}</button>`).join('')}</nav>
     <div class="auction-panels" data-auction-panels>${panes.map((html,i)=>`<section class="auction-pane" aria-label="${roomPanels[i]}">${html}</section>`).join('')}</div>
     ${online?`<div class="auction-countdown-overlay${lobby?' is-start':''}" data-auction-countdown-overlay hidden><div><small>${lobby?'L’asta inizia tra':'Tempo in scadenza'}</small><strong data-overlay-seconds>–</strong></div></div>`:''}
@@ -363,7 +386,7 @@ export function tickAuction(root, offset = 0, onFinal) {
     el.querySelector('.bar')?.setAttribute('stroke-dashoffset', String(RING * (1 - Math.min(1, shown / total))));
     el.classList.toggle('is-final', inFinal);
     el.closest('.fanta-a-lot')?.classList.toggle('is-final', inFinal);
-    if(left>0&&el.closest('.auction-page-head')&&(lobby||inFinal))overlaySeconds=Math.ceil(shown);
+    if(left>0&&el.hasAttribute('data-auction-main-clock')&&(lobby||inFinal))overlaySeconds=Math.ceil(shown);
     if(inFinal)onFinal?.(el.dataset.ends,Math.ceil(left/1000));
     // Una volta sola per timer, e solo dopo che l'utente ha toccato la pagina (il browser lo richiede).
     if (inFinal && vibratedFor !== el.dataset.ends) { vibratedFor = el.dataset.ends; if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.([40, 60, 40]); }

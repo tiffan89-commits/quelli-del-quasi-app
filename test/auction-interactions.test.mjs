@@ -25,7 +25,7 @@ test('release dialog survives refund clicks, live refresh and failed submission;
  state={...a,version:1};await poll();assert.match(root.textContent,/Asta chiusa/,'stale in-flight snapshot must not undo close');
  }finally{app?.destroy();for(const [k,d]of saved)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
-test('wizard choices independently control draw mode, role order and team order, and offers stay limited in the room',()=>{
+test('wizard choices control the draw and order, and the compact room shows only active bidders',()=>{
  const state={league:{adminUid:'u1'},rules:{...DEFAULT_RULES,roster:{P:1,D:1,C:1,A:1}},teams:['t1','t2'].map((id,i)=>({id,name:id,userId:'u'+(i+1),roster:[]})),players:[{id:'striker',name:'Punta',role:'A'},{id:'keeper',name:'Portiere',role:'P'}],auction:{status:'none',version:1,log:[],order:[]}};
  const opts={admin:true,now:1000,rng:()=>0,id:()=> 'lot'};
  const start=(nomination,playerOrder,teamOrder)=>{
@@ -45,8 +45,19 @@ test('wizard choices independently control draw mode, role order and team order,
  let next=start('random','roles',null);assert.equal(next.auction.lot.player.id,'keeper');
  for(let i=1;i<=7;i++)next=auctionAction(next,'bid',{lotId:'lot',amount:i},i%2?'u1':'u2',{...opts,now:11000+i});
  assert.equal(next.auction.lot.history.length,7);const view=auctionView(next,'u1');assert.deepEqual(view.lot.history.map(h=>h.amount),[3,4,5,6,7]);
- const {document}=parseHTML(renderAsta(view));assert.deepEqual([...document.querySelectorAll('.fanta-a-history li b')].map(x=>Number(x.textContent)),[7,6,5,4,3]);
- assert.equal(document.querySelectorAll('[data-auction-panel]').length,3);assert.equal(document.querySelectorAll('.auction-page-head [data-ends]').length,1);
+ const rivalView=auctionView(next,'u2'),{document}=parseHTML(renderAsta(rivalView));
+ assert.equal(document.querySelector('.fanta-a-history'),null);
+ assert.equal(document.querySelector('.auction-page-head'),null);
+ assert.equal(document.querySelectorAll('[data-auction-panel]').length,3);
+ const timers=[...document.querySelectorAll('.auction-compact-clock')];assert.equal(timers.length,3);assert.ok(timers.every(el=>el.dataset.ends===rivalView.lot.endsAt));
+ assert.equal(document.querySelector('.auction-bidder-credits.is-projected b').textContent,'643');
+ const input=document.querySelector('[data-auction-bid-range]');assert.equal(input.getAttribute('min'),'8');assert.equal(input.getAttribute('value'),'8');
+ assert.equal(document.querySelector('[data-auction-bid-delta]').textContent,'(+1)');
+ assert.deepEqual([...document.querySelectorAll('[data-active-auction-team]')].map(el=>el.dataset.activeAuctionTeam),['t2','t1']);
+ const passed=auctionAction(next,'pass',{lotId:'lot'},'u2',{...opts,now:11009});
+ const after=parseHTML(renderAsta(auctionView(passed,'u2'))).document;
+ assert.deepEqual([...after.querySelectorAll('[data-active-auction-team]')].map(el=>el.dataset.activeAuctionTeam),['t1']);
+ assert.equal(after.querySelector('[data-bid-form]'),null);
 });
 
 test('the last five displayed seconds span three real seconds and each of them beeps once',async()=>{
