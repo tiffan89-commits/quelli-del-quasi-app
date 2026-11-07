@@ -185,6 +185,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.31.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.31.1...v0.31.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **fanta:** keep auction alerts passive and improve the room ([3e99e78](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3e99e787654f85321dc5472349bacb77642ad8a2))
+* **fanta:** keep auction alerts passive and improve the room ([57b5485](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/57b5485cfc52b94d5dfaa0aa76cf18cdb4facf4d))
+
 ## [0.31.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.31.0...v0.31.1) (2026-11-07)
 
 
