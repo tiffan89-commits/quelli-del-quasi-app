@@ -169,7 +169,7 @@ function tick(now) {
   A.lastTick = now;
 }
 
-const playerView = p => p && { id: p.id, name: p.name, role: p.role, club: p.club, value: p.value, fm: p.fm, played: p.played, status: p.status };
+const playerView = p => p && { id: p.id, name: p.name, role: p.role, club: p.club, jersey: p.jersey, value: p.value, fm: p.fm, played: p.played, status: p.status };
 
 function auctionFor(leagueId, now = Date.now()) {
  select(leagueId);

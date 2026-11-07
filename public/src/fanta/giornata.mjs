@@ -95,7 +95,7 @@ function token(p, replaced) {
     : `<em class="${p.status === 'playing' ? 'is-live' : ''}">${vote(p.fantavote)}</em>`;
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
-    <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>${replaced ? substitutionMark('Entrato dalla panchina') : ''}</span>
+    <span class="fanta-token-shirt">${playerVisual(p,{back:true})}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>${replaced ? substitutionMark('Entrato dalla panchina') : ''}</span>
     ${events(p.events)}<b>${esc(surname)}</b>${value}
   </${tag}>`;
 }

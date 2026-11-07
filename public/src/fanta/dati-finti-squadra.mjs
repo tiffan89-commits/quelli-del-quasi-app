@@ -33,7 +33,7 @@ export function teamFor(leagueId, state, now = Date.now(),teamId=MY_TEAM,stored=
   const scale = 480 / raw.reduce((t, x) => t + x, 0);
   const roster = rosterOf(teamId).map((p, i) => {
     const s = seasonOf(p), price = Math.max(1, Math.round(raw[i] * scale));
-    return { id: p.id, name: p.name, role: p.role, club: p.club, price, next: nextMatchOf(p.club), stats: { minutes: Math.min(990, s.played * (45 + i%4*15)), teamMatches: 11, played: s.played, avgVote: s.avgVote, avgFanta: s.avgFanta, goals: s.goals, assists: s.assists }, status:s.status,play:['injured','suspended'].includes(s.status?.type)||i%5===4?null:{pct:[90,80,60,25][i%5],source:i%3?'probabili':'giornata-precedente'} };
+    return { id: p.id, name: p.name, role: p.role, club: p.club, jersey: p.jersey, price, next: nextMatchOf(p.club), stats: { minutes: Math.min(990, s.played * (45 + i%4*15)), teamMatches: 11, played: s.played, avgVote: s.avgVote, avgFanta: s.avgFanta, goals: s.goals, assists: s.assists }, status:s.status,play:['injured','suspended'].includes(s.status?.type)||i%5===4?null:{pct:[90,80,60,25][i%5],source:i%3?'probabili':'giornata-precedente'} };
   });
   const previous = { round: CURRENT_ROUND - 1, ...standardLineup(teamId) };
   const mine = stored || (state === 'da-schierare' ? null : { ...standardLineup(teamId), savedAt: new Date(now - 3 * HOUR).toISOString() });

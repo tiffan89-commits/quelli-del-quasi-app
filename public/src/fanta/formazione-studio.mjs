@@ -1,4 +1,4 @@
-import {goalkeeperShirt} from './maglie-portieri.mjs';
+import {goalkeeperShirt,shirtBack} from './maglie-portieri.mjs';
 // Studio formazione: schermo intero come lo studio del Quasi.
 // In alto il campo in orizzontale (portiere a sinistra, attacco a destra);
 // sotto, i giocatori per ruolo da toccare. Ogni maglia porta un'iconcina: infortunato, squalificato
@@ -51,7 +51,7 @@ function token(slot, p, selected) {
   if (!p) return `<button type="button" class="${cls}" data-st-slot="${slot}" data-drop="slot:${slot}" aria-label="Scegli ${ROLE_NAMES[slot[0]].toLowerCase()}">
     <span class="fs-ring">${ROLE_SHORT[slot[0]]}</span></button>`;
   return `<button type="button" class="${cls}" data-st-slot="${slot}" data-drop="slot:${slot}" data-drag-id="${esc(p.id)}" data-drag-from="slot:${slot}" title="${esc(p.name)}">
-    <span class="fs-shirt">${p.role==='P'?goalkeeperShirt(p.club):shirt(p.club)}${playBadge(p)}</span><span class="fs-player-label"><b>${esc(surname(p))}</b>${fantamedia(p)}</span></button>`;
+    <span class="fs-shirt">${p.role==='P'?shirtBack(p.club,p.jersey??'','',{goalkeeper:true}):shirt(p.club,{back:true,number:p.jersey??'',vs:p.next?.opponent,home:p.next?.home})}${playBadge(p)}</span><span class="fs-player-label"><b>${esc(surname(p))}</b>${fantamedia(p)}</span></button>`;
 }
 
 function pitch(d, byId, sel) {
@@ -63,7 +63,7 @@ function pitch(d, byId, sel) {
 function reserveTile(p,d,index,{complete,blocked}) {
   return `<article class="fs-reserve" data-drop="bench:${index}" aria-label="${esc(surname(p))}, riserva ${index+1}">
     <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" data-drag-axis="up" ${blocked?'disabled':''}>
-      <span class="fs-shirt">${p.role==='P'?goalkeeperShirt(p.club):shirt(p.club)}${playBadge(p)}</span>
+      <span class="fs-shirt">${p.role==='P'?goalkeeperShirt(p.club):shirt(p.club,{vs:p.next?.opponent,home:p.next?.home})}${playBadge(p)}</span>
       <b title="${esc(p.name)}">${esc(surname(p))}</b><span class="fs-tile-foot">${fantamedia(p)}</span>
       <small class="fs-tile-next">${esc(nextLabel(p.next))}</small><em class="fanta-role is-${p.role}">${p.role}</em>
     </button>
