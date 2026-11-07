@@ -1,5 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import{emptyState}from'../lib/db.mjs';import{hash,session,userFor,sha,newLeague}from'../lib/game.mjs';
+import{emptyState,transaction}from'../lib/db.mjs';import{hash,session,userFor,sha,newLeague}from'../lib/game.mjs';
+import{readFile}from'node:fs/promises';
+import{fixtureDb}from'./fanta/helpers.mjs';
 import{provisionSystemAdmin,beginAdminLogin,finishAdminLogin,requireSystemAdmin}from'../lib/system-admin-auth.mjs';
 import{planWipe,executeWipe,forceAllFantasy,adminLeagues,runAdminProbe}from'../lib/system-admin-operations.mjs';
 import{decodeMail}from'../lib/mail.mjs';import{createApi}from'../netlify/functions/api.mjs';
@@ -26,3 +28,38 @@ test('full wipe preserves only system account and valid administration sessions,
 test('mass sync queues all connected sources and forces assets without changing slips or cached final details; probes reject arbitrary destinations',async()=>{const{s,a}=fixture(),complete={complete:true};s.fantasyConnections=[{id:'a',server:true,session:'encrypted',leagues:['x'],rounds:[{matches:[{details:complete}]}]},{id:'b',server:true,session:'encrypted',leagues:['y']},{id:'manual',manual:true,leagues:['z']}];const result=forceAllFantasy(s,a);assert.equal(result.queued,true);assert.equal(s.fantasyConnections[0].rounds[0].matches[0].details,complete);let calls=0;await assert.rejects(()=>runAdminProbe({transact:async fn=>fn(s),u:a,input:{provider:'https://evil.test/'},fetcher:()=>{calls++;}}));assert.equal(calls,0);});
 
 test('retrying a correct admin password reuses the public MFA challenge without sending duplicate mail',()=>{const {s}=fixture(),now=Date.now(),p={username:'tiffano',password:'Test-only-password!'},first=beginAdminLogin(s,p,env,now),retry=beginAdminLogin(s,p,env,now+1000);assert.equal(retry.data.challenge,first.data.challenge);assert.equal(s.mailOutbox.length,1);assert.equal(s.adminChallenges.length,1);assert.equal(beginAdminLogin(s,{...p,password:'wrong'},env,now+2000).status,401)});
+
+test('admin wipe atomically removes a Bar and its Fanta, and refuses a changed link',async t=>{
+ const {db,connect,close}=await fixtureDb();t.after(close);
+ const migration=await readFile(new URL('../netlify/database/migrations/012_random_leagues.sql',import.meta.url),'utf8');
+ await db.exec('BEGIN;'+migration+'COMMIT;');
+ const {s,p,l,token}=fixture(),other=newLeague(s,p,'Altro Bar',true),fanta='fanta-lucas-a';
+ l.nativeFantaLink={leagueId:fanta};
+ await db.query('UPDATE fanta_state SET payload=$1 WHERE id=1',[s]);
+ await db.query("INSERT INTO fanta.competitions(id,league_id,name,kind,status) VALUES('comp',$1,'Coppa','league','draft')",[fanta]);
+ await db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key) VALUES($1,$2,'comp','native:test')",[l.id,fanta]);
+ await db.query("INSERT INTO fanta.creation_jobs(id,bar_id,owner_uid,size,name,league_id) VALUES('job',$1,$2,2,'Test',$3)",[l.id,p.id,fanta]);
+ await db.query("INSERT INTO fanta.results(matchup_id,data) VALUES('m1','{}')");
+ await db.query("INSERT INTO fanta.leagues(id,name,season,admin_uid,invite_code,rules) VALUES('survivor','Altro Fanta',2026,$1,'OTHER','{}')",[p.id]);
+ const api=createApi({transact:fn=>transaction(fn,{connect}),env});
+ const call=(route,body)=>api(new Request('https://example.test/api/'+route,{method:'POST',headers:{cookie:'sid='+token,'content-type':'application/json'},body:JSON.stringify(body)}));
+ const preview=await call('platform-wipe-plan',{scope:'league',target:l.id});
+ assert.equal(preview.status,200);
+ const plan=await preview.json();
+ assert.equal(plan.counts.legheFanta,1);
+ await db.query('UPDATE fanta.bar_links SET active=false WHERE bar_league_id=$1',[l.id]);
+ await db.query("UPDATE fanta_state SET payload=payload #- '{leagues,0,nativeFantaLink}' WHERE id=1");
+ assert.equal((await call('platform-wipe',{plan:plan.id,phrase:plan.phrase})).status,409);
+ assert.equal((await db.query("SELECT count(*)::int AS n FROM fanta.leagues")).rows[0].n,2);
+ assert.equal((await db.query("SELECT jsonb_array_length(payload->'leagues') AS n FROM fanta_state")).rows[0].n,2);
+ await db.query('UPDATE fanta.bar_links SET active=true WHERE bar_league_id=$1',[l.id]);
+ const response=await call('platform-wipe',{plan:plan.id,phrase:plan.phrase});
+ assert.equal(response.status,200);
+ assert.equal((await response.json()).counts.legheFanta,1);
+ assert.deepEqual((await db.query("SELECT id FROM fanta.leagues")).rows,[{id:'survivor'}]);
+ assert.deepEqual((await db.query("SELECT payload#>>'{leagues,0,id}' AS id FROM fanta_state")).rows,[{id:other.id}]);
+ for(const table of ['bar_links','creation_jobs','competitions','teams','rosters','matchups','results']){
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM fanta.'+table)).rows[0].n,0,table);
+ }
+ assert.ok((await db.query("SELECT count(*)::int AS n FROM fanta.players")).rows[0].n>0);
+});
