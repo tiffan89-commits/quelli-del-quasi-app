@@ -1,3 +1,10 @@
+# 0.29.49 — 2026-11-07
+
+- Gol e autogol condividono lo stesso pallone; per gli autogol i pannelli chiari diventano rossi.
+- Eventi sotto la maglia in ordine gol, autogol, rigori parati, assist, cartellini e sostituzioni; nessuna sovrapposizione con cognome o numero.
+- Nei campi e nei riepiloghi Live si mostra solo il fantavoto, senza etichette V/FV; voto base conservato nel dettaglio della prestazione e del calcolo. Aggiornamenti incrementali allineati al rendering iniziale.
+- Nessun cambiamento a motore, voti salvati, punti, saldi o frequenze.
+
 # Emergenza temporanea Netlify — 2026-11-07
 
 - Recuperati dal backend i voti mancanti di Venezia–Udinese e Bologna–Monza con due esecuzioni mirate del motore invariato; verificati risultati nelle viste Fanta e retry orario della verifica ancora incompleta.

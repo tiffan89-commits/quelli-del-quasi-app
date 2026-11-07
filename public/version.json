@@ -1,7 +1,7 @@
 {
-  "version": "0.29.48",
+  "version": "0.29.49",
   "channel": "stable",
-  "releasedAt": "2026-11-06T20:21:12.683Z",
+  "releasedAt": "2026-11-07T03:26:24.755Z",
   "features": [
     "dedicated-admin-mfa",
     "admin-wipe-controls",
@@ -161,6 +161,8 @@
     "commit-triggered-sports-push",
     "automatic-invite-join-after-social",
     "consent-based-pwa-install",
-    "maximized-readable-match-pitch"
+    "maximized-readable-match-pitch",
+    "ordered-player-events-below-shirts",
+    "fantasy-grade-only-match-pitches"
   ]
 }

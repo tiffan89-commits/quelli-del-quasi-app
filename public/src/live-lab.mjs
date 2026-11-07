@@ -1,6 +1,6 @@
 import {renderLineup,bindLineupPitch} from './lineup-pitch.mjs';
 import {footballStatistics,bindFootballStatistics} from './football-statistics.mjs';
-import {pitchEvents} from './pitch-events.mjs';
+import {pitchEvents,fantasyGradeText} from './pitch-events.mjs';
 import {renderPlayerSheet} from './fanta/giornata.mjs';
 import {renderAsta,renderListoneRows,tickAuction} from './fanta/asta.mjs';
 import {esc} from './fanta/formato.mjs';
@@ -23,7 +23,7 @@ function matchView(){
  if(signature!==structure){const state=preserve(el);el.innerHTML=`<div class="lab-score"><div><h2>${esc(m.home)}–${esc(m.away)}</h2><small>${new Date(m.originalDate).toLocaleDateString('it-IT')} · replay</small></div><strong data-lab-score></strong><span data-lab-clock></span></div><div data-lab-lineups>${renderLineup(m)}</div><details class="match-statistics"><summary>Dettagli della partita</summary><div data-lab-events></div><div data-lab-statistics></div></details>`;bindLineupPitch(el);restore(el,state);signature=structure;}
  el.querySelector('[data-lab-score]').textContent=m.score.join(' – ');el.querySelector('[data-lab-clock]').textContent=m.status==='LIVE'?'LIVE · '+m.clock:'Finale';
  for(const t of m.lineups.teams)for(const p of [...t.players,...t.bench])for(const card of el.querySelectorAll('[data-fantasy-player="'+p.id+'"]')){
-  const grade=card.querySelector('[data-fantasy-grade="pitch"]');if(grade){grade.hidden=false;grade.textContent=Number.isFinite(p.grade)?'V '+p.grade+(Number.isFinite(p.fantagrade)?' · FV '+p.fantagrade:''):p.status==='sv'?'s.v.':'—';}
+  const grade=card.querySelector('[data-fantasy-grade="pitch"]');if(grade){grade.hidden=false;grade.textContent=fantasyGradeText(p);}
   const ring=card.querySelector('[data-pitch-events]');if(ring)ring.outerHTML=pitchEvents(p);card.querySelector('.player-probability')?.remove();
  }
  const detail=el.querySelector('[data-lab-events]');detail.innerHTML=m.details.events.map(e=>`<p><b>${e.minute}′</b> ${esc(e.player||'')} · ${esc(e.detail||e.kind)}${e.assist?' · '+esc(e.assist):''}</p>`).join('');

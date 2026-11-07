@@ -1,4 +1,4 @@
-import {pitchEvents} from './pitch-events.mjs';
+import {pitchEvents,fantasyGradeText} from './pitch-events.mjs';
 const grade = value => Number.isFinite(value) ? String(value).replace('.',',') : 's.v.';
 export function fantasyEventsText(events = []) {
   if(!Array.isArray(events)){const labels={goals:'Gol',assists:'Assist',yellow:'Ammonizione',red:'Espulsione',ownGoals:'Autogol',penSaved:'Rigore parato',penMissed:'Rigore sbagliato'};return Object.entries(events||{}).filter(([,n])=>Number(n)>0).map(([k,n])=>(labels[k]||k)+(n>1?' ×'+n:'')).join(' · ');}
@@ -17,7 +17,7 @@ export function patchFantasyMatch(root, match) {
     const player=players.get(row.dataset.fantasyPlayer);if(!player)continue;
     const value=row.querySelector('[data-fantasy-grade]');
     const playing=Number.isFinite(player.grade)||Number.isFinite(player.fantagrade)||['playing','voted','sv'].includes(player.status);
-    if(value&&playing){row.querySelectorAll('.pitch-next-opponent,.pitch-player-club,.player-probability').forEach(el=>el.hidden=true);value.hidden=false;value.textContent=(value.dataset.fantasyGrade==='pitch'?'V ':'')+grade(player.grade)+(value.dataset.fantasyGrade==='pitch'?' · FV ':' / ')+grade(player.fantagrade);}
+    if(value&&playing){row.querySelectorAll('.pitch-next-opponent,.pitch-player-club,.player-probability').forEach(el=>el.hidden=true);value.hidden=false;value.textContent=fantasyGradeText(player);}
     const marker=row.querySelector('[data-pitch-events]');if(marker&&playing){const html=pitchEvents(player);if(marker.outerHTML!==html)marker.outerHTML=html;}
     const events=row.querySelector('[data-fantasy-events]');if(events)events.textContent=fantasyEventsText(player.events);
   }
