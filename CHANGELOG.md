@@ -1,3 +1,8 @@
+# 0.31.3
+
+- Tavolo d’asta compatto con barra del rilancio, regolazione di un credito e conferma esplicita. L’offerta migliore, il saldo previsto di chi è in testa e la differenza del rilancio restano visibili.
+- Due barrette per riga mostrano i partecipanti ancora in gioco nell’ordine di chiamata. Il timer è integrato nel Tavolo, nei Partecipanti e nella Rosa.
+
 # Unreleased
 
 - L’asta si segnala con un banner stabile e un indicatore nelle leghe, aggiornati in push. La sala si apre quando il partecipante lo sceglie.
