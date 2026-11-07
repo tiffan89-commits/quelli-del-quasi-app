@@ -23,6 +23,7 @@ export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,
    if(preview||url.pathname.startsWith('/invito/'))res.setHeader('X-Robots-Tag','noindex, nofollow');
    const gate=previewGate(req,url);if(gate){res.writeHead(gate.status,Object.fromEntries(gate.headers));res.end(Buffer.from(await gate.arrayBuffer()));return;}
    if(url.pathname==='/healthz')return json(res,req.method==='GET'?200:405,{ok:req.method==='GET',version:packageInfo.version+'-selfhost'});
+   if(process.env.SELFHOST_MAINTENANCE==='true'){res.setHeader('Retry-After','300');return json(res,503,{error:'Sito temporaneamente trasferito su Netlify. Riprova tra pochi minuti.'});}
    const handler=url.pathname.startsWith('/api/')?api:url.pathname.startsWith('/fanta-api/')?fanta:url.pathname==='/.netlify/functions/public-football'?scores:null;
    if(handler){
     let length=0;const chunks=[];for await(const chunk of req){length+=chunk.length;if(length>bodyLimit){req.resume();return json(res,413,{error:'Request too large'});}chunks.push(chunk);}
@@ -51,9 +52,10 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const server=createServer({api,fanta,scores});
  const {attachAuctionSocket}=await import('./auction-socket.mjs');
  const origin=process.env.PUBLIC_ORIGIN,aliases=new URL(origin).hostname==='quellidelquasi.com'?['https://casa.quellidelquasi.com','https://server.quellidelquasi.com']:[];
- const auctionHub=await attachAuctionSocket(server,{origin,allowedOrigins:[origin,...aliases]});
- const {attachSportsSocket}=await import('./sports-socket.mjs');const sportsHub=attachSportsSocket(auctionHub.io);
- const {listenSportsSaved}=await import('./sports-notifications.mjs');const sportsListener=listenSportsSaved(()=>sportsHub.refresh());
+ const maintenance=process.env.SELFHOST_MAINTENANCE==='true';
+ const auctionHub=maintenance?{close:async()=>{}}:await attachAuctionSocket(server,{origin,allowedOrigins:[origin,...aliases]});
+ const {attachSportsSocket}=await import('./sports-socket.mjs');const sportsHub=maintenance?{close:async()=>{}}:attachSportsSocket(auctionHub.io);
+ const {listenSportsSaved}=await import('./sports-notifications.mjs');const sportsListener=maintenance?{close:async()=>{}}:listenSportsSaved(()=>sportsHub.refresh());
  server.listen(Number(process.env.PORT)||3000,process.env.HOST||'127.0.0.1',()=>console.info('QUASI_HTTP_READY'));
  let ending=false;const stop=async()=>{if(ending)return;ending=true;await sportsListener.close();await sportsHub.close();await auctionHub.close();await closeDatabase();};process.once('SIGTERM',stop);process.once('SIGINT',stop);
 }

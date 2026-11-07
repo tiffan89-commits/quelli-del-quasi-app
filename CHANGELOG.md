@@ -1,3 +1,9 @@
+# Emergenza temporanea Netlify — 2026-11-07
+
+- Build opzionale per letture live dal DB ogni minuto quando Socket.IO non è disponibile; asta sul recupero HTTP esistente. Nessuna modifica alla build normale.
+- Manutenzione del server domestico: blocco API/socket e worker anche al riavvio, per evitare scritture divergenti durante il passaggio temporaneo al cloud.
+- Ripristino cloud ridotto ai voti definitivi e ai dati di gioco; documentate verifica e procedura di ritorno con riallineamento dei nuovi salvataggi.
+
 # 0.29.48 — 2026-11-06
 
 - Campo delle partite esteso fino alla barra inferiore, maglie fino a 84 px e cognomi più grandi; spazio riservato ai metadati. Per chi gioca, voto al posto di probabilità, avversario e club; push Fanta dei voti e degli eventi nel dettaglio senza ricreare la pagina.
