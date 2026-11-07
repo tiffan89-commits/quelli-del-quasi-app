@@ -28,9 +28,20 @@ export async function createLeaguePair(c,s,user,input,{season=2026,now=Date.now(
  return {ok:true,league:bar.id,fantaLeague:id,reused:s.leagues.length===count,creationStatus:status,...(status==='queued'?{jobId:requestId}:{}),message:mode==='random'?'Bar e Fanta creati. Le rose equilibrate saranno disponibili tra qualche minuto.':'Bar e Fanta creati. Squadre vuote pronte per l’asta iniziale.'};
 }
 export async function joinLinkedTeam(c,bar,user){
- const id=bar.nativeFantaLink?.leagueId;if(!id)return;
- const league=(await c.query(`SELECT id FROM fanta.leagues WHERE id=$1 AND source_key IS NULL AND rules->>'disabledAt' IS NULL`,[id])).rows[0];if(!league)return;
- let team=(await c.query('SELECT id FROM fanta.teams WHERE league_id=$1 AND user_id=$2',[id,user.id])).rows[0];
- if(!team){team=(await c.query('SELECT id FROM fanta.teams WHERE league_id=$1 AND user_id IS NULL ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED',[id])).rows[0];if(team)await c.query('UPDATE fanta.teams SET user_id=$2,manager=$3,joined_at=now() WHERE id=$1',[team.id,user.id,user.name||user.username]);}
- if(team)bar.nativeFantaLink.coachIds=[...new Set([...(bar.nativeFantaLink.coachIds||[]),user.id])];
+ const link=(await c.query(`SELECT l.id,l.max_members,b.competition_id FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id WHERE b.bar_league_id=$1 AND b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL FOR UPDATE OF l`,[bar.id])).rows[0];
+ if(!link)return;
+ const id=link.id;
+ const teams=(await c.query('SELECT id,user_id FROM fanta.teams WHERE league_id=$1 ORDER BY id FOR UPDATE',[id])).rows;
+ const barMembers=new Set(bar.members.map(m=>m.uid)),coaches=teams.map(t=>t.user_id).filter(Boolean);
+ const occupied=new Set([...barMembers,...coaches]);
+ let team=teams.find(t=>t.user_id===user.id);
+ if(!barMembers.has(user.id)&&(barMembers.size>=link.max_members||!team&&occupied.size>=link.max_members))fail('La lega è al completo',409);
+ if(!team){
+  team=teams.find(t=>!t.user_id);
+  if(!team)fail('La lega è al completo',409);
+  await c.query('UPDATE fanta.teams SET user_id=$2,manager=$3,joined_at=now() WHERE id=$1',[team.id,user.id,user.name||user.username]);
+ }
+ const previous=bar.nativeFantaLink;
+ bar.nativeFantaLink={...previous,leagueId:id,competitionId:link.competition_id,maxMembers:link.max_members,coachIds:[...new Set([...coaches,user.id])]};
+ return team.id;
 }

@@ -92,6 +92,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
   });},
   async persistAuction(c,before,after,actor,kind,input){
    const a=after.auction,id=after.league.id;
+   if(before.rules.budget!==after.rules.budget)await c.query("UPDATE fanta.leagues SET rules=jsonb_set(rules,'{budget}',to_jsonb($2::integer),true) WHERE id=$1",[id,after.rules.budget]);
    if(kind==='undo'){const removed=before.teams.flatMap(t=>t.roster).filter(p=>!after.teams.some(t=>t.roster.some(x=>x.id===p.id)));for(const p of removed){const used=await c.query("SELECT 1 FROM fanta.lineups l JOIN fanta.rounds r ON r.competition_id=l.competition_id AND r.number=l.round WHERE l.league_id=$1 AND r.deadline<=now() AND (l.starters ? $2 OR l.bench ? $2) LIMIT 1",[id,p.id]);if(used.rows.length)fail('Il giocatore è già in una formazione chiusa: acquisto non annullabile',409);}}
    await persistRosterChanges(c,before,after,{actor,kind,input});
    if(['assign','tick','read','close','releases-done'].includes(kind)&&readyRosters(after)){

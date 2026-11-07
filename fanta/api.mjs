@@ -1,5 +1,5 @@
 import {withFinalVerification} from './final-verification.mjs';
-import {queueAuctionOpened} from './notifications.mjs';
+import {queueAuctionNotice} from './notifications.mjs';
 import {lineupRound} from './round-selection.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
 import {probabilityFor,readPlayProbabilities,readPresenceMinutes} from './play-probabilities.mjs';
@@ -87,9 +87,12 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
      if(kind==='players')return s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id))).sort((a,b)=>(b.value||1)-(a.value||1));
      if(!isWrite)return auctionView(s,u.id,now());
      const next=auctionAction(s,kind==='tick'?'read':kind,p,u.id,{admin:s.league.adminUid===u.id,now:now()});
-     if(next.auction.status==='running'&&s.auction.status!=='running'){
+     if(kind==='schedule'&&next.auction.version!==s.auction.version){
+      next.auction.scheduleNotificationKey=s.league.id+':schedule:'+next.auction.version+':'+next.auction.startsAt;
+      auctionNotice=await queueAuctionNotice(c,next,next.auction,{now:now()});
+     }else if(next.auction.status==='running'&&s.auction.status!=='running'){
       next.auction.openNotificationKey=s.league.id+':open:'+next.auction.version+':'+now();
-      auctionNotice=await queueAuctionOpened(c,next,next.auction,{now:now()});
+      auctionNotice=await queueAuctionNotice(c,next,next.auction,{now:now()});
      }
      if(next.auction.version!==s.auction.version)await store.persistAuction(c,s,next,u.id,kind,p);
      return auctionView(next,u.id,now());

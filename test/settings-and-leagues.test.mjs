@@ -38,8 +38,9 @@ test('invitation code is readable by current members only; state rendering chang
 test('Quasi reward collection starts collapsed',()=>{const {document}=parseHTML(rewardsView({rewards:[]},String));assert.equal(document.getElementById('rewards-collection').hasAttribute('open'),false);});
 
 test('Bar home invite is shared by president and members, excludes computers and hides when full',()=>{
- const league={code:'TEST',name:'Bar test',admin:'a',members:[{uid:'a'},{uid:'b'}],nativeFantaLink:{maxMembers:4,coachIds:['a','b']}};
- for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 allenatori/);assert.match(html,/wa.me/);assert.match(html,/data-president-group="persone"/);}
+ const league={code:'TEST',name:'Bar test',admin:'a',members:[{uid:'a'},{uid:'b'}],nativeFantaLink:{maxMembers:4,coachIds:['a']}};
+ for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 iscritti/);assert.match(html,/wa.me/);assert.match(html,/data-president-group="persone"/);}
  assert.equal(barHomeInvite(league,{id:'outsider'},String),'');
+ league.nativeFantaLink.coachIds=['a','c','d'];assert.equal(barHomeInvite(league,{id:'a'},String),'');
  league.nativeFantaLink.maxMembers=2;assert.equal(barHomeInvite(league,{id:'a'},String),'');
 });

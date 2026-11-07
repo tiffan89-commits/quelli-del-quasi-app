@@ -3,18 +3,17 @@ import {leagueActions} from '../league-actions.mjs';
 import {settingsLogout,presidentPanel} from '../president-panel.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
-import { esc, pts, countdown, dayTime, OUTCOME, extremeClass, orderRounds } from './formato.mjs';
+import { esc, pts, dayTime, OUTCOME, extremeClass, orderRounds } from './formato.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderCompetitions} from './competitions-ui.mjs';
 import {renderAppInvite} from '../app-invite.mjs';
 import {renderLeagueInvite} from './league-invite.mjs';
-import {computerAuctionNote,computerAuctionOption} from './asta.mjs';
+import {auctionWhen} from './auction-wizard.mjs';
 
 export const LEGA_GROUPS={classifica:['classifica','calendario','schedine'],lega:['asta','regole','partecipanti','competizioni']};
 export const groupOf=sub=>LEGA_GROUPS.classifica.includes(sub)?'classifica':'lega';
 const SUBS = [['classifica', 'Classifica'], ['calendario', 'Calendario'],['schedine','Classifica schedine'], ['asta', 'Asta'], ['regole', 'Regolamento'], ['partecipanti', 'Partecipanti'],['competizioni','Competizioni']];
 const MODE = { live: 'Online, a turni con timer', manual: 'Dal vivo, a voce con banditore' };
-const ROLE_PLURAL = { P: 'portieri', D: 'difensori', C: 'centrocampisti', A: 'attaccanti' };
 
 const formDots = form => `<span class="fanta-form is-small">${form.map(f => `<i class="is-${f}" title="${OUTCOME[f]}">${f}</i>`).join('')}</span>`;
 
@@ -60,57 +59,15 @@ function calendar(l, ui) {
   </section>`;
 }
 
-export function auctionSection(l, ui, now) {
-  const a = l.auction, admin = l.isAdmin&&ui.adminTools;
-  let card;
-  if (a.status === 'running') {
-    card = `<div class="fanta-lg-card is-live">
-      <span class="fanta-live">IN CORSO</span><h2>${esc(a.typeLabel)}</h2><p>${MODE[a.mode]} · iniziata ${esc(dayTime(a.startsAt))}</p>
-      <button type="button" class="primary" data-go="asta">Entra nella sala <span aria-hidden="true">→</span></button>
-      ${admin ? '<button type="button" class="secondary" data-lega-auction="close">Chiudi l\'asta</button>' : ''}
-    </div>`;
-  } else if (a.status === 'scheduled') {
-    const left = countdown(a.startsAt, now);
-    card = `<div class="fanta-lg-card">
-      <span class="eyebrow">Programmata</span><h2>${esc(a.typeLabel)}</h2><p>${esc(dayTime(a.startsAt))} · ${MODE[a.mode]}</p>
-      ${left ? `<div class="dash-clock"><span>Si apre tra</span><strong data-countdown="${esc(a.startsAt)}">${left}</strong></div>` : '<p>Sta per aprire.</p>'}
-      <p class="fanta-note">La sala si apre all'orario stabilito${admin ? ', oppure quando la apri tu' : ''}. Riceverete una notifica.</p>
-      ${admin ? '<button type="button" class="primary" data-lega-auction="start">Apri la sala adesso</button><button type="button" class="secondary" data-lega-auction="edit">Modifica</button>' : ''}
-    </div>`;
-  } else {
-    card = `<div class="fanta-lg-card is-idle"><span class="eyebrow">${a.status === 'ended' ? 'Asta chiusa' : 'Nessuna asta'}</span>
-      <h2>${a.status === 'ended' ? `${esc(a.typeLabel)} conclusa` : 'Nessuna asta in programma'}</h2>
-      <p>${admin ? 'Programma la prossima qui sotto.' : 'Quando l\'admin la programma, la trovi qui e ricevi una notifica.'}</p></div>`;
-  }
-  const showForm = admin && (a.status !== 'running') && (a.status !== 'scheduled' || ui.editAuction);
-  const f = ui.auctionForm || {};
-  const defaultDate = (() => { const d = new Date(now + 86400000); d.setHours(21, 0, 0, 0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); })();
-  const form = showForm ? `<form class="fanta-lg-form" data-lega-auction-form>
-      <h3>${a.status === 'scheduled' ? 'Modifica l\'asta' : 'Nuova asta'}</h3>
-      <label>Tipo<select name="type">${Object.entries(a.types).filter(([k])=>l.league.kind!=='random'||k==='riparazione').map(([k, v]) => `<option value="${k}"${(f.type || 'riparazione') === k ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
-      <fieldset><legend>Modalità</legend>
-        ${Object.entries(MODE).map(([k, v]) => `<label class="fanta-choice"><input type="radio" name="mode" value="${k}"${(f.mode || a.mode || 'live') === k ? ' checked' : ''}><span><b>${k === 'live' ? 'Online' : 'Dal vivo'}</b><small>${v}</small></span></label>`).join('')}
-      </fieldset>
-      <label>Data e ora<input type="datetime-local" name="startsAt" value="${esc(f.startsAt || defaultDate)}" required></label>
-      <button type="submit" class="primary">Programma l'asta</button>
-      ${ui.auctionError ? `<p class="fanta-note is-alert">${esc(ui.auctionError)}</p>` : ''}
-    </form>` : (ui.auctionError ? `<p class="fanta-note is-alert">${esc(ui.auctionError)}</p>` : '');
-  const r = l.rules;
-  return `<section class="fanta-block is-first">
-    ${computerAuctionNote(a)}${card}
-    ${admin&&a.status!=='running'?computerAuctionOption(a,ui.computerTeams):''}
-    ${admin&&a.status!=='running'?'<div class="fanta-start-now"><button type="button" class="primary" data-lega-auction="now-manual">Apri subito · dal vivo</button><button type="button" class="secondary" data-lega-auction="now-live">Apri subito · online</button></div>':''}${form}
-    <div class="dash-section-head fanta-lg-sub"><div><h2>Crediti e rose</h2><small>${r.budget} crediti a testa · rosa ${Object.entries(r.roster).map(([k, v]) => `${v} ${ROLE_PLURAL[k]}`).join(', ')}</small></div></div>
-    <ul class="fanta-a-teams">${a.teams.map(t => `<li>
-      ${teamLogo(t.team)}
-      <span class="fanta-p-name"><b>${esc(t.team.name)}</b><small>${Object.entries(t.roles).map(([k, x]) => `${k} ${x.have}/${x.max}`).join(' · ')}</small></span>
-      <span class="fanta-a-num"><b>${t.spent}</b><small>spesi</small></span>
-      <span class="fanta-a-num"><b>${t.credits}</b><small>restano</small></span>
-      <span class="fanta-a-num"><b>${t.slotsLeft}</b><small>posti</small></span></li>`).join('')}</ul>
-  </section>`;
+export function auctionSection(l) {
+  const a=l.auction;
+  const title=a.status==='scheduled'?'Asta programmata':a.status==='running'?'Asta in corso':a.status==='ended'?'Asta conclusa':'Nessuna asta in programma';
+  return `<section class="fanta-block is-first"><div class="fanta-lg-card"><h2>${title}</h2>
+    ${a.status==='scheduled'?`<p>${esc(auctionWhen(a.startsAt))} · ${MODE[a.mode]}</p>`:''}
+    ${['running','scheduled','ended'].includes(a.status)?'<button type="button" class="primary" data-go="asta">Entra nella sala →</button>':''}
+  </div></section>`;
 }
-
-export function rules(l, ui={}) {
+function rules(l, ui={}) {
   const r = l.rules;
   return `${l.isAdmin&&ui.adminTools?`<details class="fanta-block"><summary>Impostazioni schedina</summary><form data-fanta-slips-form class="fanta-lg-form"><label class="ux-feature-toggle"><span>Schedina del Fanta attiva</span><input class="fanta-switch" type="checkbox" name="enabled" ${l.league.slipsEnabled!==false?'checked':''}></label><button type="submit" class="secondary">Salva impostazione</button></form></details>`:''}<section class="fanta-block is-first fanta-rules">
     <h3>Bonus e malus</h3>
@@ -158,8 +115,8 @@ export function fantaPresidentTasks(l){
  if(!l?.isAdmin)return [];
  const tasks=[],free=l.league.maxMembers-(l.members?l.members.filter(m=>m.human).length:l.league.humanMembers??l.league.maxMembers);
  if(free>0)tasks.push({text:free+' squadre guidate dal computer',group:'persone',action:'Invita'});
- if(['none','idle','ended'].includes(l.auction.status)&&!['pilot','random'].includes(l.league.kind))tasks.push({text:l.auction.status==='ended'?'Asta conclusa':'Asta non programmata',group:'calendario',action:'Gestisci'});
- if(l.competition?.status==='draft')tasks.push({text:'Competizione da avviare',group:'calendario',action:'Verifica'});
+ if(l.league.kind!=='pilot')tasks.push({text:({ended:'Asta conclusa',scheduled:'Asta programmata',running:'Asta in corso'})[l.auction.status]||'Asta non programmata',group:'calendario',action:'Gestisci asta',auction:true});
+ if(l.competition?.status==='draft')tasks.push({text:'Competizione da avviare',group:'competizioni',action:'Verifica'});
  return tasks;
 }
 export function renderFantaPresident(l,ui={},now=Date.now()){
@@ -169,7 +126,10 @@ export function renderFantaPresident(l,ui={},now=Date.now()){
  persone:{summary:count+'/'+l.league.maxMembers+' allenatori · '+(l.league.maxMembers-count)+' computer',html:members(l,a)},
  regole:{summary:l.rules.budget+' crediti · '+(l.league.slipsEnabled!==false?'schedina attiva':'schedina disattivata'),html:rules(l,a)},
  ...(l.isAdmin?{
- calendario:{summary:(l.competitions?.length||1)+' competizioni · '+({running:'asta in corso',scheduled:'asta programmata',ended:'asta conclusa'}[l.auction.status]||'nessuna asta programmata'),html:auctionSection(l,a,now)+(l.league.kind==='pilot'?'':renderCompetitions(l,a))},
+ ...(l.league.kind==='pilot'?{}:{
+ calendario:{summary:({running:'Asta in corso',scheduled:'Asta programmata',ended:'Asta conclusa'})[l.auction.status]||'Nessuna asta programmata',html:'<button type="button" class="primary" data-auction-manage="1">Gestisci asta →</button>'},
+ competizioni:{summary:(l.competitions?.length||1)+' competizioni',html:renderCompetitions(l,a)}
+ }),
  identita:{summary:bar?'Colori e simbolo condivisi con il Bar':'Identità della lega',html:bar?'<p>Il simbolo, il colore e il motto sono comuni a Bar e Fanta.</p><button type="button" class="secondary" data-mode="bar" data-bar-page="admin">Modifica identità nel Bar</button>':'<p>Lo stemma della tua squadra si modifica dalla pagina Oggi.</p>'}
  }:{}),
  account:{summary:'Il tuo account, avvisi e assistenza',html:renderIo(ui.me,[],null,{...ui.io,settingsOnly:true,pilot:l.league.kind==='pilot'},ui.demo)+(ui.accountHtml||'<button type="button" class="secondary" data-mode="bar" data-bar-page="profilo">Gestisci account e assistenza</button>')}

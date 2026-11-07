@@ -15,7 +15,7 @@ function computerTurn(s){
  const a=s.auction,lot=a.lot;
  if(!computerTeamsActive(s)||a.status!=='running'||a.phase==='releases'||a.pausedUntil||lot?.closing)return null;
  const deadline=Date.parse(lot?.endsAt||a.callDeadline);
- const since=lot?Date.parse(lot.history.at(-1)?.at):deadline-s.rules.callSeconds*1000;
+ const since=lot?(Date.parse(lot.history.at(-1)?.at)||deadline-(s.rules.openSeconds-s.rules.finalSeconds+s.rules.finalStretch)*1000):deadline-s.rules.callSeconds*1000;
  if(!Number.isFinite(since)||!Number.isFinite(deadline))return null;
  const eligible=s.teams.filter(t=>!t.userId&&(lot?t.id!==lot.leader&&!lot.passed.includes(t.id)&&!lot.autoPassed[t.id]:t.id===a.caller));
  // Anchor each team's reaction to the last action so reconnects never restart its clock.
@@ -29,7 +29,7 @@ export function computerDecision(s,{now=Date.now()}={}){
  const turn=computerTurn(s),a=s.auction,lot=a.lot;
  if(!turn||now<turn.at||now>=Date.parse(lot?.endsAt||a.callDeadline))return null;
  const bot=turn.team;
- if(!lot){const candidates=s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(r=>r.id===p.id))).map(p=>({p,...computerValuation(s,bot,p,{now})})).filter(x=>x.ceiling>0).sort((a,b)=>b.interest-a.interest||b.ceiling-a.ceiling);const pick=candidates[Math.floor(random(bot.id,a.version)*Math.min(5,candidates.length))];return pick?{kind:'nominate',teamId:bot.id,input:{playerId:pick.p.id,amount:1}}:null;}
+ if(!lot){const candidates=s.players.filter(p=>(!a.currentRole||a.currentRole===p.role)&&p.active!==false&&!s.teams.some(t=>t.roster.some(r=>r.id===p.id))).map(p=>({p,...computerValuation(s,bot,p,{now})})).filter(x=>x.ceiling>0).sort((a,b)=>b.interest-a.interest||b.ceiling-a.ceiling);const pick=candidates[Math.floor(random(bot.id,a.version)*Math.min(5,candidates.length))];return pick?{kind:'nominate',teamId:bot.id,input:{playerId:pick.p.id,amount:1}}:null;}
  const valuation=computerValuation(s,bot,lot.player,{now}),amount=lot.bid+s.rules.minRaise;
  return valuation.ceiling>=amount?{kind:'bid',teamId:bot.id,input:{lotId:lot.id,amount},reason:valuation.reason}:{kind:'pass',teamId:bot.id,input:{lotId:lot.id},reason:valuation.reason};
 }
