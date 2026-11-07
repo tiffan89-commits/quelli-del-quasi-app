@@ -52,6 +52,7 @@ export function createFantaApi({userId}={}) {
     // Programmazione dell'asta: solo l'admin
     auctionSchedule: (leagueId, data) => write('auction/schedule', { league: leagueId, ...data }),
     auctionStart: (leagueId,computerTeams) => write('auction/start', { league: leagueId,computerTeams }),
+    auctionLobbyStart: leagueId => write('auction/lobby-start', { league: leagueId }),
     auctionStartNow:(leagueId,mode='manual',computerTeams,settings={})=>write('auction/start-now',{league:leagueId,mode,computerTeams,...settings}),
     auctionDraw:leagueId=>write('auction/draw',{league:leagueId}),
     auctionClose: leagueId => write('auction/close', { league: leagueId }),

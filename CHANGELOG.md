@@ -1,3 +1,9 @@
+# Unreleased
+
+- Sala d’attesa dell’asta online con presenze in tempo reale, ordine di chiamata e conto alla rovescia condiviso di 10 secondi avviato dal presidente.
+- Listone, svincoli e conferme tornano in primo piano. Il timer è più leggibile e le nuove offerte mostrano il Quasi e il nome dell’offerente, con un segnale audio.
+- Il wizard distingue asta iniziale e riparazione in base alle rose. I computer restano esclusi se disattivati, anche in demo.
+
 # 0.29.52 — 2026-11-07
 
 - Le squadre generate dal Fanta ricevono nomi ironici di due parole, con una selezione di nomi in stile Atletico Poco e Hellas Madonna.

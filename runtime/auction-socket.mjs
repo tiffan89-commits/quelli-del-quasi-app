@@ -9,7 +9,7 @@ import {dispatchFanta} from '../fanta/jobs.mjs';
 export function socketAuctionView(state,uid,stamp){
  const data=auctionView(state,uid,stamp),player=p=>p?Object.fromEntries(['id','name','role','club','price','value','fm','played','ownerTeam'].filter(k=>p[k]!==undefined).map(k=>[k,p[k]])):p;
  data.competition=state.competition?{id:state.competition.id,status:state.competition.status,startRound:state.competition.start_round}:null;
- data.teams=data.teams.map(t=>({...t,team:{id:t.team.id,name:t.team.name,manager:t.team.manager,color:t.team.color}}));
+ data.teams=data.teams.map(t=>({...t,team:{id:t.team.id,name:t.team.name,manager:t.team.manager,color:t.team.color,userId:t.team.userId}}));
  data.myRoster=data.myRoster.map(player);data.log=data.log.map(s=>({...s,player:player(s.player)}));
  if(data.lot)data.lot={...data.lot,player:player(data.lot.player)};data.table=player(data.table);
  if(data.lastSale)data.lastSale={...data.lastSale,player:player(data.lastSale.player)};
@@ -53,6 +53,10 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   socket.data={league,token,user,acked:0};next();
  }catch{next(Error('Accedi alla lega per seguire l’asta.'));}});
  function roomFor(league,uid){if(!rooms.has(league))rooms.set(league,{league,uid,sockets:new Set(),state:null,pending:false,refreshing:null,timer:null,attemptedComputerTurn:null});return rooms.get(league);}
+ function pushPresence(room){
+  const present=new Set([...room.sockets].filter(s=>s.connected&&s.data.inAuction).map(s=>s.data.user.id));
+  io.to('auction:'+room.league).emit('auction:presence',(room.state?.teams||[]).filter(t=>present.has(t.userId)).map(t=>t.id));
+ }
  function send(socket,room,stamp){
   const state=room.state;if(!state?.teams.some(t=>t.userId===socket.data.user.id)){socket.disconnect(true);return;}
   const data=socketAuctionView(state,socket.data.user.id,stamp);socket.data.sent=data.version;
@@ -87,7 +91,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  }
  function schedule(room){
   clearTimeout(room.timer);const a=room.state?.auction;if(!a)return;
-  const deadline=a.status==='scheduled'?a.startsAt:a.status==='running'&&a.mode==='live'&&a.phase!=='releases'?(a.pausedUntil||a.lot?.endsAt||a.callDeadline):null;
+  const deadline=a.status==='scheduled'?a.startsAt:a.status==='running'&&a.mode==='live'&&a.phase!=='releases'?(a.lobbyEndsAt||a.pausedUntil||a.lot?.endsAt||a.callDeadline):null;
   const botDeadline=computerActionAt(room.state);
   const nextDeadline=Math.min(deadline?Date.parse(deadline):Infinity,botDeadline!==room.attemptedComputerTurn?botDeadline??Infinity:Infinity);
   if(Number.isFinite(nextDeadline)){const delay=Math.max(20,Math.min(86400000,nextDeadline-now()+10));room.timer=setTimeout(()=>void tick(room),delay);}
@@ -99,7 +103,8 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
     // One shared authoritative state per version, personalized in memory for each participant.
     const state=await store.league(room.uid,room.league,s=>s,{catalog:false,detailedVotes:false});
     if(room.state&&state.auction.version<room.state.auction.version)continue;
-    room.state=state;const stamp=now();for(const socket of room.sockets)if(socket.connected)send(socket,room,stamp);
+    const previous=room.state;room.state=state;const stamp=now();for(const socket of room.sockets)if(socket.connected)send(socket,room,stamp);
+    if(!previous||previous.auction.phase!==state.auction.phase)pushPresence(room);
     schedule(room);
     log('AUCTION_PUSH',{league:room.league,version:state.auction.version,devices:room.sockets.size});
    }catch{for(const socket of room.sockets)socket.emit('auction:unavailable');clearTimeout(room.timer);room.timer=setTimeout(()=>void refresh(room),2000);}
@@ -113,9 +118,10 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  io.on('connection',socket=>{
   const room=roomFor(socket.data.league,socket.data.user.id);room.sockets.add(socket);socket.join('auction:'+room.league);
   let lastClock=0;
+  socket.on('auction:room',value=>{if(typeof value!=='boolean'||socket.data.inAuction===value)return;socket.data.inAuction=value;pushPresence(room);});
   socket.on('auction:clock',ack=>{if(typeof ack==='function'&&now()-lastClock>=1000){lastClock=now();ack({serverTime:new Date(now()).toISOString()});}});
-  socket.on('disconnect',()=>{room.sockets.delete(socket);if(!room.sockets.size&&!['scheduled','running'].includes(room.state?.auction.status)){clearTimeout(room.timer);rooms.delete(room.league);}});
-  if(room.state)send(socket,room,now());else void refresh(room);
+  socket.on('disconnect',()=>{room.sockets.delete(socket);if(socket.data.inAuction)pushPresence(room);if(!room.sockets.size&&!['scheduled','running'].includes(room.state?.auction.status)){clearTimeout(room.timer);rooms.delete(room.league);}});
+  if(room.state){send(socket,room,now());pushPresence(room);}else void refresh(room);
  });
  const stopListening=subscribe?await subscribe(id=>void changed(id).catch(()=>{})):await listenAuctionChanges(id=>void changed(id).catch(()=>{}),{onUnavailable:()=>{listenerReady=false;for(const socket of io.sockets.sockets.values())socket.emit('auction:unavailable');},onReady:()=>{listenerReady=true;for(const room of rooms.values())void refresh(room);}});
  // Timers run on the server even when no participant has a page open.

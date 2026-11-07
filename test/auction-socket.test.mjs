@@ -16,15 +16,17 @@ test('Socket.IO pushes committed snapshots, isolates rooms, acknowledges all pee
   await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
   hub=await attachAuctionSocket(server,{store,origin,subscribe:change=>{bus.on('change',change);return()=>bus.off('change',change);},log(){}});
   const api=createFantaApi({store}),call=async(route,input={})=>{const r=await api(new Request(origin+'/fanta-api/'+route,{method:'POST',headers:{cookie:'sid=token1'},body:JSON.stringify({league:'fanta-lucas-a',...input})}));assert.equal(r.status,200,await r.clone().text());return r.json();};
-  const connect=(token,league='fanta-lucas-a',site=origin)=>{const s=client(origin,{transports:['websocket'],auth:{league},extraHeaders:{Origin:site,Cookie:'sid='+token},forceNew:true,reconnection:false});s.last=null;s.on('auction:update',(msg,ack)=>{s.last=msg.data;ack({version:msg.data.version});});sockets.push(s);return s;};
+  const connect=(token,league='fanta-lucas-a',site=origin)=>{const s=client(origin,{transports:['websocket'],auth:{league},extraHeaders:{Origin:site,Cookie:'sid='+token},forceNew:true,reconnection:false});s.last=null;s.on('auction:update',(msg,ack)=>{s.last=msg.data;ack({version:msg.data.version});});s.on('auction:presence',ids=>{s.present=ids;});sockets.push(s);return s;};
   const peers=Array.from({length:6},(_,i)=>connect('token'+(i+1))),[a,b]=peers;await waitFor(()=>peers.every(s=>s.last));assert.equal(a.last.me,'t1');assert.equal(b.last.me,'t2');assert.ok(peers.every(s=>s.last.version===a.last.version));
+  a.emit('auction:room',true);b.emit('auction:room',true);await waitFor(()=>peers.every(s=>s.present?.length===2));assert.deepEqual(a.present,['t1','t2']);
   const denied=connect('invalid');await new Promise(r=>denied.once('connect_error',r));assert.equal(denied.connected,false);
   const wrong=connect('token2','another-league');await new Promise(r=>wrong.once('connect_error',r));assert.equal(wrong.connected,false);
   const hostile=connect('token1','fanta-lucas-a','https://hostile.test');await new Promise(r=>hostile.once('connect_error',r));assert.equal(hostile.connected,false);
   let state=await call('auction/start-now',{mode:'manual',type:'iniziale'});await waitFor(()=>peers.every(s=>s.last.version===state.version));
   state=await call('auction/table',{playerId:'free'});await waitFor(()=>peers.every(s=>s.last.table?.id==='free'));assert.ok(peers.every(s=>s.last.version===a.last.version));assert.equal(b.last.isAdmin,false);
   await waitFor(()=>hub.stats()[0]?.acknowledged===6);
-  b.disconnect();state=await call('auction/assign',{playerId:'free',teamId:'t1',price:5});await waitFor(()=>a.last.version===state.version);
+  b.disconnect();await waitFor(()=>a.present?.length===1);assert.deepEqual(a.present,['t1']);
+  state=await call('auction/assign',{playerId:'free',teamId:'t1',price:5});await waitFor(()=>a.last.version===state.version);
   b.last=null;b.connect();await waitFor(()=>b.last?.version===state.version);assert.equal(b.last.teams.find(t=>t.team.id==='t1').spent,a.last.teams.find(t=>t.team.id==='t1').spent);assert.equal(b.last.lastSale.player.id,'free');
   const stamp=await new Promise((resolve,reject)=>a.timeout(1000).emit('auction:clock',(err,data)=>err?reject(err):resolve(data)));assert.ok(Math.abs(Date.now()-Date.parse(stamp.serverTime))<500);
  }finally{for(const s of sockets)s.disconnect();if(hub)await hub.close();else await new Promise(r=>server.close(r));await f.close();}
@@ -44,7 +46,11 @@ test('server advances an auction deadline without any connected client or client
   const retry=await schedule();assert.equal((await retry.json()).version,planned.version);
   const notices=(await f.db.query("SELECT user_id,data FROM fanta.notifications WHERE kind='auction' ORDER BY user_id")).rows;
   assert.deepEqual(notices.map(n=>n.user_id),['bar-only','u1','u2']);assert.ok(notices.every(n=>n.data.title.startsWith('Asta programmata')&&n.data.url.includes('/fanta/asta')));
-  await waitFor(()=>hub.stats()[0]?.version>planned.version+1,5000);assert.equal(hub.stats()[0].devices,0);
+  await waitFor(()=>hub.stats()[0]?.version===planned.version+1,5000);assert.equal(hub.stats()[0].devices,0);
+  const startedAt=Date.now(),start=await api(new Request(origin+'/fanta-api/auction/lobby-start',{method:'POST',headers:{cookie:'sid=token1'},body:JSON.stringify({league:settings.league})}));
+  assert.equal(start.status,200,await start.clone().text());const lobby=await start.json();assert.equal(lobby.phase,'lobby');
+  assert.ok(Date.parse(lobby.lobbyEndsAt)>=startedAt+10000);assert.equal(lobby.caller,null);
+  await waitFor(()=>hub.stats()[0]?.version>=lobby.version+2,14000);assert.equal(hub.stats()[0].devices,0);
   const saved=(await f.db.query("SELECT a.data,l.rules FROM fanta.auctions a JOIN fanta.leagues l ON l.id=a.league_id WHERE l.id='fanta-lucas-a'")).rows[0];
   assert.ok(saved.data.skipped);assert.equal(saved.data.currentRole,'A');assert.equal(saved.data.caller,'t2');assert.equal(saved.rules.budget,650);
  }finally{if(hub)await hub.close();else await new Promise(r=>server.close(r));await f.close();}

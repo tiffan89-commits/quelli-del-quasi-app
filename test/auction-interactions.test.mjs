@@ -20,20 +20,30 @@ test('release dialog survives refund clicks, live refresh and failed submission;
  const poll=[...timers.values()].find(f=>f.name==='pollAuction');state.version++;await poll();assert.equal(sheet.querySelector('form'),form,'poll must preserve entered values and DOM');
  form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await flush();assert.match(form.querySelector('[data-form-error]').textContent,/Riprova/);assert.equal(sheet.querySelector('form'),form);
  failRelease=false;form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await flush();assert.equal(released.playerId,a.table.id);assert.equal(released.refund,0);assert.equal(sheet.hidden,true);
- click(root.querySelector('[data-asta-close]'));await flush();assert.match(root.textContent,/Asta chiusa/);assert.doesNotMatch(root.textContent,/Prima facciamo spazio/);
+ click(root.querySelector('[data-asta-close]'));assert.ok(sheet.querySelector('[data-auction-close-confirm]'));
+ click(sheet.querySelector('[data-auction-close-confirm]'));await flush();assert.match(root.textContent,/Asta chiusa/);assert.doesNotMatch(root.textContent,/Prima facciamo spazio/);
  state={...a,version:1};await poll();assert.match(root.textContent,/Asta chiusa/,'stale in-flight snapshot must not undo close');
  }finally{app?.destroy();for(const [k,d]of saved)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
 test('wizard choices independently control draw mode, role order and team order, and offers stay limited in the room',()=>{
  const state={league:{adminUid:'u1'},rules:{...DEFAULT_RULES,roster:{P:1,D:1,C:1,A:1}},teams:['t1','t2'].map((id,i)=>({id,name:id,userId:'u'+(i+1),roster:[]})),players:[{id:'striker',name:'Punta',role:'A'},{id:'keeper',name:'Portiere',role:'P'}],auction:{status:'none',version:1,log:[],order:[]}};
  const opts={admin:true,now:1000,rng:()=>0,id:()=> 'lot'};
- const start=(nomination,playerOrder,teamOrder)=>auctionAction(state,'start-now',{mode:'live',type:'iniziale',config:{budget:650,nomination,playerOrder,teamOrder}},'u1',opts);
+ const start=(nomination,playerOrder,teamOrder)=>{
+  const lobby=auctionAction(state,'start-now',{mode:'live',type:'iniziale',config:{budget:650,nomination,playerOrder,teamOrder}},'u1',opts);
+  assert.equal(lobby.auction.phase,'lobby');assert.equal(lobby.auction.caller,null);
+  assert.throws(()=>auctionAction(lobby,'lobby-start',{},'u2',{...opts,admin:false}),/presidente/);
+  const countdown=auctionAction(lobby,'lobby-start',{},'u1',opts);
+  assert.equal(Date.parse(countdown.auction.lobbyEndsAt),11000);
+  assert.deepEqual(auctionAction(countdown,'lobby-start',{},'u1',{...opts,now:2000}).auction,countdown.auction);
+  assert.equal(auctionAction(countdown,'read',{},'server',{...opts,now:10999}).auction.phase,'lobby');
+  return auctionAction(countdown,'read',{},'server',{...opts,now:11000});
+ };
  const personal=start('personal','roles',['t2','t1']);assert.equal(personal.auction.caller,'t2');assert.equal(personal.auction.currentRole,'P');
  assert.throws(()=>auctionAction(personal,'nominate',{playerId:'striker'},'u2',opts),/ruolo/);
  assert.throws(()=>start('personal','roles',['t1','t1']),/ordine/);
  const random=start('random','mixed',null);assert.equal(random.auction.lot.player.id,'striker');assert.equal(random.auction.lot.leader,null);assert.equal(random.auction.lot.bid,0);assert.equal(teamBudget(random.teams[0],random.rules).credits,650);
  let next=start('random','roles',null);assert.equal(next.auction.lot.player.id,'keeper');
- for(let i=1;i<=7;i++)next=auctionAction(next,'bid',{lotId:'lot',amount:i},i%2?'u1':'u2',{...opts,now:1000+i});
+ for(let i=1;i<=7;i++)next=auctionAction(next,'bid',{lotId:'lot',amount:i},i%2?'u1':'u2',{...opts,now:11000+i});
  assert.equal(next.auction.lot.history.length,7);const view=auctionView(next,'u1');assert.deepEqual(view.lot.history.map(h=>h.amount),[3,4,5,6,7]);
  const {document}=parseHTML(renderAsta(view));assert.deepEqual([...document.querySelectorAll('.fanta-a-history li b')].map(x=>Number(x.textContent)),[7,6,5,4,3]);
  assert.equal(document.querySelectorAll('[data-auction-panel]').length,3);assert.equal(document.querySelectorAll('.auction-page-head [data-ends]').length,1);
@@ -44,7 +54,28 @@ test('auction audio alerts once per deadline and respects mute',async()=>{
  class Audio {state='running';currentTime=0;resume(){return Promise.resolve();}createOscillator(){return {frequency:{setValueAtTime(){}},connect(){},start(){played++;},stop(){}};}createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){}};}}
  const sound=auctionAudio({AudioContext:Audio});sound.alert('first');assert.equal(played,0);
  await sound.set(true);sound.alert('first');sound.alert('first');sound.alert('second');assert.equal(played,2);
- await sound.set(false);sound.alert('third');assert.equal(played,2);
+ sound.offer();assert.equal(played,3);
+ await sound.set(false);sound.alert('third');sound.offer();assert.equal(played,3);
+});
+
+test('initial and repair auctions depend on roster completion; disabled computers never enter the caller rotation',()=>{
+ const rules={...DEFAULT_RULES,roster:{P:1,D:0,C:0,A:0}},config={budget:500,nomination:'personal',playerOrder:'roles',teamOrder:['cpu','human']};
+ const players=[{id:'p1',role:'P',name:'Portiere 1'},{id:'p2',role:'P',name:'Portiere 2'}];
+ const state={league:{adminUid:'owner',maxMembers:2},rules,players,teams:[{id:'cpu',roster:[]},{id:'human',userId:'owner',roster:[]}],auction:{status:'none',version:1,log:[],order:[]}};
+ const opts={admin:true,now:1000};
+ assert.throws(()=>auctionAction(state,'start-now',{mode:'live',type:'riparazione',config},'owner',opts),/Completa tutte le rose/);
+ const lobby=auctionAction(state,'start-now',{mode:'live',type:'iniziale',computerTeams:false,config},'owner',opts);
+ const countdown=auctionAction(lobby,'lobby-start',{},'owner',opts);
+ const bidding=auctionAction(countdown,'read',{},'server',{now:11000});
+ assert.equal(bidding.auction.caller,'human');
+ assert.equal(auctionView(bidding,'owner').computerTeamsActive,false);
+ const called=auctionAction(bidding,'nominate',{playerId:'p1'},'owner',{now:11001});
+ assert.throws(()=>auctionAction(called,'bid',{lotId:called.auction.lot.id,amount:2},null,{now:11002,computerTeam:'cpu'}),/Non puoi partecipare/);
+ const complete=structuredClone(state);complete.teams.forEach((t,i)=>t.roster.push({...players[i],price:1}));
+ assert.throws(()=>auctionAction(complete,'start-now',{mode:'live',type:'iniziale',config},'owner',opts),/rose sono complete/);
+ const repair=auctionAction(complete,'start-now',{mode:'live',type:'riparazione',config},'owner',opts);
+ assert.equal(repair.auction.phase,'releases');
+ assert.equal(auctionAction(repair,'releases-done',{},'owner',opts).auction.phase,'lobby');
 });
 
 test('release auction closes safely in both modes, refunds and undo persist exact budgets, and restart creates a new release batch',()=>{

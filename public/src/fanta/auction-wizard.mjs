@@ -9,18 +9,19 @@ export function auctionWizard(league, now=Date.now()){
   const auction=league.auction, scheduled=auction.status==='scheduled', previous=scheduled?auction.config:null;
   const when=new Date(scheduled?auction.startsAt:now+3600000);
   const startsAt=new Date(when.getTime()-when.getTimezoneOffset()*60000).toISOString().slice(0,16);
-  const teams=auction.teams.map(teamOf),ids=teams.map(t=>t.id);
-  return {step:1,type:scheduled?auction.type:league.league.kind==='random'||league.competition?.status==='active'||auction.status==='ended'?'riparazione':'iniziale',mode:scheduled?auction.mode:'live',timing:scheduled?'scheduled':'now',startsAt,
+  const teams=auction.teams.map(teamOf),ids=teams.map(t=>t.id),complete=teams.length>0&&teams.length===(league.league.maxMembers??teams.length)&&auction.teams.every(t=>t.slotsLeft===0);
+  const allowedTypes=[complete?'riparazione':'iniziale','lampo'];
+  return {step:1,type:scheduled&&allowedTypes.includes(auction.type)?auction.type:allowedTypes[0],mode:scheduled?auction.mode:'live',timing:scheduled?'scheduled':'now',startsAt,
     computerTeams:scheduled?(auction.computerTeams??auction.singlePlayerAvailable):auction.singlePlayerAvailable,
     budget:previous?.budget??500,minBudget:Object.values(league.rules.roster).reduce((sum,count)=>sum+count,0),nomination:previous?.nomination??'personal',playerOrder:previous?.playerOrder??'roles',turns:previous?.teamOrder?'custom':'random',
-    teamOrder:[...new Set([...(previous?.teamOrder||[]).filter(id=>ids.includes(id)),...ids])],teams,hasComputers:auction.computerTeamsAvailable,repairOnly:league.league.kind==='random'};
+    teamOrder:[...new Set([...(previous?.teamOrder||[]).filter(id=>ids.includes(id)),...ids])],teams,hasComputers:auction.computerTeamsAvailable,allowedTypes};
 }
 
 function options(name, value, choices){
   return `<div class="auction-choices">${choices.map(([key,title,detail])=>`<label><input type="radio" name="${name}" value="${key}" ${value===key?'checked':''}><span><b>${title}</b>${detail?`<small>${detail}</small>`:''}</span></label>`).join('')}</div>`;
 }
 export function renderAuctionWizard(w){
-  const first=`<label class="auction-field">Tipo di asta<select name="type">${Object.entries(types).filter(([key])=>!w.repairOnly||key==='riparazione').map(([key,label])=>`<option value="${key}" ${key===w.type?'selected':''}>${label}</option>`).join('')}</select></label>
+  const first=`<label class="auction-field">Tipo di asta<select name="type">${w.allowedTypes.map(key=>`<option value="${key}" ${key===w.type?'selected':''}>${types[key]}</option>`).join('')}</select></label>
     <fieldset><legend>Modalità</legend>${options('mode',w.mode,[['live','Online','Offerte in app con timer'],['manual','Dal vivo','Offerte a voce, registra il banditore']])}</fieldset>
     <fieldset><legend>Quando</legend>${options('timing',w.timing,[['now','Apri subito'],['scheduled','Programma per dopo']])}</fieldset>
     ${w.timing==='scheduled'?`<label class="auction-field">Data e ora<input type="datetime-local" name="startsAt" value="${esc(w.startsAt)}" required></label>`:''}
