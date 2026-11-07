@@ -28,7 +28,7 @@ test('real and fantasy lineups show one drawn jersey per player, no portrait req
  assert.equal(document.querySelectorAll('.pitch-player-name.sr-only').length,11);assert.match(document.querySelector('[data-fantasy-player="0"]').innerHTML,new RegExp(GOALKEEPER_KITS.Udinese.a));
  assert.doesNotMatch(document.toString(),/player-photo|Davis K\.<\/text>/);
  const fantasy=renderFantasyLineup({teams:[{name:'Fantasy United',formation:'3-5-2',players:players.map((p,i)=>({...p,starter:true,club:'Udinese',role:i===0?'P':'C'}))}]});
- assert.doesNotMatch(fantasy,/<img|player-photo/);assert.match(fantasy,/#ffffff/);assert.match(fantasy,/Udinese/);
+ assert.doesNotMatch(fantasy,/<img|player-photo|pitch-player-club/);assert.match(fantasy,/#ffffff/);
  assert.doesNotMatch(playerVisual({club:'Inter',role:'A',photoUrl:'/api/player-photo?id=1'}),/<img|player-photo/);
  assert.match(playerVisual({club:'Inter',role:'P'}),/fanta-shirt-gk/);
 });

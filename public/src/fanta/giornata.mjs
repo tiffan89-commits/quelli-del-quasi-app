@@ -1,10 +1,11 @@
-import {substitutionMark} from '../pitch-events.mjs';
+import {pitchPerformance,hasPitchPerformance,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
+import {pitchFixture} from '../player-label.mjs';
 import {statNumber,formatStatNumber} from './stat-number.mjs';
 import {playerVisual} from './player-visual.mjs';
 // Pagina "Giornata": scelta della giornata e della sfida, formazioni con voti e fantavoti,
 // modificatore difesa, totale; scheda del singolo giocatore con la scomposizione del voto.
 // Funzioni pure: ricevono le risposte di api.round() / api.matchup() e restituiscono HTML.
-import { esc, pts, timeAgo, fixtureTime } from './formato.mjs';
+import { esc, pts, timeAgo } from './formato.mjs';
 import { shirt } from './maglie.mjs';
 import {compareStat} from './stat-comparison.mjs';
 
@@ -54,13 +55,13 @@ function scoreboard(m, side) {
 }
 
 export function events(e = {}) {
-  if(Array.isArray(e)){const counts={};for(const item of e){const key={goal:'goals',assist:'assists',yellow:'yellow',red:'red'}[item.kind];if(key)counts[key]=(counts[key]||0)+1;}e=counts;}
+  e=eventCounts(e);
   const out = [];
-  for (let i = 0; i < e.goals; i++) out.push('<i class="ev ev-goal" role="img" aria-label="Gol" title="Gol"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#f4f3e8" stroke="#809482"/><path d="m12 7 5 4-2 6H9l-2-6z" fill="#172b22"/><path d="m12 7 0-5m5 9 5-1m-7 7 3 4m-9-4-3 4m1-10-5-1" stroke="#172b22" stroke-width="1.4"/></svg></i>');
-  for(let i=0;i<Math.min(20,Number(e.assists)||0);i++)out.push('<i class="ev ev-assist" role="img" aria-label="Assist" title="Assist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6l2 7 8 3c2 1 2 3 0 3H4c-2 0-3-1-2-3l2-5z"/><path d="m10 11 3-1m-2 4 3-1M5 19v2m5-2v2m6-2v2"/></svg></i>');
+  for (let i = 0; i < e.goals; i++) out.push('<i class="ev ev-goal" role="img" aria-label="Gol" title="Gol">'+ballIcon()+'</i>');
+  for(let i=0;i<Math.min(20,Number(e.assists)||0);i++)out.push('<i class="ev ev-assist" role="img" aria-label="Assist" title="Assist">'+assistBootIcon()+'</i>');
   if (e.yellow) out.push('<i class="ev ev-yellow" role="img" aria-label="Cartellino giallo" title="Ammonizione"></i>');
   if (e.red) out.push('<i class="ev ev-red" role="img" aria-label="Cartellino rosso" title="Espulsione"></i>');
-  if (e.ownGoals) out.push('<i class="ev ev-own" title="Autogol">AG</i>');
+  if(e.ownGoals)out.push('<i class="ev ev-own" role="img" aria-label="Autogol" title="Autogol">'+ballIcon(true)+'</i>');
   if (e.penSaved) out.push('<i class="ev ev-pen" title="Rigore parato">RP</i>');
   if (e.penMissed) out.push('<i class="ev ev-pen is-bad" title="Rigore sbagliato">RS</i>');
   if (e.conceded) out.push(`<i class="ev ev-conceded" title="Gol subiti">−${e.conceded}</i>`);
@@ -68,11 +69,11 @@ export function events(e = {}) {
 }
 
 function playerRow(p) {
-  const matchInfo = `${esc(p.club)} · ${p.home ? 'vs' : '@'} ${esc(p.opponent)}`;
+  const playing = hasPitchPerformance(p);
   let right;
-  if (p.status === 'to-play') right = `<span class="fanta-p-when">${esc(fixtureTime(p.kickoff))}</span>`;
-  else if (p.status === 'sv') right = '<span class="fanta-p-vote">s.v.</span><span class="fanta-p-fv">–</span>';
-  else right = `<span class="fanta-p-vote">${vote(p.vote)}</span><span class="fanta-p-fv">${vote(p.fantavote)}</span>`;
+  if (!playing) right = '';
+  else if (p.status === 'sv') right = '<span class="fanta-p-fv">s.v.</span>';
+  else right = `<span class="fanta-p-fv">${vote(p.fantavote)}</span>`;
   const note = p.replacedBy ? `<small class="fanta-p-sub is-out">Senza voto · entra ${esc(p.replacedBy)}</small>`
     : p.enteredFor ? `<small class="fanta-p-sub is-in">Entra al posto di ${esc(p.enteredFor)}</small>`
     : p.status === 'playing' ? `<small class="fanta-p-sub is-live">In campo · ${p.minutes}'</small>` : '';
@@ -80,7 +81,7 @@ function playerRow(p) {
   const tag = clickable ? 'button type="button"' : 'div';
   return `<${tag} class="fanta-p is-${p.status}${p.enteredFor ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}>
     <span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>
-    <span class="fanta-p-name"><b><span>${esc(p.name)}</span>${events(p.events)}</b><small>${matchInfo}</small>${note}</span>
+    <span class="fanta-p-name"><b><span>${esc(p.name)}</span>${events(p.events)}</b>${playing?'':pitchFixture(p)}${note}</span>
     ${right}
   </${tag.split(' ')[0]}>`;
 }
@@ -90,13 +91,12 @@ function token(p, replaced) {
   const clickable = p.status === 'voted' || p.status === 'playing' || p.status === 'sv';
   const tag = clickable ? 'button' : 'div';
   const surname = p.name.includes('. ') ? p.name.split('. ').slice(1).join('. ') : p.name;
-  const value = p.status === 'to-play' ? `<em class="is-when">${esc(fixtureTime(p.kickoff))}</em>`
-    : p.status === 'sv' ? '<em class="is-sv">s.v.</em>'
-    : `<em class="${p.status === 'playing' ? 'is-live' : ''}">${vote(p.fantavote)}</em>`;
+  const performance = replaced ? {...p,enteredFor:replaced} : p;
+  const playing = hasPitchPerformance(performance);
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
-    <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>${replaced ? substitutionMark('Entrato dalla panchina') : ''}</span>
-    ${events(p.events)}<b>${esc(surname)}</b>${value}
+    <span class="fanta-token-shirt">${playerVisual(p)}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
+    <b>${esc(surname)}</b>${playing?'':pitchFixture(p)}${pitchPerformance(performance,playing)}
   </${tag}>`;
 }
 
@@ -124,7 +124,7 @@ function lineup(s, notStarted, view) {
   return `<div class="fanta-lineup">
     ${notStarted && s.savedAt ? `<p class="fanta-saved">Formazione salvata ${esc(timeAgo(s.savedAt))} · visibile a tutta la lega, si può cambiare fino alla scadenza</p>` : ''}
     <div class="fanta-lineup-head"><h3>Titolari <span>${esc(s.formation)}</span></h3>${toggle}</div>
-    ${view === 'campo' ? '' : '<div class="fanta-cols-row"><span class="fanta-cols"><span>Voto</span><span>FV</span></span></div>'}
+    ${view === 'campo' ? '' : '<div class="fanta-cols-row"><span class="fanta-cols"><span>Fantavoto</span></span></div>'}
     ${groups}
     ${s.bench.some(p=>p.enteredFor)?'<details class="fanta-bench" open><summary>Subentrati</summary>'+s.bench.filter(p=>p.enteredFor).map(playerRow).join('')+'</details>':''}
     ${s.bench.some(p=>!p.enteredFor)?'<details class="fanta-bench"><summary>A disposizione</summary>'+s.bench.filter(p=>!p.enteredFor).map(playerRow).join('')+'</details>':''}

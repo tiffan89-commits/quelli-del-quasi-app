@@ -1,3 +1,10 @@
+# 0.29.49 — 2026-11-07
+
+- Gol e autogol condividono lo stesso pallone; per gli autogol i pannelli chiari diventano rossi.
+- Eventi sotto la maglia in ordine gol, autogol, rigori parati, assist, cartellini e sostituzioni; nessuna sovrapposizione con cognome o numero.
+- Nei campi e nei riepiloghi Live si mostra solo il fantavoto, senza etichette V/FV; voto base conservato nel dettaglio della prestazione e del calcolo. Aggiornamenti incrementali allineati al rendering iniziale.
+- Nessun cambiamento a motore, voti salvati, punti, saldi o frequenze.
+
 # Emergenza temporanea Netlify — 2026-11-07
 
 - Recuperati dal backend i voti mancanti di Venezia–Udinese e Bologna–Monza con due esecuzioni mirate del motore invariato; verificati risultati nelle viste Fanta e retry orario della verifica ancora incompleta.
@@ -152,6 +159,8 @@
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
 ## [Unreleased]
+
+- Schedina Fanta e Giornata live mostrano avversario e orario italiano sotto la maglia fino all'arrivo del fantavoto e delle icone evento.
 
 - Generazione rose: le leghe automatiche distribuiscono tutti i crediti disponibili in costi interi proporzionali, conservando i migliori giocatori selezionati e l'equilibrio tra squadre. Le rose pilota reinvestono i residui in miglioramenti di pari ruolo alle quotazioni reali; nessuna rigenerazione delle rose esistenti.
 
