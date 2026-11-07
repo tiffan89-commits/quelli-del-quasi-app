@@ -1,3 +1,8 @@
+# 0.29.51 — 2026-11-07
+
+- Maglie senza scritte al posto degli stemmi Serie A nella schedina, nel calendario, nei dettagli e in classifica.
+- Negli scontri la squadra ospite usa la seconda maglia quando le prime divise si confondono. La stessa scelta si applica alle figurine di movimento nei campi delle formazioni.
+
 # 0.29.50 — 2026-11-07
 
 - Maglie del Fanta aggiornate per la stagione 2026/27, con varianti da trasferta in caso di contrasto insufficiente e retro numerato sul campo.

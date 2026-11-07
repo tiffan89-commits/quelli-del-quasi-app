@@ -92,9 +92,18 @@ export const KITS = {
   Pisa: { code: 'PIS', home: { a: '#141414', pattern: 'stripes', b: '#1a5fb4', w: 4, bw: 4, center: 'a', collar: 'crew', neck: '#1a5fb4', cuffs: ['#1a5fb4'], crest: '#f4f1e8' }, away: { a: '#f7f7f4', collar: 'crew', neck: '#1a5fb4', cuffs: ['#1a5fb4'], crest: '#1a5fb4' } },
 };
 // Nomi dei club come li scrive API-Football.
-const ALIASES = { 'AC Milan': 'Milan', 'AS Roma': 'Roma', 'Hellas Verona': 'Verona', 'Frosinone Calcio': 'Frosinone' };
+const ALIASES = { 'AC Milan': 'Milan', 'AS Roma': 'Roma', 'Hellas Verona': 'Verona', 'Frosinone Calcio': 'Frosinone', 'Internazionale':'Inter', 'Inter Milan':'Inter', 'SSC Napoli':'Napoli', 'SS Lazio':'Lazio' };
 const FALLBACK = { code: '', home: { a: '#5d6b62', collar: 'crew', neck: '#2b3c32', cuffs: ['#2b3c32'] } };
-const clubOf = club => KITS[ALIASES[club] || club] || FALLBACK;
+const clubKey = name => String(name??'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const clubs = new Map([
+  ...Object.entries(KITS).flatMap(([name,kit])=>[[clubKey(name),kit],[clubKey(kit.code),kit]]),
+  ...Object.entries(ALIASES).map(([name,club])=>[clubKey(name),KITS[club]]),
+]);
+const clubOf = club => clubs.get(clubKey(club)) || FALLBACK;
+export function sameClub(a,b){
+  const first=clubKey(a),second=clubKey(b);
+  return !!first&&!!second&&(first===second||clubs.has(first)&&clubs.get(first)===clubs.get(second));
+}
 
 // ---------- Maglie simili: chi gioca fuori casa cambia maglia ----------
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -108,7 +117,9 @@ function colorsOf(k) {
 // Si confondono se il colore principale è vicino (Napoli e Lazio), oppure se sono abbastanza vicini
 // sia il principale sia l'altro colore (Inter e Atalanta, entrambe nerazzurre).
 export function clash(clubA, clubB) {
-  const [mx, ox] = colorsOf(clubOf(clubA).home), [my, oy] = colorsOf(clubOf(clubB).home), d = dist(mx, my);
+  const a=clubOf(clubA),b=clubOf(clubB);
+  if(a===FALLBACK||b===FALLBACK)return false;
+  const [mx, ox] = colorsOf(a.home), [my, oy] = colorsOf(b.home), d = dist(mx, my);
   return d < 100 || (d < 130 && ox && oy && dist(ox, oy) < 90);
 }
 

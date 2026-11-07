@@ -24,6 +24,7 @@ import {createLiveChannel,requestJson,mergeLiveSnapshot,patchRegion,patchDashboa
 import {withButtonFeedback} from './action-feedback.mjs';
 import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
 import {footballStatistics,bindFootballStatistics} from './football-statistics.mjs';
+import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, bindSlipV2, stakeInputValue } from "./v2/slip-v2.mjs";
 import { quasiScene, showQuasi } from "./quasi-scene.mjs";
 import {barSlipsView,barVerdictPatch,barProfileView} from "./bar-slips.mjs";
@@ -150,24 +151,15 @@ const fmt = (n) =>
     "Under / Over 2,5": ["Under 2.5", "Over 2.5"],
     "Goal / No Goal": ["Goal", "No Goal"],
   };
-function teamLabel(name) {
-  const fantasyContext =
-    page === "calendario"
-      ? calendarScope === "fantacalcio"
-      : sourceScope === "fantacalcio";
-  const fantasy = (
-    page === "calendario"
-      ? calendarScope === "fantacalcio"
-      : sourceScope === "fantacalcio"
-  )
-    ? L()?.fantasyTeams?.[competitionScope]
-    : null;
-  const kit = fantasy && Object.values(fantasy).find((t) => t.name === name);
-  let logo = kit?.logo || kit?.shirt || TEAM_LOGOS[name];
-  return `<span class="team-label" ${fantasyContext ? 'data-fantasy-team="' + esc(name) + '" data-fantasy-competition="' + esc(competitionScope) + '"' : ""}>${logo ? `<img class="team-logo" data-deferred-src="${esc(logo)}" alt="" width="32" height="32" loading="lazy" onerror="this.hidden=true">` : `<span class="crest">${esc(name.slice(0, 2))}</span>`}<span>${esc(name)}</span></span>`;
+function teamLabel(name,{vs,home,fantasy=page==='calendario'?calendarScope==='fantacalcio':sourceScope==='fantacalcio'}={}) {
+  if(!fantasy)return `<span class="team-label">${clubShirt(name,{vs,home})}<span>${esc(name)}</span></span>`;
+  const team=Object.values(L()?.fantasyTeams?.[competitionScope]||{}).find(t=>t.name===name);
+  const logo=team?.logo||team?.shirt;
+  const icon=logo?`<img class="team-logo" data-deferred-src="${esc(logo)}" alt="" width="32" height="32" loading="lazy" onerror="this.hidden=true">`:`<span class="crest">${esc(name.slice(0,2))}</span>`;
+  return `<span class="team-label" data-fantasy-team="${esc(name)}" data-fantasy-competition="${esc(competitionScope)}">${icon}<span>${esc(name)}</span></span>`;
 }
-function fixtureTeams(home, away) {
-  return `<span class="fixture-teams">${teamLabel(home)}<span class="fixture-separator muted">–</span>${teamLabel(away)}</span>`;
+function fixtureTeams(home,away,fantasy) {
+  return `<span class="fixture-teams">${teamLabel(home,{home:true,vs:away,fantasy})}<span class="fixture-separator muted">–</span>${teamLabel(away,{home:false,vs:home,fantasy})}</span>`;
 }
 function predictionFeedback(match, pick, closed) {
   const feedback = predictionStatus(match, pick, closed);
@@ -838,7 +830,7 @@ function matchCard(x, r) {
     (x.status==='LIVE'?'In corso':x.score?'Risultato finale':matchStatus(x)) +
     '</span><div class="teams">' +
     [x.home, x.away]
-      .map((n) => '<div class="team">' + teamLabel(n) + "</div>")
+      .map((n,i) => '<div class="team">' + teamLabel(n,{home:i===0,vs:i===0?x.away:x.home}) + "</div>")
       .join("") +
     '</div><span class="inline-result" data-inline-result aria-live="polite">' + inlineResultView(x) + '</span></button><span class="selected-caption" data-selected-caption>' +
     (picks[x.id] ? "Scelta: " + esc(picks[x.id]) : "") +
@@ -1770,7 +1762,7 @@ function bind(l, r) {
 function serieATable() {
   const t = state.standings;
   if (!t) return '<div class="card">Classifica in aggiornamento.</div>';
-  return `<section class="hero"><div class="eyebrow">SERIE A · ${t.season}/${String(t.season + 1).slice(-2)}</div><h1>IL CAMPIONATO.<br><em>QUI CONTANO I GOL.</em></h1><p>Punti, risultati e gol del campionato.</p></section><div class="card serie-table-card"><table class="serie-table"><thead><tr>${["#", "Squadra", "Pt", "PG", "V", "N", "P", "GF", "GS", "DR"].map((x) => `<th scope="col">${x}</th>`).join("")}</tr></thead><tbody>${t.rows.map((x, i) => `<tr data-ranking-team="${esc(x.name)}"><td>${i + 1}</td><td>${teamLabel(x.name)}</td><td><b class="green">${x.points}</b></td>${["played", "won", "drawn", "lost", "gf", "gs", "dr"].map((k) => `<td>${x[k]}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="tiny muted">PG: partite giocate · V/N/P: vinte, pareggiate, perse · GF/GS: gol fatti e subiti · DR: differenza reti.</p><div class="notice">${esc(t.note)} ${t.finals} risultati finali disponibili · aggiornamento ${date(t.updatedAt)}.</div>`;
+  return `<section class="hero"><div class="eyebrow">SERIE A · ${t.season}/${String(t.season + 1).slice(-2)}</div><h1>IL CAMPIONATO.<br><em>QUI CONTANO I GOL.</em></h1><p>Punti, risultati e gol del campionato.</p></section><div class="card serie-table-card"><table class="serie-table"><thead><tr>${["#", "Squadra", "Pt", "PG", "V", "N", "P", "GF", "GS", "DR"].map((x) => `<th scope="col">${x}</th>`).join("")}</tr></thead><tbody>${t.rows.map((x, i) => `<tr data-ranking-team="${esc(x.name)}"><td>${i + 1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played", "won", "drawn", "lost", "gf", "gs", "dr"].map((k) => `<td>${x[k]}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="tiny muted">PG: partite giocate · V/N/P: vinte, pareggiate, perse · GF/GS: gol fatti e subiti · DR: differenza reti.</p><div class="notice">${esc(t.note)} ${t.finals} risultati finali disponibili · aggiornamento ${date(t.updatedAt)}.</div>`;
 }
 function otherSlips(l, r) {
   if (!l || !r)
@@ -1913,7 +1905,7 @@ async function openMatch(id, quiet = false) {
       match,
       fantasyRound,
       esc,
-      fixtureTeams,
+      (home,away)=>fixtureTeams(home,away,true),
       fmt,
     );
     d.dataset.match = id;
@@ -1953,7 +1945,7 @@ async function openMatch(id, quiet = false) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
-    dialog.innerHTML = `<button class="secondary" id="close-modal" >Chiudi ×</button><div class="eyebrow">LA PARTITA</div><h2 class="match-page-title">${fixtureTeams(data.home, data.away)}</h2><div class="match-page-score" data-live-detail-score>${data.score ? data.score.join(" – ") : data.liveScore ? data.liveScore.join(" – ") : "—"}</div><p class="muted" data-live-detail-status>${data.status === "FT" ? "Finale" + (data.officialConfirmed ? " · confermato" : " · in attesa di conferma") : data.status === "LIVE" ? "In corso · " + esc(data.clock || "minuto non disponibile") : "Da giocare"}</p>${lineupView(data)}<details class="match-statistics"><summary>Dettagli della partita</summary><div data-live-detail-events>${events.length ? eventColumns(data, events) : data.status === "NS" ? "" : '<div class="notice">Gol e cartellini non ancora disponibili.</div>'}</div></details>`;
+    dialog.innerHTML = `<button class="secondary" id="close-modal" >Chiudi ×</button><div class="eyebrow">LA PARTITA</div><h2 class="match-page-title">${fixtureTeams(data.home,data.away,false)}</h2><div class="match-page-score" data-live-detail-score>${data.score ? data.score.join(" – ") : data.liveScore ? data.liveScore.join(" – ") : "—"}</div><p class="muted" data-live-detail-status>${data.status === "FT" ? "Finale" + (data.officialConfirmed ? " · confermato" : " · in attesa di conferma") : data.status === "LIVE" ? "In corso · " + esc(data.clock || "minuto non disponibile") : "Da giocare"}</p>${lineupView(data)}<details class="match-statistics"><summary>Dettagli della partita</summary><div data-live-detail-events>${events.length ? eventColumns(data, events) : data.status === "NS" ? "" : '<div class="notice">Gol e cartellini non ancora disponibili.</div>'}</div></details>`;
     $("#close-modal").onclick = () => {
       activeMatchId = null;
       dialog.dataset.match = "";
