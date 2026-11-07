@@ -2,6 +2,7 @@
 
 - Le squadre generate dal Fanta ricevono nomi ironici di due parole, con una selezione di nomi in stile Atletico Poco e Hellas Madonna.
 - L’allenatore può cambiare il nome della propria squadra dall’editor dello stemma fino al primo calcio d’inizio fra le competizioni della lega.
+- Nelle aste online in solitaria il computer reagisce con tempi diversi per squadra. Chiamate, rilanci e passaggi seguono le regole dell’asta e vengono registrati e inviati ai dispositivi come quelli dei partecipanti.
 
 # 0.29.51 — 2026-11-07
 

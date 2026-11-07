@@ -1,4 +1,4 @@
-import {computerDecision} from '../fanta/auction-computer.mjs';
+import {computerActionAt,computerDecision} from '../fanta/auction-computer.mjs';
 import {Server} from 'socket.io';
 import {connection} from '../lib/db.mjs';
 import {sqlFantaStore} from '../fanta/store.mjs';
@@ -52,7 +52,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   if([...io.sockets.sockets.values()].filter(s=>s.data.user?.id===user.id).length>=8)throw Error('Troppi dispositivi collegati');
   socket.data={league,token,user,acked:0};next();
  }catch{next(Error('Accedi alla lega per seguire l’asta.'));}});
- function roomFor(league,uid){if(!rooms.has(league))rooms.set(league,{league,uid,sockets:new Set(),state:null,pending:false,refreshing:null,timer:null});return rooms.get(league);}
+ function roomFor(league,uid){if(!rooms.has(league))rooms.set(league,{league,uid,sockets:new Set(),state:null,pending:false,refreshing:null,timer:null,attemptedComputerTurn:null});return rooms.get(league);}
  function send(socket,room,stamp){
   const state=room.state;if(!state?.teams.some(t=>t.userId===socket.data.user.id)){socket.disconnect(true);return;}
   const data=socketAuctionView(state,socket.data.user.id,stamp);socket.data.sent=data.version;
@@ -63,13 +63,21 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  async function tick(room){
   if(closed)return;let notice;
   try{await store.league(room.uid,room.league,async(s,c)=>{
-   const decision=computerDecision(s,{now:now()});if(!auctionTickDue(s.auction,now())&&!decision)return;
-   let next=auctionAction(s,'read',{},'server',{now:now()});
-   const cmd=computerDecision(next,{now:now()});if(cmd)next=auctionAction(next,cmd.kind,cmd.input,null,{now:now(),computerTeam:cmd.teamId});
+   const stamp=now(),due=auctionTickDue(s.auction,stamp),planned=computerActionAt(s);
+   if(!due&&(planned==null||planned>stamp))return;
+   const next=due?auctionAction(s,'read',{},'server',{now:stamp}):s;
    if(s.auction.status!=='running'&&next.auction.status==='running'){
-    next.auction.openNotificationKey=s.league.id+':open:'+next.auction.version+':'+now();notice=await queueAuctionOpened(c,next,next.auction,{now:now()});
+    next.auction.openNotificationKey=s.league.id+':open:'+next.auction.version+':'+stamp;notice=await queueAuctionOpened(c,next,next.auction,{now:stamp});
    }
    if(next.auction.version!==s.auction.version)await store.persistAuction(c,s,next,'server','tick',{});
+   const cmd=computerDecision(next,{now:stamp});
+   if(cmd){
+    const action=auctionAction(next,cmd.kind,cmd.input,null,{now:stamp,computerTeam:cmd.teamId});
+    await store.persistAuction(c,next,action,'computer',cmd.kind,{...cmd.input,teamId:cmd.teamId,source:'computer'});
+   }else if(planned!=null&&planned<=stamp&&!due){
+    // A caller without eligible players can only wait for the normal deadline.
+    room.attemptedComputerTurn=planned;
+   }
   },{write:true,auction:true,catalog:!!room.state?.auction.singlePlayer&&!room.state?.auction.lot});
   if(notice)try{await dispatchFanta('auction-notify:'+notice);}catch{}
   }catch{log('AUCTION_TIMER_RETRY',{league:room.league});}
@@ -78,8 +86,9 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  function schedule(room){
   clearTimeout(room.timer);const a=room.state?.auction;if(!a)return;
   const deadline=a.status==='scheduled'?a.startsAt:a.status==='running'&&a.mode==='live'&&a.phase!=='releases'?(a.pausedUntil||a.lot?.endsAt||a.callDeadline):null;
-  const botDeadline=a.singlePlayer&&a.status==='running'&&a.mode==='live'&&a.phase!=='releases'?now()+2500:null;const nextDeadline=botDeadline?new Date(Math.min(deadline?Date.parse(deadline):Infinity,botDeadline)).toISOString():deadline;
-  if(nextDeadline){const delay=Math.max(20,Math.min(86400000,Date.parse(nextDeadline)-now()+10));if(Number.isFinite(delay))room.timer=setTimeout(()=>void tick(room),delay);}
+  const botDeadline=computerActionAt(room.state);
+  const nextDeadline=Math.min(deadline?Date.parse(deadline):Infinity,botDeadline!==room.attemptedComputerTurn?botDeadline??Infinity:Infinity);
+  if(Number.isFinite(nextDeadline)){const delay=Math.max(20,Math.min(86400000,nextDeadline-now()+10));room.timer=setTimeout(()=>void tick(room),delay);}
  }
  async function refresh(room){
   if(closed)return;room.pending=true;if(room.refreshing)return room.refreshing;
