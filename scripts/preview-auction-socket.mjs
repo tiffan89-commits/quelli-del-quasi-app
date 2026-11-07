@@ -3,12 +3,16 @@ import http from 'node:http';import fs from 'node:fs/promises';import path from 
 import {createHash} from 'node:crypto';
 import {fixtureDb} from '../test/fanta/helpers.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {createFantaApi} from '../fanta/api.mjs';import {attachAuctionSocket} from '../runtime/auction-socket.mjs';
 const fixture=await fixtureDb(),bus=new EventEmitter(),base=sqlFantaStore(fixture),store={...base,league:async(uid,id,fn,options)=>{const result=await base.league(uid,id,fn,options);if(options?.write)bus.emit('change',id);return result;}},api=createFantaApi({store}),root=path.resolve('public');
-const computer=process.argv.includes('--computer'),online=computer||process.argv.includes('--online');
-const port=Number(process.env.AUCTION_PREVIEW_PORT||(computer?8927:online?8929:8896));
+const computer=process.argv.includes('--computer'),mixed=process.argv.includes('--mixed'),online=computer||mixed||process.argv.includes('--online');
+const port=Number(process.env.AUCTION_PREVIEW_PORT||(computer?8927:mixed?8930:online?8929:8896));
 const startPreview=online
- ?"await api.auctionSchedule(league,{type:'iniziale',mode:'live',startsAt:new Date(Date.now()+60000).toISOString()});await api.auctionStart(league);"
+ ?`await api.auctionSchedule(league,{type:'iniziale',mode:'live',computerTeams:${computer||mixed},startsAt:new Date(Date.now()+60000).toISOString()});await api.auctionStart(league);`
  :"await api.auctionStartNow(league,'manual');";
-const startLabel=computer?'Apri asta online contro il computer':online?'Apri asta online tra partecipanti':'Apri asta di prova · banditore';
+const startLabel=computer?'Apri asta online contro il computer':mixed?'Apri asta mista di prova':online?'Apri asta online tra partecipanti':'Apri asta di prova · banditore';
+if(mixed){
+ await fixture.db.query("INSERT INTO fanta.teams(id,league_id,name,manager) VALUES('t3','fanta-lucas-a','Real Divano','Computer')");
+ await fixture.db.query(`UPDATE fanta.players SET name='Centravanti di prova',data='{"value":100}' WHERE id='free'`);
+}
 if(computer){
  await fixture.db.query("UPDATE fanta.teams SET user_id=NULL,name='Real Divano',manager='Computer' WHERE id='t2'");
  await fixture.db.query(`UPDATE fanta.players SET name='Centravanti di prova',data='{"value":100}' WHERE id='free'`);

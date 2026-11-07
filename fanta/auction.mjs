@@ -4,9 +4,13 @@ export const AUCTION_TYPES={iniziale:'Asta iniziale',riparazione:'Asta di ripara
 export const duration=(seconds,rules=DEFAULT_RULES)=>(seconds-rules.finalSeconds+rules.finalStretch)*1000;
 export function teamBudget(team,rules){const spent=team.roster.reduce((sum,p)=>sum+p.price,0),roles=Object.fromEntries(Object.entries(rules.roster).map(([r,max])=>[r,{have:team.roster.filter(p=>p.role===r).length,max}])),slotsLeft=Object.values(roles).reduce((n,x)=>n+Math.max(0,x.max-x.have),0),credits=rules.budget-spent+(team.creditAdjustment||0);return {spent:rules.budget-credits,rosterCost:spent,unrefunded:Math.max(0,-(team.creditAdjustment||0)),credits,slotsLeft,maxBid:slotsLeft?Math.max(0,credits-(slotsLeft-1)):0,roles};}
 const eligible=(s,t,p,amount)=>{const b=teamBudget(t,s.rules);return b.roles[p.role].have>=b.roles[p.role].max?'role':b.maxBid<amount?'credits':null;};
-function nextCaller(s,now){const a=s.auction,ids=a.order.filter(id=>teamBudget(s.teams.find(t=>t.id===id),s.rules).slotsLeft>0);if(!ids.length){a.status='ended';a.caller=null;a.callDeadline=null;return;}const current=a.order.indexOf(a.caller);a.caller=Array.from({length:a.order.length},(_,i)=>a.order[(current+i+1)%a.order.length]).find(id=>ids.includes(id));a.callDeadline=new Date(now+s.rules.callSeconds*1000).toISOString();a.lot=null;}
+export const singlePlayerAvailable=s=>s.teams.filter(t=>t.userId).length===1&&s.teams.some(t=>!t.userId);
+export const computerTeamsAvailable=s=>s.teams.some(t=>t.userId)&&s.teams.some(t=>!t.userId);
+export const computerTeamsActive=s=>s.auction.mode==='live'&&computerTeamsAvailable(s)&&(s.auction.computerTeams??(!!s.auction.singlePlayer&&singlePlayerAvailable(s)));
+const participants=s=>computerTeamsActive(s)?s.teams:s.teams.filter(t=>t.userId);
+function nextCaller(s,now){const a=s.auction,ids=participants(s).filter(t=>teamBudget(t,s.rules).slotsLeft>0).map(t=>t.id);if(!ids.length){a.status='ended';a.caller=null;a.callDeadline=null;return;}const current=a.order.indexOf(a.caller);a.caller=Array.from({length:a.order.length},(_,i)=>a.order[(current+i+1)%a.order.length]).find(id=>ids.includes(id));a.callDeadline=new Date(now+s.rules.callSeconds*1000).toISOString();a.lot=null;}
 function sell(s,teamId,player,price,now,id){const team=s.teams.find(t=>t.id===teamId);if(!team||!player||!Number.isInteger(price)||price<1||eligible(s,team,player,price))fail('Prezzo, crediti o posti del ruolo non validi');if(s.teams.some(t=>t.roster.some(p=>p.id===player.id)))fail('Il giocatore è già stato aggiudicato',409);team.roster.push({...player,price});const sale={id:id(),player:{...player},team:team.id,price,at:new Date(now).toISOString(),undone:false};s.auction.log.push(sale);s.auction.lastSale=sale;return sale;}
-function start(s,now,rng){const a=s.auction;a.singlePlayer=a.mode==='live'&&s.teams.filter(t=>t.userId).length===1&&s.teams.some(t=>!t.userId);a.status='running';a.phase=a.type==='riparazione'?'releases':'bidding';if(a.phase==='releases')a.releaseBatchId=a.version+':'+now;a.order=s.teams.map(t=>t.id);for(let i=a.order.length-1;i>0;i--){const j=rng(i+1);[a.order[i],a.order[j]]=[a.order[j],a.order[i]];}a.caller=null;if(a.mode==='manual'||a.phase==='releases')a.callDeadline=null;else nextCaller(s,now);a.pausedUntil=null;}
+function start(s,now,rng){const a=s.auction;a.singlePlayer=a.mode==='live'&&a.computerTeams!==false&&singlePlayerAvailable(s);a.status='running';a.phase=a.type==='riparazione'?'releases':'bidding';if(a.phase==='releases')a.releaseBatchId=a.version+':'+now;a.order=s.teams.map(t=>t.id);for(let i=a.order.length-1;i>0;i--){const j=rng(i+1);[a.order[i],a.order[j]]=[a.order[j],a.order[i]];}a.caller=null;if(a.mode==='manual'||a.phase==='releases')a.callDeadline=null;else nextCaller(s,now);a.pausedUntil=null;}
 export function auctionTickDue(a,now=Date.now()){
  if(a.status==='scheduled')return Date.parse(a.startsAt)<=now;
  if(a.status!=='running'||a.mode==='manual'||a.phase==='releases')return false;
@@ -23,21 +27,22 @@ export function advanceAuction(s,now=Date.now(),{id=randomUUID,rng=randomInt}={}
 export function auctionAction(state,kind,input,actor,{admin=false,now=Date.now(),id=randomUUID,rng=randomInt,computerTeam=null}={}){
  const s=structuredClone(state),a=s.auction;
  const adminActions=['schedule','start','start-now','close','cancel-lot','mode','table','assign','undo','release','release-undo','releases-done'];if(adminActions.includes(kind)&&!admin)fail('Solo il presidente può gestire l’asta',403);
+ if(['schedule','start','start-now'].includes(kind)&&input.computerTeams!==undefined&&typeof input.computerTeams!=='boolean')fail('Impostazione squadre del computer non valida');
  // Closing/cancelling must never implicitly sell an expired lot before handling the command.
  if(!['close','cancel-lot'].includes(kind))advanceAuction(s,now,{id,rng});
  const clearLot=reason=>{const lot=a.lot,p=lot?.player||a.table;if(p)a.cancellations=[...(a.cancellations||[]),{playerId:p.id,lotId:lot?.id||null,at:new Date(now).toISOString(),actor,reason,history:lot?.history||[]}].slice(-1000);a.lot=null;a.table=null;a.pausedUntil=null;a.skipped=null;};
- const t=computerTeam?s.teams.find(t=>t.id===computerTeam&&!t.userId):s.teams.find(t=>t.userId===actor),player=s.players.find(p=>p.id===input.playerId);
+ const t=computerTeam?(computerTeamsActive(s)?s.teams.find(t=>t.id===computerTeam&&!t.userId):null):s.teams.find(t=>t.userId===actor),player=s.players.find(p=>p.id===input.playerId);
  const free=p=>p&&p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id));
  if(kind==='read')return s;
  if(kind==='schedule'){
   if(a.status==='running')fail('Chiudi prima l’asta in corso',409);if(!AUCTION_TYPES[input.type]||!['live','manual'].includes(input.mode)||!Number.isFinite(Date.parse(input.startsAt))||Date.parse(input.startsAt)<now)fail('Controlla tipo, modalità e orario dell’asta');
-  Object.assign(a,{status:'scheduled',type:input.type,mode:input.mode,startsAt:input.startsAt,lot:null,table:null,caller:null,callDeadline:null,pausedUntil:null});
+  Object.assign(a,{status:'scheduled',type:input.type,mode:input.mode,computerTeams:input.computerTeams,singlePlayer:false,startsAt:input.startsAt,lot:null,table:null,caller:null,callDeadline:null,pausedUntil:null});
  }else if(kind==='start-now'){
   if(a.status==='running')return s;
   const initialType=s.rules.rosterMode==='empty'&&s.teams.every(t=>t.roster.length===0)?'iniziale':'riparazione';
   if(!AUCTION_TYPES[input.type||initialType]||!['manual','live'].includes(input.mode||'manual'))fail('Modalità asta non valida');
-  Object.assign(a,{status:'scheduled',type:input.type||initialType,mode:input.mode||'manual',startsAt:new Date(now).toISOString(),lot:null,table:null,pausedUntil:null});start(s,now,rng);
- }else if(kind==='start'){if(a.status!=='scheduled')fail('Programma prima un’asta');start(s,now,rng);
+  Object.assign(a,{status:'scheduled',type:input.type||initialType,mode:input.mode||'manual',computerTeams:input.computerTeams,startsAt:new Date(now).toISOString(),lot:null,table:null,pausedUntil:null});start(s,now,rng);
+ }else if(kind==='start'){if(a.status!=='scheduled')fail('Programma prima un’asta');if(a.mode==='live'&&input.computerTeams!==undefined)a.computerTeams=input.computerTeams;start(s,now,rng);
  }else if(kind==='close'){if(a.status==='ended'&&!a.lot&&!a.table)return s;clearLot('auction-closed');a.status='ended';a.caller=null;a.callDeadline=null;
  }else{
   if(a.status!=='running')fail('L’asta non è aperta',409);
@@ -73,13 +78,14 @@ const p=a.lot?.player||a.table;if(!p)return s;if(input.lotId&&a.lot?.id!==input.
     if(kind==='pass'){lot.passed.push(t.id);lot.history.push({team:t.id,pass:true,at:new Date(now).toISOString()});}
     else{if(!Number.isInteger(input.amount)||input.amount<lot.bid+s.rules.minRaise)fail('Serve almeno '+(lot.bid+s.rules.minRaise));if(eligible(s,t,lot.player,input.amount))fail('Crediti o posti del ruolo insufficienti');lot.bid=input.amount;lot.leader=t.id;lot.endsAt=new Date(now+duration(s.rules.raiseSeconds,s.rules)).toISOString();lot.timerSeconds=s.rules.raiseSeconds;lot.closing=false;lot.history.push({team:t.id,amount:input.amount,at:new Date(now).toISOString()});}
    }else fail('Comando asta non riconosciuto',404);
-   const lot=a.lot;if(lot){for(const team of s.teams.filter(x=>x.id!==lot.leader)){const reason=eligible(s,team,lot.player,lot.bid+s.rules.minRaise);if(reason)lot.autoPassed[team.id]=reason;}
-    if(s.teams.every(x=>x.id===lot.leader||lot.passed.includes(x.id)||lot.autoPassed[x.id])){lot.closing=true;lot.endsAt=new Date(now+1500).toISOString();}}
+   const lot=a.lot;if(lot){const rivals=participants(s).filter(x=>x.id!==lot.leader);for(const team of rivals){const reason=eligible(s,team,lot.player,lot.bid+s.rules.minRaise);if(reason)lot.autoPassed[team.id]=reason;}
+    if(rivals.every(x=>lot.passed.includes(x.id)||lot.autoPassed[x.id])){lot.closing=true;lot.endsAt=new Date(now+1500).toISOString();}}
   }
  }
  a.version++;return s;
 }
 export function auctionView(s,uid,now=Date.now()){
  const a=s.auction,t=s.teams.find(t=>t.userId===uid),isAdmin=s.league.adminUid===uid;
- return {...a,singlePlayerAvailable:s.teams.filter(t=>t.userId).length===1&&s.teams.some(t=>!t.userId),log:a.log.filter(x=>!x.undone).slice().reverse(),rules:s.rules,serverTime:new Date(now).toISOString(),me:t?.id||null,isAdmin,auctioneer:s.teams.find(t=>t.userId===s.league.adminUid)?.manager||'Presidente',teams:s.teams.map(t=>({team:t,...teamBudget(t,s.rules),online:!!t.userId})),myRoster:t?.roster||[]};
+ const mixed=computerTeamsActive(s);
+ return {...a,singlePlayerAvailable:singlePlayerAvailable(s),computerTeamsAvailable:computerTeamsAvailable(s),computerTeamsActive:mixed,log:a.log.filter(x=>!x.undone).slice().reverse(),rules:s.rules,serverTime:new Date(now).toISOString(),me:t?.id||null,isAdmin,auctioneer:s.teams.find(t=>t.userId===s.league.adminUid)?.manager||'Presidente',teams:s.teams.map(t=>({team:t,...teamBudget(t,s.rules),online:!!t.userId,computer:mixed&&!t.userId})),myRoster:t?.roster||[]};
 }

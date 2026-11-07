@@ -191,6 +191,7 @@ function auctionFor(leagueId, now = Date.now()) {
     type: A.type,
     startsAt: A.startsAt,
     mode: A.mode,
+    computerTeamsActive: A.mode==='live',
     isAdmin: isAdmin(leagueId),
     auctioneer: team(MY_TEAM).manager, // nell'anteprima il banditore è l'admin della lega
     table: A.mode === 'manual' && A.table ? (()=>{const p=A.players.find(p=>p.id===A.table);return {...playerView(p),...(A.releasePhase&&p.soldTo?{ownerTeam:team(p.soldTo),price:p.price}: {})};})() : null,
@@ -202,7 +203,7 @@ function auctionFor(leagueId, now = Date.now()) {
     pausedUntil: !L && now < A.pauseUntil ? new Date(A.pauseUntil).toISOString() : null,
     skipped: A.skipped && now < A.pauseUntil ? { team: A.skipped.team } : null,
     teams: A.order.map(t => ({
-      team: team(t), credits: credits(t), maxBid: maxBid(t), slotsLeft: slotsLeft(t), online: t === MY_TEAM || hashNum('online:' + t) % 5 !== 0,
+      team: team(t), credits: credits(t), maxBid: maxBid(t), slotsLeft: slotsLeft(t), online: t === MY_TEAM || hashNum('online:' + t) % 5 !== 0,computer:A.mode==='live'&&t!==MY_TEAM,
       roles: Object.fromEntries(Object.entries(AUCTION_RULES.roster).map(([r, max]) => [r, { have: roleCount(t, r), max }])),
     })),
     lot,

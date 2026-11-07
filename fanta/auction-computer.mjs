@@ -1,6 +1,5 @@
 import {createHash} from 'node:crypto';
-import {teamBudget} from './auction.mjs';
-export const singlePlayerAvailable=s=>s.teams.filter(t=>t.userId).length===1&&s.teams.some(t=>!t.userId);
+import {computerTeamsActive,teamBudget} from './auction.mjs';
 const random=(...values)=>parseInt(createHash('sha256').update(values.join(':')).digest('hex').slice(0,8),16)/0xffffffff;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function computerValuation(s,team,p,{now=Date.now()}={}){
@@ -14,7 +13,7 @@ export function computerValuation(s,team,p,{now=Date.now()}={}){
 }
 function computerTurn(s){
  const a=s.auction,lot=a.lot;
- if(!a.singlePlayer||!singlePlayerAvailable(s)||a.status!=='running'||a.mode!=='live'||a.phase==='releases'||a.pausedUntil||lot?.closing)return null;
+ if(!computerTeamsActive(s)||a.status!=='running'||a.phase==='releases'||a.pausedUntil||lot?.closing)return null;
  const deadline=Date.parse(lot?.endsAt||a.callDeadline);
  const since=lot?Date.parse(lot.history.at(-1)?.at):deadline-s.rules.callSeconds*1000;
  if(!Number.isFinite(since)||!Number.isFinite(deadline))return null;

@@ -72,13 +72,15 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
    if(next.auction.version!==s.auction.version)await store.persistAuction(c,s,next,'server','tick',{});
    const cmd=computerDecision(next,{now:stamp});
    if(cmd){
+    const bot=(await c.query('SELECT user_id FROM fanta.teams WHERE id=$1 AND league_id=$2 FOR UPDATE',[cmd.teamId,s.league.id])).rows[0];
+    if(!bot||bot.user_id)return;
     const action=auctionAction(next,cmd.kind,cmd.input,null,{now:stamp,computerTeam:cmd.teamId});
     await store.persistAuction(c,next,action,'computer',cmd.kind,{...cmd.input,teamId:cmd.teamId,source:'computer'});
    }else if(planned!=null&&planned<=stamp&&!due){
     // A caller without eligible players can only wait for the normal deadline.
     room.attemptedComputerTurn=planned;
    }
-  },{write:true,auction:true,catalog:!!room.state?.auction.singlePlayer&&!room.state?.auction.lot});
+  },{write:true,auction:true,catalog:!!room.state&&computerActionAt(room.state)!=null&&!room.state.auction.lot});
   if(notice)try{await dispatchFanta('auction-notify:'+notice);}catch{}
   }catch{log('AUCTION_TIMER_RETRY',{league:room.league});}
   await refresh(room);

@@ -22,3 +22,21 @@ test('computer auction decisions respect form, long injury, budgets and human ow
  assert.throws(()=>auctionAction(next,'bid',{lotId:next.auction.lot.id,amount:5000},null,{computerTeam:bot.id,now:now+9000}));
 });
 test('live lab uses only two-word automatic team names',()=>{for(let i=0;i<30;i++)for(const n of funnyTeamNames(20,{seed:'short'+i}))assert.equal(n.split(/\s+/).length,2);});
+test('mixed online auctions are opt-in with two, three or four people and stop controlling claimed teams',()=>{
+ const now=Date.now(),player={id:'free',name:'Punta',role:'A',value:100};
+ for(const humanCount of [2,3,4]){
+  const humans=Array.from({length:humanCount},(_,i)=>({id:'t'+i,userId:'u'+i,roster:[]}));
+  const state={league:{id:'mixed'},rules:{budget:500,roster:{P:3,D:8,C:8,A:6},minRaise:1,callSeconds:60,openSeconds:60,raiseSeconds:30,finalSeconds:10,finalStretch:10},teams:[...humans,{id:'bot',roster:[]}],players:[player],auction:{status:'none',version:1}};
+  const params={admin:true,now,rng:n=>n-1};
+  const disabled=auctionAction(state,'start-now',{type:'iniziale',mode:'live',computerTeams:false},'u0',params);
+  assert.equal(computerDecision(disabled,{now:now+10000}),null);
+  const scheduled=auctionAction(state,'schedule',{type:'iniziale',mode:'live',computerTeams:true,startsAt:new Date(now+1000).toISOString()},'u0',params);
+  const live=auctionAction(scheduled,'start',{},'u0',params);
+  assert.equal(live.auction.computerTeams,true);
+  const nominated=auctionAction(live,'nominate',{playerId:'free',amount:1},'u0',{now});
+  const cmd=computerDecision(nominated,{now:now+10000});assert.equal(cmd.kind,'bid');assert.equal(cmd.teamId,'bot');
+  nominated.teams.at(-1).userId='new-player';
+  assert.equal(computerDecision(nominated,{now:now+10000}),null);
+  assert.throws(()=>auctionAction(nominated,cmd.kind,cmd.input,null,{now:now+10000,computerTeam:cmd.teamId}));
+ }
+});
