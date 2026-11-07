@@ -175,6 +175,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.30.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.29.52...v0.30.0) (2026-11-07)
+
+
+### Features
+
+* **fanta:** aggiorna lo Studio formazione ([2ffc26f](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/2ffc26f88e3faf901900e8bc5f2e9709d1965bb6))
+* **fanta:** make the lineup studio responsive ([5c3d272](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/5c3d27236cdbd980254c1ff6ce85f0dd2382ebb4))
+
 ## [Unreleased]
 
 - Schedina Fanta e Giornata live mostrano avversario e orario italiano sotto la maglia fino all'arrivo del fantavoto e delle icone evento.
