@@ -1,4 +1,4 @@
-# Unreleased
+# 0.29.52 — 2026-11-07
 
 - Le squadre generate dal Fanta ricevono nomi ironici di due parole, con una selezione di nomi in stile Atletico Poco e Hellas Madonna.
 - L’allenatore può cambiare il nome della propria squadra dall’editor dello stemma fino al primo calcio d’inizio fra le competizioni della lega.

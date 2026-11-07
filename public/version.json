@@ -1,7 +1,7 @@
 {
-  "version": "0.29.51",
+  "version": "0.29.52",
   "channel": "stable",
-  "releasedAt": "2026-11-07T07:14:09.211Z",
+  "releasedAt": "2026-11-07T09:54:54.866Z",
   "features": [
     "dedicated-admin-mfa",
     "admin-wipe-controls",
@@ -167,6 +167,9 @@
     "fanta-match-kits-home-away-back",
     "atomic-bar-fanta-league-wipe",
     "club-shirts-replace-serie-a-crests",
-    "shared-fixture-kit-contrast"
+    "shared-fixture-kit-contrast",
+    "two-word-generated-fanta-team-names",
+    "editable-team-name-until-first-kickoff",
+    "mixed-auction-computer-teams"
   ]
 }
