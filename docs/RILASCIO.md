@@ -16,13 +16,13 @@ Il repository usa Release Please su `main`. Il punto di partenza è il tag `v0.2
 4. Distribuisci frontend e backend sul server Windows di casa seguendo la [guida Windows](GUIDA-SERVER-WINDOWS.md). Verifica la versione su `/healthz` e `/version.json`, l’avvio del worker e Socket.IO. GitHub versiona i sorgenti e Netlify gestisce il DNS. Il deploy Windows si avvia separatamente.
 5. Per tornare a un rilascio noto, usa il backup del codice installato o il tag precedente. Una correzione successiva riceve un nuovo tag.
 
-## Canale Friends & Family sul server Windows
+## Produzione unica sul server Windows
 
-- Una sola API di produzione serve entrambi i frontend e conserva la stessa sessione. Il canale sperimentale riguarda HTML, JavaScript e CSS. La PWA, Socket.IO, il worker e il database sono comuni.
+- Tutti gli account ricevono il frontend stabile. La selezione Friends & Family è disattivata con `enabled: false` nel file privato `FRIENDS_CONFIG`. Le build precedenti possono essere conservate per il rollback sul canale stabile.
+- La configurazione storica del canale pilota resta documentata qui sotto per la manutenzione dell’infrastruttura.
 - Il processo `runtime/friends-release.mjs` legge `FRIENDS_STABLE_DIR`, `FRIENDS_CANDIDATE_DIR`, `FRIENDS_CONFIG`, `FRIENDS_PORT` e `FRIENDS_SIGNING_KEY` da file ambiente privati. La configurazione locale è un JSON con `enabled`, `revision` (SHA del candidato) ed `emails` (account verificati). La build candidata è in `<FRIENDS_CANDIDATE_DIR>/<revision>`. Caddy instrada al processo la pagina iniziale, gli inviti e i percorsi `/_friends/*`. Il resto, comprese le API, resta sul servizio web principale.
 - Il server verifica l'account della sessione prima di servire il candidato. Gli asset candidati hanno un percorso legato alla revisione e richiedono un cookie firmato e vincolato alla sessione. Un errore di selezione fa ripiegare sul frontend stabile.
-- Il rilascio ordinario delle modifiche verificate aggiorna il canale pilota dal commit già caricato sul branch di lavoro. Conserva la revisione precedente e lascia attiva la lista Friends & Family. Registra lo SHA distribuito e verifica che un accesso anonimo riceva ancora il frontend stabile. La promozione sul canale stabile segue la procedura dal tag dopo l’OK del proprietario.
-- Per un rollback del frontend pilota, imposta `enabled: false` nella configurazione privata. Vale alla richiesta successiva. Chi ha già aperto la pagina rientra nel canale stabile tornando alla scheda o ricaricandola.
+- Per ogni rilascio verifica che il selettore restituisca `stable` e che gli asset del vecchio canale pilota risultino inaccessibili. Chi ha già aperto la pagina rientra sullo stabile tornando alla scheda o ricaricandola.
 - I rilasci backend sono unici per tutti. Conserva una copia precedente e verifica la compatibilità dello schema prima di attivare il codice nuovo. Tornare al codice precedente lascia intatte le scritture del database.
 
 ## Prima integrazione

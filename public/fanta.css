@@ -651,6 +651,10 @@ button.fanta-cal-match:hover{background:#ffffff08}
 .fanta-lg-form .fanta-choice{display:flex;align-items:center;gap:10px;color:var(--white)}
 .fanta-lg-form .fanta-choice span{display:grid}
 .fanta-lg-form .fanta-choice small{font-size:11px;color:var(--muted)}
+.fanta-lg-form [data-roster-status]{margin:0}
+.fanta-lg-form [data-roster-results]:not([hidden]){max-height:180px;overflow:auto;overscroll-behavior:contain}
+.fanta-lg-form [data-roster-results][hidden]{display:none}
+.fanta-lg-form [data-roster-results] .fanta-choice{padding:8px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
 .fanta-lg-form .primary{min-height:50px;border-radius:12px}
 
 .fanta-rules h3{margin:20px 0 8px;font:600 22px 'Barlow Condensed',sans-serif}
