@@ -83,6 +83,7 @@ test('opening a native slip match reads saved XIs once, renders club jerseys and
  assert.match(page.textContent,/Formazione non ancora salvata/);
  assert.equal(page.querySelectorAll('.fanta-shirt-back').length,2);
  const {document:giornata}=parseHTML(renderGiornata({round:{round:{number:11,state:'in-corso'},rounds:[],matchups:[]},matchup,side:'home',view:'campo'}));
+ assert.match(giornata.querySelector('.fanta-token svg').getAttribute('aria-label'),/numero \d+/);
  for(const view of [page,giornata]){
   assert.equal(view.querySelector('.pitch-next-opponent').textContent,'FRO');
   assert.equal(view.querySelector('.pitch-next-kickoff').textContent,'sab 15:00');

@@ -1,3 +1,4 @@
+import {fantasyWalletKey} from './src/fantasy-accounts.mjs';
 const beforeKickoff=new Set(['NS','TBD','SCHEDULED']);
 export function eventDeadline(round,match){
  const exact=match?.kickoff||match?.officialKickoff;
@@ -22,4 +23,26 @@ export function eventCountdown(at,now=Date.now()){
 }
 export function playableEventRound(round){
  return !!round&&!round.archived&&(round.source!=='fantacalcio'||!!round.nativeFanta);
+}
+
+export function slipCreditReserve(round,rounds,league,uid){
+ if(round.pointsOnly)return 0;
+ const fantasy=!!round.virtualBookmaker,wallet=fantasy?fantasyWalletKey(round,league):null;
+ const season=r=>r.season??/^seriea:(\d+):/.exec(r.sourceId||'')?.[1];
+ const later=r=>{
+  if(fantasy&&r.serieARound!=null&&round.serieARound!=null)return Number(r.serieARound)>Number(round.serieARound);
+  if((!fantasy||r.competitionKey===round.competitionKey)&&r.number!=null&&round.number!=null)return Number(r.number)>Number(round.number);
+  return Date.parse(r.kickoff)>Date.parse(round.kickoff);
+ };
+ return rounds.filter(r=>{
+  if(r===round||r.id===round.id||r.pointsOnly||r.archived||r.league&&league?.id&&r.league!==league.id||!!r.virtualBookmaker!==fantasy)return false;
+  if(fantasy?fantasyWalletKey(r,league)!==wallet:r.source==='fantacalcio')return false;
+  if(season(round)!=null&&season(r)!=null&&String(season(round))!==String(season(r)))return false;
+  const remaining=r.stakeReserveOpen??(!r.settled&&r.matches?.some(match=>!match.void));
+  return remaining&&later(r)&&!((r.slip??r.slips?.find(s=>s.uid===uid))?.stake>0);
+ }).length;
+}
+
+export function slipStakeLimit(credits,savedStake=0,reserve=0){
+ return Math.max(0,savedStake,Math.round((credits+savedStake-reserve)*100)/100);
 }

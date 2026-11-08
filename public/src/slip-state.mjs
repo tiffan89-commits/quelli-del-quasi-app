@@ -1,4 +1,4 @@
-import {eventLocked,noOpenEvents,stakeLocked} from '../slip-events.mjs';
+import {eventLocked,noOpenEvents,stakeLocked,slipStakeLimit} from '../slip-events.mjs';
 export function roundAvailability(round,now=Date.now()){
  if(round?.eventBetting){
   if(noOpenEvents(round,now))return 'chiusa';
@@ -71,22 +71,22 @@ export function editablePicks(round,picks,now=Date.now()){
 export function cleanPicks(round, picks = {}) {
   return Object.fromEntries((round?.matches || []).filter(m => typeof picks[m.id] === 'string').map(m => [m.id, picks[m.id]]));
 }
-export function fingerprint(picks = {}, stake = 10) {
+export function fingerprint(picks = {}, stake = 1) {
   return JSON.stringify([Object.entries(picks).sort(([a],[b]) => a.localeCompare(b)), Number(stake)]);
 }
 export function slipSummary(round, picks, stake, credits = Infinity, now = Date.now()) {
   const matches = round?.matches || [], partial=round?.eventBetting===true, valid = editablePicks(round, picks,now);
   const count = Object.keys(valid).length, total = matches.length;
   const pointsOnly = round?.pointsOnly === true;
-  const value = Number(stake), max = partial?Infinity:Number(round?.rules?.maxStake || 20),fixedStake=partial&&stakeLocked(round,round.slip?.picks,now);
-  const validStake = pointsOnly || (Number.isFinite(value) && value >= 1 && value <= max && (!fixedStake||value===round.slip.stake) && Math.round(value*100)/100 === value && value <= credits + Number(round?.slip?.stake || 0));
-  const dirty = fingerprint(valid, pointsOnly ? 0 : value) !== fingerprint(round?.slip?.picks, pointsOnly ? 0 : round?.slip?.stake || 10);
+  const value = Number(stake), reserve=round?.stakeReserve||0, maxStake=slipStakeLimit(credits,round?.slip?.stake,reserve),fixedStake=partial&&stakeLocked(round,round.slip?.picks,now);
+  const validStake = pointsOnly || (Number.isFinite(value) && value >= 1 && value <= maxStake && (!fixedStake||value===round.slip.stake) && Math.round(value*100)/100 === value && value <= credits + Number(round?.slip?.stake || 0));
+  const dirty = fingerprint(valid, pointsOnly ? 0 : value) !== fingerprint(round?.slip?.picks, pointsOnly ? 0 : round?.slip?.stake || 1);
   const price=m=>valid[m.id]===round?.slip?.picks?.[m.id]?(round.slip?.acceptedOdds?.[m.id]??m.odds?.[valid[m.id]]):m.odds?.[valid[m.id]];
   const missing = matches.filter(m => !m.void && valid[m.id] && !Number.isFinite(price(m))).length;
   const odds = missing || !count || (!partial&&count!==total) ? null : matches.reduce((a,m) => m.void ? a : a * (price(m) || 1), 1);
   const closed = editingClosed(round, now);
   const status = round?.settled ? 'Liquidata' : roundAvailability(round,now)==='non ancora aperta'?'Non ancora aperta':closed?'Chiusa' : round?.slip && !dirty ? 'Salvata' : round?.slip ? 'Modifiche da salvare' : 'Bozza';
-  return {count,total,missing,odds,pointsOnly,validStake,dirty,closed,status,fixedStake,picks:valid,potential:odds === null ? null : Math.round(odds*value*100)/100,canSave:round?.preview!==true && total>0 && (partial?count>0&&(!round.virtualBookmaker||!missing):count===total) && validStake && !closed && (partial||roundAvailability(round,now)==='aperta')};
+  return {count,total,missing,odds,pointsOnly,validStake,dirty,closed,status,fixedStake,maxStake,reserve,picks:valid,potential:odds === null ? null : Math.round(odds*value*100)/100,canSave:round?.preview!==true && total>0 && (partial?count>0&&(!round.virtualBookmaker||!missing):count===total) && validStake && !closed && (partial||roundAvailability(round,now)==='aperta')};
 }
 export function draftKey(user, league, round) {
   return ['quasi-draft-v1',user,league,sourceOf(round),round?.id].join(':');
@@ -96,12 +96,14 @@ export function loadDraft(storage, key, round, now=Date.now()) {
     const draft=JSON.parse(storage.getItem(key) || 'null');
     if(!draft || draft.version!==1 || now-draft.updatedAt>30*86400000 || draft.updatedAt>now+60000 || editingClosed(round,now)) return null;
     // A draft made against another saved version needs an explicit choice by the user.
-    return {...draft,picks:cleanPicks(round,draft.picks),conflict:draft.base !== fingerprint(round.slip?.picks,round.pointsOnly ? 0 : round.slip?.stake || 10)};
+    const base=fingerprint(round.slip?.picks,round.pointsOnly?0:round.slip?.stake||1);
+    const draftBase=!round.slip&&draft.base===fingerprint({},10)?base:draft.base;
+    return {...draft,base:draftBase,picks:cleanPicks(round,draft.picks),conflict:draftBase!==base};
   } catch { return null; }
 }
 export function saveDraft(storage,key,{round,picks,stake,base},now=Date.now()) {
   try {
-    storage.setItem(key,JSON.stringify({version:1,updatedAt:now,base:base??fingerprint(round.slip?.picks,round.pointsOnly ? 0 : round.slip?.stake || 10),picks:cleanPicks(round,picks),stake:round.pointsOnly ? 0 : stake}));
+    storage.setItem(key,JSON.stringify({version:1,updatedAt:now,base:base??fingerprint(round.slip?.picks,round.pointsOnly ? 0 : round.slip?.stake || 1),picks:cleanPicks(round,picks),stake:round.pointsOnly ? 0 : stake}));
     return true;
   } catch { return false; }
 }

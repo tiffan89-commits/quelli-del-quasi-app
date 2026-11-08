@@ -1,6 +1,6 @@
 import {slipTeamLabel} from '../club-crest.mjs';
 import {patchRegion} from '../live-channel.mjs';
-import {pointTerms,QUOTA_SCORING,slipPointTerms} from '../../scoring.mjs';
+import {pointTerms,QUOTA_SCORING,roundPointRules,slipPointTerms} from '../../scoring.mjs';
 // 0.26: righe compatibili con patchSlipResults (data-match-card, data-inline-result, data-match-status, data-pick-feedback).
 // Schedina v2: 1/X/2 al primo livello, altri mercati espandibili, barra fissa con puntata e quota totale.
 // Usa lo stesso modello dati di app.mjs: picks[match.id] = valore (es. "1", "X2", "Over 2.5").
@@ -13,9 +13,6 @@ import {teamCode,pickCode} from '../bar-slips.mjs';
 export const MAIN = ['1', 'X', '2'];
 export const EXTRA = ['1X', '12', 'X2', 'Under 2.5', 'Over 2.5', 'Goal', 'No Goal'];
 const show = (p) => p.replace(' 2.5', ' 2,5');
-// Tagli rapidi della puntata; il campo "Altro" resta vuoto quando la puntata coincide con uno di essi.
-export const quickStakes = (max) => [1, Math.round(max / 2), max];
-export const stakeInputValue = (stake, max) => (quickStakes(max).includes(Number(stake)) ? '' : stake);
 
 export function totalOdds(round, picks) {
   let t = 1, n = 0;
@@ -28,10 +25,10 @@ export function totalOdds(round, picks) {
 
 function option(m, p, picks, closed, esc, fmt, pointsOnly,round) {
   const on = picks[m.id] === p;
-  const quotaScoring=round.rules?.scoring===QUOTA_SCORING;
+  const rules=roundPointRules(round),quotaScoring=rules?.scoring===QUOTA_SCORING;
   const accepted=closed&&round.slip?.picks?.[m.id]===p?(quotaScoring?slipPointTerms(round,m,round.slip):round.slip.pointTerms?.[m.id]):null;
   const odd=quotaScoring&&accepted?.correct!=null?accepted.correct:round.eventBetting&&round.slip?.picks?.[m.id]===p?round.slip.acceptedOdds?.[m.id]??m.odds?.[p]:m.odds?.[p];
-  const terms=accepted||m.pointOffers?.[p]||pointTerms(m,p,{mode:'weighted',scoring:'difficulty-v2',correct:1,wrong:-1,...round.rules});
+  const terms=accepted||(quotaScoring?pointTerms(m,p,rules,odd):m.pointOffers?.[p])||pointTerms(m,p,{mode:'weighted',scoring:'difficulty-v2',correct:1,wrong:-1,...round.rules});
   const amount=n=>Number.isFinite(n)?(n>0?'+':n<0?'−':'')+Number(Math.abs(n).toFixed(2)).toLocaleString('it-IT'):'—';
   const gain=terms.correct===null?'?':amount(terms.correct),loss=amount(terms.wrong);
   const points='<small class="v2-odd-points"><em class="points-gain">'+gain+'</em>'+(quotaScoring?'':'<span aria-hidden="true"> / </span><em class="points-loss">'+loss+'</em>')+' pt</small>';
@@ -48,14 +45,12 @@ export function barKickoff(value){
  return [capital(parts.weekday),parts.day,capital(parts.month),parts.year,parts.hour+':'+parts.minute].join(' ');
 }
 
-export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity, openMatch = null, esc, fmt, date, fantasyMeta, teamLabel=slipTeamLabel }) {
+export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, openMatch = null, esc, fmt, date, fantasyMeta, teamLabel=slipTeamLabel }) {
   if (!round) return '<section class="card empty"><h1>La prossima è quella buona.</h1><p>La prossima schedina sarà disponibile a breve.</p></section>';
   const partial=round.eventBetting===true,closed=editingClosed(round),preview=round.preview===true&&!closed,ready=(partial?!closed:roundAvailability(round)==='aperta')||preview, fanta = sourceOf(round) === 'fantacalcio', pointsOnly = round.pointsOnly === true;
-  const sum = slipSummary(round, picks, stake, credits), max = Number(round.rules?.maxStake || 20);
+  const sum = slipSummary(round, picks, stake, credits);
   if(partial)picks=sum.picks;
-  const chosen=sum.count,tot=partial||preview?sum.odds:totalOdds(round,picks);
   const missingOdds=!pointsOnly&&(sum.missing>0||(round.matches||[]).some(m=>(openMatch===m.id?[...MAIN,...EXTRA]:MAIN).some(p=>!Number.isFinite(m.odds?.[p]))));
-  const totalLabel=sum.missing?'?':'Quota '+(tot?fmt(tot):'–')+' · '+(tot?fmt(Math.round(stake*tot)):0)+' cr';
   const rows = orderSlipMatches(round.matches || []).map(m => {
     const extraOn=EXTRA.includes(picks[m.id]),open=openMatch===m.id,locked=editingEventLocked(round,m),at=eventDeadline(round,m);
     const clock=partial&&!locked?`<small class="slip-event-clock" data-slip-event-at="${at}" title="Tempo per giocare">${eventCountdown(at)}</small>`:'';
@@ -69,23 +64,52 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
       (open && !pointsOnly ? '<div class="v2-odds-extra">' + EXTRA.map(p => option(m, p, picks, locked||!ready, esc, fmt, pointsOnly,round)).join('') + '</div>' : '') +
       '<div class="sr-only" data-pick-feedback></div></article>';
   }).join('');
-  const quick=partial?[1,5,10].filter(v=>v<=credits+(round.slip?.stake||0)):quickStakes(max),left=partial?(chosen?0:1):(round.matches?.length||0)-chosen;
-  const saved = !!round.slip && !sum.dirty;
-  const state = preview ? ['is-todo','Anteprima'] : saved ? ['is-ok', partial?'Confermata':'Confermata · modificabile fino a ' + date(round.deadline || round.kickoff)]
-    : round.slip ? ['is-warn', 'Modifiche da salvare'] : ['is-todo', 'Non ancora confermata'];
-  const hint = preview || sum.canSave ? null : left > 0
-    ? ['v2-error is-hint','status',partial?'Scegli almeno una partita.':'Mancano '+left+(left===1?' partita':' partite')+': scegli un esito per ognuna per confermare.']
-    : ['v2-error', 'alert', partial?(sum.fixedStake?'La puntata è bloccata.':'Controlla la puntata e il saldo disponibile.'):'Controlla la puntata (1–'+max+') e i crediti disponibili.'];
-  const label = saved ? 'Confermata ✓' : round.slip ? 'Salva' : 'Conferma';
   return '<section class="v2-slip" data-slip-source="'+(fanta?'fantacalcio':'seriea')+'" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
-    '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><div data-os-content data-slip-match-list>' + rows + '</div>'+slipNotice(missingOdds)+'</section>' +
-    (!ready ? '' : '<div class="v2-slipbar"><div class="v2-slip-summary"><p class="v2-state ' + state[0] + '" role="status" title="'+esc(state[1])+'">' + esc(preview?state[1]:left>0?(partial?'Scegli una partita':'Mancano '+left+(left===1?' partita':' partite')):hint?'Controlla puntata e saldo':saved?'Confermata ✓':state[1]) + '</p>' +
-      (pointsOnly ? '' : '<div class="v2-slip-meta">'+(sum.fixedStake?'<b data-v2-stake-current title="Puntata bloccata">'+fmt(stake)+' cr</b>':'<details class="v2-stake-picker"><summary data-v2-stake-menu aria-label="Modifica la puntata in crediti"><b data-v2-stake-current>'+fmt(stake)+' cr</b><span aria-hidden="true">⌃</span></summary><div class="v2-stake-panel"><p>Quanto metti sul bancone?</p><div class="v2-stakes">' + quick.map(v =>
-        '<button type="button" class="v2-stake' + (Number(stake) === v ? ' is-on' : '') + '" data-v2-stake="' + v + '">' + v + (!partial&&v === max ? ' max' : '') + '</button>').join('') +
-        '<input id="stake" class="v2-stake-input" type="number" inputmode="decimal" min="1" '+(partial?'':'max="'+max+'" ')+'value="' + esc(partial?(quick.includes(Number(stake))?'':stake):stakeInputValue(stake, max)) + '" placeholder="Altro" aria-label="Puntata personalizzata in crediti"></div><small>'+(partial?'Usa i crediti del tuo saldo.':'Da 1 a '+fmt(max)+' crediti')+'</small></div></details>')+'<span data-v2-slip-total>'+totalLabel+'</span></div>') + '</div>' +
-      '<button type="button" class="v2-save' + (saved ? ' is-done' : '') + '" id="save-slip"' + (sum.canSave && !saved ? '' : ' disabled') + '><span>' + label + (pointsOnly || saved ? '' : ' · ' + fmt(stake) + ' cr') + '</span>' +
-      '</button>' +
-      (hint ? '<p class="' + hint[0] + ' sr-only" role="' + hint[1] + '">' + hint[2] + '</p>' : '') + '</div>');
+    '<h1 class="v2-title">La schedina</h1><div data-os-content data-slip-match-list>' + rows + '</div>'+slipNotice(missingOdds)+'</section>' +
+    (ready ? renderSlipBar({round,picks,stake,credits,esc,fmt,date}) : '');
+}
+
+function renderSlipBar({round,picks,stake,credits=500,esc,fmt,date}){
+  const sum=slipSummary(round,picks,stake,credits),partial=round.eventBetting===true,preview=round.preview===true;
+  const saved=!!round.slip&&!sum.dirty,missing=partial?!sum.count:sum.total-sum.count;
+  const status=preview?'Anteprima':saved?'Confermata ✓':missing?partial?'Scegli una partita':'Mancano '+missing+(missing===1?' partita':' partite'):!sum.validStake?'Controlla puntata e saldo':round.slip?'Modifiche da salvare':'Non ancora confermata';
+  const title=saved&&!partial?'Confermata · modificabile fino a '+date(round.deadline||round.kickoff):status;
+  const total=sum.missing?'?':sum.odds?'Quota '+fmt(sum.odds)+' · '+fmt(Math.round(stake*sum.odds))+' cr':'Quota –';
+  const label=saved?'Confermata ✓':round.slip?'Salva':'Conferma';
+  const state=saved?'is-ok':round.slip?'is-warn':'is-todo';
+  const hint=!sum.validStake&&!preview?sum.fixedStake?'La puntata è bloccata.':sum.reserve?'Tieni da parte un credito per ogni giornata rimanente.':'Crediti insufficienti.':null;
+  const stakeText=sum.fixedStake?'Puntata bloccata':'Puntata';
+  return `<div class="v2-slipbar">${sum.pointsOnly||sum.fixedStake?'':renderStakeRange(sum,stake,fmt,preview)}
+    <div class="v2-slip-summary"><p class="v2-state ${state}" role="status" title="${esc(title)}">${esc(status)}</p>
+      ${sum.pointsOnly?'':`<div class="v2-slip-meta"><b data-v2-stake-current title="${stakeText}">${fmt(stake)} cr</b><span data-v2-slip-total>${total}</span></div>`}</div>
+    <button type="button" class="v2-save${saved?' is-done':''}" id="save-slip" ${sum.canSave&&!saved?'':'disabled'}><span>${label}</span></button>
+    ${hint||missing&&!preview?`<p class="v2-error sr-only" role="${hint?'alert':'status'}">${hint||status}</p>`:''}</div>`;
+}
+
+function renderStakeRange(sum,stake,fmt,disabled){
+  const step=Number.isInteger(stake)?1:0.01,max=step===1?Math.floor(sum.maxStake):sum.maxStake;
+  const value=Math.max(1,Math.min(stake,max)),fill=100*(value-1)/Math.max(1,max-1);
+  return `<div class="auction-offer-amount v2-slip-range" role="group" aria-label="Puntata in crediti">
+    <button type="button" class="secondary auction-offer-step" data-stake-step="-1" aria-label="Diminuisci di un credito" ${disabled||value<=1?'disabled':''}>−</button>
+    <div class="auction-offer-slider">
+      <input id="stake" type="range" min="1" max="${Math.max(1,max)}" step="${step}" value="${value}" aria-label="Importo della puntata" aria-valuetext="${fmt(value)} crediti" style="--offer-fill:${fill}%" ${disabled||max<=1?'disabled':''}>
+      <div class="auction-offer-bounds"><span>1 cr</span>${sum.reserve?`<span>${sum.reserve} cr di riserva</span>`:''}<span>${fmt(max)} cr</span></div>
+    </div>
+    <button type="button" class="secondary auction-offer-step" data-stake-step="1" aria-label="Aumenta di un credito" ${disabled||value>=max?'disabled':''}>+</button>
+  </div>`;
+}
+
+export function patchSlipBar(bar,options){
+  if(!bar)return;
+  const html=renderSlipBar(options);
+  const template=bar.ownerDocument.createElement('template');template.innerHTML=html;
+  patchRegion(bar,html);
+  const input=bar.querySelector('#stake'),fresh=template.content.querySelector('#stake');
+  if(input&&fresh){
+    for(const attr of ['min','max','step','value','style','aria-valuetext'])input.setAttribute(attr,fresh.getAttribute(attr));
+    input.disabled=fresh.disabled;
+    if(input.value!==fresh.value)input.value=fresh.value;
+  }
 }
 
 // A choice changes the odds controls, never the match header or its loaded crest.
@@ -107,7 +131,7 @@ export function patchSlipV2(root,options){
   else if(extra)extra.remove();else if(nextExtra)odds.after(nextExtra);
  }
  current.querySelector('.slip-play-note').hidden=fresh.querySelector('.slip-play-note').hidden;
- if(bar){patchRegion(bar,nextBar.outerHTML);const input=bar.querySelector('#stake'),next=nextBar.querySelector('#stake');if(input&&next){input.disabled=next.disabled;if(doc.activeElement!==input)input.value=next.value;}}
+ if(bar)patchSlipBar(bar,options);
  return true;
 }
 
@@ -115,8 +139,11 @@ export function patchSlipV2(root,options){
 export function bindSlipV2(root, { onPick, onToggle, onStake, onSave }) {
   root.querySelectorAll('.v2-odd[data-pick]').forEach(b => b.onclick = () => onPick(b.dataset.pick, b.dataset.value));
   root.querySelectorAll('[data-v2-more]').forEach(b => b.onclick = () => onToggle(b.dataset.v2More));
-  root.querySelectorAll('[data-v2-stake]').forEach(b => b.onclick = () => {onStake(Number(b.dataset.v2Stake));root.querySelector('.v2-stake-picker')?.removeAttribute('open');});
-  const input = root.querySelector('#stake'); if (input) input.oninput = () => onStake(Number(input.value));
-  const save = root.querySelector('#save-slip'); if (save) save.onclick = () => {root.querySelector('.v2-stake-picker')?.removeAttribute('open');return onSave();};
-  const picker=root.querySelector('.v2-stake-picker');if(picker)picker.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.currentTarget.removeAttribute('open');e.currentTarget.querySelector('summary')?.focus();}};
+  const input=root.querySelector('#stake');
+  if(input)input.oninput=()=>onStake(Number(input.value));
+  root.querySelectorAll('[data-stake-step]').forEach(button=>button.onclick=()=>{
+    const value=Math.round((Number(input.value)+Number(button.dataset.stakeStep))*100)/100;
+    onStake(Math.max(Number(input.min||input.getAttribute('min')),Math.min(Number(input.max||input.getAttribute('max')),value)));
+  });
+  const save=root.querySelector('#save-slip');if(save)save.onclick=onSave;
 }
