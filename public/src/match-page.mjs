@@ -3,14 +3,23 @@
 let active=null,skipPop=false;
 export function bindSwipeBack(surface,back,direction='right',canSwipe=()=>true){
  let start=null;
- surface.addEventListener('touchstart',event=>{start=event.touches.length===1&&canSwipe(event)?event.touches[0]:null;},{passive:true});
+ surface.addEventListener('touchstart',event=>{
+  start=null;
+  if(event.touches.length!==1||event.target.closest?.('input,select,textarea,[contenteditable]')||!canSwipe(event))return;
+  for(let node=event.target;node&&node!==surface;node=node.parentElement){
+   if(node.scrollWidth<=node.clientWidth+2)continue;
+   const overflow=surface.ownerDocument.defaultView?.getComputedStyle(node).overflowX;
+   if(overflow==='auto'||overflow==='scroll')return;
+  }
+  start=event.touches[0];
+ },{passive:true});
  surface.addEventListener('touchcancel',()=>{start=null;},{passive:true});
  surface.addEventListener('touchend',event=>{
   const first=start,point=event.changedTouches[0];start=null;
   if(!first||!point)return;
   const dx=point.clientX-first.clientX,dy=point.clientY-first.clientY;
   const movement=direction==='both'?Math.abs(dx):direction==='left'?-dx:dx;
-  if(movement>=45&&movement>Math.abs(dy)*1.4)back();
+  if(movement>=45&&movement>Math.abs(dy)*1.4){event.stopPropagation();back();}
  },{passive:true});
 }
 export function closeMatchPage({back=true}={}){

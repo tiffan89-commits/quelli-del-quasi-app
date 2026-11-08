@@ -2,6 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { pageMetrics, oneScreenExcluded } from '../public/src/one-screen.mjs';
+import { bindSwipeBack } from '../public/src/match-page.mjs';
+
+test('uno swipe del carosello interno non chiude la schermata che lo contiene',()=>{
+ const listeners={};
+ const surface={ownerDocument:{defaultView:{getComputedStyle:()=>({overflowX:'auto'})}},addEventListener:(name,listener)=>{listeners[name]=listener;}};
+ const child={parentElement:surface,clientWidth:390,scrollWidth:780};
+ let closed=0,stopped=0;
+ bindSwipeBack(surface,()=>closed++);
+ const gesture=(target,kind='touchend')=>{
+  listeners.touchstart({target,touches:[{clientX:40,clientY:80}]});
+  listeners[kind]({changedTouches:[{clientX:140,clientY:82}],stopPropagation:()=>stopped++});
+ };
+ gesture(child);
+ gesture(surface,'touchcancel');
+ assert.equal(closed,0);
+ gesture(surface);
+ assert.equal(closed,1);
+ assert.equal(stopped,1);
+});
 
 test('pageMetrics conta le pagine e la pagina corrente', () => {
  assert.deepEqual(pageMetrics(390, 390, 0), { pages: 1, page: 0 });

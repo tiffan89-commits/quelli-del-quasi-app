@@ -162,6 +162,7 @@ export function startOneScreen(doc = globalThis.document) {
   const newTrack=track!==main;
   pausedForMatch = false;
   if (newTrack||nextKey!==key) {
+   dragging=null;
    if (main&&!drill.length)saved.set(key,metrics.page);
    clearDrillView();
    if(nextKey!==key){for(const entry of drill)entry.el.open=false;drill=[];}
@@ -182,6 +183,7 @@ export function startOneScreen(doc = globalThis.document) {
    drill=drill.slice(0,drill.findIndex(entry=>!entry.el.open||!main.contains(entry.el)));restore=!drill.length;
   }
   if (toTop) { toTop = false; saved.delete(key); restore = true; }
+  if (dragging?.active && !restore) return;
   quiet(() => {
    if (!root.classList.contains('os-on')) { root.classList.add('os-on'); nativeScrollTo?.call(win, 0, 0); }
    host.classList.add('os-root');
@@ -362,6 +364,7 @@ export function startOneScreen(doc = globalThis.document) {
   });
   el.addEventListener('scroll', () => {
    if (el !== main) return;
+   if (dragging?.active) return;
    if(flow()){refresh(false);return;}
    refresh();
    if (dragging) return;
@@ -372,26 +375,36 @@ export function startOneScreen(doc = globalThis.document) {
    if(el===main&&drill.length&&metrics.page===0&&e.touches.length===1&&!scroller(e.target,'x')&&!e.target.closest('input,select,textarea,button,a')){
     const t=e.touches[0];drillGesture={x:t.clientX,y:t.clientY};
    }else drillGesture=null;
-   if (el !== main || flow() || e.touches.length !== 1 || scroller(e.target, 'x')) { dragging = null; return; }
+   if (el !== main || flow() || !el.clientWidth || e.touches.length !== 1 || scroller(e.target, 'x') || e.target.closest('input,select,textarea,[contenteditable]')) { dragging = null; return; }
    const t = e.touches[0];
-   dragging = { x: t.clientX, y: t.clientY, left: el.scrollLeft, page: Math.round(el.scrollLeft / el.clientWidth), at: Date.now(), active: false, inner: scroller(e.target, 'y') };
+   const {page,pages}=pageMetrics(el.scrollWidth,el.clientWidth,el.scrollLeft);
+   win.clearTimeout(snapTimer);
+   dragging = { x: t.clientX, y: t.clientY, left: el.scrollLeft, page, pages, at: Date.now(), active: false };
   }, { passive: true });
   el.addEventListener('touchmove', e => {
    if (!dragging || el !== main) return;
    const t = e.touches[0], dx = t.clientX - dragging.x, dy = t.clientY - dragging.y;
-   if (!dragging.active) { if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy) * 1.2) { if (Math.abs(dy) > 12) dragging = null; return; } dragging.active = true; }
+   if (!dragging.active) {
+    if (Math.abs(dx)<8||Math.abs(dx)<Math.abs(dy)*1.4) {if(Math.abs(dy)>12)dragging=null;return;}
+    const next=dragging.page+(dx<0?1:-1);
+    if(next<0||next>=dragging.pages)return;
+    dragging.active=true;
+   }
    el.scrollLeft = dragging.left - dx;
   }, { passive: true });
   const end = e => {
    if(drillGesture){
     const g=drillGesture,t=e.changedTouches?.[0];drillGesture=null;
-    if(e.type==='touchend'&&t&&t.clientX-g.x>55&&t.clientX-g.x>Math.abs(t.clientY-g.y)*1.4){dragging=null;backDetail();return;}
+    if(e.type==='touchend'&&t&&t.clientX-g.x>55&&t.clientX-g.x>Math.abs(t.clientY-g.y)*1.4){e.stopPropagation();dragging=null;backDetail();return;}
    }
    if (!dragging || el !== main) return;
    const d = dragging; dragging = null;
    if (!d.active) return;
+   e.stopPropagation();
    const t = e.changedTouches?.[0], dx = t ? t.clientX - d.x : 0, fast = Math.abs(dx) / Math.max(1, Date.now() - d.at) > 0.35;
-   go(Math.abs(dx) > el.clientWidth * 0.18 || (fast && Math.abs(dx) > 24) ? d.page + (dx < 0 ? 1 : -1) : d.page);
+   const advance=e.type==='touchend'&&(Math.abs(dx)>el.clientWidth*.18||fast&&Math.abs(dx)>24);
+   go(advance?d.page+(dx<0?1:-1):d.page);
+   schedule();
   };
   el.addEventListener('touchend', end, { passive: true });
   el.addEventListener('touchcancel', end, { passive: true });

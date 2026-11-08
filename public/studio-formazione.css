@@ -28,7 +28,7 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .studio-live-lineup .fanta-token{min-width:0;gap:1px;padding:2px 0}
 .studio-live-lineup button[data-player]{cursor:pointer;touch-action:manipulation}
 .studio-live-lineup button[data-player]>*{pointer-events:none}
-.studio-live-lineup .fanta-pitch .fanta-token-shirt{width:clamp(23px,calc(25cqh - 47px),85px);height:clamp(23px,calc(25cqh - 47px),85px)}
+.studio-live-lineup .fanta-pitch .fanta-token-shirt{width:min(calc(100% - 6px),clamp(23px,calc(25cqh - 47px),85px));height:auto;aspect-ratio:1}
 .studio-live-lineup .fanta-token :is(.pitch-next-opponent,.pitch-next-kickoff){line-height:1.05}
 .studio-live-lineup .live-studio-bench{height:100%;padding-bottom:39px}
 .live-studio-reserves{
