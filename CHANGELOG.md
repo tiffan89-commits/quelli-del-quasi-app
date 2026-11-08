@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.34.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.34.1...v0.34.2) (2026-11-08)
+
+
+### Bug Fixes
+
+* **slip:** keep future picks editable and align match details ([c69e987](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c69e987a3419d24a86bb245145393b94babf69b7))
+* **slip:** keep future picks editable and align match details ([ccf0667](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/ccf0667f2d972075ee1782d1fd33133bb785793c))
+
 ## [0.34.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.34.0...v0.34.1) (2026-11-08)
 
 
