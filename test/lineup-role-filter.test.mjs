@@ -18,18 +18,23 @@ test('API position aliases map to fantasy roles; unknown roles and empty selecti
  for(const kind of ['official','fantasy']){const html=renderLineup({lineups:{...lineup,kind}});assert.doesNotMatch(html,/data-lineup-role=/);assert.ok(html.indexOf('Juventus P')<html.indexOf('Juventus D'));}
 });
 
-test('dedicated match pages put each complete bench between its team and the next team',()=>{
+test('dedicated match pages put each bench behind its team and gate the details slide',()=>{
  const extended={...lineup,teams:lineup.teams.map(t=>({...t,bench:Array.from({length:25},(_,i)=>({id:String(i),name:'Nome Riserva'+i,role:'D',probability:55}))}))};
  const {document}=parseHTML(renderLineup({lineups:extended},{paged:true}));
  const panes=[...document.querySelectorAll('.pitch-team')];
- assert.deepEqual(panes.map(p=>p.getAttribute('aria-label')),['Titolari Juventus','Panchina Juventus','Titolari Inter','Panchina Inter']);
- assert.deepEqual([...document.querySelectorAll('[data-pitch-tab]')].map(p=>p.dataset.pitchTab),['0','2']);
+ assert.deepEqual(panes.map(p=>p.getAttribute('aria-label')),['Formazione Juventus','Formazione Inter']);
+ assert.deepEqual([...document.querySelectorAll('[data-pitch-tab]')].map(p=>p.dataset.pitchTab),['0','1']);
  const withDetails=parseHTML(renderLineup({lineups:{...extended,kind:'official'}},{paged:true,swipeDetails:true})).document;
  assert.equal(withDetails.querySelector('.lineup-paged h3'),null);
- assert.ok(withDetails.querySelector('.pitch-bench-page:last-of-type + .pitch-details-edge'));
- for(const index of [1,3]){
-  assert.equal(panes[index].querySelectorAll('.bench-stickers .pitch-player').length,25);
-  assert.equal(panes[index].querySelector('.bench-player-surname').textContent,'Riserva0');
-  assert.equal(panes[index].querySelector('.football-pitch'),null);
+ assert.ok(withDetails.querySelector('.pitch-team:last-of-type + .pitch-details-edge:not([hidden])'));
+ const noDetails=parseHTML(renderLineup({lineups:extended},{paged:true,swipeDetails:true,detailsAvailable:false})).document;
+ assert.ok(noDetails.querySelector('.pitch-details-edge[hidden]'));
+ for(const pane of panes){
+  const bench=pane.querySelector('.pitch-flip-back');
+  assert.ok(bench.hasAttribute('inert'));
+  assert.equal(bench.querySelectorAll('.bench-stickers .pitch-player').length,25);
+  assert.equal(bench.querySelector('.bench-player-surname').textContent,'Riserva0');
+  assert.equal(pane.querySelector('[data-pitch-flip]').textContent.trim(),'A disposizione');
  }
+ assert.equal(withDetails.querySelector('[data-pitch-flip]').textContent.trim(),'Panchina');
 });

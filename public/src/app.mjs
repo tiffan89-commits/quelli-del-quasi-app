@@ -1978,7 +1978,7 @@ async function openMatch(id, quiet = false) {
     const detailsOpen=quiet&&dialog.querySelector('.match-detail-drill')?.open;
     dialog.innerHTML = `<div class="match-toolbar">
       <button class="secondary" id="close-modal">Chiudi ×</button>
-      <details class="match-detail-drill" ${detailsOpen?'open':''}>
+      <details class="match-detail-drill" ${events.length?(detailsOpen?'open':''):'hidden'}>
         <summary><span class="match-details-forward">Dettagli della partita ›</span><span class="match-details-back">← Formazioni</span></summary>
         <div class="match-details-body">
           <h3>Dettagli della partita</h3>
@@ -1990,7 +1990,7 @@ async function openMatch(id, quiet = false) {
     <div class="match-headline">
       <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,fantasy:false})}</h2>
       <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
-    </div>${lineupView(data)}`;
+    </div>${lineupView(data,events.length>0)}`;
     $("#close-modal").onclick = () => {
       activeMatchId = null;
       dialog.dataset.match = "";
@@ -1998,7 +1998,7 @@ async function openMatch(id, quiet = false) {
     };
     const drill=dialog.querySelector('.match-detail-drill'),body=drill.querySelector('.match-details-body');
     const fitDetails=()=>{if(!drill.open)return;const nav=document.querySelector('nav.v2-tabbar')?.getBoundingClientRect();const bottom=nav?.top>innerHeight/2?nav.top:innerHeight;body.style.setProperty('--match-detail-height',Math.max(120,bottom-body.getBoundingClientRect().top-10)+'px');};
-    const openDetails=()=>{drill.open=true;};
+    const openDetails=()=>{if(!drill.hidden)drill.open=true;};
     drill.ontoggle=()=>{
       if(drill.open){fitDetails();return;}
       const slides=dialog.querySelector('.pitch-slides');
@@ -2036,7 +2036,7 @@ async function openMatch(id, quiet = false) {
   }
 }
 
-function lineupView(data){return renderLineup(data,{paged:true,swipeDetails:true});}
+function lineupView(data,detailsAvailable){return renderLineup(data,{paged:true,swipeDetails:true,detailsAvailable});}
 function supportSection() {
   return '<details class="card inline-support"><summary>Invia un suggerimento o segnala un bug</summary><p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field">Messaggio<textarea name="message" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form></details>';
 }
@@ -2566,8 +2566,16 @@ function applyLive(data){
       if(score&&score.textContent!==value)score.textContent=value;
       const status=dialog.querySelector('[data-live-detail-status]'),label=matchDetailStatus(m);
       if(status&&status.textContent!==label)status.textContent=label;
-      const events=dialog.querySelector('[data-live-detail-events]');if(events){const html=eventColumns(m,(m.details?.events||[]).filter(isMatchEvent));if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events>'+html+'</div>');events.dataset.revision=html;}}
-      const penalties=dialog.querySelector('[data-live-detail-penalties]');if(penalties){const html=footballPenalties(m,{compact:true});if(penalties.dataset.revision!==html){patchRegion(penalties,'<div data-live-detail-penalties>'+html+'</div>');penalties.dataset.revision=html;}}
+      const events=dialog.querySelector('[data-live-detail-events]');
+      if(events&&Array.isArray(m.details?.events)){
+        const items=m.details.events.filter(isMatchEvent),html=eventColumns(m,items);
+        const drill=dialog.querySelector('.match-detail-drill'),edge=dialog.querySelector('.pitch-details-edge');
+        drill.hidden=!items.length;
+        if(edge)edge.hidden=drill.hidden;
+        if(drill.hidden)drill.open=false;
+        if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events>'+html+'</div>');events.dataset.revision=html;}
+      }
+      const penalties=dialog.querySelector('[data-live-detail-penalties]');if(penalties&&m.details?.penalties!==undefined){const html=footballPenalties(m,{compact:true});if(penalties.dataset.revision!==html){patchRegion(penalties,'<div data-live-detail-penalties>'+html+'</div>');penalties.dataset.revision=html;}}
     }
   }
 }

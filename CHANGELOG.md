@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Le panchine sono sul retro del campo, raggiungibili dal pulsante di ribaltamento. Lo swipe passa tra le squadre e apre i dettagli solo se ci sono eventi.
+
 - Intestazione delle partite Serie A su una riga. I dettagli si aprono scorrendo dall’intestazione o oltre l’ultima panchina e mostrano gli eventi e i rigori.
 
 - Schedine più compatte senza riepilogo degli esiti, testo a piè pagina e orario dell’ultimo aggiornamento. Friends & Family può provare in anteprima la prossima schedina Serie A mentre le quote sono in arrivo.

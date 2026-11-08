@@ -41,11 +41,11 @@ function pitchField(t){
  return `<div class="football-pitch"><div class="pitch-marks" aria-hidden="true"></div><div class="pitch-rows" style="--pitch-lines:${rows.length}">${rows.map(row=>`<div class="pitch-row${row.length>=5?' row-5':''}" style="--players:${row.length}">${row.map(p=>sticker(p,t)).join('')}</div>`).join('')}</div></div>`;
 }
 
-function benchPage(t,kind){
+function benchPage(t,kind,label){
  const bench=t.bench||[],players=t.started?[...bench.filter(hasEntered),...bench.filter(p=>!hasEntered(p))]:bench;
  const filter=kind==='probable'&&!t.started&&players.length>0;
  const roles=[...AVAILABLE_ROLES,...(players.some(p=>availablePlayerRole(p)==='other')?[['other','Altri']]:[])];
- return `<div class="pitch-bench-room lineup-bench"><div class="bench-room-label"><b>Panchina</b><span>${players.length} a disposizione</span></div>${filter?`<div class="lineup-role-tabs" role="group" aria-label="Filtra la panchina per ruolo">${roles.map(([role,label])=>`<button type="button" data-lineup-role="${role}" aria-pressed="${role==='all'}">${label}</button>`).join('')}</div>`:''}<div class="bench-stickers" style="--bench-rows:${Math.max(1,Math.ceil(players.length/5))};--bench-rows-short:${Math.max(1,Math.ceil(players.length/7))}">${players.map(p=>sticker(p,t,filter,true)).join('')}</div><p class="lineup-role-empty muted" data-lineup-role-empty ${players.length?'hidden':''}>${players.length?'Nessun giocatore disponibile in questo ruolo.':'Panchina non disponibile.'}</p></div>`;
+ return `<div class="pitch-bench-room lineup-bench"><div class="bench-room-label"><b>${label}</b><span>${players.length} giocatori</span></div>${filter?`<div class="lineup-role-tabs" role="group" aria-label="Filtra la panchina per ruolo">${roles.map(([role,label])=>`<button type="button" data-lineup-role="${role}" aria-pressed="${role==='all'}">${label}</button>`).join('')}</div>`:''}<div class="bench-stickers" style="--bench-rows:${Math.max(1,Math.ceil(players.length/5))};--bench-rows-short:${Math.max(1,Math.ceil(players.length/7))}">${players.map(p=>sticker(p,t,filter,true)).join('')}</div><p class="lineup-role-empty muted" data-lineup-role-empty ${players.length?'hidden':''}>${players.length?'Nessun giocatore disponibile in questo ruolo.':'Panchina non disponibile.'}</p></div>`;
 }
 
 function pitchExtras(t,kind){
@@ -54,12 +54,29 @@ function pitchExtras(t,kind){
  return '';
 }
 
-function pagedLineup(l,title,notes,swipeDetails){
- const panes=l.teams.flatMap((team,index)=>[{team,index,bench:false},{team,index,bench:true}]);
- return `<section class="lineup-section lineup-paged">${title?`<h3>${title}</h3>`:''}<div class="pitch-tabs" role="tablist" aria-label="Squadra da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i*2}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides" aria-label="Titolari e panchine">${panes.map(({team,index,bench})=>`<section class="pitch-team ${bench?'pitch-bench-page':'pitch-starters-page'}" data-pitch-team="${index}" aria-label="${bench?'Panchina':'Titolari'} ${esc(team.team)}">${bench?benchPage(team,l.kind):`<div class="pitch-heading"><strong>${esc(team.team)}</strong><span>${esc(team.formation||'')}</span></div>${pitchField(team)}`}</section>`).join('')}${swipeDetails?'<div class="pitch-details-edge" aria-hidden="true"></div>':''}</div><div class="pitch-page-buttons" aria-label="Pagine della formazione">${panes.map(({team,bench},i)=>`<button type="button" data-pitch-page="${i}" aria-label="${bench?'Panchina':'Titolari'} ${esc(team.team)}" ${i===0?'aria-current="step"':''}>${bench?'Panchina':'Titolari'}</button>`).join('')}</div>${l.teams.map((t,i)=>`<div data-pitch-extras="${i}" ${i?'hidden':''}>${pitchExtras(t,l.kind)}</div>`).join('')}${notes}</section>`;
+function pagedLineup(l,title,notes,swipeDetails,detailsAvailable){
+ const teams=l.teams.map((team,i)=>{
+  const benchLabel=l.kind==='probable'&&!team.started?'A disposizione':'Panchina';
+  return `<section class="pitch-team" data-pitch-team="${i}" aria-label="Formazione ${esc(team.team)}">
+    <div class="pitch-heading"><strong>${esc(team.team)}</strong><span>${esc(team.formation||'')}</span></div>
+    <div class="pitch-flip-card">
+      <div class="pitch-flip-face pitch-flip-front">${pitchField(team)}</div>
+      <div class="pitch-flip-face pitch-flip-back" inert aria-hidden="true">${benchPage(team,l.kind,benchLabel)}</div>
+      <button type="button" class="pitch-flip-button" data-pitch-flip="${benchLabel}" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a9 9 0 0 1 15-5l3 3m0-5v5h-5M21 14a9 9 0 0 1-15 5l-3-3m0 5v-5h5"/></svg>
+        <span>${benchLabel}</span>
+      </button>
+    </div>
+  </section>`;
+ }).join('');
+ return `<section class="lineup-section lineup-paged">${title?`<h3>${title}</h3>`:''}
+   <div class="pitch-tabs" role="tablist" aria-label="Squadra da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div>
+   <div class="pitch-slides" aria-label="Titolari e panchine">${teams}${swipeDetails?`<div class="pitch-details-edge" aria-hidden="true" ${detailsAvailable?'':'hidden'}></div>`:''}</div>
+   ${l.teams.map((t,i)=>`<div data-pitch-extras="${i}" ${i?'hidden':''}>${pitchExtras(t,l.kind)}</div>`).join('')}${notes}
+ </section>`;
 }
 
-export function renderLineup(data,{paged=false,swipeDetails=false}={}){
+export function renderLineup(data,{paged=false,swipeDetails=false,detailsAvailable=true}={}){
  const source=recoverOfficialPitchLayout(data.lineups,data.details?.sourceLineups),started=['1H','HT','2H','LIVE','FT','AET','PEN','ET'].includes(data.status)||source?.started;
  const homeTeam=data.home??source?.teams[0]?.team,awayTeam=data.away??source?.teams[1]?.team;
  const l=source?{...source,teams:source.teams.map((t,i)=>{
@@ -69,21 +86,23 @@ export function renderLineup(data,{paged=false,swipeDetails=false}={}){
  if(!l)return '<section class="card"><h3>Probabili formazioni</h3><p class="muted">Formazioni non ancora disponibili.</p></section>';
  const title=l.kind==='fantasy'?'Le formazioni':l.kind==='official'?'Formazioni ufficiali':'Probabili formazioni';
  const notes=`<p class="lineup-source">${l.kind==='fantasy'?(l.complete?'Definitive':l.teams.some(t=>t.players.length)?'Formazioni consegnate':'In attesa delle formazioni'):l.kind==='official'?'Formazione confermata':['minutes-presence-v1','recent-form-v2','recent-form-v3'].includes(l.method)?'Presenza stimata':'Stima basata su '+(l.sourceCount||1)+' fonti'+((l.sourceCount||1)<5?' · copertura parziale':'')}${l.updatedAt?' · '+new Date(l.updatedAt).toLocaleString('it-IT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):''}</p>${l.kind==='probable'?'<small class="lineup-method">Presenza stimata da minuti, titolarità e forma recente. Verde: formazione ufficiale.</small>':''}${l.kind==='probable'&&Number(l.accuracy?.validMatches)>=10&&Number.isFinite(l.accuracy?.accuracyPct)?'<p class="lineup-accuracy">Accuratezza degli 11: <strong>'+Number(l.accuracy.accuracyPct).toLocaleString('it-IT',{maximumFractionDigits:1})+'%</strong> · su '+Math.floor(l.accuracy.validMatches)+' partite</p>':''}`;
- if(paged)return pagedLineup(l,swipeDetails&&l.kind==='official'?'':title,notes,swipeDetails);
+ if(paged)return pagedLineup(l,swipeDetails&&l.kind==='official'?'':title,notes,swipeDetails,detailsAvailable);
  return `<section class="lineup-section"><h3>${title}</h3><div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
 }
 export function bindLineupPitch(root,{onDetails}={}){
  root._pitchCleanup?.();
  const slides=root.querySelector('.pitch-slides');if(!slides)return;
  const tabs=[...root.querySelectorAll('[data-pitch-tab]')],teams=[...root.querySelectorAll('.pitch-team')];
- const paged=!!slides.closest('.lineup-paged'),links=[...root.querySelectorAll('[data-pitch-page]')],extras=[...root.querySelectorAll('[data-pitch-extras]')];
+ const paged=!!slides.closest('.lineup-paged'),flips=[...root.querySelectorAll('[data-pitch-flip]')],extras=[...root.querySelectorAll('[data-pitch-extras]')];
  let current=paged?Math.min(root._pitchPage||0,teams.length-1):0,settleTimer=null,scrolling=false;
+ if(!teams.length)return;
+ const flipped=paged?(root._pitchFlips??=new Set()):null;
  const size=()=>{const team=teams[current];if(team)slides.style.height=Math.ceil(team.getBoundingClientRect().height)+'px';};
  const fit=()=>{const page=root.closest?.('#match-page-root');if(!page||!slides.clientWidth||!Number.isFinite(globalThis.window?.innerHeight))return;const pitch=slides.querySelector('.football-pitch');if(!pitch&&!paged)return;
   if(paged){
    const nav=page.ownerDocument.querySelector('nav.v2-tabbar'),navRect=nav?.getBoundingClientRect();
    const bottom=navRect?.top>window.innerHeight/2?navRect.top:window.innerHeight;
-   const reserved=[...page.querySelectorAll('.pitch-page-buttons,.lineup-accuracy,:scope>details.match-statistics>summary,[data-pitch-extras]:not([hidden]) details>summary, :scope>details.card>summary')]
+   const reserved=[...page.querySelectorAll('.lineup-accuracy,:scope>details.match-statistics>summary,[data-pitch-extras]:not([hidden]) details>summary, :scope>details.card>summary')]
     .reduce((sum,el)=>sum+(el.getBoundingClientRect().height?el.getBoundingClientRect().height+16:0),0);
    const height=Math.max(142,Math.floor(bottom-slides.getBoundingClientRect().top-(globalThis.scrollY||0)-reserved-32));
    page.style.setProperty('--match-pitch-height',height+'px');return;
@@ -96,7 +115,6 @@ export function bindLineupPitch(root,{onDetails}={}){
   if(paged)root._pitchPage=i;
   const team=paged?Number(teams[i]?.dataset.pitchTeam):i;
   tabs.forEach((b,j)=>b.setAttribute('aria-selected',String(j===team)));
-  links.forEach(b=>{if(Number(b.dataset.pitchPage)===i)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
   extras.forEach((el,j)=>{el.hidden=j!==team;});
  };
  // Changing height while horizontal scrolling can reset the browser's snap target.
@@ -113,14 +131,28 @@ export function bindLineupPitch(root,{onDetails}={}){
  const scheduleSize=()=>{scrolling=true;clearTimeout(settleTimer);settleTimer=setTimeout(settled,140);};
  const go=i=>{select(i);scheduleSize();slides.scrollTo({left:i*slides.clientWidth,behavior:globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
  tabs.forEach(b=>b.onclick=()=>go(Number(b.dataset.pitchTab)));
- links.forEach(b=>b.onclick=()=>go(Number(b.dataset.pitchPage)));
+ flips.forEach((button,i)=>{
+  const card=button.closest('.pitch-flip-card'),front=card.querySelector('.pitch-flip-front'),back=card.querySelector('.pitch-flip-back');
+  const paint=()=>{
+   const bench=flipped.has(i);
+   card.classList.toggle('is-flipped',bench);
+   front.toggleAttribute('inert',bench);
+   front.setAttribute('aria-hidden',String(bench));
+   back.toggleAttribute('inert',!bench);
+   back.setAttribute('aria-hidden',String(!bench));
+   button.setAttribute('aria-pressed',String(bench));
+   button.querySelector('span').textContent=bench?'Titolari':button.dataset.pitchFlip;
+  };
+  button.onclick=()=>{if(flipped.has(i))flipped.delete(i);else flipped.add(i);paint();};
+  paint();
+ });
  slides.onscroll=()=>{if(!slides.clientWidth)return;select(Math.max(0,Math.min(teams.length-1,Math.round(slides.scrollLeft/slides.clientWidth))));scheduleSize();};
  slides.addEventListener?.('scrollend',settled);
  root.addEventListener('toggle',size,true);
  const filterRole=event=>{const button=event.target.closest?.('[data-lineup-role]'),panel=button?.closest('.lineup-bench');if(!panel)return;const role=button.dataset.lineupRole;panel.querySelectorAll('[data-lineup-role]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));let visible=0;panel.querySelectorAll('[data-available-role]').forEach(card=>{card.hidden=role!=='all'&&card.dataset.availableRole!==role;if(!card.hidden)visible++;});const empty=panel.querySelector('[data-lineup-role-empty]');if(empty)empty.hidden=visible>0;if(paged){const grid=panel.querySelector('.bench-stickers');grid?.style.setProperty('--bench-rows',Math.max(1,Math.ceil(visible/5)));grid?.style.setProperty('--bench-rows-short',Math.max(1,Math.ceil(visible/7)));}size();};
  root.addEventListener('click',filterRole);
  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{if(!scrolling)size();});teams.forEach(t=>observer?.observe(t));
- const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;[...tabs,...links].forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);globalThis.window?.removeEventListener?.('resize',fit);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});globalThis.window?.addEventListener?.('resize',fit);select(current);fit();size();if(paged&&current)slides.scrollLeft=current*slides.clientWidth;
+ const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;[...tabs,...flips].forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);globalThis.window?.removeEventListener?.('resize',fit);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});globalThis.window?.addEventListener?.('resize',fit);select(current);fit();size();if(paged&&current)slides.scrollLeft=current*slides.clientWidth;
 }
 
 const grade=v=>Number.isFinite(v)?String(v):'s.v.';

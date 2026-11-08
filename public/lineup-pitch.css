@@ -31,12 +31,24 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 .pitch-player-grades{font-size:13px;padding:2px 6px;border-radius:999px;background:#102d20;color:#ebecbf;font-weight:800}.lineup-substitutes>summary{color:#8de5a3}
 .pitch-row.row-5 .player-sticker{width:min(66px,100%);height:auto;aspect-ratio:1}.pitch-row.row-5 .player-sticker>svg{width:100%;height:100%}
 
-/* Four fixed-width panes for match lineups. Benches use a locker-room board. */
+/* Each team has one slide and two sides of the same pitch. */
 .match-page .lineup-paged .pitch-slides{overflow-y:hidden;transition:none}
 .match-page .lineup-paged .pitch-heading{margin:0 0 3px;min-height:15px}
-.match-page .pitch-page-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:4px 0}
-.match-page .pitch-page-buttons button{min-height:29px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);font-size:11px;white-space:nowrap}
-.match-page .pitch-page-buttons button[aria-current]{color:var(--lime);border-color:currentColor}
+.match-page .pitch-flip-card{position:relative;display:grid;height:var(--match-pitch-height);perspective:1000px}
+.match-page .pitch-flip-face{grid-area:1/1;min-width:0;min-height:0;backface-visibility:hidden;transition:transform .32s ease}
+.match-page .pitch-flip-face[inert]{pointer-events:none}
+.match-page .pitch-flip-back{transform:rotateY(180deg)}
+.match-page .pitch-flip-card.is-flipped .pitch-flip-front{transform:rotateY(-180deg)}
+.match-page .pitch-flip-card.is-flipped .pitch-flip-back{transform:rotateY(0)}
+.match-page .pitch-flip-card :is(.football-pitch,.lineup-sticker-list,.pitch-bench-room){height:100%;box-sizing:border-box;padding-bottom:35px}
+.match-page .pitch-flip-front .lineup-sticker-list{align-content:start;overflow:auto}
+.match-page .pitch-flip-button{
+ position:absolute;right:6px;bottom:4px;z-index:2;display:flex;flex-direction:column;align-items:center;gap:1px;
+ min-width:52px;min-height:31px;padding:2px 5px;border:1px solid #bfc6a77a;border-radius:8px;
+ background:#10251f;color:#f6f3e7;font-size:9px;font-weight:700;line-height:1.1;white-space:nowrap
+}
+.match-page .pitch-flip-button svg{width:16px;height:16px}
+@media(prefers-reduced-motion:reduce){.match-page .pitch-flip-face{transition:none}}
 .match-page .pitch-bench-room{
  box-sizing:border-box;display:flex;flex-direction:column;height:calc(var(--match-pitch-height) + 18px);margin:0;padding:6px;
  border:1px solid #9b734e;border-radius:12px;background:repeating-linear-gradient(90deg,#493527 0,#493527 18px,#513b2a 18px,#513b2a 36px)
@@ -47,7 +59,7 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 .match-page .pitch-bench-room .lineup-role-tabs button{min-height:24px;padding:2px 5px;font-size:10px}
 .match-page .pitch-bench-room .bench-stickers{
  --bench-lines:var(--bench-rows);
- --bench-shirt:clamp(18px,calc((var(--match-pitch-height) - 38px)/var(--bench-lines) - 43px),66px);
+ --bench-shirt:clamp(18px,calc((var(--match-pitch-height) - 65px)/var(--bench-lines) - 43px),66px);
  flex:1;min-height:0;align-content:start;justify-items:center;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:0
 }
 .match-page .pitch-bench-room .bench-stickers .pitch-player{
@@ -91,6 +103,7 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 .match-page .match-headline .match-page-score{flex:none;margin:0;font-size:clamp(19px,5vw,25px)}
 .match-page .match-headline [data-live-detail-status]{flex:none;margin:0;font-size:11px;white-space:nowrap}
 .pitch-details-edge{flex:0 0 100%;scroll-snap-align:start;align-self:stretch}
+.pitch-details-edge[hidden],.match-page .match-detail-drill[hidden]{display:none}
 .match-page .match-details-body{touch-action:pan-y pinch-zoom}
 .match-page .match-details-body>h3{margin:3px 0;font-size:16px}
 .match-page .match-details-body .events-columns{grid-template-columns:minmax(0,1fr);gap:4px}
