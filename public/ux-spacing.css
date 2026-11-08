@@ -84,6 +84,8 @@ body details.rankrow{display:block;padding:0;border-bottom:1px solid var(--line)
 .home-league-invite-main b{font-size:clamp(12px,3.2vw,15px);overflow:hidden;text-overflow:ellipsis}
 .home-league-invite-main small{color:var(--muted);font-size:11px}
 .home-league-invite-main>span{margin-left:auto;color:var(--lime)}
+.settings-app-invite{break-inside:avoid}
+.settings-app-invite .app-invite-status:empty{display:none}
 .home-league-invite .whatsapp-invite{flex:none;min-width:42px;min-height:42px;padding:7px;justify-content:center}
 .president-panel>.profile-logout{margin-top:20px}
 

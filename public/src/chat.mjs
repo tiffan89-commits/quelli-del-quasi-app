@@ -20,7 +20,7 @@ export function chatView(l, u) {
   try {
     draft = localStorage.getItem(draftKey(l, u)) || "";
   } catch {}
-  return `<section class="chat-room"><div class="round-heading"><div><div class="eyebrow">IL TAVOLO È SEMPRE APERTO</div><h1>Chiacchiere da bar</h1><p>${esc(l.name)} · solo i membri di questa lega</p></div><span class="chat-sign" aria-hidden="true">“</span></div><details class="chat-notifications card"><summary>Il bar ti chiama. <span class="tiny muted">Gestisci notifiche</span></summary><div class="chat-push-content"><div><p class="tiny muted" id="chat-push-note">Le notifiche sono facoltative. I messaggi restano qui anche quando sei assente.</p></div><div><button class="secondary" id="chat-push" disabled>Caricamento…</button><button type="button" class="text-button" id="chat-push-test" hidden>Invia una notifica di prova a questo dispositivo</button></div></div></details><div id="chat-error" class="notice" role="status" hidden></div><div class="chat-panel card"><button type="button" class="text-button" id="chat-refresh">Aggiorna messaggi ↻</button><button class="text-button" id="chat-older" hidden>Carica messaggi precedenti</button><div id="chat-log" class="chat-log" role="log" aria-label="Messaggi della lega" aria-live="polite" aria-relevant="additions"><p class="muted">Apro il bar…</p></div><button class="secondary chat-new" id="chat-new" hidden>Nuovi messaggi ↓</button><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-text">Messaggio alla lega</label><textarea id="chat-text" maxlength="1200" rows="2" required placeholder="Qui anche le certezze durano una giornata…">${esc(draft)}</textarea><div><span class="tiny muted" id="chat-counter">${draft.length}/1200 · bozza sul dispositivo</span><button class="primary" id="chat-send">Invia al bar ↗</button></div></form></div><p class="tiny muted">Solo testo · fino a 1200 caratteri · ultimi 3000 messaggi conservati. Puoi eliminare i tuoi messaggi; il presidente può moderare la stanza. La consegna delle notifiche può richiedere qualche minuto.</p></section>`;
+  return `<section class="chat-room"><div class="round-heading"><div><div class="eyebrow">IL TAVOLO È SEMPRE APERTO</div><h1>Chiacchiere da bar</h1><p>${esc(l.name)} · solo i membri di questa lega</p></div><span class="chat-sign" aria-hidden="true">“</span></div><details class="chat-notifications card"><summary>Il bar ti chiama. <span class="tiny muted">Gestisci notifiche</span></summary><div class="chat-push-content"><div><p class="tiny muted" id="chat-push-note">Le notifiche sono facoltative. I messaggi restano qui anche quando sei assente.</p></div><div><button class="secondary" id="chat-push" disabled>Caricamento…</button><button type="button" class="text-button" id="chat-push-test" hidden>Invia una notifica di prova a questo dispositivo</button></div></div></details><div id="chat-error" class="notice" role="status" hidden></div><div class="chat-panel card"><button type="button" class="text-button" id="chat-refresh">Aggiorna messaggi ↻</button><button class="text-button" id="chat-older" hidden>Carica messaggi precedenti</button><div id="chat-log" class="chat-log" role="log" aria-label="Messaggi della lega" aria-live="polite" aria-relevant="additions"><p class="muted">Apro il bar…</p></div><button class="secondary chat-new" id="chat-new" hidden>Nuovi messaggi ↓</button><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-text">Messaggio alla lega</label><textarea id="chat-text" maxlength="1200" rows="2" required>${esc(draft)}</textarea><div><span class="tiny muted" id="chat-counter">${draft.length}/1200 · bozza sul dispositivo</span><button class="primary" id="chat-send">Invia al bar ↗</button></div></form></div><p class="tiny muted">Solo testo · fino a 1200 caratteri · ultimi 3000 messaggi conservati. Puoi eliminare i tuoi messaggi; il presidente può moderare la stanza. La consegna delle notifiche può richiedere qualche minuto.</p></section>`;
 }
 export function bindChat({ league, user, api, notify, onUnread = () => {},onNotify=()=>{},consent }) {
   stopChat();
@@ -42,8 +42,6 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
     refreshPending = false,
     sending = false,
     config = null,
-    lastNonce = null,
-    nonceText = null,
     registered = false;
   let revision=roomCache.get(draftKey(league,user))?.revision||0,lastRead=0;
   const cache=()=>{roomCache.set(draftKey(league,user),{messages:messages.filter(m=>!m.pending).slice(-100),latest,revision,hasOlder});if(roomCache.size>10)roomCache.delete(roomCache.keys().next().value);};
@@ -83,13 +81,19 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
       ? messages
           .map(
             (m) =>
-              `<article class="chat-message ${m.uid === user.id ? "mine" : ""} ${m.deleted ? "deleted" : ""}${m.system?" is-system":""}" data-message="${esc(m.id)}"><div class="chat-meta"><strong>${m.uid === user.id ? "Tu" : esc(m.name)}</strong><time datetime="${esc(m.created)}">${m.pending?'Invio in corso…':new Date(m.created).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div><p>${esc(m.text)}</p>${!m.pending && !m.deleted && !m.system && (m.uid === user.id || league.admin === user.id) ? `<button class="text-button chat-delete" data-chat-delete="${esc(m.id)}" aria-label="Elimina messaggio di ${esc(m.name)}">Elimina</button>` : ""}</article>`,
+              `<article class="chat-message ${m.uid === user.id ? "mine" : ""} ${m.deleted ? "deleted" : ""}${m.system?" is-system":""}" data-message="${esc(m.id)}"><div class="chat-meta"><strong>${m.uid === user.id ? "Tu" : esc(m.name)}</strong><time datetime="${esc(m.created)}">${m.pending?'Invio in corso…':m.failed?'Invio non riuscito':new Date(m.created).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div><p>${esc(m.text)}</p>${m.failed?`<button type="button" class="text-button" data-chat-retry="${esc(m.id)}">Riprova</button>`:''}${!m.pending && !m.failed && !m.deleted && !m.system && (m.uid === user.id || league.admin === user.id) ? `<button class="text-button chat-delete" data-chat-delete="${esc(m.id)}" aria-label="Elimina messaggio di ${esc(m.name)}">Elimina</button>` : ""}</article>`,
           )
           .join("")
       : '<div class="chat-empty"><span aria-hidden="true">“</span><h2>Il primo giro di parole è tuo.</h2><p class="muted">Scrivi alla lega. Chi arriva dopo ritroverà la conversazione.</p></div>';
     older.hidden = !hasOlder;
     if (prepend) log.scrollTop = oldTop + log.scrollHeight - oldHeight;
     else if (atBottom) log.scrollTop = log.scrollHeight;
+    log.querySelectorAll("[data-chat-retry]").forEach(button=>{
+      button.onclick=()=>{
+        const message=messages.find(m=>m.id===button.dataset.chatRetry);
+        if(message&&!sending)void sendMessage(message);
+      };
+    });
     log.querySelectorAll("[data-chat-delete]").forEach(
       (b) =>
         (b.onclick = async () => {
@@ -108,8 +112,9 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
     );
   }
   async function load(before) {
-    if (!alive || loading) return;
-    loading = true;
+    if(!alive)return;
+    if(loading){if(!before)refreshPending=true;return;}
+    loading=true;
     try {
       const r = await api(
         "chat-messages?" +
@@ -121,15 +126,15 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
       if (!alive) return;
       lastRead=Math.max(lastRead,r.read||0);
       if(r.unchanged){error.hidden=true;void read();return;}
-      if(!before&&r.messages.length&&r.messages[0].seq>latest+1){messages=messages.filter(m=>m.pending);hasOlder=r.hasOlder;}
-      if((r.revision||0)!==revision)messages=messages.filter(m=>m.pending);
+      if(!before&&r.messages.length&&r.messages[0].seq>latest+1){messages=messages.filter(m=>m.pending||m.failed);hasOlder=r.hasOlder;}
+      if((r.revision||0)!==revision)messages=messages.filter(m=>m.pending||m.failed);
       revision=r.revision||0;
       const atBottom = bottom() || !messages.length,
         previous = latest;
       const combined = new Map(messages.map((m) => [m.id, m]));
       r.messages.forEach((m) => combined.set(m.id, m));
       messages = [...combined.values()].sort((a, b) => a.seq - b.seq);
-      latest = r.latest;
+      latest = Math.max(latest,r.latest);
       if (before || !messages.length || messages[0]?.seq === r.messages[0]?.seq)
         hasOlder = r.hasOlder;
       paint({ atBottom: before ? false : atBottom, prepend: !!before });
@@ -140,7 +145,8 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
     } catch (e) {
       report(e);
     } finally {
-      loading = false;
+      loading=false;
+      if(refreshPending){refreshPending=false;void load();}
     }
   }
   function pushLabel() {
@@ -224,45 +230,41 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
       form.requestSubmit();
     }
   };
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const body = text.value.trim();
-    if (sending || !body) return;
-    sending = true;
-    form.querySelector("button").disabled = true;
-    if (nonceText !== body) {
-      lastNonce = crypto.randomUUID().replace(/-/g, "");
-      nonceText = body;
-    }
-    const pendingId='pending:'+lastNonce;
-    messages.push({id:pendingId,seq:latest+0.5,uid:user.id,name:user.name,text:body,created:new Date().toISOString(),pending:true});paint();
-    try {
-      const r = await api("chat-send", {
-        league: league.id,
-        text: body,
-        nonce: lastNonce,
-      });
-      if (!alive) return;
-      if (text.value.trim() === body) {
-        text.value = "";
-        text.oninput();
-        lastNonce = null;
-        nonceText = null;
+  async function sendMessage(message){
+    const button=form.querySelector("button");
+    sending=true;button.disabled=true;error.hidden=true;
+    message.pending=true;message.failed=false;
+    paint();
+    try{
+      const r=await api("chat-send",{league:league.id,text:message.text,nonce:message.nonce});
+      messages=messages.filter(m=>m.id!==message.id);
+      if(!messages.some(m=>m.id===r.message.id))messages.push(r.message);
+      messages.sort((a,b)=>a.seq-b.seq);
+      if(r.message.seq===latest+1)latest=r.message.seq;
+      lastRead=Math.max(lastRead,r.message.seq);
+      if(!alive)return;
+      onUnread(0);cache();paint();
+      if(r.message.seq>latest)void load();
+    }catch(e){
+      message.pending=false;message.failed=true;
+      if(alive){cache();paint();report(e);}
+      else {
+        const key=draftKey(league,user),saved=roomCache.get(key);
+        if(saved&&!saved.messages.some(m=>m.id===message.id))saved.messages.push(message);
       }
-      messages=messages.filter(m=>m.id!==pendingId);
-      if (!messages.some((m) => m.id === r.message.id))
-        messages.push(r.message);
-      latest = Math.max(latest, r.message.seq);
-      lastRead=latest;onUnread(0);cache();
-      paint();
-      error.hidden = true;
-    } catch (e) {
-      messages=messages.filter(m=>m.id!==pendingId);paint();
-      report(e);
-    } finally {
-      sending = false;
-      if (alive) form.querySelector("button").disabled = false;
+    }finally{
+      sending=false;if(alive)button.disabled=false;
     }
+  }
+  form.onsubmit=e=>{
+    e.preventDefault();
+    const body=text.value.trim();
+    if(sending||!body)return;
+    const nonce=crypto.randomUUID().replace(/-/g,"");
+    const message={id:"pending:"+nonce,nonce,seq:latest+0.5,uid:user.id,name:user.name,text:body,created:new Date().toISOString()};
+    text.value="";text.oninput();
+    messages.push(message);
+    void sendMessage(message);
   };
   older.onclick = () => load(messages[0]?.seq);
   jump.onclick = () => {
@@ -277,6 +279,7 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
   load();
   stop = () => {
     alive = false;
+    cache();
     persist();
   };
 }

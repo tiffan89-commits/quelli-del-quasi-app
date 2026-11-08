@@ -9,5 +9,5 @@ export function hubTile(icon,title,subtitle,{action='',html='',admin=false,whats
  const label=`${hubIcon(icon)}<b>${esc(title)}</b><small>${esc(subtitle)}</small>`;
  if(whatsapp)return `<div class="lega-tile invite-hub-tile"><button type="button" ${action}>${label}</button>${whatsapp}</div>`;
  return html?`<details class="lega-tile lega-tile-detail"><summary>${label}</summary>${html}</details>`
- :`<button type="button" class="lega-tile${admin?' is-admin':''}" ${action}>${label}${arrow?'<span class="lega-tile-next" aria-hidden="true">›</span>':''}</button>`;
+ :`<button type="button" class="lega-tile${admin?' is-admin':''}" ${action}>${label}${icon==='chat'?'<b class="chat-tile-unread" data-chat-tile-badge hidden></b>':''}${arrow?'<span class="lega-tile-next" aria-hidden="true">›</span>':''}</button>`;
 }

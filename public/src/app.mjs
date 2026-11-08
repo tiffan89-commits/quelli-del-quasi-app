@@ -2,7 +2,7 @@ import {joinInvite} from './invite-join.mjs';
 import {bindSwipeBack,openMatchPage} from './match-page.mjs';
 import {barHomeInvite} from './bar-home-invite.mjs';
 import {leagueActions} from './league-actions.mjs';
-import {settingsLogout,presidentEntry,presidentPanel,barPresidentTasks,bindPresidentPanel} from './president-panel.mjs';
+import {settingsFooter,presidentEntry,presidentPanel,barPresidentTasks,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
 import {paintAuctionBadges,trackAuctionBadges} from './auction-index.mjs';
 import {nicknameNotice} from './nickname-notice.mjs';
@@ -55,7 +55,7 @@ import {hubHead,hubTile} from './league-hub.mjs';
 import {shareLeagueInvite,whatsappInvite} from './league-invite.mjs';
 import {createFantaApi} from './fanta/api.mjs';
 import {renderFantaNotificationSettings} from './fanta/io.mjs';
-import {bindAppInvites,performAppInvite,signupShareData,appWhatsappInvite} from './app-invite.mjs';
+import {bindAppInvites} from './app-invite.mjs';
 import {rewardsView,bindRewards} from './progression-ui.mjs';
 import {bindStyledSelects,syncStyledSelects,closeStyledSelect} from './styled-select.mjs';
 
@@ -90,7 +90,8 @@ let chatConsent = null;
 import { fantasyMatchView } from "./bar-fanta-match.mjs";
 import {patchFantasyMatch} from './fantasy-live-detail.mjs';
 import {fantasyAccount,fantasyGroup,fantasyWalletKey} from './fantasy-accounts.mjs';
-let requestedChat = new URLSearchParams(location.search).get("chat");
+let requestedChat=new URLSearchParams(location.search).get("chat");
+try{requestedChat??=sessionStorage.getItem("qdq:pending-chat");if(requestedChat)sessionStorage.setItem("qdq:pending-chat",requestedChat);}catch{}
 let calendarScope = "seriea";
 let editBaseSavedAt = null,
   editBaseFingerprint = null;
@@ -192,8 +193,13 @@ function chatBadge(){
  const count=state.leagues.reduce((sum,l)=>sum+(l.chat?.unread||0),0);
  for(const badge of document.querySelectorAll('[data-chat-badge]')){
   badge.hidden=!count;
-  badge.textContent=count>99?'99+':String(count);
   badge.setAttribute('aria-label',count===1?'1 messaggio da leggere':count+' messaggi da leggere');
+ }
+ const unread=chatLeague()?.chat?.unread||0;
+ for(const badge of document.querySelectorAll('[data-chat-tile-badge]')){
+  badge.hidden=!unread;
+  badge.textContent=unread>99?'99+':String(unread);
+  badge.setAttribute('aria-label',unread===1?'1 messaggio da leggere':unread+' messaggi da leggere');
  }
 }
 function closeLeagueChat() {
@@ -265,9 +271,26 @@ function openLeagueChat(trigger=document.activeElement) {
   chatOpen = true;
   updateChatWidget();
 }
+function clearRequestedChat(){
+  requestedChat=null;
+  try{sessionStorage.removeItem("qdq:pending-chat");}catch{}
+  const params=new URLSearchParams(location.search);
+  if(!params.has("chat"))return;
+  params.delete("chat");
+  window.history.replaceState(null,"",location.pathname+(params.size?"?"+params:"")+location.hash);
+}
+function openChatNotification(id){
+  if(!state.user?.emailVerified||!state.leagues.some(l=>l.id===id))return false;
+  closeLeagueChat();leaveFanta();
+  try{localStorage.setItem("qdq:mode","bar");}catch{}
+  leagueId=id;selectedRoundId=null;sourceScope="seriea";competitionScope=null;page="barleague";
+  chatLeagueId=id;chatOpen=true;
+  writeAppRoute({mode:"bar",page:"lega",league:id},{replace:true});
+  return true;
+}
 let barDemo=null,initialViewReady=Promise.resolve();
 async function prepareDemo(){const session=(await import('./demo-session.mjs')).getDemoSession();await session.ready;barDemo=session.bar;state=structuredClone(barDemo.state);if(!state.leagues.some(l=>l.id===leagueId))leagueId=state.leagues[0].id;return session;}
-async function openBarDemo(target={}){await prepareDemo();await loadAppStyles();if(target?.page==='logout'){await returnToLanding();return;}leaveFanta();leagueId=target?.league||leagueId;page=({profilo:'profilo',impostazioni:'impostazioni',invita:'profilo',schedina:'schedina',admin:'admin',regolamento:'regolamento'})[target?.page]||'lega';sourceScope=target?.sourceScope||'seriea';selectedRoundId=target?.round||null;hydrateDraft();render();writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page,league:leagueId});}
+async function openBarDemo(target={}){await prepareDemo();await loadAppStyles();if(target?.page==='logout'){await returnToLanding();return;}leaveFanta();leagueId=target?.league||leagueId;page=({profilo:'profilo',impostazioni:'impostazioni',invita:'impostazioni',schedina:'schedina',admin:'admin',regolamento:'regolamento'})[target?.page]||'lega';sourceScope=target?.sourceScope||'seriea';selectedRoundId=target?.round||null;hydrateDraft();render();writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page,league:leagueId});}
 const accountAttempts=new Map();
 async function api(path, data, options = {}) {
   if(barDemo&&state.user?.demo){const result=await barDemo.api(path,data);return options.meta?{data:result,etag:null}:result;}
@@ -300,7 +323,8 @@ function R() {
   const rounds = availableRounds();
   const round=rounds.find(r=>r.id===selectedRoundId)||rounds.find(r=>r.preview)||defaultSlipRound(rounds,Date.now(),state.calendar);
   const league=L();
-  return round?{...round,stakeReserve:slipCreditReserve(round,league.rounds,league,state.user?.id)}:round;
+  if(round)round.stakeReserve=slipCreditReserve(round,league.rounds,league,state.user?.id);
+  return round;
 }
 function me() {
   if(!preferredFanta())return L()?.members.find(x=>x.uid===state.user.id);
@@ -358,18 +382,8 @@ async function refresh(reset = false) {
         if (state.leagues.some((l) => l.id === saved)) leagueId = saved;
       } catch {}
     if (state.user && state.user.id !== previousUser && page !== "schedina") sourceScope = 'seriea';
-    if (requestedChat && state.leagues.some((l) => l.id === requestedChat)) {
-      leagueId = requestedChat;page="barleague";
-      chatOpen = true;
-      requestedChat = null;
-      const params = new URLSearchParams(location.search);
-      params.delete("chat");
-      window.history.replaceState(
-        null,
-        "",
-        location.pathname + (params.size ? "?" + params : ""),
-      );
-    }
+    const openRequestedChat=!!requestedChat&&!!state.user?.emailVerified&&openChatNotification(requestedChat);
+    if(requestedChat&&state.user?.emailVerified)clearRequestedChat();
     offline = false;
     lastRefresh = new Date();
     if (previousUser && state.user?.id !== previousUser) {
@@ -395,6 +409,7 @@ async function refresh(reset = false) {
       document.querySelector("dialog[open]");
     if (
       reset ||
+      openRequestedChat ||
       !previousUser ||
       state.user?.id !== previousUser ||
       state.user?.emailVerified !== previousVerified ||
@@ -628,7 +643,7 @@ function render() {
     (!state.user.emailVerified && !state.user.demo)
       ? profile()
       : page === "impostazioni"
-        ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,footer:settingsLogout(),groups:accountGroups()})
+        ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,footer:settingsFooter(),groups:accountGroups()})
         : page === "seriea"
         ? serieATable()
         : page === "altri"
@@ -1146,7 +1161,7 @@ function profile({embedded=false}={}) {
  const email=`<p class="profile-email-value">${esc(u.email||"Email non inserita")}${u.emailVerified?' <span class="green" role="img" aria-label="Email verificata">✓</span>':''}</p>`;
  const verification=required?`<form id="account-email" class="profile-password"><h3>Email e sicurezza</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail||u.email||"")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button>${u.pendingEmail||u.email?'<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>':''}</form>`:'';
  const password=u.emailVerified&&u.hasLocalPassword?`<form id="account-password" class="profile-password"><h3>Cambia password</h3><label class="field">Password attuale<input name="currentPassword" type="password" required maxlength="200" autocomplete="current-password"></label><label class="field">Nuova password<input name="newPassword" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label><label class="field">Conferma nuova password<input name="confirmPassword" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label><button class="secondary">Salva password</button></form>`:'';
- return `${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${nicknameNotice(u,{profile:true})}<section class="profile-account profile-embedded">${email}<form id="profile-name" class="profile-name-form"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary" aria-label="Salva soprannome">Salva</button></form>${verification}${password}</section>${embedded?'':settingsLogout()}`;
+ return `${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${nicknameNotice(u,{profile:true})}<section class="profile-account profile-embedded">${email}<form id="profile-name" class="profile-name-form"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary" aria-label="Salva soprannome">Salva</button></form>${verification}${password}</section>${embedded?'':settingsFooter()}`;
 }
 function accountGroups(settings){
  const u=state.user;
@@ -1252,7 +1267,6 @@ function barLeagueInfo(l){
   hubTile('rules','Regolamento del Bar',rules,{action:'data-bar-page="regolamento"',arrow:true})+
   (l.code?hubTile('invite','Invita nella tua lega','Condividi l’invito',{action:'data-share-league',whatsapp:whatsappInvite(l,esc,{iconOnly:true})}):'')+
   hubTile('chat','Chiacchiere da bar','Apri la chat della lega',{action:'data-league-chat aria-controls="league-chat-widget"'})+
-  hubTile('invite','Invita a usare l’app','Condividi il link per registrarsi',{action:'data-share-app-signup',whatsapp:appWhatsappInvite({data:signupShareData(),iconOnly:true})})+
   '</div>'+leagueActions()+'</div>';
 }
 function leagueAdmin(l){
@@ -1367,7 +1381,7 @@ function openBarTarget(target) {
     competitionScope=round?.competitionKey||null;selectedRoundId=round?.id||null;
     slipScope='mine';hydrateDraft();
   }
-  if(target?.page){page=['create-league','join-league'].includes(target.page)?'lega':target.page==='invita'?'profilo':target.page;writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page,league:L()?.id});}
+  if(target?.page){page=['create-league','join-league'].includes(target.page)?'lega':target.page==='invita'?'impostazioni':target.page;writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page,league:L()?.id});}
   render();window.scrollTo(0,0);liveChannel.wake();if(['create-league','join-league'].includes(target?.page)){document.getElementById('v2-open-leagues')?.click();document.querySelector('[data-v2-action="'+(target.page==='join-league'?'join':'create')+'"]')?.click();}
   if(target?.page==='invita')document.querySelector('[data-app-invite]')?.scrollIntoView({block:'start'});
   if(target?.match)[...document.querySelectorAll('[data-match-card]')].find(row=>row.dataset.matchCard===target.match)?.scrollIntoView({block:'center'});
@@ -1471,11 +1485,6 @@ function bind(l, r) {
   bindRandomLeagues(document);
   for(const button of document.querySelectorAll('[data-share-league]'))button.onclick=()=>void shareLeagueInvite(l,{notify});
   const chatButton=$('[data-league-chat]');if(chatButton)chatButton.onclick=()=>openLeagueChat(chatButton);
-  const appInvite=$('[data-share-app-signup]');if(appInvite)appInvite.onclick=async()=>{
-    const data=signupShareData(),result=await performAppInvite('share',{data});
-    if(result.manual)window.prompt('Copia il link per registrarsi',data.url);
-    else if(result.message)notify(result.message);
-  };
   if($('#open-native-slips'))$('#open-native-slips').onclick=()=>openNativeSlips();
   const fantaSelect=document.querySelector('[data-fanta-bar-select]');if(fantaSelect)fantaSelect.onchange=e=>{persistDraft();leagueId=e.target.value;sourceScope='fantacalcio';competitionScope=null;selectedRoundId=null;hydrateDraft();render();};
   bindAppInvites();
@@ -2368,8 +2377,16 @@ if ("serviceWorker" in navigator)
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.addEventListener("message", (e) => {
     if(e.data?.type==='open-fanta'){
-      try{localStorage.setItem('qdq:mode','fanta');if(typeof e.data.league==='string')localStorage.setItem('qdq:fantaLeague',e.data.league);}catch{}
-      if(state.user){const target=typeof e.data.url==='string'?new URL(e.data.url,location.origin):null;const route=target?.origin===location.origin?readAppRoute(target.hash):null;const targetLeague=typeof e.data.league==='string'?e.data.league:L()?.nativeFantaLink?.leagueId;const targetPage=route?.page==='asta'?'asta':'oggi';writeAppRoute({mode:'fanta',page:targetPage,league:targetLeague});closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:targetLeague,initialTab:targetPage,onBar:openBarTarget,force:true});}
+      const target=typeof e.data.url==="string"?new URL(e.data.url,location.origin):null;
+      const route=target?.origin===location.origin?readAppRoute(target.hash):null;
+      const league=typeof e.data.league==="string"?e.data.league:route?.league;
+      if(!league)return;
+      const page=route?.mode==='fanta'&&['asta','squadra','giornata'].includes(route.page)?route.page:'oggi';
+      const navigation={...route,mode:'fanta',page,league};
+      try{localStorage.setItem('qdq:mode','fanta');localStorage.setItem('qdq:fantaLeague',league);}catch{}
+      if(!state.user){pendingAppRoute=navigation;return;}
+      writeAppRoute(navigation);closeLeagueChat();
+      void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:league,initialTab:page,onBar:openBarTarget,force:true});
       return;
     }
     if(e.data?.type==='open-slip'&&!state.user&&typeof e.data.league==='string'){
@@ -2378,18 +2395,14 @@ if ("serviceWorker" in navigator)
     if(e.data?.type==='open-slip'&&state.leagues.some(l=>l.id===e.data.league)){
       persistDraft();leagueId=e.data.league;const round=L().rounds.find(r=>r.id===e.data.round);if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}page='schedina';slipScope='mine';hydrateDraft();render();window.scrollTo(0,0);return;
     }
-    if (
-      e.data?.type === "open-chat" &&
-      state.leagues.some((l) => l.id === e.data.league)
-    ) {
-      persistDraft();
-      closeLeagueChat();leaveFanta();
-      leagueId = e.data.league;page='barleague';
-      writeAppRoute({mode:'bar',page:'lega',league:leagueId});
-      chatOpen = true;
-      hydrateDraft();
-      render();
-      window.scrollTo(0, 0);
+    if(e.data?.type==="open-chat"&&typeof e.data.league==="string"){
+      requestedChat=e.data.league;
+      try{sessionStorage.setItem("qdq:pending-chat",requestedChat);}catch{}
+      if(state.user?.emailVerified){
+        persistDraft();
+        if(openChatNotification(requestedChat)){clearRequestedChat();hydrateDraft();render();window.scrollTo(0,0);}
+        else void refresh();
+      }
     }
   });
 let liveStatus=null;
@@ -2468,7 +2481,7 @@ document.addEventListener('quasi:chat-update',e=>{
 document.addEventListener('quasi:chat-reconnect',()=>{if(state.user&&!state.user.demo)void refresh();});
 document.addEventListener('quasi:fanta-team-claimed',()=>{void refresh();});
 document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked){syncChatLauncher(linked);openLeagueChat(e.detail.trigger);}});
-document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['join-league','create-league'].includes(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'profilo':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
+document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['join-league','create-league'].includes(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'impostazioni':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.settings-app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
 const liveChannel=createSportsPush({
   context:()=>!preferredFanta()&&state.user&&!state.user.demo&&state.user.emailVerified&&L()?{mode:'bar',league:L().id}:null,

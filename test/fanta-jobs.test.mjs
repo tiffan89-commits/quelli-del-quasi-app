@@ -1,3 +1,4 @@
+import {readAppRoute} from '../public/src/routes.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixtureDb,apiFixture} from './fanta/helpers.mjs';
@@ -55,6 +56,8 @@ test('Fanta: reminder is idempotent, only missing lineups receive it; nonproduct
   const l=f.lineup('t1');await f.db.query('INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench) VALUES($1,1,$2,$3,$4,$5)',['fanta-lucas-a','t1',l.formation,JSON.stringify(l.starters),JSON.stringify(l.bench)]);
   await queueFantaNotifications({connect:f.connect,now});await queueFantaNotifications({connect:f.connect,now});
   const notes=(await f.db.query('SELECT * FROM fanta.notifications')).rows;assert.equal(notes.length,1);assert.equal(notes[0].user_id,'u2');assert.equal(notes[0].kind,'lineupReminder');
+  const destination=new URL(notes[0].data.url,'https://example.test');
+  assert.deepEqual(readAppRoute(destination.hash),{mode:'fanta',page:'squadra',section:'studio',league:'fanta-lucas-a',round:'1',competition:'fanta-lucas-a:main'});
   let sends=0;await deliverFantaNotifications({connect:f.connect,now,env:{CONTEXT:'deploy-preview'},sendPush:()=>sends++,deliverMail:()=>sends++});assert.equal(sends,0);
   assert.ok((await f.db.query('SELECT delivered_at FROM fanta.notifications')).rows[0].delivered_at);
  }finally{await f.close();}
