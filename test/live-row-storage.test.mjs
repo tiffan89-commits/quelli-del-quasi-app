@@ -4,19 +4,23 @@ import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 import {runOperation} from '../lib/operations/workflows.mjs';
 import {readBarRows} from '../lib/operations/bar-rows.mjs';
+import {saveBarSlip} from '../lib/bar-slip-save.mjs';
+import {sha} from '../lib/game.mjs';
+import {readSnapshot} from '../lib/db.mjs';
 
 test('replaying a final settles once and resumes interrupted rewards on row storage',async()=>{
  const db=new PGlite();
  const kickoff='2026-11-08T19:45:00.000Z';
  const fixtureId='seriea:2026:11:2',roundId='round-11',leagueId='league',userId='user';
  const rules={mode:'classic',correct:1,wrong:-1};
- const match={id:fixtureId,home:'Fiorentina',away:'Juventus',status:'NS',score:null,kickoff,odds:{1:3},frozen:{}};
- const slip={uid:userId,stake:10,picks:{[fixtureId]:'1'},acceptedOdds:{[fixtureId]:2.5}};
+ const match={id:fixtureId,home:'Fiorentina',away:'Juventus',status:'NS',score:null,kickoff,odds:{1:2.5},frozen:{}};
+ const token='synthetic-session',input={league:leagueId,round:roundId,stake:10,picks:{[fixtureId]:'1'},baseSavedAt:null};
  const original={
-  users:[{id:userId,name:'Test'}],
-  leagues:[{id:leagueId,name:'Test',rules,members:[{uid:userId,credits:490,points:0}]}],
+  users:[{id:userId,name:'Test',emailVerified:true}],
+  sessions:[{uid:userId,token:sha(token),expires:Date.parse('2026-11-10T00:00:00Z')}],
+  leagues:[{id:leagueId,name:'Test',rules,members:[{uid:userId,credits:500,points:0}]}],
   rounds:[{id:roundId,league:leagueId,title:'Giornata 11',source:'seriea',number:11,
-   kickoff,deadline:'2000-01-01T00:00:00Z',rules,requiresOfficialScores:true,matches:[match],slips:[slip]}],
+   kickoff,deadline:'2000-01-01T00:00:00Z',rules,requiresOfficialScores:true,matches:[match],slips:[]}],
   ledger:[],football:{calendar:{season:2026,rounds:[{number:11,matches:[match]}]}},
  };
  const final={
@@ -51,15 +55,21 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
  try{
   await db.exec('CREATE SCHEMA fanta; CREATE TABLE fanta_state(id int PRIMARY KEY,payload jsonb)');
   await db.query('INSERT INTO fanta_state VALUES(1,$1)',[JSON.stringify(original)]);
-  for(const name of ['017_live_storage_backfill','018_live_storage_accounts']){
+  for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views']){
    await db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
   }
+  const saved=await saveBarSlip(token,input,{connect,sportsStorage:'rows',now:()=>Date.parse('2026-11-08T19:00:00Z')});
+  assert.equal(saved.receipt.member.credits,490);
+  assert.equal((await state()).rounds[0].slips[0].acceptedOdds[fixtureId],2.5);
+  const appSnapshot=()=>readSnapshot(state=>state,{kind:'game',connect,sportsStorage:'rows'});
+  assert.equal((await appSnapshot()).rounds[0].slips[0].acceptedOdds[fixtureId],2.5);
+  await db.query("UPDATE fanta.bar_matchday_matches SET data=jsonb_set(data,'{odds,1}','3') WHERE id=$1",[fixtureId]);
 
   await assert.rejects(batch,/reward write interrupted/);
   const settled=await state(),ledger=await movements();
   assert.equal(settled.leagues[0].members[0].credits,515);
   assert.equal(settled.rounds[0].slips[0].prize,25);
-  assert.deepEqual(settled.rounds[0].slips[0].acceptedOdds,slip.acceptedOdds);
+  assert.deepEqual(settled.rounds[0].slips[0].acceptedOdds,saved.receipt.slip.acceptedOdds);
   assert.equal(ledger.filter(row=>row.data.amount===25).length,1);
   assert.deepEqual(await rewards(),[]);
   assert.deepEqual(cache.data.matches[0].score,[1,0]);
@@ -71,6 +81,9 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   const awarded=await state(),awards=await rewards();
   assert.equal(awarded.rounds[0].rewardVersion,1);
   assert.equal(awards[0].data.filter(award=>award.round===roundId).length,1);
+  const app=await appSnapshot();
+  assert.equal(app.rounds[0].slips[0].prize,25);
+  assert.equal(app.leagues[0].members[0].credits,515);
   const replay=await batch();
   assert.equal(replay.metrics.dbWrites,0);
   assert.equal(replay.metrics.cacheWrites,0);
