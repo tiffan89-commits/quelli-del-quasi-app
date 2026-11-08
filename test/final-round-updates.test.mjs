@@ -1,3 +1,4 @@
+import {applyVerifiedFixtureEvents} from '../fanta/ingest.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import {parseHTML} from 'linkedom';
 import {newPlan,claimWork,completeWork,dueWork} from '../lib/operations/calendar.mjs';
 import {finalReadiness} from '../fanta/final-readiness.mjs';
@@ -34,4 +35,12 @@ test('Oggi retains a clickable completed round while the next round is open; exp
 test('header controls share one non-wrapping container; both products expose settings in the same header position',()=>{
  const {document}=parseHTML(renderLeagueChip({id:'l',name:'Lega',members:[{uid:'u',credits:9999}]},'u',String,String,'<button>Bar Fanta</button>'));assert.ok(document.querySelector('.ux-controls .v2-credits'));assert.equal(document.querySelectorAll('.ux-controls .settings-entry').length,1);
  const f=parseHTML(topBar({mode:'fanta',league:{name:'Lega'},credits:9999,slipCredits:9999})).document;assert.equal(f.querySelectorAll('.ux-controls .settings-entry').length,1);assert.equal(f.querySelectorAll('.ux-controls .v2-credits').length,2);
+});
+
+test('the official Bologna–Monza save correction requires the exact event and preserves provider comments',()=>{
+ const event={type:'Goal',detail:'Missed Penalty',player:{id:1649},team:{id:1579},time:{elapsed:81},comments:null};
+ const raw={fixture:{id:1550179},league:{season:2026},teams:{home:{id:500},away:{id:1579}},events:[event]};
+ applyVerifiedFixtureEvents({...raw,fixture:{id:9}});assert.equal(event.comments,null);
+ applyVerifiedFixtureEvents(raw);assert.match(event.comments,/Saved by Łukasz Skorupski/);assert.match(event.verifiedSource,/legaseriea\.it/);
+ event.comments='Provider confirms the save';applyVerifiedFixtureEvents(raw);assert.equal(event.comments,'Provider confirms the save');
 });

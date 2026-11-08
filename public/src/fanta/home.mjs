@@ -66,13 +66,13 @@ function nextMove(h, now) {
 
 function barLink(h) {
   const bar=h.bar;
-  return bar?.saved?`<button type="button" class="fanta-bar-link" data-mode="bar" data-bar-page="schedina" data-bar-league="${esc(bar.league)}" data-bar-round="${esc(bar.round)}" data-bar-match="${esc(bar.match)}"><b>Segui la schedina</b><span aria-hidden="true">→</span></button>`:'';
+  return bar?.saved?`<button type="button" class="fanta-bar-link secondary dash-cta" data-mode="bar" data-bar-page="schedina" data-bar-league="${esc(bar.league)}" data-bar-round="${esc(bar.round)}" data-bar-match="${esc(bar.match)}"><b>Segui la schedina</b><span aria-hidden="true">→</span></button>`:'';
 }
 
 function matchCard(h) {
   const { match, round } = h;
   if (!match) return round.state==='in-corso'
-    ? `<button type="button" class="fanta-result fanta-last-result" data-go="giornata" data-round="${round.number}"><span><b>Live</b><small>Giornata ${round.number}</small></span><span aria-hidden="true">→</span></button>`
+    ? `<section class="fanta-home-card"><button type="button" class="fanta-result fanta-last-result" data-go="giornata" data-round="${round.number}"><span><b>Live</b><small>Giornata ${round.number}</small></span><span aria-hidden="true">→</span></button>${barLink(h)}</section>`
     : '';
   const live=round.state==='in-corso',title=match.final?'Ultima partita':live?'Live':'Prossima partita';
   const status=match.final||live?'':dayTime(round.firstKickoff);
@@ -82,7 +82,7 @@ function matchCard(h) {
   const count=key=>scores?.[key]?.withVote??scores?.[key]?.played;
   const side=key=>`<span class="fanta-vs-team">${teamLogo(match[key])}<b>${esc(match[key].name)}</b>${
     Number.isFinite(scores?.[key]?.points)?`<small>${pts(scores[key].points)} FP${!match.final&&Number.isInteger(count(key))?' · '+count(key)+'/'+(match.live.of||11)+' a voto':''}</small>`:''}</span>`;
-  return `<section class="fanta-block fanta-home-match" aria-labelledby="fanta-match-title">
+  return `<section class="fanta-block fanta-home-match fanta-home-card" aria-labelledby="fanta-match-title">
     <button type="button" class="fanta-match-link" data-go="giornata" data-round="${round.number}" data-mu="${esc(match.id||match.matchupId||h.bar?.matchup||'')}" aria-label="${title}, giornata ${round.number}. Apri lo Studio Live">
       <span class="fanta-home-match-head"><b id="fanta-match-title">${title}</b><small>Giornata ${round.number}${status?' · '+esc(status):''}</small><span aria-hidden="true">→</span></span>
       <span class="fanta-vs">${side('home')}<strong class="fanta-home-score">${total}</strong>${side('away')}</span>

@@ -5,7 +5,7 @@ export function restoreAppFooter(doc=globalThis.document){
  if(doc?.body)delete doc.body.dataset.gameMode;
  doc?.documentElement?.style.removeProperty('--app-bottom-space');doc?.documentElement?.style.removeProperty('--app-tabbar-height');
 }
-// Move the consent controls into account settings without replacing their handlers.
+// Keep the same privacy controls and handlers in the app footer.
 export function placeAppFooter(root){
  if(!root?.ownerDocument||typeof root.querySelector!=='function')return;
  const doc=root?.ownerDocument,main=root?.querySelector('main');if(!doc||!main)return;
@@ -14,15 +14,15 @@ export function placeAppFooter(root){
  main.querySelector(':scope>.footer,:scope>[data-app-footer]')?.remove();
  const nav=root.querySelector('.v2-tabbar');
  if(nav&&!nav.querySelector('[data-app-footer]')){
-  const footer=doc.createElement('small');
+  const footer=doc.createElement('div');
   footer.dataset.appFooter='true';
   footer.textContent=`© ${new Date().getFullYear()} QUELLI DEL QUASI. Gioco fantasy con solo crediti virtuali`;
   nav.append(footer);
  }
  if(context.links){
-  const settings=main.querySelector('[data-account-privacy]');
-  context.links.hidden=!settings;
-  (settings||doc.body).append(context.links);
+  const footer=nav?.querySelector('[data-app-footer]');
+  context.links.hidden=!footer;
+  (footer||doc.body).append(context.links);
  }
  const measure=()=>{
   const win=doc.defaultView;if(!Number.isFinite(win?.innerHeight)||!win.getComputedStyle)return;

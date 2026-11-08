@@ -1,4 +1,5 @@
-import {presidentTodos} from '../president-panel.mjs';
+import {presidentPanel,settingsLogout} from '../president-panel.mjs';
+import {bindSwipeBack} from '../match-page.mjs';
 import {patchRegion} from '../live-channel.mjs';
 import {placeAppFooter} from '../app-footer.mjs';
 import {createSportsPush} from '../sports-push.mjs';
@@ -25,7 +26,7 @@ import {bindLineupPitch,setPitchFlip} from '../lineup-pitch.mjs';
 import { enableDrag } from './trascina.mjs';
 import { renderAsta, renderListoneSheet, renderListoneRows, renderAssignConfirm, tickAuction, auctionAudio, bidState, bidAmount } from './asta.mjs';
 import { auctionWizard, renderAuctionWizard } from './auction-wizard.mjs';
-import { renderLega,renderFantaPresident,fantaPresidentTasks } from './lega.mjs';
+import { renderLega,renderFantaPresident } from './lega.mjs';
 import { renderIo, renderDemoInfo } from './io.mjs';
 import { renderPilotPicker,renderPilotConfirm,renderPilotInfo } from './pilota.mjs';
 import {renderReleaseConfirm,renderRosterAdmin,renderMarketConfirm,refundFor} from './mercato.mjs';
@@ -90,12 +91,13 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (ui.mode === 'bar') return `<div class="fanta-empty"><span class="eyebrow">Modalità Bar</span><h2>Qui c'è il Bar che conosci</h2>
       <p>Schedine, Quasi e premi. Nell'app vera questo interruttore apre la parte Bar, con la stessa lega e gli stessi amici.</p>
       <button type="button" class="primary" data-mode="fanta">Torna al Fanta</button></div>`;
+    if(ui.tab==='impostazioni')return presidentPanel({mode:'fanta',open:ui.presidentGroup,footer:settingsLogout({bridge:true}),groups:slipServices?.account?.groups?.(ui.me?.settings)});
     if(ui.pilot)return renderPilotPicker(ui.pilot);
     if(ui.choiceLeagueId||!ui.leagues.length&&ui.teamChoices.length)return renderTeamChoices(ui.choiceLeagueId?ui.teamChoices.filter(l=>l.id===ui.choiceLeagueId):ui.teamChoices,{busy:ui.claimingTeam,error:ui.choiceError});
     if(ui.me?.access==='full'&&!ui.leagues.length)return '<div class="fanta-empty"><h2>Il Fanta non è ancora attivo</h2>'+ (barLeagues.some(b=>b.admin===ui.me?.id)?'<p>Prepara le squadre dal pannello del presidente.</p><button class="primary" data-mode="bar" data-bar-page="admin">Attiva il Fanta di questa lega</button>':'<p>Il presidente non ha ancora attivato il Fanta.</p>')+'<button class="secondary" data-mode="bar">Torna al Bar</button></div>';
     if(ui.tab==='schedine')return ui.home?slips.render(slipContext()):'<div class="fanta-loading" role="status">Carichiamo la competizione…</div>';
-    if(ui.tab==='presidente')return renderFantaPresident(ui.lega.data,{...ui.lega,presidentGroup:ui.presidentGroup,me:ui.me,io:ui.io,demo,accountGroups:slipServices?.account?.groups?.(ui.me?.settings),bar:barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id),invite:linkedInvite(ui.lega.data?.league,barLeagues)});
-    if (ui.tab === 'oggi') return ui.home ? presidentTodos(fantaPresidentTasks(ui.lega.data||{isAdmin:ui.home.league.role==='admin',league:ui.home.league,auction:ui.home.auction||{}},linkedInvite(ui.home.league,barLeagues)),'fanta')+renderHome({...ui.home,invite:linkedInvite(ui.home.league,barLeagues),inviteCopied:ui.lega.copied,openingLineup:openingHomeLineup,bar:findBarSlip(ui.home,barLeagues)}) : '<div class="fanta-loading" role="status">Carichiamo la tua squadra…</div>';
+    if(ui.tab==='presidente')return renderFantaPresident(ui.lega.data,{...ui.lega,presidentGroup:ui.presidentGroup,me:ui.me,io:ui.io,demo,bar:barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id),invite:linkedInvite(ui.lega.data?.league,barLeagues)});
+    if (ui.tab === 'oggi') return ui.home ? renderHome({...ui.home,invite:linkedInvite(ui.home.league,barLeagues),inviteCopied:ui.lega.copied,openingLineup:openingHomeLineup,bar:findBarSlip(ui.home,barLeagues)}) : '<div class="fanta-loading" role="status">Carichiamo la tua squadra…</div>';
     if (ui.tab === 'giornata') return renderGiornata({round:ui.round,matchup:ui.matchup,matchupId:ui.matchupId,side:ui.side,flips:ui.liveFlips,error:ui.liveError});
     if (ui.tab === 'squadra') return renderSquadra(ui.squadra);
     if (ui.tab === 'asta') return ui.asta.wizard?renderAuctionWizard(ui.asta.wizard):renderAsta(ui.asta.data,{...ui.asta,members:barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id)?.members},ui.asta.players);
@@ -318,8 +320,8 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
 
   function render() {
     if(destroyed)return;
-    if(ui.tab==='io'){ui.tab='presidente';ui.presidentGroup='account';}
-    const settingsOpen=ui.tab==='presidente'?[...root.querySelectorAll('.president-panel details')].map(d=>[d.dataset.presidentSection||d.querySelector('summary')?.textContent,d.open]):[];
+    if(ui.tab==='io'){ui.tab='impostazioni';ui.presidentGroup='account';}
+    const settingsOpen=['presidente','impostazioni'].includes(ui.tab)?[...root.querySelectorAll('.president-panel details')].map(d=>[d.dataset.presidentSection||d.querySelector('summary')?.textContent,d.open]):[];
     document.body.dataset.gameMode='fanta';
     document.body.classList.toggle('fanta-auction-page',ui.tab==='asta');
     applyLeagueTheme(linkedLeagueIdentity(league(),barLeagues));
@@ -329,7 +331,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     const wizardScroll=root.querySelector('.auction-wizard-fields')?.scrollTop;
     const oldStudio=root.querySelector('.fanta-live-studio'),railLeft=oldStudio?.querySelector('.fanta-mu-rail')?.scrollLeft??null;
     oldStudio?._pitchCleanup?.();
-    const mainHtml=`<main class="fanta-main">${['asta','giornata'].includes(ui.tab)?'':competitionSwitcher(ui.home?.competitions||ui.lega.data?.competitions,ui.home?.competition?.id||ui.lega.data?.competition?.id)}${page()}</main>`;
+    const mainHtml=`<main class="fanta-main">${['asta','giornata','impostazioni','presidente'].includes(ui.tab)?'':competitionSwitcher(ui.home?.competitions||ui.lega.data?.competitions,ui.home?.competition?.id||ui.lega.data?.competition?.id)}${page()}</main>`;
     const offer=ui.tab==='asta'&&!ui.asta.wizard&&root.querySelector('[data-bid-form]');
     const lot=ui.asta.data?.lot;
     if(offer&&lot?.id===offer.dataset.lot&&bidState(ui.asta.data).can){
@@ -340,8 +342,8 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       syncOffer(input,ui.asta.amount);
     }else root.innerHTML = `${topBar({user:ui.me,slipCredits:(()=>{const d=slips.context(slipContext());return d.league?.members?.find(m=>m.uid===d.uid)?.fantasyWallets?.[d.league.fantasyWalletScopes?.[d.round?.competitionKey]]?.credits??d.league?.members?.find(m=>m.uid===d.uid)?.fantasyWallet?.credits;})(),hideCredits:false,mode:ui.mode, league: ui.mode === 'fanta' ? linkedLeagueIdentity(league(),barLeagues) : null, credits:ui.asta.data?.teams?.find(t=>t.team.id===ui.home?.me.teamId)?.credits??ui.home?.auction?.credits })}${demoBar()}
       ${mainHtml}
-      ${ui.mode === 'fanta'&&!ui.choiceLeagueId&&ui.leagues.length ? tabBar(FANTA_TABS.some(([id]) => id === ui.tab) ? ui.tab : (ui.tab==='presidente'?null:TAB_OF[ui.tab] || 'oggi')) : ''}`;
-    if(ui.tab==='presidente'){
+      ${ui.mode === 'fanta'&&!ui.choiceLeagueId&&ui.leagues.length ? tabBar(FANTA_TABS.some(([id]) => id === ui.tab) ? ui.tab : (ui.tab==='impostazioni'?null:ui.tab==='presidente'?'lega':TAB_OF[ui.tab] || 'oggi')) : ''}`;
+    if(['presidente','impostazioni'].includes(ui.tab)){
       for(const d of root.querySelectorAll('.president-panel details')){
         if(ui.presidentGroup&&d.dataset.presidentSection===ui.presidentGroup)continue;
         const saved=settingsOpen.find(([key])=>key===(d.dataset.presidentSection||d.querySelector('summary')?.textContent));
@@ -352,6 +354,17 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     retainAppHeader(root);
     paintAuctionBadges();
     placeAppFooter(root);
+    const squadra=root.querySelector('.fanta-squadra');
+    if(squadra){
+      const sections=['formazione','rosa','calendario'];
+      const move=step=>{const next=sections[sections.indexOf(ui.squadra.sub)+step];if(next)handleSquadra({sqSub:next});};
+      bindSwipeBack(squadra,()=>move(1),'left');
+      bindSwipeBack(squadra,()=>move(-1));
+    }
+    const leaguePanel=root.querySelector('.president-panel:has(.league-settings-back)');
+    if(leaguePanel)bindSwipeBack(leaguePanel,()=>openTab('lega'),'right',()=>!leaguePanel.querySelector('.os-drill'));
+    const wizard=root.querySelector('.auction-wizard');
+    if(wizard)bindSwipeBack(wizard,()=>openTab(ui.asta.from||'lega'),'right',event=>!ui.asta.wizard?.busy&&!event.target.closest('input,select,textarea,button'));
     if(ui.tab==='asta'){
       showAuctionPanel(ui.asta.panel||0);
       root.querySelectorAll('.auction-pane').forEach((el,i)=>{el.scrollTop=paneScroll[i]||0;});
@@ -369,7 +382,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     // Asta dal vivo: il cursore va da solo dove serve (prezzo dopo aver messo il giocatore sul tavolo, ricerca dopo l'assegnazione).
     if (ui.asta.focus) { document.getElementById(ui.asta.focus)?.focus(); ui.asta.focus = null; }
     bindAppInvites(root);
-    if(ui.tab==='presidente')slipServices?.account?.bind?.(()=>render(),barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id));
+    if(ui.tab==='impostazioni')slipServices?.account?.bind?.(()=>render(),barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id));
     renderSheet();
     bindStyledSelects(root);
     if (ui.tab === 'asta') {tickAuction(root, ui.asta.offset,auctionSound.alert);showAuctionConnection();}
@@ -536,7 +549,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(e.target.matches('[data-league-size-form],[data-competition-create-form],[data-competition-start-form]')){
       e.preventDefault();const form=e.target;if(form.dataset.submitting==='true')return;form.dataset.submitting='true';const p=Object.fromEntries(new FormData(form)),b=form.querySelector('button[type="submit"]');b.disabled=true;
       const action=form.matches('[data-league-size-form]')?api.configureLeague(league()?.id,Number(p.size)):form.matches('[data-competition-create-form]')?api.createCompetition(league()?.id,p):api.startCompetition(league()?.id,{...p,startRound:Number(p.startRound),twice:!!p.twice});
-      action.then(async result=>{if(result.status==='draft'){await switchCompetition(result.id);ui.tab='presidente';ui.presidentGroup='calendario';render();}else{ui.home=null;await load();await loadLega();}toast('Impostazioni salvate.');}).catch(err=>toast(err.message)).finally(()=>{form.dataset.submitting='false';b.disabled=false;});return;
+      action.then(async result=>{if(result.status==='draft'){await switchCompetition(result.id);openTab('lega');}else{ui.home=null;await load();await loadLega();}toast('Impostazioni salvate.');}).catch(err=>toast(err.message)).finally(()=>{form.dataset.submitting='false';b.disabled=false;});return;
     }
     if(e.target.matches('[data-team-link-form]')){e.preventDefault();const form=e.target,data=new FormData(form),button=form.querySelector('button[type="submit"]');button.disabled=true;
       api.linkTeam(league()?.id,data.get('team'),data.get('username')).then(result=>{ui.lega.linkError=null;toast(result.demo?'Associazione simulata: in demo niente viene salvato.':'Account associato alla squadra.');return loadLega();}).catch(error=>{ui.lega.linkError=error.message;render();});return;
@@ -809,7 +822,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   }
 
   function openTab(tab, round, matchup,record=true) {
-    if(tab==='io'){tab='presidente';ui.presidentGroup='account';}
+    if(tab==='io'){tab='impostazioni';ui.presidentGroup='account';}
     if(tab==='schedine')slips.enter();
     if (tab === 'formazione') { tab = 'squadra'; ui.squadra.sub = 'formazione'; }
     if(tab==='giornata'&&round==null&&ui.tab!=='giornata')round=ui.home?.round.number;
@@ -818,6 +831,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(tab==='classifica'&&!['classifica','calendario','schedine'].includes(ui.lega.sub))ui.lega.sub='classifica';
     if(tab==='lega')ui.lega.sub=null;
     if(record)writeAppRoute({mode:'fanta',page:tab,section:['lega','classifica','presidente'].includes(tab)?ui.lega.sub:null,league:league()?.id,round:tab==='schedine'?(round||null):tab==='giornata'?(round||ui.roundNumber||ui.home?.round.number):null});
+    if(tab==='asta'&&ui.tab!=='asta')ui.asta.from=ui.tab;
     ui.tab=tab;ui.sheet=null;ui.studio=null;
     if (tab === 'asta') {startAuction();render();}
     else {ui.asta.wizard=null;ui.asta.panel=0;stopAuction();void auctionStream?.check();}
@@ -942,7 +956,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       return;
     }
     if(d.auctionManage){void manageAuction(el);return;}
-    if(d.auctionExit){const wizard=ui.asta.wizard;openTab(wizard?'presidente':'oggi');return;}
+    if(d.auctionExit){openTab(ui.asta.from||'lega');return;}
     if(d.auctionPanel!==undefined){showAuctionPanel(Number(d.auctionPanel));return;}
     if(d.auctionTeam){void openRoster(d.auctionTeam,{readOnly:true});return;}
     const wizard=ui.asta.wizard;

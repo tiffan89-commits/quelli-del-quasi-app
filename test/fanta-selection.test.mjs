@@ -22,7 +22,7 @@ test('team calendar starts at the first round and points to the exact Studio Liv
  const {document}=parseHTML(renderTeamCalendar({round:{number:3},calendar:[match(3,false),match(1,true),match(4,false),match(2,true)]}));
  const tiles=[...document.querySelectorAll('.fanta-team-fixture')];
  assert.deepEqual(tiles.map(t=>t.dataset.mu),['sfida-1','sfida-2','sfida-3','sfida-4']);
- assert.equal(tiles[0].firstElementChild.textContent,'0–2');
+ assert.equal(tiles[0].querySelector('.team-calendar-score').textContent,'0–2');
  assert.equal(tiles[0].dataset.go,'giornata');
  assert.equal(tiles[0].dataset.round,'1');
 });

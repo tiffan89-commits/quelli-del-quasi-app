@@ -5,6 +5,9 @@
 
 # Unreleased
 
+- I Quasi riutilizzano il disegno personalizzato e caricano subito lo sfondo corretto. Impostazioni personali e Pannello del presidente sono separati. Privacy e preferenze statistiche sono nel footer.
+- Le Home di Bar e Fanta mostrano i riquadri di giornata, il calendario Squadra centra i punteggi e le viste di lega si chiudono con il gesto inverso.
+
 - Le dirette delle schedine Fanta mostrano il punteggio al centro degli stemmi. Il calendario Squadra apre intorno alla giornata corrente e permette di caricare quattro giornate alla volta in entrambe le direzioni.
 - Il retro delle schedine del Bar riprende la cartolina, con Quasi al centro, sottotitoli variati e rischio accanto al nome. Data e orario restano sotto le squadre, con il conto alla rovescia a lato.
 - Account, Avvisi e Assistenza sono condivisi da Bar e Fanta. Gli account con password locale possono cambiarla. I promemoria via email partono due ore prima e rispettano il consenso.

@@ -77,7 +77,7 @@ html.os-on main.os-split>#live-channel-status:empty{display:none}
 .os-track.os-drill .os-drill-parent>:not(.os-drill-path){display:none!important}
 .os-track.os-drill .os-drill-path{display:block!important;max-height:none!important;overflow:visible!important}
 .os-track.os-drill .os-drill-target>summary{display:none!important}
-.os-drill-nav{display:flex;align-items:center;gap:10px;margin:4px 14px 8px;min-height:38px;touch-action:pan-y pinch-zoom}
+.os-drill-nav{display:flex;box-sizing:border-box;align-items:center;gap:10px;margin:4px auto 8px;max-width:calc(100% - 28px);min-height:38px;touch-action:pan-y pinch-zoom}
 .os-drill-nav button{flex:none;min-height:36px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--lime);font:600 13px 'DM Sans',sans-serif}
 .os-drill-nav strong{font-size:15px;overflow-wrap:anywhere}
 html.os-on .os-track details:not(.member-menu,.v2-stake-picker)>summary{position:relative;padding-inline-end:25px;list-style:none}

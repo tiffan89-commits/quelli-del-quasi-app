@@ -555,3 +555,26 @@ body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11
 .account-alerts #enable-device-alerts{margin:4px 0}
 .fanta-team-calendar .fanta-calendar-more{display:block;margin:4px auto;min-height:32px;padding:4px 14px}
 .fanta-team-calendar .fanta-team-fixture.is-current{border:2px solid var(--league-accent,var(--lime))}
+
+.lega-hub .lega-tile-detail>summary::after,.lega-hub .lega-tile-next{right:11px!important;top:50%!important;transform:translateY(-50%)!important}
+.lega-hub .lega-tile:has(.lega-tile-next){position:relative;padding-inline-end:26px}
+.president-heading:has(.league-settings-back){display:flex;gap:8px;align-items:center}
+.president-panel:has(.league-settings-back),.fanta-squadra,.auction-wizard{touch-action:pan-y pinch-zoom}
+.support-fields{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,2fr);gap:8px}
+#support-form .field{gap:3px;margin:4px 0;font-size:12px}
+#support-form :is(input,textarea,.quasi-select-button){min-width:0;min-height:38px;padding:5px 8px}
+#support-form textarea{min-height:68px}
+#support-form button[type=submit],#support-form button:not([type]){min-height:38px;padding:6px 12px}
+.fanta-competitions details.competition-tool:not([open]){border:1px solid var(--line);border-radius:12px;padding:7px 9px;margin:6px 0;background:var(--panel)}
+.logo-editor-top [data-logo-close]{width:40px;height:40px;min-height:0;display:grid;place-items:center;padding:0;font-size:21px;line-height:1;border:1px solid var(--lime);color:var(--lime)}
+.fanta-home-card,.league-dashboard>.dash-next.fanta-home-card{border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+html.os-on main.os-root .fanta-home-compact .fanta-home-card .fanta-bar-link{width:calc(100% - 20px);margin:2px 10px 8px;min-height:34px;padding:5px 8px}
+html.os-on main.os-root .league-dashboard>.dash-next.fanta-home-card{padding:8px 10px!important}
+.league-dashboard .dash-next.fanta-home-card .dash-cta{min-height:34px}
+html.os-on main.os-root .league-dashboard>.dash-hero:has(.dash-numbers){height:148px!important}
+.dash-hero-copy>.dash-numbers{grid-template-columns:repeat(3,minmax(0,1fr));border:0;gap:4px;margin:4px 0 0}
+.dash-hero-copy .dash-numbers button{display:grid;gap:1px;padding:2px 4px;text-align:left;min-width:0;background:#0c1815bb;border:1px solid #ffffff28;border-radius:5px}
+.dash-hero-copy .dash-numbers strong{font-size:18px;margin:0}
+.dash-hero-copy .dash-numbers :is(span,small){font-size:9px;white-space:nowrap}
+.dash-recap-details>.round-recap{border:0}
+.league-dashboard>.dash-last-round{grid-column:1/-1!important;grid-row:auto!important}

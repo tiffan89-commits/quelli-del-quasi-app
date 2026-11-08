@@ -5,9 +5,9 @@ export const hubIcon=k=>'<span class="lega-tile-icon" aria-hidden="true"><svg vi
 export function hubHead(name,subtitle){
  return `<section class="hero lega-hub-head" data-os-header><span class="eyebrow">LA TUA LEGA</span><h1>${esc(name)}</h1><p>${esc(subtitle)}</p></section>`;
 }
-export function hubTile(icon,title,subtitle,{action='',html='',admin=false,whatsapp=''}={}){
+export function hubTile(icon,title,subtitle,{action='',html='',admin=false,whatsapp='',arrow=false}={}){
  const label=`${hubIcon(icon)}<b>${esc(title)}</b><small>${esc(subtitle)}</small>`;
  if(whatsapp)return `<div class="lega-tile invite-hub-tile"><button type="button" ${action}>${label}</button>${whatsapp}</div>`;
- return html?`<details class="lega-tile lega-tile-detail"><summary>${label}<span class="lega-tile-next" aria-hidden="true">›</span></summary>${html}</details>`
- :`<button type="button" class="lega-tile${admin?' is-admin':''}" ${action}>${label}</button>`;
+ return html?`<details class="lega-tile lega-tile-detail"><summary>${label}</summary>${html}</details>`
+ :`<button type="button" class="lega-tile${admin?' is-admin':''}" ${action}>${label}${arrow?'<span class="lega-tile-next" aria-hidden="true">›</span>':''}</button>`;
 }

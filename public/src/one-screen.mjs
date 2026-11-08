@@ -103,6 +103,7 @@ export function startOneScreen(doc = globalThis.document) {
    bindSwipeBack(drillNav,backDetail);
   }
   drillNav.lastElementChild.textContent=drill.at(-1).title;
+  drillNav.style.width=Math.max(0,main.clientWidth-28)+'px';
   if(drillNav.nextElementSibling!==main)main.before(drillNav);
  }
  function openDetail(detail){

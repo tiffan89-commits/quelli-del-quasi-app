@@ -1,15 +1,16 @@
 // A page inside the existing app chrome. The underlying slip and its draft DOM
 // stay mounted, so closing a match never reloads or resets the user's choices.
 let active=null,skipPop=false;
-export function bindSwipeBack(surface,back){
+export function bindSwipeBack(surface,back,direction='right',canSwipe=()=>true){
  let start=null;
- surface.addEventListener('touchstart',event=>{start=event.touches.length===1?event.touches[0]:null;},{passive:true});
+ surface.addEventListener('touchstart',event=>{start=event.touches.length===1&&canSwipe(event)?event.touches[0]:null;},{passive:true});
  surface.addEventListener('touchcancel',()=>{start=null;},{passive:true});
  surface.addEventListener('touchend',event=>{
   const first=start,point=event.changedTouches[0];start=null;
   if(!first||!point)return;
   const dx=point.clientX-first.clientX,dy=point.clientY-first.clientY;
-  if(dx>=45&&dx>Math.abs(dy)*1.4)back();
+  const movement=direction==='both'?Math.abs(dx):direction==='left'?-dx:dx;
+  if(movement>=45&&movement>Math.abs(dy)*1.4)back();
  },{passive:true});
 }
 export function closeMatchPage({back=true}={}){
@@ -26,7 +27,7 @@ export function openMatchPage({onClose,document:doc=globalThis.document,kind='ma
  root.open=true;root.close=()=>closeMatchPage();
  if(swipeBack){
   root.classList.add('match-swipe-back');
-  bindSwipeBack(root,root.close);
+  bindSwipeBack(root,root.close,swipeBack===true?'right':swipeBack);
  }
  active={root,scroll:globalThis.scrollY||0,focus:doc.activeElement,onClose,doc};
  doc.getElementById('app').after(root);doc.body.classList.add('match-page-active');

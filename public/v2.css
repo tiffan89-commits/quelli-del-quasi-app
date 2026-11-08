@@ -125,7 +125,7 @@ body.v2-on .league-dashboard{border:0;border-radius:0;background:none;box-shadow
 .dash-scene-room{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;z-index:-2;transform:scale(1.06)}
 .dash-scene-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#07130eb0 0%,#07130e70 46%,#07130e10 100%),linear-gradient(0deg,#07130ed0 0%,transparent 36%)}
 .dash-scene-person{position:absolute;right:-5%;bottom:2%;width:62%;height:96%;display:flex;align-items:flex-end;justify-content:center;filter:drop-shadow(0 10px 14px #0007)}
-.dash-scene-person>svg{display:block;width:100%;height:100%}
+.dash-scene-person>.quasi-avatar{display:block;width:100%;height:100%}
 .dash-scene-edit{position:absolute;right:12px;top:12px;font-size:11px;font-weight:700;padding:7px 12px;border-radius:20px;background:#0b1712b8;border:1px solid #cfbf8550;color:#e8d9a8;backdrop-filter:blur(4px)}
 .dash-hero-copy{position:absolute;left:22px;bottom:24px;max-width:52%;z-index:2;pointer-events:none}
 .dash-hero-copy .eyebrow{font-size:10px;letter-spacing:2.2px;color:#cfdcc4;display:block;overflow-wrap:anywhere}

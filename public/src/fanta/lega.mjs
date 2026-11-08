@@ -1,6 +1,6 @@
 import {hubHead,hubTile} from '../league-hub.mjs';
 import {leagueActions} from '../league-actions.mjs';
-import {settingsLogout,presidentPanel} from '../president-panel.mjs';
+import {presidentPanel} from '../president-panel.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
 import { esc, pts, dayTime, OUTCOME, extremeClass, resultsFirst } from './formato.mjs';
@@ -104,11 +104,11 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   if(group==='lega'){
     const name=l.league.name.replace(/^Random League/i,'Lega pilota'),count=l.members.filter(m=>m.human).length;
     const tiles=[
-      l.isAdmin?hubTile('gear','Pannello del presidente','Impostazioni della lega',{action:'data-go="presidente"',admin:true}):'',
-      hubTile('people','Partecipanti · '+count,'Chi allena le squadre',{html:members(l,{...ui,invite:null})}),
+      l.isAdmin?hubTile('gear','Pannello del presidente','Impostazioni della lega',{action:'data-go="presidente"',admin:true,arrow:true}):'',
+      hubTile('people','Partecipanti · '+count,'Chi allena le squadre',{html:members(l,{...ui,adminTools:l.isAdmin,invite:null})}),
       hubTile('rules','Regolamento del Fanta','Bonus, malus e formazioni',{html:rules(l)}),
-      !pilot?hubTile('competition','Competizioni','Campionati e coppe',{html:renderCompetitions(l,ui)}):'',
-      !pilot&&(l.isAdmin||['running','scheduled'].includes(l.auction.status))?hubTile('auction','Asta',l.auction.status==='running'?'In corso':l.auction.status==='scheduled'?'Programmata':l.isAdmin?'Gestisci le aste':'Apri la sala',{action:l.isAdmin?'data-auction-manage="1"':'data-go="asta"'}):'',
+      !pilot?hubTile('competition','Competizioni','Campionati e coppe',{html:renderCompetitions(l,{...ui,adminTools:l.isAdmin})}):'',
+      !pilot&&(l.isAdmin||['running','scheduled'].includes(l.auction.status))?hubTile('auction','Asta',l.auction.status==='running'?'In corso':l.auction.status==='scheduled'?'Programmata':l.isAdmin?'Gestisci le aste':'Apri la sala',{arrow:true,action:l.isAdmin?'data-auction-manage="1"':'data-go="asta"'}):'',
       ui.invite?.code?hubTile('invite','Invita nella tua lega','Condividi l’invito',{action:'data-lega-invite="share"',whatsapp:whatsappInvite(ui.invite,esc,{iconOnly:true})}):'',
       ui.hasChat?hubTile('chat','Chiacchiere da bar','Apri la chat della lega',{action:'data-fanta-chat aria-controls="league-chat-widget"'}):'',
     ];
@@ -138,17 +138,14 @@ export function fantaPresidentTasks(l,invite){
 }
 export function renderFantaPresident(l,ui={},now=Date.now()){
  if(!l)return '<div class="fanta-loading" role="status">Carichiamo il pannello…</div>';
- const a={...ui,adminTools:!!l.isAdmin,inSettings:true},count=l.members.filter(m=>m.human).length,bar=ui.bar;
- return presidentPanel({mode:'fanta',footer:settingsLogout({bridge:true}),open:ui.presidentGroup,tasks:fantaPresidentTasks(l,ui.invite),groups:{
- persone:{summary:count+'/'+l.league.maxMembers+' allenatori · '+(l.league.maxMembers-count)+' computer',html:members(l,a)},
+ if(!l.isAdmin)return renderLega(l,{...ui,group:'lega'});
+ const bar=ui.bar;
+ return presidentPanel({mode:'fanta',title:'Pannello del presidente',back:'data-go="lega"',open:ui.presidentGroup,tasks:fantaPresidentTasks(l,ui.invite),groups:{
  regole:{summary:l.rules.budget+' crediti · bonus, malus e formazione',html:rules(l)},
  ...(l.isAdmin?{
- ...(l.league.kind==='pilot'?{}:{
- competizioni:{summary:(l.competitions?.length||1)+' competizioni',html:renderCompetitions(l,a)}
- }),
  identita:{summary:bar?'Colori e simbolo condivisi con il Bar':'Identità della lega',html:bar?'<p>Il simbolo, il colore e il motto sono comuni a Bar e Fanta.</p><button type="button" class="secondary" data-mode="bar" data-bar-page="admin">Modifica identità nel Bar</button>':'<p>Lo stemma della tua squadra si modifica dalla pagina Oggi.</p>'}
  }:{}),
- ...(ui.accountGroups||{account:{summary:'Gestisci il tuo account',html:'<button type="button" class="secondary" data-mode="bar" data-bar-page="profilo">Apri Account</button>'}}),
+
  ...(l.isAdmin&&bar?.admin===ui.me?.id&&!ui.demo?{elimina:{summary:'Bar, Fanta e storico',html:'<button type="button" class="secondary league-delete-action" data-mode="bar" data-bar-page="admin" data-president-group="elimina">Apri conferma di eliminazione</button>'}}:{})
  }});
 }

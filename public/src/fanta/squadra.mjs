@@ -258,8 +258,7 @@ export function renderTeamCalendar(data,range){
  const rows=fixtures.map(m=>{
   const score=Number.isFinite(m.home.goals)&&Number.isFinite(m.away.goals)?`${m.home.goals}–${m.away.goals}`:'';
   return `<button type="button" class="fanta-team-fixture ${m.round===current?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}">
-    ${score?`<strong class="team-calendar-score">${score}</strong>`:''}
-    <span class="team-calendar-sides">${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><i aria-hidden="true">–</i><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span>
+    <span class="team-calendar-sides">${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><strong class="team-calendar-score">${score}</strong><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span>
     <small>Giornata ${m.round} · ${m.official?'Finale':score?'Provvisorio':'Da giocare'}${m.home.points!=null?' · '+pts(m.home.points)+'–'+pts(m.away.points)+' FP':''}</small>
   </button>`;
  }).join('');

@@ -1,3 +1,5 @@
+import {hubHead,hubTile} from '../public/src/league-hub.mjs';
+import {appWhatsappInvite,signupShareData} from '../public/src/app-invite.mjs';
 import {renderFantaNotificationSettings} from '../public/src/fanta/io.mjs';
 import {clubShirt} from '../public/src/club-crest.mjs';
 import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
@@ -125,6 +127,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     LEAGUE_EMBLEMS,
     clearAdminState() {},
     calendarSections,
+    hubHead,hubTile,appWhatsappInvite,signupShareData,
     leagueDashboard, countdownLabel, quasiScene, rosterView, achievementBoard, avatarSvg, AVATAR_OPTIONS, whatsappInvite,renderAppInvite,bindAppInvites,
     fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},showQuasi,barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,
     bindRoster(){},openQuasiStudio(){},renderLineup,bindLineupPitch(){},
@@ -203,9 +206,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   try{
     for(const target of ['profilo','classifiche','calendario','quasi','regolamento','admin','lega','schedina']){
       vm.runInContext('navigatePage('+JSON.stringify(target)+')',ctx);
-      assert.equal(vm.runInContext('page',ctx),target==='profilo'?'admin':target);
+      assert.equal(vm.runInContext('page',ctx),target==='profilo'?'impostazioni':target);
       assert.match(html,/aria-current="page"/);
-      if(target==='profilo')assert.match(html,/Il tuo banco di comando/);
+      if(target==='profilo')assert.match(html,/Impostazioni/);
       if(target==='lega')assert.match(html,/class="dash-hero"/);
     }
     assert.equal(requestCount,beforeNavigation,'menus must render synchronously without requesting state, even when the server cannot respond');
@@ -317,6 +320,8 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /id="fantasy-connect"/);
   vm.runInContext("page='admin';render()",ctx);
   assert.doesNotMatch(html, /id="fantasy-connect"/);
+  assert.doesNotMatch(html,/aria-label="Invita con WhatsApp"/);
+  vm.runInContext("page='barleague';render()",ctx);
   assert.match(html,/aria-label="Invita con WhatsApp"/);
   assert.doesNotMatch(html,/quasi-roster-grid/);
   assert.doesNotMatch(html, /Collega competizione/);

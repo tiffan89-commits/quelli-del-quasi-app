@@ -1,4 +1,3 @@
-import {renderFantaNotificationSettings} from '../public/src/fanta/io.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
@@ -26,10 +25,11 @@ test('plus opens the existing join/create sheet and switches forms without reque
  try{bindLeagueSwitcher({leagues:[],uid:'member',esc:String});document.querySelector('.league-add').closest('button').onclick();assert.equal(document.getElementById('v2-sheet-root').hidden,false);document.querySelector('[data-v2-action="join"]').onclick();assert.equal(document.getElementById('v2-form-join').hidden,false);assert.equal(document.getElementById('v2-form-create').hidden,true);document.querySelector('[data-v2-action="create"]').onclick();assert.equal(document.getElementById('v2-form-join').hidden,true);assert.equal(document.getElementById('v2-form-create').hidden,false);}finally{globalThis.document=oldDocument;globalThis.addEventListener=oldAdd;}
 });
 
-test('member settings include invites and the shared account, but no president controls or labels',async()=>{
+test('a Fanta member who opens the president route returns to the league without management controls',async()=>{
  const data=await createDemoFantaApi({delay:0}).league('lega-quasi');data.isAdmin=false;data.league.role='member';
- const html=renderFantaPresident(data,{invite:{code:'TEST',name:'Bar test'},accountGroups:{account:{html:'<form id="profile-name"></form>'},avvisi:{html:renderFantaNotificationSettings({notify:{results:true}})},assistenza:{html:'<form id="support-form"></form>'}},me:{user:{name:'Membro'},settings:{notify:{results:true}}}}),{document}=parseHTML(html);
- assert.equal(document.querySelector('h1').textContent,'Il tuo banco di comando');assert.equal(document.querySelector('.profile-logout').closest('details'),null);assert.equal(document.querySelectorAll('.profile-logout').length,1);assert.match(html,/Invita nella lega/);assert.ok(document.querySelector('#profile-name'));assert.ok(document.querySelector('[data-notify="results"][checked]'));assert.equal(document.querySelectorAll('details[open]').length,0);assert.doesNotMatch(html,/Pannello del presidente|data-league-size-form|data-competition-create-form|data-fanta-slips-form|data-team-link-form|Modifica identità nel Bar/);
+ const html=renderFantaPresident(data,{invite:{code:'TEST',name:'Bar test'}}),{document}=parseHTML(html);
+ assert.ok(document.querySelector('.lega-hub'));assert.match(html,/Invita nella tua lega/);
+ assert.doesNotMatch(html,/Pannello del presidente|data-league-size-form|data-competition-create-form|data-team-link-form|data-president-section/);
 });
 
 test('invitation code is readable by current members only; state rendering changes no game data',()=>{

@@ -10,8 +10,17 @@ import {sqlFantaStore} from './store.mjs';
 import {roundView} from './views.mjs';
 import {advanceCup} from './competitions.mjs';
 const transaction=async(connect,fn)=>{const c=await connect();try{await c.query('BEGIN');const x=await fn(c);await c.query('COMMIT');return x;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}};
+// The official report confirms the save omitted from the provider event.
+const bolognaMonzaReport="https://www.legaseriea.it/serie-a/news/bologna-monza-2026-2027-2-1-cronaca-risultato-gol";
+export function applyVerifiedFixtureEvents(raw){
+ if(raw.fixture?.id!==1550179||raw.league?.season!==2026||raw.teams?.home?.id!==500||raw.teams?.away?.id!==1579)return;
+ const penalty=raw.events?.find(e=>e.type==='Goal'&&e.detail==='Missed Penalty'&&e.player?.id===1649&&e.team?.id===1579&&e.time?.elapsed===81);
+ if(penalty&&!penalty.comments){penalty.comments='Saved by Łukasz Skorupski';penalty.verifiedSource=bolognaMonzaReport;}
+}
 export async function ingestFixture(source,{connect=connection,env=process.env,now=Date.now,force=false,rebuildKey=null,finalVerification=false,config=configuredVotes(env),...unused}={}){
- const raw=structuredClone(source),id='af:'+raw.fixture.id,stamp=new Date(now()).toISOString(),modelKey=currentModelKey(config),fixtureRound=Number(raw.league.round?.match(/(\d+)$/)?.[1]),digest=fixtureFingerprint(raw);
+ const raw=structuredClone(source);
+ applyVerifiedFixtureEvents(raw);
+ const id='af:'+raw.fixture.id,stamp=new Date(now()).toISOString(),modelKey=currentModelKey(config),fixtureRound=Number(raw.league.round?.match(/(\d+)$/)?.[1]),digest=fixtureFingerprint(raw);
  if(raw.league.id!==135||raw.league.season!==Number(env.FANTA_SEASON||2026)||!fixtureRound||fixtureRound>38)throw Error('Partita di un altro campionato o stagione');
  const before=await transaction(connect,async c=>{
   const existing=(await c.query('SELECT * FROM fanta.fixtures WHERE id=$1 FOR UPDATE',[id])).rows[0],sameModel=existing?.vote_model_key===modelKey;
@@ -58,8 +67,8 @@ export async function dailyCatalog({connect=connection,provider=fantaProvider(),
   await c.query('INSERT INTO fanta.jobs(id,data) VALUES($1,$2) ON CONFLICT DO NOTHING',[id,JSON.stringify({players:values.length,calls:provider.calls})]);return {players:values.length,calls:provider.calls};
  });
 }
-export async function computeRounds({connect=connection,now=Date.now,recalculate=false,modelKey=currentModelKey(),serieARounds=null,correctionReason='owner-authorized-full-statistical-rebuild'}={}){
- const c=await connect();let leagues;try{leagues=(await c.query(`SELECT l.id,l.admin_uid,c.id AS competition_id,c.kind FROM fanta.leagues l JOIN fanta.competitions c ON c.league_id=l.id WHERE l.rules->>'disabledAt' IS NULL`)).rows;}finally{c.release();}
+export async function computeRounds({connect=connection,now=Date.now,recalculate=false,modelKey=currentModelKey(),serieARounds=null,leagueId=null,correctionReason='owner-authorized-full-statistical-rebuild'}={}){
+ const c=await connect();let leagues;try{leagues=(await c.query(`SELECT l.id,l.admin_uid,c.id AS competition_id,c.kind FROM fanta.leagues l JOIN fanta.competitions c ON c.league_id=l.id WHERE l.rules->>'disabledAt' IS NULL AND ($1::text IS NULL OR l.id=$1)`,[leagueId])).rows;}finally{c.release();}
  const store=sqlFantaStore({connect});let count=0;
  for(const l of leagues){const c=await connect();let rounds;try{rounds=(await c.query('SELECT number FROM fanta.rounds WHERE competition_id=$1 AND ($3 OR NOT official) AND deadline<=$2 AND ($4::int[] IS NULL OR seriea_round=ANY($4::int[])) ORDER BY number',[l.competition_id,new Date(now()).toISOString(),recalculate,serieARounds])).rows;}finally{c.release();}
   for(const r of rounds)await store.league(l.admin_uid,l.id,async(s,c)=>{
