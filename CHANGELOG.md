@@ -254,6 +254,21 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.32.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.32.0...v0.32.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* route Fanta notifications to their league and studio ([55e1bc5](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/55e1bc501b77e3322ef057e70c5ac2e570a85525))
+* route Fanta notifications to their league and studio ([5fd1048](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/5fd1048fca8d4fde0622abb2f2e9af3749a6ab11))
+* use quota points and reserve credits for future slips ([a45de16](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/a45de1630265b7f8c3ab8cb78724a7999aa5294d))
+* use quota points and reserve credits for future slips ([a45de16](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/a45de1630265b7f8c3ab8cb78724a7999aa5294d))
+* use quota points and reserve credits for future slips ([76208db](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/76208db1a6f458a643a4a649673cda16f78995c9))
+* **ux:** keep mobile navigation clear of the keyboard ([cc3a3d8](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/cc3a3d89ebc79b45f30b1f9048ed7b10d88a998e))
+* **ux:** keep mobile navigation clear of the keyboard ([2905c6b](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/2905c6b97d0bc09d1f6dbd085854c1cc775b3a29))
+* **ux:** refine chat, settings and mobile navigation ([cc3a3d8](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/cc3a3d89ebc79b45f30b1f9048ed7b10d88a998e))
+* **ux:** send chat messages instantly and open their league from notifications ([ab48442](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/ab48442fc421e73f73fe49745320ac2337bccec3))
+
 ## [0.32.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.31.3...v0.32.0) (2026-11-08)
 
 
