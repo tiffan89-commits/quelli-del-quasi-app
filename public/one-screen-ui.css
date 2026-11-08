@@ -16,6 +16,11 @@ html.os-on main.os-root .slip-section-buttons>button[data-short] .seg-long{displ
 html.os-on main.os-root .slip-section-buttons>button[data-short]::after{content:attr(data-short)}
 
 /* ---------- Schedina: giornata, righe partita compatte ---------- */
+/* One indivisible row per line lets columns repack when the extra odds close. */
+html.os-on:not(.os-nocols) main.os-root [data-os-slip]>.v2-match-row{
+ display:inline-block;width:100%;vertical-align:top;
+ max-height:calc(var(--os-h) - 2px);overflow:auto
+}
 html.os-on main.os-root .round-selector{margin:0 0 4px!important}
 html.os-on main.os-root .round-selector .quasi-select-button{min-height:38px!important;padding:6px 12px!important;font-size:13px!important;border-radius:999px!important}
 html.os-on main.os-root .v2-slip .v2-eyebrow,

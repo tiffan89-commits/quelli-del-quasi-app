@@ -11,10 +11,12 @@ export function increasedScore(before,after){return Array.isArray(before)&&Array
 function reorderSlipRows(root,round){
  const lists=[...(root.matches?.('[data-slip-match-list]')?[root]:[]),...root.querySelectorAll('[data-slip-match-list]')];
  const ordered=orderSlipMatches(round.matches),doc=root.ownerDocument||root,focused=doc.activeElement;
+ const rowId=el=>el.dataset.matchCard||el.dataset.resultRow||
+  (el.classList.contains('v2-match-row')?el.firstElementChild?.dataset.matchCard:null);
  for(const list of lists){
-  const rows=[...list.children].filter(el=>el.hasAttribute('data-match-card')||el.hasAttribute('data-result-row'));
+  const rows=[...list.children].filter(rowId);
   if(rows.length<2)continue;
-  const byId=new Map(rows.map(el=>[el.dataset.matchCard||el.dataset.resultRow,el]));
+  const byId=new Map(rows.map(el=>[rowId(el),el]));
   let anchor=rows[0];
   for(const row of ordered.map(m=>byId.get(String(m.id))).filter(Boolean)){
    if(row!==anchor)list.insertBefore(row,anchor);
