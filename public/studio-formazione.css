@@ -30,10 +30,16 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .studio-live-lineup button[data-player]>*{pointer-events:none}
 .studio-live-lineup .fanta-pitch .fanta-token-shirt{width:clamp(23px,calc(25cqh - 47px),85px);height:clamp(23px,calc(25cqh - 47px),85px)}
 .studio-live-lineup .fanta-token :is(.pitch-next-opponent,.pitch-next-kickoff){line-height:1.05}
-.studio-live-lineup .live-studio-bench{height:100%;padding-bottom:35px}
-.live-studio-reserves{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;justify-items:center;min-height:0;overflow:auto}
-.live-studio-reserves .fanta-token{max-width:100%}
-.live-studio-reserves .fanta-token-shirt{width:37px;height:37px}
+.studio-live-lineup .live-studio-bench{container-type:inline-size;height:100%;padding-bottom:39px}
+.live-studio-reserves{
+ --reserve-cell:clamp(83px,28cqw,132px);--reserve-shirt:104px;
+ display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--reserve-cell)),1fr));
+ flex:1;min-height:0;align-content:start;gap:5px;overflow:auto;overscroll-behavior-y:contain
+}
+.live-studio-reserves.is-dense{--reserve-cell:clamp(60px,21cqw,110px);--reserve-shirt:92px}
+.live-studio-reserves .fanta-token{width:100%;gap:2px;padding:3px 3px 5px;border-radius:7px;background:linear-gradient(transparent 55%,#38271b99 55%,#38271b99)}
+.live-studio-reserves .fanta-token-shirt{width:min(calc(100% - 12px),var(--reserve-shirt));height:auto;aspect-ratio:1}
+.live-studio-reserve-name{font-size:12px;font-weight:750;line-height:1.15;color:#fff0ce;overflow-wrap:anywhere}
 .studio-live-lineup .pitch-flip-button{right:6px;bottom:5px}
 .live-player-sheet{
  inset:auto 0 0;width:100%;max-height:min(88dvh,860px);box-sizing:border-box;color:var(--white);

@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Nello Studio Live la panchina usa maglie più grandi, cognomi leggibili sotto le maglie e un numero di colonne che si adatta allo spazio.
+
 - Le leghe abilitate possono far schierare le sole squadre computer in base a forma, titolarità prevista e difficoltà della prossima partita di Serie A.
 
 - Il presidente cerca i calciatori liberi per cognome dalla quarta lettera quando aggiunge un giocatore alla rosa.
