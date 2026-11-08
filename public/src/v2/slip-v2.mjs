@@ -64,14 +64,14 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
     const kickoff=m.officialKickoff||m.kickoff;
     const meta=fanta?(fantasyMeta?.(m)||(kickoff?date(kickoff):'')):barKickoff(kickoff);
     const live = m.status === 'LIVE', status = fanta?(live?'In corso':m.score?'Risultato finale':meta):meta;
-    return '<article class="v2-match" data-match-card="' + esc(m.id) + '" data-result-score="' + esc(JSON.stringify(live ? m.liveScore || null : m.score || null)) + '"><button type="button" class="v2-match-head match-link" data-detail="' + esc(m.id) + '" aria-label="' + esc(m.home+' – '+m.away) + '"><div><b class="slip-teams">' + teamLabel(m.home,{home:true,vs:m.away,short:teamCode(m.home)}) + '<span class="slip-versus">–</span>' + teamLabel(m.away,{home:false,vs:m.home,short:teamCode(m.away)}) + '</b><small data-match-status>' + esc(status) + '</small></div><span class="slip-match-indicator">'+clock+'<span class="inline-result" data-inline-result aria-live="polite">' + inlineResultView(m) + '</span></span></button>' +
+    return '<div class="v2-match-row"><article class="v2-match" data-match-card="' + esc(m.id) + '" data-result-score="' + esc(JSON.stringify(live ? m.liveScore || null : m.score || null)) + '"><button type="button" class="v2-match-head match-link" data-detail="' + esc(m.id) + '" aria-label="' + esc(m.home+' – '+m.away) + '"><div><b class="slip-teams">' + teamLabel(m.home,{home:true,vs:m.away,short:teamCode(m.home)}) + '<span class="slip-versus">–</span>' + teamLabel(m.away,{home:false,vs:m.home,short:teamCode(m.away)}) + '</b><small data-match-status>' + esc(status) + '</small></div><span class="slip-match-indicator">'+clock+'<span class="inline-result" data-inline-result aria-live="polite">' + inlineResultView(m) + '</span></span></button>' +
       '<div class="v2-odds-main">' + MAIN.map(p => option(m, p, picks, locked||!ready, esc, fmt, pointsOnly,round)).join('') +
       (pointsOnly ? '' : '<button type="button" class="v2-more' + (extraOn ? ' is-on' : '') + '" data-v2-more="' + esc(m.id) + '" data-short-pick="' + esc(open?'−':extraOn?pickCode(picks[m.id]):'+') + '" aria-expanded="' + open + '" aria-label="' + esc(extraOn?'Altri mercati · '+show(picks[m.id]):'Altri mercati') + '">' + (open ? '–' : '+') + '</button>') + '</div>' +
       (open && !pointsOnly ? '<div class="v2-odds-extra">' + EXTRA.map(p => option(m, p, picks, locked||!ready, esc, fmt, pointsOnly,round)).join('') + '</div>' : '') +
-      '<div class="sr-only" data-pick-feedback></div></article>';
+      '<div class="sr-only" data-pick-feedback></div></article></div>';
   }).join('');
   return '<section class="v2-slip" data-slip-source="'+(fanta?'fantacalcio':'seriea')+'" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
-    '<h1 class="v2-title">La schedina</h1><div data-os-content data-slip-match-list>' + rows + '</div>'+slipNotice(missingOdds)+'</section>' +
+    '<h1 class="v2-title">La schedina</h1><div data-os-content data-os-slip data-slip-match-list>' + rows + '</div>'+slipNotice(missingOdds)+'</section>' +
     (ready ? renderSlipBar({round,picks,stake,credits,esc,fmt,date}) : '');
 }
 

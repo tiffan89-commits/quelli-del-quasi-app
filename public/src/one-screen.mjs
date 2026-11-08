@@ -52,6 +52,7 @@ export function startOneScreen(doc = globalThis.document) {
  let segs = null, segAnchors = [], pin = null, pinned = null;
  let drill = [], drillNav = null, drillGesture = null;
  let dots = null, metrics = { pages: 1, page: 0 }, restore = false, toTop = false, pausedForMatch = false;
+ let slipAnchor = null;
  // L'app torna "in cima" con window.scrollTo(0, 0) dopo ogni cambio di sezione:
  // con le pagine laterali "in cima" vuol dire la prima pagina. I ridisegni
  // (aggiornamenti live, salvataggi) non lo chiamano e restano sulla pagina.
@@ -163,6 +164,7 @@ export function startOneScreen(doc = globalThis.document) {
   pausedForMatch = false;
   if (newTrack||nextKey!==key) {
    dragging=null;
+   slipAnchor=null;
    if (main&&!drill.length)saved.set(key,metrics.page);
    clearDrillView();
    if(nextKey!==key){for(const entry of drill)entry.el.open=false;drill=[];}
@@ -210,11 +212,16 @@ export function startOneScreen(doc = globalThis.document) {
    }
    if (!columns || flow()) { refresh(false); return; }
    if (win.getComputedStyle(main).columnFill !== 'auto') { win.setTimeout(schedule, 200); return; } // foglio non ancora caricato
-   if(!main.hasAttribute('data-os-strip')){
+   if(!main.matches('[data-os-strip],[data-os-slip]')){
     markTall();
     markBreaks();
    }
    if (restore) { restore = false; main.scrollLeft = (drill.length ? metrics.page : saved.get(key) || 0) * main.clientWidth; }
+   if (slipAnchor) {
+    const row = slipAnchor;
+    slipAnchor = null;
+    if (main.contains(row)) main.scrollLeft = pageOf(row) * main.clientWidth;
+   }
    refresh(false);
   });
  }
@@ -355,6 +362,12 @@ export function startOneScreen(doc = globalThis.document) {
  }
  function bind(el) {
   if (bound.has(el)) return; bound.add(el);
+  if (el.hasAttribute('data-os-slip')) el.addEventListener('click', e => {
+   const toggle = e.target.closest('[data-v2-more]');
+   if (el !== main || !toggle) return;
+   slipAnchor = toggle.closest('.v2-match-row');
+   schedule();
+  }, {capture:true});
   el.addEventListener('click',e=>{
    if(el!==main||!root.classList.contains('os-on'))return;
    const summary=e.target.closest('summary'),detail=summary?.parentElement;
