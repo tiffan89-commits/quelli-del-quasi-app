@@ -67,21 +67,30 @@ export function barVerdictPatch(root,players){
 export function barProfileView(p,{name,avatar,slip,round,fmt}){
  const status=`${p.correct}/${p.correct+p.wrong+p.pending} prese${p.omitted?' · '+p.omitted+' saltate':''}`;
  const ticket=slip&&round?`<div class="bar-stub"><div class="bar-stub-head"><span>${slip.stake} cr${slip.odds?' · quota '+fmt(slip.odds):''}</span><span>${esc(status)}</span></div><div class="bar-bets" data-slip-match-list>${barBetTiles(round,slip,fmt,{interactive:false})}</div></div>`:'';
- return `<div class="bar-dossier"><div class="bar-dossier-quasi">${quasiScene(avatar,name,{eager:true})}</div><div class="bar-dossier-identity"><h3 class="bar-dossier-name">${esc(name)}</h3>${riskBadge(p.risk)}</div><p class="bar-dossier-subtitle">${esc(bettorSubtitle(p))}</p><blockquote class="bar-dossier-quip">«${esc(p.headline)}»</blockquote>${ticket}</div>`;
+ return `<div class="bar-dossier"><button type="button" class="bar-dossier-quasi" aria-label="Guarda il Quasi di ${esc(name)}">${quasiScene(avatar,name,{eager:true})}</button><div class="bar-dossier-identity"><h3 class="bar-dossier-name">${esc(name)}</h3>${riskBadge(p.risk)}</div><p class="bar-dossier-subtitle">${esc(bettorSubtitle(p))}</p><blockquote class="bar-dossier-quip">«${esc(p.headline)}»</blockquote>${ticket}</div>`;
 }
 
+const preferredSlipCardHeight=248;
 let layoutObserver;
 export function bindBarSlipPages(root){
  layoutObserver?.disconnect();
  const track=root?.querySelector('[data-os-strip]');
  if(!track||typeof ResizeObserver==='undefined')return;
- const cards=[...track.querySelectorAll('.bar-tile')];let pageSize=2;
+ const cards=[...track.querySelectorAll('.bar-tile')];
+ if(!cards.length)return;
+ let pageSize=2;
  layoutObserver=new ResizeObserver(()=>{
-  const page=track.firstElementChild,card=cards[0];if(!track.classList.contains('os-track')||!page||!card)return;
-  const style=getComputedStyle(page),gap=parseFloat(style.rowGap)||0,cols=style.gridTemplateColumns.split(' ').length;
-  const height=card.getBoundingClientRect().height;
-  const next=Math.max(2,cols*Math.max(1,Math.floor((page.clientHeight+gap+.5)/(height+gap))));
-  if(!height||next===pageSize)return;
+  const page=track.firstElementChild;
+  if(!track.classList.contains('os-track')||!page)return;
+  const style=getComputedStyle(page);
+  const gap=parseFloat(style.rowGap)||0;
+  const cols=Number(style.getPropertyValue('--bar-slip-columns'))||1;
+  const available=page.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom);
+  if(available<=0)return;
+  const rows=Math.max(Math.ceil(2/cols),Math.floor((available+gap)/(preferredSlipCardHeight+gap)));
+  track.style.setProperty('--bar-slip-rows',rows);
+  const next=cols*rows;
+  if(next===pageSize)return;
   const oldIndex=Math.round(track.scrollLeft/Math.max(1,track.clientWidth))*pageSize;
   pageSize=next;
   const pages=[];for(let i=0;i<cards.length;i+=pageSize){const group=document.createElement('div');group.className='bar-slip-page';group.append(...cards.slice(i,i+pageSize));pages.push(group);}
