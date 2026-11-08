@@ -553,7 +553,7 @@ body[data-game-mode] .quasi-select-button{padding-inline-end:36px!important;text
 body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11px 12px;overflow-wrap:anywhere}
 
 .v2-slip[data-slip-source="seriea"] .v2-match-head{justify-content:space-between}
-.v2-slip[data-slip-source="seriea"] [data-match-status]{font-size:clamp(8px,2.45vw,11px);line-height:1.2}
+.slip-match-kickoff{color:var(--muted);max-width:96px;text-align:center;text-wrap:balance;font-size:clamp(9px,2.5vw,11px);line-height:1.2;font-variant-numeric:tabular-nums}
 .slip-match-indicator{flex:none;display:grid;place-items:center;align-self:center;min-width:0}
 .slip-match-indicator .inline-result:empty{display:none}
 .slip-match-indicator .slip-event-clock{font-size:clamp(8px,2.5vw,12px);font-weight:750}

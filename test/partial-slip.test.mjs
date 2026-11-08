@@ -5,6 +5,7 @@ import {placeSlip,settle,priceSlip} from '../lib/game.mjs';
 import {describeSavedSlip} from '../lib/player-analysis.mjs';
 import {slipSummary} from '../public/src/slip-state.mjs';
 import {renderSlipV2} from '../public/src/v2/slip-v2.mjs';
+import {patchSlipResults} from '../public/src/slip-results.mjs';
 import {barSlipsView} from '../public/src/bar-slips.mjs';
 const now=Date.now(),future=i=>new Date(now+(i+1)*3600000).toISOString();
 function fixture(){
@@ -34,10 +35,16 @@ test('individual kickoff protects earlier picks, accepted odds and stake while t
  assert.equal(r.slips[0].acceptedOdds.m0,2);assert.equal(priceSlip(r,r.slips[0]).odds,4);assert.equal(l.members[0].credits,475);
  assert.equal(slipSummary({...r,closed:true,slip:r.slips[0]},{m0:'X',m1:'X'},25,475,late).picks.m0,'1');
 });
-test('partial slip has a timer per event and no fixed stake cap; six Fanta outcomes render without flip',()=>{
+test('partial Bar slip shows the Italian kickoff per match and has no fixed stake cap; six Fanta outcomes render without flip',()=>{
  const {r}=fixture();r.matches[0].kickoff=new Date(now-1000).toISOString();
  const doc=parseHTML(renderSlipV2({round:{...r,closed:true},picks:{m1:'1'},stake:50,credits:500,esc:String,fmt:String,date:String})).document;
- assert.equal(doc.querySelectorAll('[data-slip-event-at]').length,9);
+ assert.equal(doc.querySelectorAll('.slip-match-kickoff').length,10);
+ assert.equal(doc.querySelector('[data-match-card=m1] time').getAttribute('datetime'),r.matches[1].kickoff);
+ const time=doc.querySelector('[data-match-card=m0] time');
+ r.matches[0].kickoff='2026-11-07T14:00:00Z';
+ patchSlipResults(doc,r,{m1:'1'},false);
+ assert.equal(time.textContent,'Sab 7 nov 26 15:00');
+ assert.equal(doc.querySelectorAll('[data-slip-event-at]').length,0);
  assert.ok(doc.querySelector('[data-pick=m0]').disabled);
  assert.equal(doc.querySelector('[data-pick=m1]').disabled,false);
  assert.equal(doc.querySelector('#stake').getAttribute('max'),'500');
