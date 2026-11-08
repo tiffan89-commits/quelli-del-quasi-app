@@ -262,6 +262,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.33.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.0...v0.33.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **ux:** enlarge reserve shirts in Studio Live ([9907d6b](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/9907d6b8d1aab1ce6a3a7b443d7a21e244f90703))
+* **ux:** enlarge reserve shirts in Studio Live ([c551eae](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c551eaedbc24de86434c8643b294b552edb6f624))
+
 ## [0.33.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.32.2...v0.33.0) (2026-11-08)
 
 
