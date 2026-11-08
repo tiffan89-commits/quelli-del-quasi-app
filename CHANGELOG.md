@@ -268,6 +268,16 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.33.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.1...v0.33.2) (2026-11-08)
+
+
+### Bug Fixes
+
+* **ux:** compact Fanta bench and smooth horizontal navigation ([6482f43](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/6482f43e4404669d90c94f2a38d18914e47b4e32))
+* **ux:** coordinate horizontal gestures and fit the Fanta pitch ([a690913](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/a690913d0d572d31a41fe99da723d7d4782d2332))
+* **ux:** hide mirrored faces during pitch flip ([c1ee7f8](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c1ee7f85b73fd5a526d4aecd10d1bc0fc8bfd6d7))
+* **ux:** match the compact bench in Fanta Live ([69785c5](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/69785c552313a09203b011ba7d49b30162dbb39e))
+
 ## [0.33.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.0...v0.33.1) (2026-11-08)
 
 
