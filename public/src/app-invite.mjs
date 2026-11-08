@@ -10,7 +10,12 @@ export function appWhatsappInvite({data=appShareData(),iconOnly=false}={}){
  return `<a class="whatsapp-invite secondary" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="Invita a usare l’app con WhatsApp">${whatsappIcon}${iconOnly?'':'<span>WhatsApp</span>'}</a>`;
 }
 
-export function renderAppInvite(){
+export function renderAppInvite({compact=false}={}){
+ if(compact)return `<section class="settings-app-invite" data-app-invite="compact" aria-label="Invita a usare l’app">
+   <div class="home-league-invite"><button type="button" class="home-league-invite-main" data-app-invite-share><b>Invita a usare l’app</b><span aria-hidden="true">→</span></button>${appWhatsappInvite({data:signupShareData(),iconOnly:true})}</div>
+   <div class="app-invite-link" data-app-invite-fallback hidden><label>Link dell’app<input readonly aria-label="Link pubblico di Quelli del Quasi" value="${APP_INVITE_URL}"></label></div>
+   <p class="tiny muted app-invite-status" data-app-invite-status role="status" aria-live="polite"></p>
+ </section>`;
  return `<section class="card app-invite" data-app-invite aria-label="Invita a usare l’app">
   <p class="muted">Al bancone c’è posto. Fai conoscere Quelli del Quasi ai tuoi amici.</p>
   <div class="league-invite-actions">
@@ -39,7 +44,8 @@ export function bindAppInvites(root=globalThis.document,{navigator=globalThis.na
   for(const [selector,action]of [['[data-app-invite-copy]','copy'],['[data-app-invite-share]','share']]){
    const button=panel.querySelector(selector);if(!button)continue;
    button.onclick=e=>{e.preventDefault();e.stopPropagation();void withButtonFeedback(button,async()=>{
-    const result=await performAppInvite(action,{navigator}),status=panel.querySelector('[data-app-invite-status]');if(status)status.textContent=result.message;
+    const data=panel.dataset.appInvite==='compact'?signupShareData():appShareData();
+    const result=await performAppInvite(action,{navigator,data}),status=panel.querySelector('[data-app-invite-status]');if(status)status.textContent=result.message;
     const fallback=panel.querySelector('[data-app-invite-fallback]');if(fallback){fallback.hidden=!result.manual;if(result.manual){const input=fallback.querySelector('input');input?.focus();input?.select();}}
    },{label:action==='copy'?'Copio il link…':'Apro la condivisione…'});};
   }

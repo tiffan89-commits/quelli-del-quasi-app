@@ -61,7 +61,7 @@ test('competition tools belong to the Fanta league, while auction management sta
 });
 test('unpriced future slip has disabled choices and no confirmation button',()=>{const r=round(13,{closed:true,kickoff:new Date(Date.now()+864e5).toISOString(),matches:[{id:'m',home:'Casa',away:'Ospiti',odds:{}}]});const html=renderSlipV2({round:r,esc:String,fmt:String,date:String});assert.match(html,/data-pick="m" data-value="1" disabled/);assert.ok(!html.includes('id="save-slip"'));});
 import vm from 'node:vm';import {createBarDemo} from '../public/src/bar-demo.mjs';
-import {settingsLogout,presidentPanel,presidentTodos,barPresidentTasks} from '../public/src/president-panel.mjs';
+import {settingsFooter,presidentPanel,presidentTodos,barPresidentTasks} from '../public/src/president-panel.mjs';
 import {LEAGUE_COLORS} from '../public/src/league-theme.mjs';
 import {isLeagueAdmin} from '../public/src/v2/league-switcher.mjs';
 test('the Bar president panel keeps league rules separate from participants and the personal settings',()=>{

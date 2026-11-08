@@ -471,8 +471,10 @@ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-code{disp
 .lega-tile-detail.os-drill-target>.fanta-block{margin:0;padding-top:0;border-top:0}
 .lega-tile-detail.os-drill-target .fanta-lg-members{margin-top:4px}
 .v2-tab:has(>.league-unread){position:relative}
-.league-unread{position:absolute;top:1px;left:calc(50% + 6px);display:grid;place-items:center;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#c54447;color:white;font:800 10px/1 'DM Sans',sans-serif}
-.league-unread[hidden]{display:none}
+.league-unread{position:absolute;top:3px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:#c54447;pointer-events:none}
+[data-league-chat],[data-fanta-chat]{position:relative}
+.lega-tile>.chat-tile-unread{position:absolute;top:10px;right:10px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#c54447;color:white;font:800 11px/1 'DM Sans',sans-serif;pointer-events:none}
+.league-unread[hidden],.chat-tile-unread[hidden]{display:none}
 html.os-on main.os-root .fanta-home-compact .fanta-hero{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);column-gap:10px;align-items:center;background:linear-gradient(135deg,#2a5541,var(--fanta-pitch) 72%,#19382b)}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-identity{display:contents}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-crest{grid-column:2;grid-row:1/span 4;width:100%!important;max-width:130px;justify-self:center}
