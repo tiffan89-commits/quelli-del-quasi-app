@@ -300,12 +300,12 @@ html.os-on main.os-root .v2-match .v2-odd:is(.pick-winning,.pick-losing) .v2-odd
  html.os-on main.os-root .v2-match .inline-score{font-size:13px}
 }
 
-/* Each pair gets a full-width flex page so Safari cannot fragment its cards. */
+/* Keep each group in one horizontal page and reserve equal rows on the last page. */
 html.os-on main.os-root .bar-table{padding-block:2px 0!important}
 html.os-on main.os-root .bar-table .bar-head{padding-block:0!important;min-height:0!important;margin-block:0 4px!important}
 .bar-slip-page{display:grid;gap:4px}
 html.os-on body #app>main.os-split [data-os-strip]{display:flex;columns:auto;gap:0;padding-inline:0!important}
-html.os-on main.os-root .bar-slip-page{flex:0 0 100%;min-width:0;height:100%;box-sizing:border-box;padding:0 14px;overflow:hidden;align-content:start;grid-auto-rows:min(248px,calc((var(--os-h) - 4px)/2))}
+html.os-on main.os-root .bar-slip-page{--bar-slip-columns:1;--bar-slip-default-rows:2;flex:0 0 100%;min-width:0;height:100%;box-sizing:border-box;padding:2px 14px 6px;gap:6px;overflow:hidden;grid-template-columns:repeat(var(--bar-slip-columns),minmax(0,1fr));grid-template-rows:repeat(var(--bar-slip-rows,var(--bar-slip-default-rows)),minmax(0,1fr))}
 html.os-on main.os-root .bar-tile{min-width:0;min-height:0;max-width:570px;width:100%;margin:0 auto;padding:4px;gap:2px}
 html.os-on main.os-root .bar-tile.pitch-flip-card{padding-bottom:27px}
 html.os-on main.os-root .bar-tile .bar-who{grid-template-columns:34px minmax(0,1fr);gap:6px;line-height:1}
@@ -325,7 +325,25 @@ html.os-on main.os-root .bar-tile .bar-stub{display:flex;flex:1;flex-direction:c
 html.os-on main.os-root .bar-tile .bar-stub-head{padding-bottom:2px;margin-bottom:2px;gap:4px;font-size:10px;letter-spacing:.02em}
 html.os-on main.os-root .bar-tile .bar-stub-head span+span{font-size:10px}
 @media(max-height:735px){html.os-on main.os-root .bar-tile .bar-quip{-webkit-line-clamp:1}}
-@media(min-width:760px){html.os-on main.os-root .bar-slip-page{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:760px){html.os-on main.os-root .bar-slip-page{--bar-slip-columns:2;--bar-slip-default-rows:1}}
+@media(max-height:650px) and (max-width:759px){
+ html.os-on main.os-root .bar-slip-page .bar-tile.pitch-flip-card{padding-bottom:24px}
+ html.os-on main.os-root .bar-slip-page .bar-card-back{bottom:24px}
+ html.os-on main.os-root .bar-slip-page .bar-who{grid-template-columns:26px minmax(0,1fr)}
+ html.os-on main.os-root .bar-slip-page .bar-quasi{width:26px;height:26px}
+ html.os-on main.os-root .bar-slip-page .bar-quip{padding-block:1px}
+ html.os-on main.os-root .bar-slip-page .bar-bets{grid-auto-rows:minmax(20px,1fr);gap:2px}
+ html.os-on main.os-root .bar-slip-page .bar-bet{display:grid;grid-template-columns:1fr 1fr;justify-items:center;align-content:center;gap:0;padding:0}
+ html.os-on main.os-root .bar-slip-page .bar-teams{grid-column:1/-1;font-size:8px}
+ html.os-on main.os-root .bar-slip-page .bar-bet strong{font-size:11px}
+ .bar-slip-page .bar-score .inline-live{font-size:0}
+ .bar-slip-page .bar-score:empty{display:none}
+ .bar-slip-page .bar-bet:has(.bar-score:empty) strong{grid-column:1/-1}
+ .bar-slip-page .bar-dossier{display:grid;grid-template-columns:36px minmax(0,1fr);grid-template-rows:16px 16px minmax(0,1fr);height:100%;min-height:0;justify-items:center}
+ .bar-slip-page .bar-dossier-quasi{grid-row:1/span 2}
+ .bar-slip-page .bar-dossier-quasi .quasi-scene{width:34px;height:34px}
+ .bar-slip-page .bar-dossier .bar-stub{grid-column:1/-1;align-self:stretch;padding:2px 3px}
+}
 
 .fanta-slip-balance{margin:2px 0 5px;color:var(--muted);font-size:11px}
 .serie-standings .serie-table{min-width:0;width:100%;table-layout:fixed;font-size:clamp(9px,2.8vw,14px)}

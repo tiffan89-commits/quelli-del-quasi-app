@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Le schede di «Del Bar» usano tutta l’altezza disponibile con dimensioni uniformi. Una pressione prolungata sul Quasi apre il ritratto ingrandito. Il footer legale è più staccato dalla navigazione.
+
 - Le schede delle home Bar e Fanta condividono bordi, margini e spazi interni, inclusa Ultima partita. Il disegno del Quasi in cache è un SVG valido anche quando viene caricato come immagine.
 
 - I Quasi riutilizzano il disegno personalizzato e caricano subito lo sfondo corretto. Impostazioni personali e Pannello del presidente sono separati. Privacy e preferenze statistiche sono nel footer.

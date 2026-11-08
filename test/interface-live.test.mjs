@@ -42,7 +42,7 @@ import {
 import { calendarSections } from "../public/src/calendar-order.mjs";
 import { leagueDashboard, countdownLabel } from '../public/src/league-dashboard.mjs';
 import { avatarSvg, AVATAR_OPTIONS } from '../public/src/avatar.mjs';
-import {quasiScene,showQuasi} from '../public/src/quasi-scene.mjs';
+import {quasiScene,bindQuasiZoom} from '../public/src/quasi-scene.mjs';
 import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from '../public/src/bar-slips.mjs';
 import {rosterView} from '../public/src/quasi-roster.mjs';
 import {achievementBoard} from '../public/src/achievement-board.mjs';
@@ -129,7 +129,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     calendarSections,
     hubHead,hubTile,appWhatsappInvite,signupShareData,
     leagueDashboard, countdownLabel, quasiScene, rosterView, achievementBoard, avatarSvg, AVATAR_OPTIONS, whatsappInvite,renderAppInvite,bindAppInvites,
-    fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},showQuasi,barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,
+    fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},bindQuasiZoom,barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,
     bindRoster(){},openQuasiStudio(){},renderLineup,bindLineupPitch(){},
     rewardsView,roomSvg,REWARD_SLOTS,
     bindProgression(){},bindRewards(){},bindStyledSelects(){},syncStyledSelects(){},closeStyledSelect(){},pushSupported(){return false;},enableLeagueNotifications(){},

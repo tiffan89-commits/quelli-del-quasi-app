@@ -1,6 +1,6 @@
 /* UX 0.29.46, block 1: one footer and one allowance for fixed controls. */
 body[data-game-mode] main,body.v2-on main,body.v2-on:has(.v2-slipbar) main{padding-bottom:var(--app-bottom-space,calc(84px + var(--safe-bp)))!important}
-.v2-tabbar:has(>[data-app-footer]){display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto minmax(12px,auto);row-gap:0}
+.v2-tabbar:has(>[data-app-footer]){display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto minmax(12px,auto);row-gap:6px}
 .v2-tabbar>[data-app-footer]{grid-column:1/-1;align-self:center;margin:0;text-align:center;color:var(--muted);font-size:9.5px;line-height:12px}
 @media(min-width:1024px){body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){height:auto;min-height:60px}}
 body[data-game-mode] .analytics-footer[hidden]{display:none}
@@ -153,8 +153,8 @@ body.match-page-active main.match-page{max-width:650px!important;margin-inline:a
 
 @media(max-width:1023px){
  body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){
-  grid-template-rows:44px 12px;height:auto;min-height:0;
-  padding:2px max(4px,env(safe-area-inset-right,0px)) calc(max(6px,env(safe-area-inset-bottom,0px)) + 1px) max(4px,env(safe-area-inset-left,0px))!important
+  grid-template-rows:44px auto;height:auto;min-height:0;
+  padding:2px max(4px,env(safe-area-inset-right,0px)) max(2px,calc(env(safe-area-inset-bottom,0px) - 5px)) max(4px,env(safe-area-inset-left,0px))!important
  }
  body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab{height:44px;min-height:0;padding-block:1px!important;gap:2px}
  body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab svg{width:19px;height:19px}

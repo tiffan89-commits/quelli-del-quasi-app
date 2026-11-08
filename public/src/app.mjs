@@ -30,7 +30,7 @@ import {ballIcon,substitutionMark} from './pitch-events.mjs';
 import {footballPenalties} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, bindSlipV2,tickSlipEventClocks } from "./v2/slip-v2.mjs";
-import { quasiScene, showQuasi } from "./quasi-scene.mjs";
+import { quasiScene, bindQuasiZoom } from "./quasi-scene.mjs";
 import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from "./bar-slips.mjs";
 import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource } from "./v2/tabs.mjs";
 import { renderLeagueChip, bindLeagueSwitcher, isLeagueAdmin } from "./v2/league-switcher.mjs";
@@ -1753,7 +1753,12 @@ function bindBarSlips() {
     l = L(),
     r = R();
   bindBarSlipPages(root);
-  if (!root || !l || !r?.closed || r.pointsOnly || sourceOf(r) === "fantacalcio") return;
+  if (!root || !l || !r?.closed) return;
+  root.querySelectorAll("[data-quasi-member]").forEach((button) => {
+    const member = l.members.find((m) => m.uid === button.dataset.quasiMember);
+    if (member) bindQuasiZoom(button, member);
+  });
+  if (r.pointsOnly || sourceOf(r) === "fantacalcio") return;
   const round = r.id;
   loadBarVerdicts(r)
     .then((players) => {
@@ -1763,12 +1768,6 @@ function bindBarSlips() {
       document.querySelectorAll('[data-bar-quip]').forEach(q=>{q.hidden=true;});
       document.querySelectorAll("[data-bar-archetype]").forEach((q) => (q.textContent = ""));
     });
-  root.querySelectorAll("[data-quasi-member]").forEach(
-    (b) => (b.onclick = () => {
-      const member = l.members.find((m) => m.uid === b.dataset.quasiMember);
-      if (member) showQuasi(member);
-    }),
-  );
 }
 async function flipAnalysis(button) {
   const flipped=button.getAttribute('aria-pressed')==='true';
@@ -1785,6 +1784,7 @@ async function flipAnalysis(button) {
     const member = l.members.find((m) => m.uid === uid) || {},
       slip = (r.publicSlips || []).find((x) => x.uid === uid);
     back.innerHTML = barProfileView(a, { name: member.name || "Giocatore", avatar: member.avatar, slip, round:r, fmt });
+    bindQuasiZoom(back.querySelector('.bar-dossier-quasi'), { ...member, name: member.name || 'Giocatore' });
     back.dataset.profileState='ready';
   } catch (e) {
     back.innerHTML = `<p class="muted">${esc(e.message)}</p>`;

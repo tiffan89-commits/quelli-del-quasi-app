@@ -30,5 +30,32 @@ export function quasiBanner(value,name){
  return `<button type="button" class="dash-scene" data-open-quasi-studio aria-label="Apri il tuo Quasi, ${esc(name)}"><img class="dash-scene-room" src="${roomAsset(room,'hero')}" srcset="${roomMedia(room)?.hero.width!==roomMedia(room)?.full.width?roomAsset(room,'hero')+' '+roomMedia(room).hero.width+'w, ':''}${roomAsset(room)} ${roomMedia(room)?.full.width||640}w" sizes="(min-width:900px) 1180px, calc(100vw - 36px)" width="640" height="800" fetchpriority="high" alt="" loading="eager" decoding="async"><span class="dash-scene-shade"></span><span class="dash-scene-person">${quasiArt(a)}</span><span class="dash-scene-edit">Il mio Quasi ✎</span></button>`;
 }
 export function showQuasi(member){
- const d=document.createElement('dialog');d.className='quasi-zoom';d.setAttribute('aria-label','Il Quasi di '+member.name);d.innerHTML='<button type="button" class="quasi-zoom-close" aria-label="Chiudi">×</button>'+quasiScene(member.avatar,member.name,{eager:true});document.body.append(d);const close=()=>{d.close();d.remove();};d.querySelector('button').onclick=close;d.addEventListener('cancel',close);d.onclick=e=>{if(e.target===d)close();};d.showModal();
+ const d=document.createElement('dialog');d.className='quasi-zoom';d.setAttribute('aria-label','Il Quasi di '+member.name);d.innerHTML='<button type="button" class="quasi-zoom-close" aria-label="Chiudi">×</button>'+quasiScene(member.avatar,member.name,{eager:true});document.body.append(d);const close=()=>{d.close();d.remove();};d.querySelector('button').onclick=close;d.addEventListener('cancel',close);let backdropPressed=false;d.onpointerdown=e=>{backdropPressed=e.target===d;};d.onclick=e=>{if(e.target===d&&backdropPressed)close();};d.showModal();
+}
+export function bindQuasiZoom(button,member){
+ let timer,pointer,x,y,opened=false;
+ const cancel=()=>{clearTimeout(timer);pointer=undefined;};
+ button.addEventListener('pointerdown',event=>{
+  if(!event.isPrimary||event.button!==0)return;
+  cancel();
+  opened=false;
+  pointer=event.pointerId;
+  x=event.clientX;
+  y=event.clientY;
+  timer=setTimeout(()=>{
+   if(!button.isConnected)return;
+   opened=true;
+   showQuasi(member);
+  },450);
+ });
+ button.addEventListener('pointermove',event=>{
+  if(event.pointerId===pointer&&Math.hypot(event.clientX-x,event.clientY-y)>10)cancel();
+ });
+ for(const name of ['pointerup','pointercancel','pointerleave'])button.addEventListener(name,event=>{
+  if(event.pointerId===pointer)cancel();
+ });
+ button.addEventListener('contextmenu',event=>event.preventDefault());
+ button.onclick=event=>{
+  if(!opened||event.detail===0)showQuasi(member);
+ };
 }

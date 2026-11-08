@@ -50,7 +50,7 @@
 .bar-bet.lose strong,.bar-bet strong.pick-losing{color:#a13a1c}
 .bar-bet.goal-flash{animation:bar-goal .9s ease-out}
 @keyframes bar-goal{30%{box-shadow:0 0 0 3px #d6f77b;transform:scale(1.06)}}
-.bar-tile.pitch-flip-card{display:grid;grid-template:auto/minmax(0,1fr);padding-bottom:27px}
+.bar-tile.pitch-flip-card{display:grid;grid-template:minmax(0,1fr)/minmax(0,1fr);padding-bottom:27px}
 .bar-card-front{display:flex;flex-direction:column;gap:inherit}
 .bar-card-back{position:absolute;grid-area:auto;inset:4px 4px 27px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .bar-profile.pitch-flip-button{inset:auto 5px 3px auto;flex-direction:row;justify-content:center;gap:3px;min-height:22px;padding:2px 5px;font-size:10px}
@@ -60,7 +60,9 @@
 
 /* Retro della schedina, con l’impostazione della cartolina del Bar. */
 .bar-card-back{border-radius:12px;background:radial-gradient(ellipse at top right,#324d38,#13241d 80%)}
-.bar-dossier{display:grid;justify-items:center;gap:3px;padding:4px 6px 3px;text-align:center}
+.bar-dossier{display:flex;flex-direction:column;align-items:center;min-height:100%;gap:3px;padding:4px 6px 3px;text-align:center}
+.bar-dossier-quasi{min-height:0;padding:0;border:0;background:none;border-radius:10px}
+.bar-slip-page :is(.bar-quasi,.bar-dossier-quasi){touch-action:pan-x pinch-zoom;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .bar-dossier-quasi .quasi-scene{width:clamp(56px,18vw,76px);height:clamp(56px,18vw,76px);aspect-ratio:1;border-radius:10px}
 .bar-dossier-quasi .quasi-scene-caption{display:none}
 .bar-dossier-name{min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--lime);font:700 clamp(16px,5vw,22px)/1 "Barlow Condensed",sans-serif}
@@ -69,7 +71,7 @@
 .bar-dossier .bar-stub{width:100%}
 .bar-dossier .bar-bet{cursor:default}
 
-html.os-on main.os-root .bar-tile .bar-dossier .bar-bets{grid-auto-rows:26px}
+html.os-on main.os-root .bar-tile .bar-dossier .bar-bets{grid-auto-rows:minmax(26px,1fr)}
 html.os-on main.os-root .bar-tile .bar-dossier .bar-bet{display:grid;grid-template-columns:1fr 1fr;gap:0;justify-items:center;align-content:center}
 html.os-on main.os-root .bar-tile .bar-dossier .bar-teams{grid-column:1/-1;font-size:9px}
 html.os-on main.os-root .bar-tile .bar-dossier .bar-bet strong{font-size:13px}
@@ -80,5 +82,5 @@ html.os-on main.os-root .bar-tile .bar-dossier .bar-bet strong{font-size:13px}
  .bar-dossier-quasi .quasi-scene{width:56px;height:56px}
  .bar-dossier{gap:2px;padding-block:2px}
  .bar-dossier-quip{display:none}
- html.os-on main.os-root .bar-tile .bar-dossier .bar-bets{grid-auto-rows:23px}
+ html.os-on main.os-root .bar-tile .bar-dossier .bar-bets{grid-auto-rows:minmax(23px,1fr)}
 }
