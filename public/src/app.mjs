@@ -27,7 +27,7 @@ import {withButtonFeedback} from './action-feedback.mjs';
 import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
 import {playerSurname} from './player-label.mjs';
 import {ballIcon,substitutionMark} from './pitch-events.mjs';
-import {footballStatistics,bindFootballStatistics} from './football-statistics.mjs';
+import {footballPenalties} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, bindSlipV2, stakeInputValue } from "./v2/slip-v2.mjs";
 import { quasiScene, showQuasi } from "./quasi-scene.mjs";
@@ -1909,6 +1909,13 @@ async function matchSnapshot(match,round=null){
  if(!detailPending.has(key))detailPending.set(key,api('match?'+params).then(data=>{detailCache.set(key,{data,revision,at:Date.now()});if(state.user?.id===key.split(':')[0])displayCache('bar:'+state.user.id).set(key,{data,revision,at:Date.now()});if(detailCache.size>60)detailCache.delete(detailCache.keys().next().value);return data;}).finally(()=>detailPending.delete(key)));
  return {...match,...await detailPending.get(key)};
 }
+const liveMatchStatus=status=>['LIVE','1H','HT','2H','ET','BT','P'].includes(status);
+const matchDetailScore=match=>(liveMatchStatus(match.status)?match.liveScore||match.score:match.score)?.join('–')||'—';
+function matchDetailStatus(match){
+  if(['FT','AET','PEN'].includes(match.status))return 'Finale';
+  if(liveMatchStatus(match.status))return match.clock?'Live · '+match.clock:'Live';
+  return 'Da giocare';
+}
 async function openMatch(id, quiet = false) {
   const fantasyRound = L()?.rounds.find(
     (r) => r.source === "fantacalcio" && r.matches.some((m) => m.id === id),
@@ -1969,7 +1976,21 @@ async function openMatch(id, quiet = false) {
 
     const events = (data.details?.events || []).filter(isMatchEvent);
     const detailsOpen=quiet&&dialog.querySelector('.match-detail-drill')?.open;
-    dialog.innerHTML = `<div class="match-toolbar"><button class="secondary" id="close-modal">Chiudi ×</button><details class="match-detail-drill" ${detailsOpen?'open':''}><summary><span class="match-details-forward">Dettagli della partita ›</span><span class="match-details-back">← Formazioni</span></summary><div class="match-details-body"><h3>Dettagli della partita</h3><div data-live-detail-events>${events.length?eventColumns(data,events):'<p class="muted">Eventi non ancora disponibili.</p>'}</div><div data-live-detail-statistics>${footballStatistics(data,{compact:true})}</div></div></details></div><h2 class="match-page-title">${fixtureTeams(data.home,data.away,false)}</h2><div class="match-scoreline"><div class="match-page-score" data-live-detail-score>${data.score?data.score.join(' – '):data.liveScore?data.liveScore.join(' – '):'—'}</div><p class="muted" data-live-detail-status>${data.status==='FT'?'Finale'+(data.officialConfirmed?' · confermato':' · in attesa di conferma'):data.status==='LIVE'?'In corso · '+esc(data.clock||'minuto non disponibile'):'Da giocare'}</p></div>${lineupView(data)}`;
+    dialog.innerHTML = `<div class="match-toolbar">
+      <button class="secondary" id="close-modal">Chiudi ×</button>
+      <details class="match-detail-drill" ${detailsOpen?'open':''}>
+        <summary><span class="match-details-forward">Dettagli della partita ›</span><span class="match-details-back">← Formazioni</span></summary>
+        <div class="match-details-body">
+          <h3>Dettagli della partita</h3>
+          <div data-live-detail-events>${events.length?eventColumns(data,events):'<p class="muted">Eventi non ancora disponibili.</p>'}</div>
+          <div data-live-detail-penalties>${footballPenalties(data,{compact:true})}</div>
+        </div>
+      </details>
+    </div>
+    <div class="match-headline">
+      <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,fantasy:false})}</h2>
+      <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
+    </div>${lineupView(data)}`;
     $("#close-modal").onclick = () => {
       activeMatchId = null;
       dialog.dataset.match = "";
@@ -1977,13 +1998,31 @@ async function openMatch(id, quiet = false) {
     };
     const drill=dialog.querySelector('.match-detail-drill'),body=drill.querySelector('.match-details-body');
     const fitDetails=()=>{if(!drill.open)return;const nav=document.querySelector('nav.v2-tabbar')?.getBoundingClientRect();const bottom=nav?.top>innerHeight/2?nav.top:innerHeight;body.style.setProperty('--match-detail-height',Math.max(120,bottom-body.getBoundingClientRect().top-10)+'px');};
-    drill.ontoggle=()=>{if(drill.open)fitDetails();else window.dispatchEvent(new Event('resize'));};
-    let touchStart=null;
-    drill.addEventListener('touchstart',e=>{touchStart=e.touches[0];},{passive:true});
-    drill.addEventListener('touchend',e=>{const end=e.changedTouches[0];if(drill.open&&touchStart&&end&&end.clientX-touchStart.clientX>55&&end.clientX-touchStart.clientX>Math.abs(end.clientY-touchStart.clientY)*1.4)drill.open=false;touchStart=null;},{passive:true});
-    bindFootballStatistics(body);
+    const openDetails=()=>{drill.open=true;};
+    drill.ontoggle=()=>{
+      if(drill.open){fitDetails();return;}
+      const slides=dialog.querySelector('.pitch-slides');
+      if(slides)slides.scrollLeft=(dialog._pitchPage||0)*slides.clientWidth;
+      window.dispatchEvent(new Event('resize'));
+    };
+    const watchSwipe=(surface,action)=>{
+      let start=null;
+      surface.addEventListener('touchstart',e=>{start=e.touches.length===1?e.touches[0]:null;},{passive:true});
+      surface.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+      surface.addEventListener('touchend',e=>{
+        const end=e.changedTouches[0],first=start;start=null;
+        if(!first||!end)return;
+        const dx=end.clientX-first.clientX,dy=end.clientY-first.clientY;
+        if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.4)action(dx);
+      },{passive:true});
+    };
+    watchSwipe(dialog.querySelector('.match-headline'),openDetails);
+    watchSwipe(dialog.querySelector('.match-toolbar'),dx=>{
+      if(!drill.open)openDetails();
+      else if(dx>0)drill.open=false;
+    });
     fitDetails();
-    bindLineupPitch(dialog);
+    bindLineupPitch(dialog,{onDetails:openDetails});
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
     if (!quiet) {
@@ -1997,7 +2036,7 @@ async function openMatch(id, quiet = false) {
   }
 }
 
-function lineupView(data){return renderLineup(data,{paged:true});}
+function lineupView(data){return renderLineup(data,{paged:true,swipeDetails:true});}
 function supportSection() {
   return '<details class="card inline-support"><summary>Invia un suggerimento o segnala un bug</summary><p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field">Messaggio<textarea name="message" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form></details>';
 }
@@ -2523,12 +2562,12 @@ function applyLive(data){
         }).catch(()=>{});
         return;
       }
-      const score=dialog.querySelector('[data-live-detail-score]'),value=(m.status==='LIVE'?m.liveScore:m.score)?.join(' – ')||'—';
+      const score=dialog.querySelector('[data-live-detail-score]'),value=matchDetailScore(m);
       if(score&&score.textContent!==value)score.textContent=value;
-      const status=dialog.querySelector('[data-live-detail-status]'),label=m.status==='LIVE'?'In corso · '+(m.clock||'minuto non disponibile'):m.status==='FT'?'Finale'+(m.officialConfirmed?' · confermato':' · in attesa di conferma'):'Da giocare';
+      const status=dialog.querySelector('[data-live-detail-status]'),label=matchDetailStatus(m);
       if(status&&status.textContent!==label)status.textContent=label;
       const events=dialog.querySelector('[data-live-detail-events]');if(events){const html=eventColumns(m,(m.details?.events||[]).filter(isMatchEvent));if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events>'+html+'</div>');events.dataset.revision=html;}}
-      const numbers=dialog.querySelector('[data-live-detail-statistics]');if(numbers){const html=footballStatistics(m,{compact:true});if(numbers.dataset.revision!==html){patchRegion(numbers,'<div data-live-detail-statistics>'+html+'</div>');numbers.dataset.revision=html;bindFootballStatistics(dialog);}}
+      const penalties=dialog.querySelector('[data-live-detail-penalties]');if(penalties){const html=footballPenalties(m,{compact:true});if(penalties.dataset.revision!==html){patchRegion(penalties,'<div data-live-detail-penalties>'+html+'</div>');penalties.dataset.revision=html;}}
     }
   }
 }

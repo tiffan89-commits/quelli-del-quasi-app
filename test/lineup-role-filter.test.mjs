@@ -24,6 +24,9 @@ test('dedicated match pages put each complete bench between its team and the nex
  const panes=[...document.querySelectorAll('.pitch-team')];
  assert.deepEqual(panes.map(p=>p.getAttribute('aria-label')),['Titolari Juventus','Panchina Juventus','Titolari Inter','Panchina Inter']);
  assert.deepEqual([...document.querySelectorAll('[data-pitch-tab]')].map(p=>p.dataset.pitchTab),['0','2']);
+ const withDetails=parseHTML(renderLineup({lineups:{...extended,kind:'official'}},{paged:true,swipeDetails:true})).document;
+ assert.equal(withDetails.querySelector('.lineup-paged h3'),null);
+ assert.ok(withDetails.querySelector('.pitch-bench-page:last-of-type + .pitch-details-edge'));
  for(const index of [1,3]){
   assert.equal(panes[index].querySelectorAll('.bench-stickers .pitch-player').length,25);
   assert.equal(panes[index].querySelector('.bench-player-surname').textContent,'Riserva0');
