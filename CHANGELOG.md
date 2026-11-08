@@ -268,6 +268,16 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.33.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.3...v0.33.4) (2026-11-08)
+
+
+### Bug Fixes
+
+* **fanta:** mostra i titolari sostituiti nello Studio Live ([ac0285b](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/ac0285bfb77f829546b1d0e272ddb3d6666c37c3))
+* **quasi:** apri il premio della giornata nello studio ([66bac86](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/66bac8693f5e3febd6f4f0886d0fb7ba7fc266ed))
+* **schedina:** mostra data e ora del calcio di inizio ([f659602](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/f659602026973fa428f66fd74e31dfcdd938c18e))
+* **ux:** apri il premio, mostra gli orari e chiarisci i cambi Fanta ([fbd44b1](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/fbd44b132dd15c710ed15e412685f1f25f521dbc))
+
 ## [0.33.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.2...v0.33.3) (2026-11-08)
 
 
