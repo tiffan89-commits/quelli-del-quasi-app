@@ -19,5 +19,5 @@ export function fantasyMatchView(
             "",
           )}</div><p class="tiny muted">Gol attesi ${model.expectedGoals.map(fmt).join(" – ")} · storico ${model.samples.join(" / ")} partite · fantapunti medi ${model.meanFantasyPoints.map((x) => (x === null ? "n.d." : fmt(x))).join(" / ")} · giocatori con storico ${model.knownPlayers.join(" / ")}. Le quote accettate sono fissate quando confermi la schedina.</p></details>`
       : ""
-  }<div class="row"><h3>Formazioni e bonus/malus</h3>${details?.complete ? '<span class="pill">Definitiva</span>' : ''}</div><p class="tiny muted">${details?.provisional ? 'Provvisorie' : ''}</p>${details ? renderFantasyLineup(details) : '<p class="muted">Formazioni non ancora disponibili.</p>'}`;
+  }<div class="row"><h3>Formazioni e bonus/malus</h3>${details?.complete ? '<span class="pill">Definitiva</span>' : ''}</div><p class="tiny muted">${details?.provisional ? 'Provvisorie' : ''}</p>${details ? renderFantasyLineup(details,{paged:true}) : '<p class="muted">Formazioni non ancora disponibili.</p>'}`;
 }

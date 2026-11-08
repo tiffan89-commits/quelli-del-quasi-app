@@ -34,8 +34,8 @@ test('all three new HTML adapters parse eleven starters per side and reject trun
  for(const [html,parse]of [[sos,parseSos],[gazzetta,parseGazzetta],[corriere,parseCorriere]]){assert.equal(parse(html)[0].teams[1].players.length,11);assert.equal(parse(html.replace('awayPlayer10','').replace('bPlayer10','')).length,0);}
 });
 test('collapsing removes empty space and switching teams resizes only after horizontal scroll settles',async()=>{
- let heights=[900,1400];const listeners={},tabs=[{setAttribute(){}},{setAttribute(){}}],teams=[0,1].map(i=>({getBoundingClientRect:()=>({height:heights[i]})}));
- const slides={style:{},clientWidth:390,scrollLeft:0,scrollTo({left}){this.scrollLeft=left;}},root={querySelector:()=>slides,querySelectorAll:s=>s.includes('tab')?tabs:teams,addEventListener:(n,fn)=>listeners[n]=fn,removeEventListener:(n,fn)=>{if(listeners[n]===fn)delete listeners[n];}};
+ let heights=[900,1400];const listeners={},tabs=[0,1].map(i=>({dataset:{pitchTab:String(i)},setAttribute(){}})),teams=[0,1].map(i=>({getBoundingClientRect:()=>({height:heights[i]})}));
+ const slides={style:{},clientWidth:390,scrollLeft:0,closest:()=>null,scrollTo({left}){this.scrollLeft=left;}},root={querySelector:()=>slides,querySelectorAll:s=>s==='[data-pitch-tab]'?tabs:s==='.pitch-team'?teams:[],addEventListener:(n,fn)=>listeners[n]=fn,removeEventListener:(n,fn)=>{if(listeners[n]===fn)delete listeners[n];}};
  bindLineupPitch(root);assert.equal(slides.style.height,'900px');heights[0]=500;listeners.toggle();assert.equal(slides.style.height,'500px');tabs[1].onclick();assert.equal(slides.style.height,'500px');slides.scrollLeft=130;slides.onscroll();assert.equal(slides.style.height,'500px');slides.scrollLeft=390;slides.onscroll();await new Promise(r=>setTimeout(r,180));assert.equal(slides.style.height,'1400px');heights[1]=600;listeners.toggle();assert.equal(slides.style.height,'600px');root._pitchCleanup();assert.equal(listeners.toggle,undefined);
 });
 test('surname initials and compound surnames do not create fake ballots between the same player',()=>{

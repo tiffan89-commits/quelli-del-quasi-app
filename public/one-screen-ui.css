@@ -338,7 +338,7 @@ html.os-on .serie-standings-page{max-height:calc(var(--os-h) - 4px);overflow:aut
 
 .president-group[data-president-section="persone"]:not([open]){display:none}
 html.os-on main.os-root .president-panel .president-heading{margin-inline:14px}
-html.os-on main.os-root .president-panel .president-heading{padding:7px 0 4px}
+html.os-on main.os-root .president-panel .president-heading{min-height:0;padding:7px 0 4px}
 html.os-on main.os-root .president-panel .president-heading h1{font-size:12px;margin:0}
 
 html.os-on main.os-root .president-panel .president-group>summary{padding:10px 27px 10px 12px}

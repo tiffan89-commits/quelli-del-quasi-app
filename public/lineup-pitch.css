@@ -30,3 +30,66 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 .pitch-event.is-red{background:#ed4e47}.pitch-event.is-sub{gap:0;font-size:13px}.pitch-event.is-sub b:first-child{color:#8de5a3}.pitch-event.is-sub b+b{color:#ff7b70}
 .pitch-player-grades{font-size:13px;padding:2px 6px;border-radius:999px;background:#102d20;color:#ebecbf;font-weight:800}.lineup-substitutes>summary{color:#8de5a3}
 .pitch-row.row-5 .player-sticker{width:min(66px,100%);height:auto;aspect-ratio:1}.pitch-row.row-5 .player-sticker>svg{width:100%;height:100%}
+
+/* Four fixed-width panes for match lineups. Benches use a locker-room board. */
+.match-page .lineup-paged .pitch-slides{overflow-y:hidden;transition:none}
+.match-page .lineup-paged .pitch-heading{margin:0 0 3px;min-height:15px}
+.match-page .pitch-page-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:4px 0}
+.match-page .pitch-page-buttons button{min-height:29px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);font-size:11px;white-space:nowrap}
+.match-page .pitch-page-buttons button[aria-current]{color:var(--lime);border-color:currentColor}
+.match-page .pitch-bench-room{
+ box-sizing:border-box;display:flex;flex-direction:column;height:calc(var(--match-pitch-height) + 18px);margin:0;padding:6px;
+ border:1px solid #9b734e;border-radius:12px;background:repeating-linear-gradient(90deg,#493527 0,#493527 18px,#513b2a 18px,#513b2a 36px)
+}
+.match-page .bench-room-label{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:2px 6px 4px;color:#f5e2bd;font-size:12px}
+.match-page .bench-room-label b{text-transform:uppercase;letter-spacing:.11em}
+.match-page .pitch-bench-room .lineup-role-tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:0 0 3px;overflow:visible}
+.match-page .pitch-bench-room .lineup-role-tabs button{min-height:24px;padding:2px 5px;font-size:10px}
+.match-page .pitch-bench-room .bench-stickers{
+ --bench-lines:var(--bench-rows);
+ --bench-shirt:clamp(18px,calc((var(--match-pitch-height) - 38px)/var(--bench-lines) - 43px),66px);
+ flex:1;min-height:0;align-content:start;justify-items:center;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:0
+}
+.match-page .pitch-bench-room .bench-stickers .pitch-player{
+ max-width:none;box-sizing:border-box;padding:1px 0;gap:1px;
+ background:linear-gradient(transparent 53%,#352316 53%,#634328 60%,#412c1e 70%);border-radius:6px
+}
+@media(max-height:730px){
+ .match-page .pitch-bench-room .bench-stickers{--bench-lines:var(--bench-rows-short);grid-template-columns:repeat(7,minmax(0,1fr))}
+ .match-page .lineup-paged .pitch-bench-room .bench-stickers .pitch-player{gap:0;padding:0}
+ .match-page .bench-player-surname{font-size:9px;line-height:10px}
+}
+.match-page .pitch-bench-room .bench-stickers .pitch-player[hidden]{display:none}
+.match-page .lineup-paged .pitch-bench-room .bench-stickers .pitch-player .player-sticker{width:min(100%,var(--bench-shirt));height:auto;aspect-ratio:1}
+.match-page .bench-player-surname{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff0ce;font-size:10px;font-weight:700;line-height:12px}
+.match-page .lineup-paged .pitch-bench-room :is(.player-probability,.pitch-player-grades,.pitch-next-opponent,.pitch-next-kickoff){font-size:9px;line-height:1.1;margin:0}
+.match-page .pitch-bench-room .pitch-event-ring{min-height:0;gap:1px}
+.match-page .pitch-bench-room .pitch-event-ring :is(.pitch-event,svg){width:12px;height:12px}
+.match-page .match-toolbar{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.match-page .match-toolbar>#close-modal,.match-page .match-detail-drill>summary{
+ min-height:30px;padding:3px 8px;margin:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--lime);font-size:12px;font-weight:700
+}
+.match-page .match-detail-drill{margin:0;border:0;background:none;padding:0}
+.match-page .match-detail-drill>summary{list-style:none;display:flex;align-items:center;gap:6px}
+.match-page .match-detail-drill>summary::-webkit-details-marker{display:none}
+.match-page .match-detail-drill:not([open]) .match-details-back,.match-page .match-detail-drill[open] .match-details-forward{display:none}
+.match-page:has(.match-detail-drill[open])>.match-toolbar{display:block}
+.match-page:has(.match-detail-drill[open]) .match-toolbar>#close-modal{float:right}
+.match-page .match-details-body{clear:both}
+.match-page:has(.match-detail-drill[open])>.match-toolbar .match-detail-drill{flex:1;min-width:0}
+.match-page:has(.match-detail-drill[open])>:not(.match-toolbar){display:none}
+.match-page .match-detail-drill[open]>summary{width:fit-content}
+.match-page .match-details-body{max-height:var(--match-detail-height,65dvh);overflow-y:auto;overscroll-behavior:contain;margin-top:6px}
+@media(prefers-reduced-motion:no-preference){.match-page .match-detail-drill[open] .match-details-body{animation:match-drill-in .16s ease-out}@keyframes match-drill-in{from{transform:translateX(16px);opacity:.65}}}
+.match-page .match-scoreline{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:4px 8px;margin-bottom:2px}
+.match-page .match-scoreline .match-page-score{margin:0}
+.match-page .match-scoreline [data-live-detail-status]{font-size:10px;margin:0}
+.match-page .match-details-body>h3{margin:3px 0;font-size:16px}
+.match-page .match-details-body .events-columns{grid-template-columns:minmax(0,1fr);gap:4px}
+.match-page .match-details-body .events-columns h3{font-size:14px;margin:4px 0}
+.match-page .match-event-row{display:grid;grid-template-columns:28px 22px minmax(0,1fr);gap:5px;align-items:center;min-height:25px;padding:2px 5px;margin:0}
+.match-page .match-event-row svg{width:17px;height:17px;vertical-align:middle}
+.match-page .match-event-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.match-page .match-details-body .event-item.compact-penalty{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
+.match-page .match-details-body .compact-penalty strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.match-page .match-details-body .compact-penalty p{margin:0;font-size:11px}

@@ -17,3 +17,16 @@ test('API position aliases map to fantasy roles; unknown roles and empty selecti
  const {document,window}=parseHTML('<main>'+html+'</main>'),root=document.querySelector('main');bindLineupPitch(root);assert.ok(root.querySelector('[data-lineup-role="other"]'));root.querySelector('[data-lineup-role="P"]').dispatchEvent(new window.Event('click',{bubbles:true}));assert.equal(root.querySelector('[data-lineup-role-empty]').hidden,false);assert.equal([...root.querySelectorAll('[data-available-role]')].filter(p=>!p.hidden).length,0);root._pitchCleanup();
  for(const kind of ['official','fantasy']){const html=renderLineup({lineups:{...lineup,kind}});assert.doesNotMatch(html,/data-lineup-role=/);assert.ok(html.indexOf('Juventus P')<html.indexOf('Juventus D'));}
 });
+
+test('dedicated match pages put each complete bench between its team and the next team',()=>{
+ const extended={...lineup,teams:lineup.teams.map(t=>({...t,bench:Array.from({length:25},(_,i)=>({id:String(i),name:'Nome Riserva'+i,role:'D',probability:55}))}))};
+ const {document}=parseHTML(renderLineup({lineups:extended},{paged:true}));
+ const panes=[...document.querySelectorAll('.pitch-team')];
+ assert.deepEqual(panes.map(p=>p.getAttribute('aria-label')),['Titolari Juventus','Panchina Juventus','Titolari Inter','Panchina Inter']);
+ assert.deepEqual([...document.querySelectorAll('[data-pitch-tab]')].map(p=>p.dataset.pitchTab),['0','2']);
+ for(const index of [1,3]){
+  assert.equal(panes[index].querySelectorAll('.bench-stickers .pitch-player').length,25);
+  assert.equal(panes[index].querySelector('.bench-player-surname').textContent,'Riserva0');
+  assert.equal(panes[index].querySelector('.football-pitch'),null);
+ }
+});

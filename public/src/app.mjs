@@ -25,6 +25,8 @@ import {barModeSwitch,enterFanta,leaveFanta,preferredFanta,clearFantaSessions} f
 import {createLiveChannel,requestJson,mergeLiveSnapshot,patchRegion,patchDashboard} from "./live-channel.mjs";
 import {withButtonFeedback} from './action-feedback.mjs';
 import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
+import {playerSurname} from './player-label.mjs';
+import {ballIcon,substitutionMark} from './pitch-events.mjs';
 import {footballStatistics,bindFootballStatistics} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, bindSlipV2, stakeInputValue } from "./v2/slip-v2.mjs";
@@ -1904,8 +1906,12 @@ function eventColumns(data, events) {
     else if (e.side === "away" || key(e.team) === key(data.away)) away.push(e);
     else unknown.push(e);
   }
-  const event = (e) =>
-    `<div class="event-item"><b class="green">${esc(e.minute)}</b> ${matchEventLabel(e)}<strong style="display:block">${esc((e.players || []).join(", ") || "")}${e.incoming?' → '+esc(e.incoming):''}</strong>${e.kind==='var'?'<small>'+esc(e.detail||'')+'</small>':''}</div>`;
+  const event=e=>{
+    const icon=e.kind==='goal'||e.kind==='own-goal'?ballIcon(e.kind==='own-goal'):e.kind==='substitution'?substitutionMark():({yellow:'🟨',red:'🟥','penalty-missed':'✕','penalty-saved':'🧤',var:'▣'})[e.kind];
+    const names=[(e.players||[]).map(playerSurname).filter(Boolean).join(', '),playerSurname(e.incoming)].filter(Boolean).join(' → ');
+    const description=[names,e.kind==='var'?e.detail:''].filter(Boolean).join(' · ');
+    return `<div class="event-item match-event-row"><b class="green">${esc(e.minute)}</b><span role="img" aria-label="${esc(matchEventLabel(e))}">${icon}</span><strong title="${esc(description)}">${esc(description)}</strong></div>`;
+  };
   return `<div class="events-columns"><section><h3>${esc(data.home)}</h3>${home.length ? home.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section><section><h3>${esc(data.away)}</h3>${away.length ? away.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section></div>${unknown.length ? '<div class="notice">Squadra non indicata dalla fonte</div>' + unknown.map(event).join("") : ""}`;
 }
 
@@ -1977,16 +1983,21 @@ async function openMatch(id, quiet = false) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
-    dialog.innerHTML = `<button class="secondary" id="close-modal" >Chiudi ×</button><div class="eyebrow">LA PARTITA</div><h2 class="match-page-title">${fixtureTeams(data.home,data.away,false)}</h2><div class="match-page-score" data-live-detail-score>${data.score ? data.score.join(" – ") : data.liveScore ? data.liveScore.join(" – ") : "—"}</div><p class="muted" data-live-detail-status>${data.status === "FT" ? "Finale" + (data.officialConfirmed ? " · confermato" : " · in attesa di conferma") : data.status === "LIVE" ? "In corso · " + esc(data.clock || "minuto non disponibile") : "Da giocare"}</p>${lineupView(data)}<details class="match-statistics"><summary>Dettagli della partita</summary><div data-live-detail-events>${events.length ? eventColumns(data, events) : data.status === "NS" ? "" : '<div class="notice">Gol e cartellini non ancora disponibili.</div>'}</div></details>`;
+    const detailsOpen=quiet&&dialog.querySelector('.match-detail-drill')?.open;
+    dialog.innerHTML = `<div class="match-toolbar"><button class="secondary" id="close-modal">Chiudi ×</button><details class="match-detail-drill" ${detailsOpen?'open':''}><summary><span class="match-details-forward">Dettagli della partita ›</span><span class="match-details-back">← Formazioni</span></summary><div class="match-details-body"><h3>Dettagli della partita</h3><div data-live-detail-events>${events.length?eventColumns(data,events):'<p class="muted">Eventi non ancora disponibili.</p>'}</div><div data-live-detail-statistics>${footballStatistics(data,{compact:true})}</div></div></details></div><h2 class="match-page-title">${fixtureTeams(data.home,data.away,false)}</h2><div class="match-scoreline"><div class="match-page-score" data-live-detail-score>${data.score?data.score.join(' – '):data.liveScore?data.liveScore.join(' – '):'—'}</div><p class="muted" data-live-detail-status>${data.status==='FT'?'Finale'+(data.officialConfirmed?' · confermato':' · in attesa di conferma'):data.status==='LIVE'?'In corso · '+esc(data.clock||'minuto non disponibile'):'Da giocare'}</p></div>${lineupView(data)}`;
     $("#close-modal").onclick = () => {
       activeMatchId = null;
       dialog.dataset.match = "";
       dialog.close();
     };
-    const numbers=document.createElement('div');numbers.setAttribute('data-live-detail-statistics','');numbers.innerHTML=footballStatistics(data);
-    dialog.querySelector('[data-live-detail-events]')?.after(numbers);
-    bindFootballStatistics(numbers);
-    dialog.querySelectorAll('details[open]').forEach(x=>x.open=false);
+    const drill=dialog.querySelector('.match-detail-drill'),body=drill.querySelector('.match-details-body');
+    const fitDetails=()=>{if(!drill.open)return;const nav=document.querySelector('nav.v2-tabbar')?.getBoundingClientRect();const bottom=nav?.top>innerHeight/2?nav.top:innerHeight;body.style.setProperty('--match-detail-height',Math.max(120,bottom-body.getBoundingClientRect().top-10)+'px');};
+    drill.ontoggle=()=>{if(drill.open)fitDetails();else window.dispatchEvent(new Event('resize'));};
+    let touchStart=null;
+    drill.addEventListener('touchstart',e=>{touchStart=e.touches[0];},{passive:true});
+    drill.addEventListener('touchend',e=>{const end=e.changedTouches[0];if(drill.open&&touchStart&&end&&end.clientX-touchStart.clientX>55&&end.clientX-touchStart.clientX>Math.abs(end.clientY-touchStart.clientY)*1.4)drill.open=false;touchStart=null;},{passive:true});
+    bindFootballStatistics(body);
+    fitDetails();
     bindLineupPitch(dialog);
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
@@ -2001,7 +2012,7 @@ async function openMatch(id, quiet = false) {
   }
 }
 
-function lineupView(data){return renderLineup(data);}
+function lineupView(data){return renderLineup(data,{paged:true});}
 function supportSection() {
   return '<details class="card inline-support"><summary>Invia un suggerimento o segnala un bug</summary><p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field">Messaggio<textarea name="message" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form></details>';
 }
@@ -2521,7 +2532,7 @@ function applyLive(data){
       const status=dialog.querySelector('[data-live-detail-status]'),label=m.status==='LIVE'?'In corso · '+(m.clock||'minuto non disponibile'):m.status==='FT'?'Finale'+(m.officialConfirmed?' · confermato':' · in attesa di conferma'):'Da giocare';
       if(status&&status.textContent!==label)status.textContent=label;
       const events=dialog.querySelector('[data-live-detail-events]');if(events){const html=eventColumns(m,(m.details?.events||[]).filter(isMatchEvent));if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events>'+html+'</div>');events.dataset.revision=html;}}
-      const numbers=dialog.querySelector('[data-live-detail-statistics]');if(numbers){const html=footballStatistics(m);if(numbers.dataset.revision!==html){patchRegion(numbers,'<div data-live-detail-statistics>'+html+'</div>');numbers.dataset.revision=html;bindFootballStatistics(dialog);}}
+      const numbers=dialog.querySelector('[data-live-detail-statistics]');if(numbers){const html=footballStatistics(m,{compact:true});if(numbers.dataset.revision!==html){patchRegion(numbers,'<div data-live-detail-statistics>'+html+'</div>');numbers.dataset.revision=html;bindFootballStatistics(dialog);}}
     }
   }
 }

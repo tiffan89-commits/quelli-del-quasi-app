@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Dettaglio partita con quattro schermate laterali. Ogni squadra mostra i titolari sul campo e tutti i giocatori a disposizione su una panchina dedicata. Gli eventi Serie A si aprono da una voce in alto e mostrano minuto, icona e cognomi su una riga.
+
 - Friends & Family: intestazioni fisse durante lo scorrimento dei contenuti, schedina live compatta con gli esiti colorati, cartolina su pagina dedicata e classifica Serie A in due pagine.
 - Impostazioni più compatte nel Bar e nel Fanta. I dettagli si aprono a destra e si torna con Indietro o con uno swipe. Il calendario della squadra carica altre giornate con il pulsante +. Nel Fanta, Gestisci asta è nel pannello del presidente e gli interruttori delle notifiche sono compatti.
 
