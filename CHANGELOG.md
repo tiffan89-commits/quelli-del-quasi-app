@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- La panchina dello Studio Live Fanta usa cinque giocatori per riga e maglie compatte, come nel dettaglio delle partite di Serie A.
+
 - Nello Studio Live la panchina usa maglie più grandi, cognomi leggibili sotto le maglie e un numero di colonne che si adatta allo spazio.
 
 - Le leghe abilitate possono far schierare le sole squadre computer in base a forma, titolarità prevista e difficoltà della prossima partita di Serie A.

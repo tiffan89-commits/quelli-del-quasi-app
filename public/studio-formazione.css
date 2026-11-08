@@ -30,16 +30,20 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .studio-live-lineup button[data-player]>*{pointer-events:none}
 .studio-live-lineup .fanta-pitch .fanta-token-shirt{width:clamp(23px,calc(25cqh - 47px),85px);height:clamp(23px,calc(25cqh - 47px),85px)}
 .studio-live-lineup .fanta-token :is(.pitch-next-opponent,.pitch-next-kickoff){line-height:1.05}
-.studio-live-lineup .live-studio-bench{container-type:inline-size;height:100%;padding-bottom:39px}
+.studio-live-lineup .live-studio-bench{height:100%;padding-bottom:39px}
 .live-studio-reserves{
- --reserve-cell:clamp(83px,28cqw,132px);--reserve-shirt:104px;
- display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--reserve-cell)),1fr));
- flex:1;min-height:0;align-content:start;gap:5px;overflow:auto;overscroll-behavior-y:contain
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;
+ flex:1;min-height:0;align-content:start;overflow:auto;overscroll-behavior-y:contain
 }
-.live-studio-reserves.is-dense{--reserve-cell:clamp(60px,21cqw,110px);--reserve-shirt:92px}
-.live-studio-reserves .fanta-token{width:100%;gap:2px;padding:3px 3px 5px;border-radius:7px;background:linear-gradient(transparent 55%,#38271b99 55%,#38271b99)}
-.live-studio-reserves .fanta-token-shirt{width:min(calc(100% - 12px),var(--reserve-shirt));height:auto;aspect-ratio:1}
-.live-studio-reserve-name{font-size:12px;font-weight:750;line-height:1.15;color:#fff0ce;overflow-wrap:anywhere}
+.live-studio-reserves .fanta-token{width:100%;gap:1px;padding:1px 2px 3px;border-radius:6px;background:linear-gradient(transparent 53%,#352316 53%,#634328 60%,#412c1e 70%)}
+.live-studio-reserves .fanta-token-shirt{width:min(calc(100% - 6px),66px);height:auto;aspect-ratio:1}
+.live-studio-reserves .fanta-token-shirt .fanta-role{right:-2px;width:14px;height:14px;font-size:8px}
+.live-studio-reserve-name{font-size:10px;font-weight:700;line-height:1.15;color:#fff0ce;overflow-wrap:anywhere}
+.live-studio-reserves :is(.pitch-player-grades,.pitch-next-opponent,.pitch-next-kickoff){font-size:10px;line-height:1.1;margin:0}
+.live-studio-reserves .pitch-player-grades{padding:1px 5px}
+.live-studio-reserves .pitch-fixture,.live-studio-reserves .pitch-event-ring{gap:1px}
+.live-studio-reserves .pitch-event-ring{min-height:0}
+.live-studio-reserves .pitch-event{width:12px;height:12px;flex-basis:12px}
 .studio-live-lineup .pitch-flip-button{right:6px;bottom:5px}
 .live-player-sheet{
  inset:auto 0 0;width:100%;max-height:min(88dvh,860px);box-sizing:border-box;color:var(--white);
