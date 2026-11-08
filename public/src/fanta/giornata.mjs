@@ -1,5 +1,5 @@
 import {pitchPerformance,hasPitchPerformance,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
-import {pitchFixture} from '../player-label.mjs';
+import {pitchFixture,playerSurname} from '../player-label.mjs';
 import {renderPitchFlip} from '../lineup-pitch.mjs';
 import {statNumber,formatStatNumber} from './stat-number.mjs';
 import {playerVisual} from './player-visual.mjs';
@@ -45,7 +45,7 @@ export function events(e = {}) {
 }
 
 // Vista "Campo": attacco in alto, porta in basso. Chi è entrato dalla panchina prende il posto del titolare senza voto.
-function token(p, replaced) {
+function token(p, replaced, showSurname = false) {
   const clickable = p.id!=null;
   const tag = clickable ? 'button' : 'div';
   const performance = replaced ? {...p,enteredFor:replaced} : p;
@@ -53,6 +53,7 @@ function token(p, replaced) {
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}" aria-haspopup="dialog"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
     <span class="fanta-token-shirt">${playerVisual(p,{back:true,nameOnShirt:true})}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
+    ${showSurname?`<span class="live-studio-reserve-name" aria-hidden="true">${esc(playerSurname(p))}</span>`:''}
     ${playing?'':pitchFixture(p)}${pitchPerformance(performance,playing)}
   </${tag}>`;
 }
@@ -72,7 +73,7 @@ function liveTeam(s,flipped){
   if(s.hidden)return `<div class="fanta-empty is-inline"><p>${esc(s.hiddenReason)}</p>${s.needsLineup?'<button type="button" class="primary" data-go="formazione">Schiera la formazione</button>':''}</div>`;
   const field=s.starters.length?pitch(s):'<p class="fanta-empty is-inline">Formazione non ancora salvata.</p>';
   const bench=`<div class="pitch-bench-room live-studio-bench"><div class="bench-room-label"><b>Panchina</b><span>${s.bench.length} giocatori</span></div>
-    ${s.bench.length?`<div class="live-studio-reserves">${s.bench.map(p=>token(p,p.enteredFor)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
+    ${s.bench.length?`<div class="live-studio-reserves${s.bench.length>=10?' is-dense':''}">${s.bench.map(p=>token(p,p.enteredFor,true)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
   return renderPitchFlip(field,bench,'Panchina',flipped);
 }
 
