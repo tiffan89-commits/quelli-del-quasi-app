@@ -51,7 +51,17 @@ export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagu
   native.votes=(await c.query("SELECT DISTINCT ON(v.player_id,f.round) v.player_id,f.round,v.data FROM fanta.votes v JOIN fanta.fixtures f ON f.id=v.fixture_id WHERE f.round=ANY($1::int[]) AND f.season=$2 AND v.model_key=coalesce((SELECT data->>'key' FROM fanta.jobs WHERE id='votes:active-model'),v.model_key) ORDER BY v.player_id,f.round,v.id DESC",[[...new Set(native.rounds.filter(r=>Date.parse(r.deadline)>=Math.min(...links.map(l=>Date.parse(l.cutover)))-7*86400000).map(r=>r.seriea_round))],links[0].season])).rows;
   const state=(await c.query(`SELECT jsonb_build_object('leagues',(SELECT coalesce(jsonb_agg(l),'[]') FROM jsonb_array_elements(payload->'leagues') l WHERE l->>'id'=ANY($1::text[])),'rounds',(SELECT coalesce(jsonb_agg(r),'[]') FROM jsonb_array_elements(payload->'rounds') r WHERE r->>'league'=ANY($1::text[])),'ledger','[]'::jsonb) AS data FROM fanta_state WHERE id=1`,[links.map(l=>l.bar_league_id)])).rows[0]?.data;
   const changed=state?projectNativeBar(state,native,{now}):0;
-  if(changed)await c.query(`UPDATE fanta_state SET payload=jsonb_set(jsonb_set(jsonb_set(payload,'{leagues}',(SELECT coalesce(jsonb_agg(coalesce((SELECT x FROM jsonb_array_elements($1::jsonb) x WHERE x->>'id'=l->>'id'),l)),'[]') FROM jsonb_array_elements(payload->'leagues') l)),'{rounds}',(SELECT coalesce(jsonb_agg(r),'[]') FROM (SELECT r FROM jsonb_array_elements(payload->'rounds') r WHERE r->>'league'<>ALL($4::text[]) UNION ALL SELECT r FROM jsonb_array_elements($2::jsonb) r) a)),'{ledger}',coalesce(payload->'ledger','[]')||$3::jsonb) WHERE id=1`,[JSON.stringify(state.leagues),JSON.stringify(state.rounds),JSON.stringify(state.ledger),links.map(l=>l.bar_league_id)]);
+  if(changed){
+   const {rows:[current]}=await c.query('SELECT payload FROM fanta_state WHERE id=1 FOR UPDATE');
+   const payload=current?.payload;
+   if(!payload)throw Error('Bar state unavailable');
+   const linkedIds=new Set(links.map(l=>l.bar_league_id));
+   const leagueUpdates=new Map(state.leagues.map(l=>[l.id,l]));
+   payload.leagues=(payload.leagues??[]).map(l=>leagueUpdates.get(l.id)??l);
+   payload.rounds=(payload.rounds??[]).filter(r=>!linkedIds.has(r.league)).concat(state.rounds);
+   payload.ledger=(payload.ledger??[]).concat(state.ledger);
+   await c.query('UPDATE fanta_state SET payload=$1::jsonb WHERE id=1',[JSON.stringify(payload)]);
+  }
   await c.query('COMMIT');return {changed};
  }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}
 }
