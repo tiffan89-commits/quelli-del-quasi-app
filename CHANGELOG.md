@@ -260,6 +260,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.33.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.32.2...v0.33.0) (2026-11-08)
+
+
+### Features
+
+* **fanta:** coach opted-in computer teams by matchup ([3b2ed9f](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3b2ed9f9696b0b81251b2570517282dbaadd2f88))
+* **fanta:** coach opted-in computer teams by matchup ([d92b124](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/d92b124c36e0fb3a4c710417ecf6544c46ec4376))
+
 ## [0.32.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.32.1...v0.32.2) (2026-11-08)
 
 
