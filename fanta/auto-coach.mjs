@@ -1,11 +1,37 @@
 import {DEFAULT_RULES,validateLineup} from './rules.mjs';
 import {createHash} from 'node:crypto';
 import {identityKey} from './player-identities.mjs';
+import {normalizeTeam} from '../lib/calendar.mjs';
 const unavailable=p=>p.active===false||['injured','suspended','unavailable'].includes(p.status?.type);
 export function coachScore(p){
  const probability=Number.isFinite(p.startProbability)?p.startProbability/100:Number.isFinite(p.probability)?p.probability/100:.65;
  const form=p.stats?.recentFanta??p.stats?.avgFanta??p.fm??p.avgFanta??6;
- return Math.max(0,Math.min(1,probability))*4+(Number.isFinite(form)?form:6);
+ return Math.max(0,Math.min(1,probability))*4+(Number.isFinite(form)?form:6)+(p.matchupAdjustment??0);
+}
+
+export function applyMatchDifficulty(roster,fixtures,round){
+ const form=new Map(),adjustments=new Map();
+ for(const match of fixtures){
+  if(match.round>=round||match.round<round-5||!['FT','AET','PEN'].includes(match.status)||!match.score?.every(Number.isFinite))continue;
+  const [home,away]=match.score;
+  for(const [club,scored,conceded] of [[match.home,home,away],[match.away,away,home]]){
+   const key=normalizeTeam(club),record=form.get(key)||{points:2.8,played:2};
+   record.points+=scored>conceded?3:scored===conceded?1:0;
+   record.played++;
+   form.set(key,record);
+  }
+ }
+ const pointsPerGame=club=>form.has(club)?form.get(club).points/form.get(club).played:1.4;
+ for(const match of fixtures.filter(match=>match.round===round)){
+  const home=normalizeTeam(match.home),away=normalizeTeam(match.away);
+  const homeOdds=match.odds?.['1'],awayOdds=match.odds?.['2'];
+  const advantage=homeOdds>1&&awayOdds>1
+   ?2.5*(awayOdds/(homeOdds+awayOdds)-.5)
+   : .2+(pointsPerGame(home)-pointsPerGame(away))*.5;
+  adjustments.set(home,Math.max(-1,Math.min(1,advantage)));
+  adjustments.set(away,-adjustments.get(home));
+ }
+ return roster.map(player=>({...player,matchupAdjustment:adjustments.get(normalizeTeam(player.club))??0}));
 }
 export function chooseAutoLineup(roster,rules=DEFAULT_RULES){
  const available=roster.filter(p=>!unavailable(p)),rank=(a,b)=>coachScore(b)-coachScore(a)||a.id.localeCompare(b.id),byRole=Object.fromEntries(['P','D','C','A'].map(r=>[r,available.filter(p=>p.role===r).sort(rank)]));

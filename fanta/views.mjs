@@ -10,12 +10,14 @@ const team=t=>({id:t.id,name:t.name,manager:t.manager,color:t.color,branding:t.b
 import {currentRound,lineupRound} from './round-selection.mjs';
 export {currentRound} from './round-selection.mjs';
 export function roundState(s,r,uid,now=Date.now()){
+ if(r.data?.archivedWithoutResults)return 'archiviata';
  if(r.official)return 'calcolata';if(Date.parse(r.deadline)<=now)return 'in-corso';return s.lineups.some(x=>x.round===r.number&&!x.inherited_from&&x.team_id===s.teams.find(t=>t.userId===uid)?.id)?'schierata':'da-schierare';
 }
 export function savedLineup(s,t,number){
  return s.lineups.find(x=>x.team_id===t.id&&x.round===number&&!x.inherited_from)||null;
 }
 export function sheet(s,t,r,{now=Date.now()}={}){
+ if(r.data?.archivedWithoutResults)return {team:team(t),hidden:true,hiddenReason:'Risultato storico non disponibile',total:null,goals:null};
  const lineup=savedLineup(s,t,r.number);if(!lineup){const locked=r.official||Date.parse(r.deadline)<=now;return {team:team(t),hidden:true,needsLineup:!locked,notSubmitted:true,unmapped:0,unresolved:0,hiddenReason:locked?'Formazione non schierata · 0 fantapunti':'Formazione non ancora salvata',total:locked?0:null,goals:locked?0:null};}
  const votes=new Map(s.votes.map(v=>[v.player_id,v.data]));
  const allIds=new Set([...lineup.starters,...lineup.bench]);
