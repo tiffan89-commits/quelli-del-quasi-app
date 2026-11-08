@@ -323,9 +323,9 @@ body.fanta-sheet-open{overflow:hidden}
 .fanta-team-formation{display:flex;flex-direction:column;height:var(--os-h,calc(100dvh - 265px));min-height:0}
 .fanta-team-formation .pitch-flip-card{flex:1;min-height:220px;width:100%;max-width:720px;align-self:center;overflow:clip}
 .fanta-team-formation .pitch-flip-front{container-type:size}
-.fanta-team-formation .fanta-pitch.is-editor{height:100%;box-sizing:border-box;grid-template-rows:repeat(4,minmax(0,1fr));padding:6px 4px 27px;align-content:stretch}
+.fanta-team-formation .fanta-pitch.is-editor{height:100%;min-height:0;margin:0;box-sizing:border-box;grid-template-rows:repeat(4,minmax(0,1fr));padding:6px 4px 27px;align-content:stretch}
 .fanta-team-formation .fanta-pitch-row{align-items:center;min-height:0}
-.fanta-team-formation .fanta-pitch.is-editor :is(.fanta-token-shirt,.fanta-slot-ring){width:clamp(20px,calc(25cqh - 51px),68px);height:clamp(20px,calc(25cqh - 51px),68px)}
+.fanta-team-formation .fanta-pitch.is-editor :is(.fanta-token-shirt,.fanta-slot-ring){width:min(calc(100% - 6px),clamp(20px,calc(25cqh - 43px),68px));height:auto;aspect-ratio:1}
 .fanta-team-formation .fanta-token{min-width:0}
 .fanta-team-formation .fanta-saved-bench{height:100%;padding-bottom:35px}
 .fanta-saved-bench ol{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-content:start;gap:4px;list-style:none;padding:0;margin:0;overflow:auto;min-height:0;scrollbar-width:thin}

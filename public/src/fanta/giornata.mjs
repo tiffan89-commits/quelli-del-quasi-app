@@ -73,7 +73,7 @@ function liveTeam(s,flipped){
   if(s.hidden)return `<div class="fanta-empty is-inline"><p>${esc(s.hiddenReason)}</p>${s.needsLineup?'<button type="button" class="primary" data-go="formazione">Schiera la formazione</button>':''}</div>`;
   const field=s.starters.length?pitch(s):'<p class="fanta-empty is-inline">Formazione non ancora salvata.</p>';
   const bench=`<div class="pitch-bench-room live-studio-bench"><div class="bench-room-label"><b>Panchina</b><span>${s.bench.length} giocatori</span></div>
-    ${s.bench.length?`<div class="live-studio-reserves${s.bench.length>=10?' is-dense':''}">${s.bench.map(p=>token(p,p.enteredFor,true)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
+    ${s.bench.length?`<div class="live-studio-reserves">${s.bench.map(p=>token(p,p.enteredFor,true)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
   return renderPitchFlip(field,bench,'Panchina',flipped);
 }
 

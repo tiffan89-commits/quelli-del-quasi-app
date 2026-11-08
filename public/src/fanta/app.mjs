@@ -217,11 +217,34 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     } finally{sq.saving=false;if(!destroyed&&!suspended)render();}
   }
 
+  const teamSections=['formazione','rosa','calendario'];
+  function switchTeamSection(section){
+    const sq=ui.squadra,step=teamSections.indexOf(section)-teamSections.indexOf(sq.sub);
+    if(!step||!teamSections.includes(section))return;
+    sq.sub=section;
+    sq.calendarRange=undefined;
+    writeAppRoute({mode:'fanta',page:'squadra',section,league:league()?.id});
+    const squadra=root.querySelector('.fanta-squadra'),track=squadra?.querySelector('[data-os-content]');
+    if(!track){render();return;}
+    const template=document.createElement('template');
+    template.innerHTML=renderSquadra(sq);
+    const next=template.content.querySelector('[data-os-content]');
+    track.replaceWith(next);
+    squadra.querySelectorAll('[data-sq-sub]').forEach(button=>{
+      const active=button.dataset.sqSub===section;
+      button.classList.toggle('is-active',active);
+      button.setAttribute('aria-selected',String(active));
+    });
+    bindStyledSelects(next);
+    if(!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+      next.animate?.([{transform:`translateX(${Math.sign(step)*24}px)`,opacity:.7},{transform:'none',opacity:1}],{duration:170,easing:'ease-out'});
+    }
+  }
   function handleSquadra(d, event) {
     const sq = ui.squadra, data = sq.data;
     if (!data) return false;
     if (d.pitchFlip) {sq.benchFlipped=!sq.benchFlipped;setPitchFlip(event.target.closest('[data-pitch-flip]'),sq.benchFlipped);return true;}
-    if (d.sqSub) {if(sq.sub!==d.sqSub){writeAppRoute({mode:'fanta',page:'squadra',section:d.sqSub,league:league()?.id}); sq.sub = d.sqSub; sq.calendarRange=undefined;render();}return true; }
+    if(d.sqSub){switchTeamSection(d.sqSub);return true;}
     if ('sqCalendarMore' in d || 'sqCalendarPrevious' in d) {
       const visible=new Set([...root.querySelectorAll('.fanta-team-calendar [data-go="giornata"]')].map(row=>row.dataset.mu));
       const direction='sqCalendarPrevious' in d?'earlier':'later';
@@ -363,8 +386,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     placeAppFooter(root);
     const squadra=root.querySelector('.fanta-squadra');
     if(squadra){
-      const sections=['formazione','rosa','calendario'];
-      const move=step=>{const next=sections[sections.indexOf(ui.squadra.sub)+step];if(next)handleSquadra({sqSub:next});};
+      const move=step=>{const next=teamSections[teamSections.indexOf(ui.squadra.sub)+step];if(next)switchTeamSection(next);};
       bindSwipeBack(squadra,()=>move(1),'left');
       bindSwipeBack(squadra,()=>move(-1));
     }

@@ -5,6 +5,12 @@
 
 # Unreleased
 
+- Il flip del campo e delle schede nasconde il lato inattivo anche su WebKit, evitando testi e maglie specchiati.
+
+- I gesti orizzontali in Squadra, nei contenuti paginati e nel dettaglio delle partite evitano cambi di schermata concorrenti. Le maglie si adattano allo spazio delle file del campo.
+
+- La panchina dello Studio Live Fanta usa cinque giocatori per riga e maglie compatte, come nel dettaglio delle partite di Serie A.
+
 - Nello Studio Live la panchina usa maglie più grandi, cognomi leggibili sotto le maglie e un numero di colonne che si adatta allo spazio.
 
 - Le leghe abilitate possono far schierare le sole squadre computer in base a forma, titolarità prevista e difficoltà della prossima partita di Serie A.

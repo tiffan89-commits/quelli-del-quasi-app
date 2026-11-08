@@ -154,17 +154,6 @@ export function bindLineupPitch(root,{onPage,autoHeight=true}={}){
  };
  const scheduleSize=()=>{scrolling=true;clearTimeout(settleTimer);settleTimer=setTimeout(settled,140);};
  const go=i=>{const target=Math.max(0,Math.min(i,last()));if(!details)select(target);scheduleSize();slides.scrollTo({left:target*slides.clientWidth,behavior:globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
- let touch=null;
- const start=e=>{touch=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY,page:current}:null;};
- const end=e=>{
-  const gesture=touch;touch=null;
-  if(e.type==='touchcancel'||!gesture||details.hidden)return;
-  const point=e.changedTouches[0],dx=point.clientX-gesture.x,dy=point.clientY-gesture.y;
-  if(Math.abs(dx)<22||Math.abs(dx)<Math.abs(dy)*1.4)return;
-  if(dx<0&&gesture.page===teams.length-1)go(teams.length);
-  if(dx>0&&gesture.page===teams.length)go(teams.length-1);
- };
- if(details){slides.addEventListener('touchstart',start,{passive:true});slides.addEventListener('touchend',end,{passive:true});slides.addEventListener('touchcancel',end,{passive:true});}
  tabs.forEach(b=>b.onclick=()=>go(Number(b.dataset.pitchTab)));
  flips.forEach(button=>{
   const i=Number(button.closest('[data-pitch-team]').dataset.pitchTeam);
@@ -183,7 +172,7 @@ export function bindLineupPitch(root,{onPage,autoHeight=true}={}){
  const filterRole=event=>{const button=event.target.closest?.('[data-lineup-role]'),panel=button?.closest('.lineup-bench');if(!panel)return;const role=button.dataset.lineupRole;panel.querySelectorAll('[data-lineup-role]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));let visible=0;panel.querySelectorAll('[data-available-role]').forEach(card=>{card.hidden=role!=='all'&&card.dataset.availableRole!==role;if(!card.hidden)visible++;});const empty=panel.querySelector('[data-lineup-role-empty]');if(empty)empty.hidden=visible>0;if(paged){const grid=panel.querySelector('.bench-stickers');grid?.style.setProperty('--bench-rows',Math.max(1,Math.ceil(visible/5)));grid?.style.setProperty('--bench-rows-short',Math.max(1,Math.ceil(visible/7)));}size();};
  root.addEventListener('click',filterRole);
  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{if(!scrolling)size();});teams.forEach(t=>observer?.observe(t));
- const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;[...tabs,...flips].forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);if(details){slides.removeEventListener('touchstart',start);slides.removeEventListener('touchend',end);slides.removeEventListener('touchcancel',end);}observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);globalThis.window?.removeEventListener?.('resize',fit);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});globalThis.window?.addEventListener?.('resize',fit);select(current);fit();size();if(paged&&current)slides.scrollLeft=current*slides.clientWidth;
+ const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;[...tabs,...flips].forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);globalThis.window?.removeEventListener?.('resize',fit);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});globalThis.window?.addEventListener?.('resize',fit);select(current);fit();size();if(paged&&current)slides.scrollLeft=current*slides.clientWidth;
  return {go,teamCount:teams.length};
 }
 
