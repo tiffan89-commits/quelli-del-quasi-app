@@ -54,25 +54,52 @@ function pitchExtras(t,kind){
  return '';
 }
 
+export function matchAvailability(data){
+ if(!['NS','TBD','PST',''].includes(data.status||'')||data.lineups?.started)return '';
+ const sections=(data.lineups?.teams||[]).map(team=>{
+  const players=(team.unavailable||[]).filter(p=>p.name);
+  if(!players.length)return '';
+  return `<section><h4>${esc(team.team)}</h4>${players.map(p=>`<div class="match-availability-row"><strong>${esc(playerSurname(p))}</strong><span>${esc(p.status||'Indisponibile')}</span></div>`).join('')}</section>`;
+ }).join('');
+ return sections?`<section class="match-availability"><h3>Indisponibili e in dubbio</h3>${sections}</section>`:'';
+}
+
+export const PITCH_FLIP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a9 9 0 0 1 15-5l3 3m0-5v5h-5M21 14a9 9 0 0 1-15 5l-3-3m0 5v-5h5"/></svg>';
+
+export function renderPitchFlip(front,back,label='Panchina',flipped=false){
+ return `<div class="pitch-flip-card${flipped?' is-flipped':''}">
+      <div class="pitch-flip-face pitch-flip-front" ${flipped?'inert ':''}aria-hidden="${flipped}">${front}</div>
+      <div class="pitch-flip-face pitch-flip-back" ${flipped?'':'inert '}aria-hidden="${!flipped}">${back}</div>
+      <button type="button" class="pitch-flip-button" data-pitch-flip="${label}" aria-pressed="${flipped}">
+        ${PITCH_FLIP_ICON}
+        <span>${flipped?'Titolari':label}</span>
+      </button>
+    </div>`;
+}
+
+export function setPitchFlip(button,bench){
+ const card=button.closest('.pitch-flip-card'),front=card.querySelector('.pitch-flip-front'),back=card.querySelector('.pitch-flip-back');
+ card.classList.toggle('is-flipped',bench);
+ front.toggleAttribute('inert',bench);
+ front.setAttribute('aria-hidden',String(bench));
+ back.toggleAttribute('inert',!bench);
+ back.setAttribute('aria-hidden',String(!bench));
+ button.setAttribute('aria-pressed',String(bench));
+ button.querySelector('span').textContent=bench?(button.dataset.pitchBackLabel||'Titolari'):button.dataset.pitchFlip;
+}
+
 function pagedLineup(l,title,notes,swipeDetails,detailsAvailable){
  const teams=l.teams.map((team,i)=>{
   const benchLabel=l.kind==='probable'&&!team.started?'A disposizione':'Panchina';
   return `<section class="pitch-team" data-pitch-team="${i}" aria-label="Formazione ${esc(team.team)}">
     <div class="pitch-heading"><strong>${esc(team.team)}</strong><span>${esc(team.formation||'')}</span></div>
-    <div class="pitch-flip-card">
-      <div class="pitch-flip-face pitch-flip-front">${pitchField(team)}</div>
-      <div class="pitch-flip-face pitch-flip-back" inert aria-hidden="true">${benchPage(team,l.kind,benchLabel)}</div>
-      <button type="button" class="pitch-flip-button" data-pitch-flip="${benchLabel}" aria-pressed="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a9 9 0 0 1 15-5l3 3m0-5v5h-5M21 14a9 9 0 0 1-15 5l-3-3m0 5v-5h5"/></svg>
-        <span>${benchLabel}</span>
-      </button>
-    </div>
+    ${renderPitchFlip(pitchField(team),benchPage(team,l.kind,benchLabel),benchLabel)}
   </section>`;
  }).join('');
  return `<section class="lineup-section lineup-paged">${title?`<h3>${title}</h3>`:''}
    <div class="pitch-tabs" role="tablist" aria-label="Squadra da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div>
    <div class="pitch-slides" aria-label="Titolari e panchine">${teams}${swipeDetails?`<div class="pitch-details-edge" aria-hidden="true" ${detailsAvailable?'':'hidden'}></div>`:''}</div>
-   ${l.teams.map((t,i)=>`<div data-pitch-extras="${i}" ${i?'hidden':''}>${pitchExtras(t,l.kind)}</div>`).join('')}${notes}
+   ${swipeDetails?'':l.teams.map((t,i)=>`<div data-pitch-extras="${i}" ${i?'hidden':''}>${pitchExtras(t,l.kind)}</div>`).join('')}${notes}
  </section>`;
 }
 
@@ -93,8 +120,9 @@ export function bindLineupPitch(root,{onDetails}={}){
  root._pitchCleanup?.();
  const slides=root.querySelector('.pitch-slides');if(!slides)return;
  const tabs=[...root.querySelectorAll('[data-pitch-tab]')],teams=[...root.querySelectorAll('.pitch-team')];
+ const edge=onDetails&&slides.querySelector('.pitch-details-edge');
  const paged=!!slides.closest('.lineup-paged'),flips=[...root.querySelectorAll('[data-pitch-flip]')],extras=[...root.querySelectorAll('[data-pitch-extras]')];
- let current=paged?Math.min(root._pitchPage||0,teams.length-1):0,settleTimer=null,scrolling=false;
+ let current=paged?Math.min(root._pitchPage||0,teams.length-1):0,settleTimer=null,scrolling=false,edgeArmed=false;
  if(!teams.length)return;
  const flipped=paged?(root._pitchFlips??=new Set()):null;
  const size=()=>{const team=teams[current];if(team)slides.style.height=Math.ceil(team.getBoundingClientRect().height)+'px';};
@@ -119,40 +147,38 @@ export function bindLineupPitch(root,{onDetails}={}){
  };
  // Changing height while horizontal scrolling can reset the browser's snap target.
  const settled=()=>{
-  clearTimeout(settleTimer);scrolling=false;
-  const width=slides.clientWidth;
-  if(onDetails&&width&&slides.scrollLeft>=teams.length*width-2){
-   slides.scrollLeft=(teams.length-1)*width;
-   onDetails();
-   return;
-  }
+  clearTimeout(settleTimer);scrolling=false;edgeArmed=false;
   if(paged)fit();size();
  };
+ const armEdge=()=>{edgeArmed=!!slides.clientWidth&&slides.scrollLeft>=(teams.length-1)*slides.clientWidth-2;};
+ if(edge){
+  slides.addEventListener('touchstart',armEdge,{passive:true});
+  slides.addEventListener('wheel',armEdge,{passive:true});
+ }
  const scheduleSize=()=>{scrolling=true;clearTimeout(settleTimer);settleTimer=setTimeout(settled,140);};
  const go=i=>{select(i);scheduleSize();slides.scrollTo({left:i*slides.clientWidth,behavior:globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
  tabs.forEach(b=>b.onclick=()=>go(Number(b.dataset.pitchTab)));
  flips.forEach((button,i)=>{
-  const card=button.closest('.pitch-flip-card'),front=card.querySelector('.pitch-flip-front'),back=card.querySelector('.pitch-flip-back');
-  const paint=()=>{
-   const bench=flipped.has(i);
-   card.classList.toggle('is-flipped',bench);
-   front.toggleAttribute('inert',bench);
-   front.setAttribute('aria-hidden',String(bench));
-   back.toggleAttribute('inert',!bench);
-   back.setAttribute('aria-hidden',String(!bench));
-   button.setAttribute('aria-pressed',String(bench));
-   button.querySelector('span').textContent=bench?'Titolari':button.dataset.pitchFlip;
-  };
+  const paint=()=>setPitchFlip(button,flipped.has(i));
   button.onclick=()=>{if(flipped.has(i))flipped.delete(i);else flipped.add(i);paint();};
   paint();
  });
- slides.onscroll=()=>{if(!slides.clientWidth)return;select(Math.max(0,Math.min(teams.length-1,Math.round(slides.scrollLeft/slides.clientWidth))));scheduleSize();};
+ slides.onscroll=()=>{
+  const width=slides.clientWidth;
+  if(!width)return;
+  const last=teams.length-1;
+  select(Math.max(0,Math.min(last,Math.round(slides.scrollLeft/width))));
+  if(edgeArmed&&!edge.hidden&&slides.scrollLeft>=last*width+20){
+   edgeArmed=false;slides.scrollLeft=last*width;onDetails();return;
+  }
+  scheduleSize();
+ };
  slides.addEventListener?.('scrollend',settled);
  root.addEventListener('toggle',size,true);
  const filterRole=event=>{const button=event.target.closest?.('[data-lineup-role]'),panel=button?.closest('.lineup-bench');if(!panel)return;const role=button.dataset.lineupRole;panel.querySelectorAll('[data-lineup-role]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));let visible=0;panel.querySelectorAll('[data-available-role]').forEach(card=>{card.hidden=role!=='all'&&card.dataset.availableRole!==role;if(!card.hidden)visible++;});const empty=panel.querySelector('[data-lineup-role-empty]');if(empty)empty.hidden=visible>0;if(paged){const grid=panel.querySelector('.bench-stickers');grid?.style.setProperty('--bench-rows',Math.max(1,Math.ceil(visible/5)));grid?.style.setProperty('--bench-rows-short',Math.max(1,Math.ceil(visible/7)));}size();};
  root.addEventListener('click',filterRole);
  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{if(!scrolling)size();});teams.forEach(t=>observer?.observe(t));
- const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;[...tabs,...flips].forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);globalThis.window?.removeEventListener?.('resize',fit);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});globalThis.window?.addEventListener?.('resize',fit);select(current);fit();size();if(paged&&current)slides.scrollLeft=current*slides.clientWidth;
+ const cleanup=()=>{clearTimeout(settleTimer);slides.onscroll=null;[...tabs,...flips].forEach(b=>b.onclick=null);slides.removeEventListener?.('scrollend',settled);if(edge){slides.removeEventListener('touchstart',armEdge);slides.removeEventListener('wheel',armEdge);}observer?.disconnect();root.removeEventListener('toggle',size,true);root.removeEventListener('click',filterRole);root.removeEventListener('close',cleanup);globalThis.window?.removeEventListener?.('resize',fit);};root._pitchCleanup=cleanup;root.addEventListener('close',cleanup,{once:true});globalThis.window?.addEventListener?.('resize',fit);select(current);fit();size();if(paged&&current)slides.scrollLeft=current*slides.clientWidth;
 }
 
 const grade=v=>Number.isFinite(v)?String(v):'s.v.';

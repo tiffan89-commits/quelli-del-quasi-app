@@ -33,7 +33,7 @@ function option(m, p, picks, closed, esc, fmt, pointsOnly,round) {
   const gain=amount(terms.correct),loss=amount(terms.wrong),points='<small class="v2-odd-points"><em class="points-gain">'+gain+'</em><span aria-hidden="true"> / </span><em class="points-loss">'+loss+'</em> pt</small>';
   return '<button type="button" class="v2-odd' + (on ? ' is-on' : '') + '" data-pick="' + esc(m.id) + '" data-value="' + esc(p) + '"' +
     (closed ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(m.home + ' – ' + m.away + ': ' + show(p)+'; '+gain+' punti se corretto, '+loss+' punti se sbagliato') + '">' +
-    '<b>' + esc(show(p)) + '</b><span' + (!pointsOnly && Number.isFinite(odd) ? ' data-odd="' + esc(fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '')) + '"' : '') + '>' + (pointsOnly ? 'Solo punti' : Number.isFinite(odd) ? 'Quota '+fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '') : 'Quota in arrivo') + '</span>'+points+'</button>';
+    '<b>' + esc(show(p)) + '</b><span' + (!pointsOnly && Number.isFinite(odd) ? ' data-odd="' + esc(fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '')) + '"' : '') + '>' + (pointsOnly ? 'Solo punti' : Number.isFinite(odd) ? 'Quota '+fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '') : '?') + '</span>'+points+'</button>';
 }
 
 export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity, openMatch = null, esc, fmt, date, fantasyMeta, teamLabel=slipTeamLabel }) {
@@ -41,6 +41,8 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
   const closed=isClosed(round),preview=round.preview===true&&!closed,ready=roundAvailability(round)==='aperta'||preview, fanta = sourceOf(round) === 'fantacalcio', pointsOnly = round.pointsOnly === true;
   const sum = slipSummary(round, picks, stake, credits), max = Number(round.rules?.maxStake || 20);
   const chosen = Object.keys(picks).filter(k => typeof picks[k] === 'string').length, tot = preview ? sum.odds : totalOdds(round, picks);
+  const missingOdds=!pointsOnly&&(sum.missing>0||(round.matches||[]).some(m=>(openMatch===m.id?[...MAIN,...EXTRA]:MAIN).some(p=>!Number.isFinite(m.odds?.[p]))));
+  const totalLabel=sum.missing?'?':'Quota '+(tot?fmt(tot):'–')+' · '+(tot?fmt(Math.round(stake*tot)):0)+' cr';
   const rows = orderSlipMatches(round.matches || []).map(m => {
     const extraOn = EXTRA.includes(picks[m.id]), open = openMatch === m.id;
     const meta = fanta && fantasyMeta ? fantasyMeta(m) : (m.kickoff ? date(m.kickoff) : '');
@@ -53,18 +55,18 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
   }).join('');
   const quick = quickStakes(max), left = (round.matches?.length || 0) - chosen;
   const saved = !!round.slip && !sum.dirty;
-  const state = preview ? ['is-todo','Anteprima · in attesa delle quote'] : saved ? ['is-ok', 'Confermata · modificabile fino a ' + date(round.deadline || round.kickoff)]
+  const state = preview ? ['is-todo','Anteprima'] : saved ? ['is-ok', 'Confermata · modificabile fino a ' + date(round.deadline || round.kickoff)]
     : round.slip ? ['is-warn', 'Modifiche da salvare'] : ['is-todo', 'Non ancora confermata'];
   const hint = preview || sum.canSave ? null : left > 0
     ? ['v2-error is-hint', 'status', 'Mancano ' + left + (left === 1 ? ' partita' : ' partite') + ': scegli un esito per ognuna per confermare.']
     : ['v2-error', 'alert', 'Controlla la puntata (1–' + max + ') e i crediti disponibili.'];
   const label = saved ? 'Confermata ✓' : round.slip ? 'Salva' : 'Conferma';
   return '<section class="v2-slip" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
-    '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><div data-os-content data-slip-match-list>' + rows + '</div></section>' +
+    '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><div data-os-content data-slip-match-list>' + rows + '<p class="tiny muted slip-odds-legend"'+(missingOdds?'':' hidden')+'>? = Quota in arrivo</p></div></section>' +
     (!ready ? '' : '<div class="v2-slipbar"><div class="v2-slip-summary"><p class="v2-state ' + state[0] + '" role="status" title="'+esc(state[1])+'">' + esc(preview?state[1]:left>0?'Mancano '+left+(left===1?' partita':' partite'):hint?'Controlla puntata e saldo':saved?'Confermata ✓':state[1]) + '</p>' +
       (pointsOnly ? '' : '<div class="v2-slip-meta"><details class="v2-stake-picker"><summary data-v2-stake-menu aria-label="Modifica la puntata in crediti"><b data-v2-stake-current>'+fmt(stake)+' cr</b><span aria-hidden="true">⌃</span></summary><div class="v2-stake-panel"><p>Quanto metti sul bancone?</p><div class="v2-stakes">' + quick.map(v =>
         '<button type="button" class="v2-stake' + (Number(stake) === v ? ' is-on' : '') + '" data-v2-stake="' + v + '">' + v + (v === max ? ' max' : '') + '</button>').join('') +
-        '<input id="stake" class="v2-stake-input" type="number" inputmode="decimal" min="1" max="' + max + '" value="' + esc(stakeInputValue(stake, max)) + '" placeholder="Altro" aria-label="Puntata personalizzata in crediti"></div><small>Da 1 a '+fmt(max)+' crediti</small></div></details><span data-v2-slip-total title="Quota '+(tot?fmt(tot):'–')+' · ritorno '+(tot?fmt(Math.round(stake*tot)):0)+' crediti">Quota '+(tot?fmt(tot):'–')+' · '+(tot?fmt(Math.round(stake*tot)):0)+' cr</span></div>') + '</div>' +
+        '<input id="stake" class="v2-stake-input" type="number" inputmode="decimal" min="1" max="' + max + '" value="' + esc(stakeInputValue(stake, max)) + '" placeholder="Altro" aria-label="Puntata personalizzata in crediti"></div><small>Da 1 a '+fmt(max)+' crediti</small></div></details><span data-v2-slip-total>'+totalLabel+'</span></div>') + '</div>' +
       '<button type="button" class="v2-save' + (saved ? ' is-done' : '') + '" id="save-slip"' + (sum.canSave && !saved ? '' : ' disabled') + '><span>' + label + (pointsOnly || saved ? '' : ' · ' + fmt(stake) + ' cr') + '</span>' +
       '</button>' +
       (hint ? '<p class="' + hint[0] + ' sr-only" role="' + hint[1] + '">' + hint[2] + '</p>' : '') + '</div>');
@@ -85,6 +87,7 @@ export function patchSlipV2(root,options){
   if(extra&&nextExtra)patchRegion(extra,nextExtra.outerHTML);
   else if(extra)extra.remove();else if(nextExtra)odds.after(nextExtra);
  }
+ current.querySelector('.slip-odds-legend').hidden=fresh.querySelector('.slip-odds-legend').hidden;
  if(bar){patchRegion(bar,nextBar.outerHTML);const input=bar.querySelector('#stake'),next=nextBar.querySelector('#stake');if(input&&next){input.disabled=next.disabled;if(doc.activeElement!==input)input.value=next.value;}}
  return true;
 }

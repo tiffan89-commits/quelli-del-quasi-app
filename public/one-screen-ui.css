@@ -304,17 +304,34 @@ html.os-on main.os-root .v2-match .v2-odd:is(.pick-winning,.pick-losing) .v2-odd
  html.os-on main.os-root .v2-match .inline-score{font-size:13px}
 }
 
-/* A fragmented grid is unreliable in WebKit. Cards are independent blocks. */
-html.os-on main.os-root .bar-grid{display:block;overflow:visible}
-html.os-on main.os-root .bar-tile{break-inside:avoid;max-width:570px;margin:0 auto 7px;padding:8px;gap:5px}
-html.os-on main.os-root .bar-tile .bar-quasi{width:42px;height:46px}
-html.os-on main.os-root .bar-tile .bar-id h3{font-size:20px}
-html.os-on main.os-root .bar-tile .bar-quip{padding:6px 8px;margin:2px 0;font-size:12px;line-height:1.25}
-html.os-on main.os-root .bar-tile .bar-profile{min-height:34px;margin:2px 0 0;padding:4px 8px;font-size:12px}
-html.os-on main.os-root .bar-tile .bar-bet{min-height:35px;padding:3px}
-html.os-on main.os-root .bar-tile .bar-bet strong{font-size:16px}
+/* Each pair is one indivisible page. The profile flips inside its original tile. */
+html.os-on main.os-root .bar-table{padding-block:2px 0!important}
+html.os-on main.os-root .bar-table .bar-head{padding-block:0!important;min-height:0!important;margin-block:0 4px!important}
+.bar-slip-page{display:grid;gap:4px}
+html.os-on main.os-root .bar-slip-page{break-inside:avoid;overflow:hidden}
+html.os-on main.os-root .bar-slip-page+.bar-slip-page{break-before:column}
+html.os-on main.os-root .bar-tile{min-width:0;min-height:0;max-width:570px;width:100%;margin:0 auto;padding:4px;gap:2px}
+html.os-on main.os-root .bar-tile.pitch-flip-card{padding-bottom:27px}
+html.os-on main.os-root .bar-tile .bar-who{grid-template-columns:34px minmax(0,1fr);gap:6px;line-height:1}
+html.os-on main.os-root .bar-tile .bar-quasi{width:34px;height:34px}
+html.os-on main.os-root .bar-tile .bar-quasi .quasi-scene{width:100%;height:100%!important;aspect-ratio:1}
+html.os-on main.os-root .bar-card-back .bar-dossier-quasi .quasi-scene{height:30px!important}
+html.os-on main.os-root .bar-table .bar-round .quasi-select-button,
+html.os-on main.os-root .bar-table .bar-round select{min-height:32px!important;padding-block:3px!important;font-size:12px!important}
+html.os-on main.os-root .bar-tile .bar-id h3{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.os-on main.os-root .bar-tile .bar-archetype{font-size:10px;min-height:0;margin:0}
+html.os-on main.os-root .bar-tile .bar-risk{font-size:9px;margin:1px 0 0}
+html.os-on main.os-root .bar-tile .bar-quip{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;padding:2px 5px;margin:0;min-height:0;font-size:10px;line-height:1.1}
+html.os-on main.os-root .bar-tile .bar-bets{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
+html.os-on main.os-root .bar-tile .bar-bet{height:26px;min-height:0!important;min-width:0;gap:0;padding:1px 0;line-height:1}
+html.os-on main.os-root .bar-tile .bar-bet strong{font-size:12px}
 html.os-on main.os-root .bar-tile .bar-teams{font-size:8px}
-html.os-on main.os-root .bar-tile .bar-stub{padding:5px}
+html.os-on main.os-root .bar-tile .bar-stub{padding:3px 4px}
+html.os-on main.os-root .bar-tile .bar-stub-head{padding-bottom:2px;margin-bottom:2px;gap:4px;font-size:10px;letter-spacing:.02em}
+html.os-on main.os-root .bar-tile .bar-stub-head span+span{font-size:10px}
+@media(min-width:760px){.bar-slip-page{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-height:760px) and (max-width:759px){html.os-on main.os-root .bar-tile{min-height:clamp(0px,calc((var(--os-h) - 18px)/2),240px)}}
+@media(min-width:760px){html.os-on main.os-root .bar-tile{min-height:clamp(0px,calc(var(--os-h) - 12px),375px)}}
 
 .fanta-slip-balance{margin:2px 0 5px;color:var(--muted);font-size:11px}
 .serie-standings-page{break-inside:avoid}
@@ -352,9 +369,14 @@ html.os-on main.os-root .president-panel .president-body{padding:2px 10px 10px}
 .president-panel #branding-form .theme-swatch{width:21px;height:21px}
 .president-panel #branding-form .emblem-presets button{min-height:29px;padding:3px 6px}
 .president-panel #branding-form>.field{margin:5px 0}
-html.os-on main.os-root [data-os-flow] .community-grid{grid-template-columns:1fr 1fr}
+html.os-on main.os-root [data-os-flow] .community-grid{grid-template-columns:minmax(0,1fr)}
 html.os-on main.os-root [data-os-flow] .community-grid>.card{padding:8px 10px!important}
-html.os-on main.os-root [data-os-flow] :is(.almost-card,.verdict-honours)>summary{font-size:13px;font-weight:700}
+html.os-on main.os-root [data-os-flow] .verdict-honours>summary{font-size:13px;font-weight:700}
+.verdict-almost{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.verdict-almost h3{margin:0 0 4px;font-size:14px}
+.verdict-almost .almost-row{padding:4px 0}
+.verdict-almost .almost-row strong{margin-right:8px}
+.verdict-almost .almost-row p{margin:2px 0;font-size:12px}
 html.os-on main.os-root [data-os-flow] .verdict-honours{padding:7px 10px;margin-block:5px}
 .os-drill-target .community-grid{display:block!important}
 .os-track.os-drill .os-drill-parent.community-grid{display:block!important}

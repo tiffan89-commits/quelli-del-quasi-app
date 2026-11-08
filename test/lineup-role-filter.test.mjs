@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
-import {renderLineup,bindLineupPitch,availablePlayerRole} from '../public/src/lineup-pitch.mjs';
+import {renderLineup,bindLineupPitch,availablePlayerRole,matchAvailability} from '../public/src/lineup-pitch.mjs';
 const lineup={kind:'probable',teams:['Juventus','Inter'].map((team,j)=>({team,players:[{name:'Titolare',role:'P'}],bench:['P','D','C','A'].map((role,i)=>({playerId:'af:'+(100*j+i+1),name:team+' '+role,role,probability:25+i*5}))}))};
 test('available-player filters show only the selected role, keep each team independent, resize and clean up without reloads',()=>{
  const {document,window}=parseHTML('<main>'+renderLineup({lineups:lineup})+'</main>'),root=document.querySelector('main'),teams=[...root.querySelectorAll('.pitch-team')],panels=[...root.querySelectorAll('.lineup-bench')];
@@ -37,4 +37,21 @@ test('dedicated match pages put each bench behind its team and gate the details 
   assert.equal(pane.querySelector('[data-pitch-flip]').textContent.trim(),'A disposizione');
  }
  assert.equal(withDetails.querySelector('[data-pitch-flip]').textContent.trim(),'Panchina');
+});
+
+test('match availability belongs to the details page and is limited to matches yet to start',()=>{
+ const teams=[
+  {...lineup.teams[0],unavailable:[{name:'Kenan Yıldız',status:'In dubbio'}]},
+  {...lineup.teams[1],unavailable:[{name:'Lautaro Martínez',status:'Squalificato'}]}
+ ];
+ const data={status:'NS',lineups:{...lineup,teams}};
+ const {document}=parseHTML(matchAvailability(data));
+ const groups=[...document.querySelectorAll('.match-availability > section')];
+ assert.deepEqual(groups.map(group=>group.querySelector('h4').textContent),['Juventus','Inter']);
+ assert.deepEqual(groups.map(group=>group.querySelector('strong').textContent),['Yıldız','Martínez']);
+ assert.deepEqual(groups.map(group=>group.querySelector('span').textContent),['In dubbio','Squalificato']);
+ assert.equal(matchAvailability({...data,status:'1H'}),'');
+ assert.equal(matchAvailability({...data,status:'FT'}),'');
+ assert.equal(matchAvailability({...data,lineups:lineup}),'');
+ assert.doesNotMatch(renderLineup(data,{paged:true,swipeDetails:true}),/Indisponibili e in dubbio/);
 });

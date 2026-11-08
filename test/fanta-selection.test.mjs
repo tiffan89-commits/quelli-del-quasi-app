@@ -5,6 +5,12 @@ test('assigned players disappear from the studio pool, while the saved overview 
  for(const html of [renderPickSheet(sq,'D1',true),renderBenchSheet(sq)]){assert.ok(!html.includes('data-pick="'+rolePlayers[0].id+'"'));assert.ok(!html.includes('data-pick="'+rolePlayers[1].id+'"'));assert.ok(!html.includes('data-bench-pick="'+rolePlayers[0].id+'"'));assert.ok(!html.includes('data-bench-pick="'+rolePlayers[1].id+'"'));assert.ok(html.includes(rolePlayers[2].id));}
  const swap=renderPickSheet(sq,'D1',false);assert.ok(swap.includes('data-pick="'+rolePlayers[0].id+'"'));assert.ok(swap.indexOf('data-pick="'+rolePlayers[2].id+'"')<swap.indexOf('data-pick="'+rolePlayers[0].id+'"'));
  const overview=parseHTML(renderSquadra(sq)).document;assert.equal(overview.querySelector('[data-lineup],[data-list-add],[data-slot],[data-formation],[data-drag-id]'),null);assert.ok(overview.querySelector('[data-studio="open"]'));
+ assert.equal(overview.querySelector('.fanta-view-module'),null);
+ assert.equal(overview.querySelector('[data-pitch-flip]').textContent.trim(),'Panchina');
+ assert.ok(overview.querySelector('.pitch-flip-back').hasAttribute('inert'));
+ const bench=parseHTML(renderSquadra({...sq,benchFlipped:true})).document;
+ assert.ok(bench.querySelector('.pitch-flip-front').hasAttribute('inert'));
+ assert.equal(bench.querySelector('.pitch-flip-back').hasAttribute('inert'),false);
  let doc=parseHTML(renderStudio(sq,{role:'tutti'})).document;assert.equal(doc.querySelectorAll('.fs-grid [data-st-player="'+rolePlayers[0].id+'"]').length,0);assert.equal(doc.querySelectorAll('.fs-grid [data-st-player="'+rolePlayers[1].id+'"]').length,1);assert.ok(doc.querySelector('.fs-grid [data-st-player="'+rolePlayers[2].id+'"]'));draft.slots.D0=null;doc=parseHTML(renderStudio(sq,{role:'tutti'})).document;assert.ok(doc.querySelector('.fs-grid [data-st-player="'+rolePlayers[0].id+'"]'));
  assert.deepEqual(orderRounds([1,2,3,4,5].map(number=>({number})),3).map(r=>r.number),[3,4,5,2,1]);
 });

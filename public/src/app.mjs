@@ -41,7 +41,7 @@ const initialPublicMode=Object.keys(PUBLIC_AUTH_HASHES).find(k=>PUBLIC_AUTH_HASH
 let v2Invite = pendingInvite(), landingDismissed = !!v2Invite||!!initialPublicMode, forceDemo = initialPublicMode==='demo';
 let initialDemoRequested=initialPublicMode==='demo';
 import {inlineResultView,patchSlipResults} from './slip-results.mjs';
-import {renderLineup,bindLineupPitch} from './lineup-pitch.mjs';
+import {renderLineup,bindLineupPitch,matchAvailability,setPitchFlip} from './lineup-pitch.mjs';
 let studioModule;const loadStudio=()=>studioModule??=import('./quasi-studio.mjs');
 window.addEventListener?.('quasi:idle',()=>{if(state.user&&!studioModule)loadStudio().catch(()=>{studioModule=null;});});
 
@@ -1042,9 +1042,7 @@ function summaryHint(d) {
       ? "Controlla puntata, limite e crediti disponibili."
       : d.count < d.total
         ? "Mancano " + (d.total - d.count) + " pronostici."
-        : d.missing
-          ? "Puoi confermare anche con quote in arrivo."
-          : "Tutto pronto. Conferma per partecipare.";
+        : "Tutto pronto. Conferma per partecipare.";
 }
 function updateSlipUI() {
   const r = R(),
@@ -1629,7 +1627,7 @@ function bind(l, r) {
     .querySelectorAll("[data-analyze]")
     .forEach(
       (b) =>
-        (b.onclick = () => openAnalysis(b.dataset.analyze, b.dataset.round)),
+        (b.onclick = () => flipAnalysis(b)),
     );
   if($('#ranking-select'))$('#ranking-select').onchange=e=>{
     persistDraft();rankingScope=e.target.value;
@@ -1686,7 +1684,7 @@ function bind(l, r) {
         ),
         q = r.matches.reduce((a, x) => a * (x.odds?.[picks[x.id]] || 1), 1);
       $("#potential").textContent = missing
-        ? "Quote in arrivo"
+        ? "?"
         : Object.keys(picks).length === r.matches.length
           ? fmt(q * stake) + " crediti"
           : "—";
@@ -1788,7 +1786,7 @@ function otherSlips(l, r) {
     return '<div class="card">Entra in una lega per consultare le schedine.</div>';
   return barSlipsView({ l, r, uid: state.user.id, fmt, rounds: availableRounds(), sourceOf });
 }
-// Verdicts for the whole table arrive in one light request; tiles and popup share the same cache.
+// Verdicts for the whole table arrive in one light request shared by both sides of every tile.
 const barVerdicts = new Map(),
   barVerdictPending = new Map();
 function applyAcknowledgedSlip(result){const ok=applySlipReceipt(state,result);if(ok)barVerdicts.delete(result.receipt.league+':'+result.receipt.round);return ok;}
@@ -1832,41 +1830,26 @@ function bindBarSlips() {
     }),
   );
 }
-function popup() {
-  activeMatchId = null;
-  let d = $("#match-modal");
-  if (!d) {
-    d = document.createElement("dialog");
-    d.id = "match-modal";
-    document.body.appendChild(d);
-    d.addEventListener("click", (e) => {
-      if (e.target === d) d.close();
-    });
-  }
-  d.dataset.match = "";
-  d.classList.remove("bar-profile-dialog");
-  d.innerHTML =
-    '<button class="secondary" id="close-modal">Chiudi ×</button><p class="muted">Caricamento…</p>';
-  if (!d.open) d.showModal();
-  $("#close-modal").onclick = () => d.close();
-  return d;
-}
-async function openAnalysis(uid, round) {
-  const r = (L()?.rounds || []).find((x) => x.id === round) || R(),
-    d = popup();
-  d.classList.add("bar-profile-dialog");
-  $("#close-modal").onclick = () => d.close();
+async function flipAnalysis(button) {
+  const flipped=button.getAttribute('aria-pressed')==='true';
+  setPitchFlip(button,!flipped);
+  const back=button.closest('.bar-tile').querySelector('[data-bar-profile]');
+  if(flipped||back.dataset.profileState==='ready'||back.dataset.profileState==='loading')return;
+  const l=L(),uid=button.dataset.analyze,r=l?.rounds?.find(x=>x.id===button.dataset.round)||R();
+  back.dataset.profileState='loading';
+  back.innerHTML='<p role="status">Caricamento…</p>';
   try {
     const players = await loadBarVerdicts(r),
       a = players.find((x) => x.uid === uid);
     if (!a) throw new Error("Nessun profilo disponibile per questa giornata");
-    const member = L().members.find((m) => m.uid === uid) || {},
+    const member = l.members.find((m) => m.uid === uid) || {},
       slip = (r.publicSlips || []).find((x) => x.uid === uid);
-    d.innerHTML = barProfileView(a, { name: member.name || "Giocatore", avatar: member.avatar, slip, fmt });
+    back.innerHTML = barProfileView(a, { name: member.name || "Giocatore", avatar: member.avatar, slip, fmt });
+    back.dataset.profileState='ready';
   } catch (e) {
-    d.innerHTML = `<button class="secondary" id="close-modal">Chiudi ×</button><p class="muted">${esc(e.message)}</p>`;
+    back.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
+    back.dataset.profileState='error';
   }
-  $("#close-modal").onclick = () => d.close();
 }
 function eventColumns(data, events) {
   const norm = (s) =>
@@ -1975,22 +1958,24 @@ async function openMatch(id, quiet = false) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
+    const availability=matchAvailability(data),hasDetails=!!(events.length||availability);
     const detailsOpen=quiet&&dialog.querySelector('.match-detail-drill')?.open;
     dialog.innerHTML = `<div class="match-toolbar">
       <button class="secondary" id="close-modal">Chiudi ×</button>
-      <details class="match-detail-drill" ${events.length?(detailsOpen?'open':''):'hidden'}>
+      <details class="match-detail-drill" ${hasDetails?(detailsOpen?'open':''):'hidden'}>
         <summary><span class="match-details-forward">Dettagli della partita ›</span><span class="match-details-back">← Formazioni</span></summary>
         <div class="match-details-body">
           <h3>Dettagli della partita</h3>
-          <div data-live-detail-events>${events.length?eventColumns(data,events):'<p class="muted">Eventi non ancora disponibili.</p>'}</div>
-          <div data-live-detail-penalties>${footballPenalties(data,{compact:true})}</div>
+          <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
+          <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
+          <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
         </div>
       </details>
     </div>
     <div class="match-headline">
       <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,fantasy:false})}</h2>
       <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
-    </div>${lineupView(data,events.length>0)}`;
+    </div>${lineupView(data,hasDetails)}`;
     $("#close-modal").onclick = () => {
       activeMatchId = null;
       dialog.dataset.match = "";
@@ -2009,11 +1994,12 @@ async function openMatch(id, quiet = false) {
       let start=null;
       surface.addEventListener('touchstart',e=>{start=e.touches.length===1?e.touches[0]:null;},{passive:true});
       surface.addEventListener('touchcancel',()=>{start=null;},{passive:true});
-      surface.addEventListener('touchend',e=>{
-        const end=e.changedTouches[0],first=start;start=null;
-        if(!first||!end)return;
-        const dx=end.clientX-first.clientX,dy=end.clientY-first.clientY;
-        if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.4)action(dx);
+      surface.addEventListener('touchend',()=>{start=null;},{passive:true});
+      surface.addEventListener('touchmove',e=>{
+        const point=e.touches[0];
+        if(!start||e.touches.length!==1)return;
+        const dx=point.clientX-start.clientX,dy=point.clientY-start.clientY;
+        if(Math.abs(dx)>=22&&Math.abs(dx)>Math.abs(dy)*1.4){start=null;action(dx);}
       },{passive:true});
     };
     watchSwipe(dialog.querySelector('.match-headline'),openDetails);
@@ -2567,15 +2553,26 @@ function applyLive(data){
       const status=dialog.querySelector('[data-live-detail-status]'),label=matchDetailStatus(m);
       if(status&&status.textContent!==label)status.textContent=label;
       const events=dialog.querySelector('[data-live-detail-events]');
+      const availability=dialog.querySelector('[data-match-availability]');
       if(events&&Array.isArray(m.details?.events)){
-        const items=m.details.events.filter(isMatchEvent),html=eventColumns(m,items);
+        const items=m.details.events.filter(isMatchEvent),html=items.length?eventColumns(m,items):'';
+        if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events'+(items.length?'':' hidden')+'>'+html+'</div>');events.dataset.revision=html;}
+      }
+      if(availability&&(m.lineups||matchDetailStatus(m)!=='Da giocare')){
+        const html=matchAvailability(m);
+        if(availability.dataset.revision!==html){patchRegion(availability,'<div data-match-availability'+(html?'':' hidden')+'>'+html+'</div>');availability.dataset.revision=html;}
+      }
+      if(events&&availability){
         const drill=dialog.querySelector('.match-detail-drill'),edge=dialog.querySelector('.pitch-details-edge');
-        drill.hidden=!items.length;
+        drill.hidden=events.hidden&&availability.hidden;
         if(edge)edge.hidden=drill.hidden;
         if(drill.hidden)drill.open=false;
-        if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events>'+html+'</div>');events.dataset.revision=html;}
       }
-      const penalties=dialog.querySelector('[data-live-detail-penalties]');if(penalties&&m.details?.penalties!==undefined){const html=footballPenalties(m,{compact:true});if(penalties.dataset.revision!==html){patchRegion(penalties,'<div data-live-detail-penalties>'+html+'</div>');penalties.dataset.revision=html;}}
+      const penalties=dialog.querySelector('[data-live-detail-penalties]');
+      if(penalties&&events){
+        if(m.details?.penalties!==undefined){const html=footballPenalties(m,{compact:true});if(penalties.dataset.revision!==html){patchRegion(penalties,'<div data-live-detail-penalties>'+html+'</div>');penalties.dataset.revision=html;}}
+        penalties.hidden=events.hidden;
+      }
     }
   }
 }

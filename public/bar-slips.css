@@ -6,9 +6,7 @@
 .bar-head p{margin:0;color:var(--muted);font-size:14px;line-height:1.45;max-width:46ch}
 .bar-round{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .bar-round select{min-height:44px;width:100%;margin:0}
-.bar-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
-@media(min-width:760px){.bar-head{flex-direction:row;justify-content:space-between;align-items:flex-end}.bar-round{min-width:220px}.bar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(min-width:1100px){.bar-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:760px){.bar-head{flex-direction:row;justify-content:space-between;align-items:flex-end}.bar-round{min-width:220px}}
 .bar-tile{position:relative;display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:18px;background:#0e1c17;border:1px solid var(--line)}
 .bar-tile.is-me{border-color:#d6f77b70;box-shadow:0 0 0 1px #d6f77b24,0 10px 28px -16px #d6f77b66}
 .bar-who{position:relative;display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;align-items:center}
@@ -35,11 +33,8 @@
 @keyframes bar-pop{from{opacity:0;transform:translateY(4px)}}
 /* La schedina in miniatura, su carta. */
 .bar-stub{padding:9px 8px 8px;border-radius:10px;background:#f3eed9;color:#22301f;box-shadow:inset 0 0 0 1px #d9cfa6}
-.bar-stub-head,.bar-stub-foot{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;color:#53583f}
-.bar-stub-head{padding-bottom:6px;margin-bottom:7px;border-bottom:1.5px dashed #b9ae86;font:700 12px/1 'Barlow Condensed',sans-serif;letter-spacing:.12em}
+.bar-stub-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;color:#53583f;padding-bottom:6px;margin-bottom:7px;border-bottom:1.5px dashed #b9ae86;font:700 12px/1 'Barlow Condensed',sans-serif;letter-spacing:.12em}
 .bar-stub-head span+span{letter-spacing:.03em;font-size:12.5px;color:#22301f}
-.bar-stub-foot{margin-top:7px;padding-top:6px;border-top:1.5px dashed #b9ae86}
-.bar-stub-foot b{color:#22301f}
 .bar-bets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 @media(max-width:340px){.bar-bets{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .bar-bet{width:auto;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:46px;padding:5px 1px 4px;border-radius:7px;border:1px solid #ddd3ac;background:#fffdf3;color:#22301f;text-align:center}
@@ -59,12 +54,13 @@
 .bar-bet.lose strong,.bar-bet strong.pick-losing{color:#a13a1c}
 .bar-bet.goal-flash{animation:bar-goal .9s ease-out}
 @keyframes bar-goal{30%{box-shadow:0 0 0 3px #d6f77b;transform:scale(1.06)}}
-.bar-profile{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:0 16px;border-radius:12px;border:0;background:var(--lime);color:#10200f;font-weight:800;font-size:14px}
-.bar-profile i{font-style:normal;font-size:18px;transition:transform .15s}
-.bar-profile:active i{transform:translateX(4px)}
+.bar-tile.pitch-flip-card{display:grid;grid-template:auto/minmax(0,1fr);padding-bottom:27px}
+.bar-card-front{display:flex;flex-direction:column;gap:inherit}
+.bar-card-back{position:absolute;grid-area:auto;inset:4px 4px 27px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.bar-profile.pitch-flip-button{inset:auto 5px 3px auto;flex-direction:row;justify-content:center;gap:3px;min-height:22px;padding:2px 5px;font-size:10px}
+.bar-profile.pitch-flip-button svg{width:13px;height:13px}
 .bar-foot-note{margin:14px 2px 0;text-align:center;color:var(--muted);font-size:11px}
-/* Popup del profilo. */
-dialog.bar-profile-dialog{width:min(560px,calc(100vw - 20px));max-height:calc(100dvh - 24px);overflow:auto;padding:14px 14px calc(18px + var(--safe-bp,0px))}
+/* Profilo sul retro della tessera. */
 .bar-dossier{display:flex;flex-direction:column;gap:14px;margin-top:10px}
 .bar-dossier-top{display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px;align-items:center}
 .bar-dossier-quasi .quasi-scene{border-radius:14px;max-height:none}
@@ -94,3 +90,20 @@ dialog.bar-profile-dialog{width:min(560px,calc(100vw - 20px));max-height:calc(10
 .bar-hist.is-now i{opacity:1;box-shadow:0 0 0 2px #f6f3e780}
 .bar-hist small{margin-top:4px;font-size:10px;color:var(--muted)}
 @media(prefers-reduced-motion:reduce){.bar-skeleton,.bar-quip.is-ready,.bar-meter-track i,.bar-bet.goal-flash{animation:none}}
+.bar-card-back .bar-dossier{gap:3px;margin:0}
+.bar-card-back .bar-dossier-top{grid-template-columns:30px minmax(0,1fr);gap:6px}
+.bar-card-back .bar-dossier-quasi .quasi-scene{width:30px;height:30px;aspect-ratio:1}
+.bar-card-back .bar-dossier-top .eyebrow{display:none}
+.bar-card-back .bar-dossier-top h2{font-size:16px;margin:0}
+.bar-card-back .bar-dossier-name{font-size:11px;margin:0}
+.bar-card-back .bar-meter b{font-size:14px}
+.bar-card-back .bar-meter-track{height:4px;margin:2px 0 0}
+.bar-card-back :is(.bar-dossier-quip,.bar-dossier-text,.bar-dossier-evo,.bar-dossier .tiny){font-size:11px;line-height:1.2;padding:3px 5px;margin:0}
+.bar-card-back .bar-dossier-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.bar-card-back .bar-dossier-stats div{padding:2px 4px;min-width:0}
+.bar-card-back .bar-dossier-stats dt{font-size:9px}
+.bar-card-back .bar-dossier-stats dd{font-size:11px;margin:1px 0 0}
+.bar-card-back .bar-dossier-top,.bar-card-back .bar-meter,.bar-card-back .bar-dossier-stats{order:-1}
+.bar-card-back .bar-dossier>h3{font-size:10px;margin:0}
+.bar-card-back .bar-hists{height:30px}
+.bar-card-back .bar-hist small{font-size:8px;margin-top:1px}

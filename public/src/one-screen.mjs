@@ -191,7 +191,7 @@ export function startOneScreen(doc = globalThis.document) {
    if (!typing() || !height) {
     const inset = bottomInset();
     const top = main.getBoundingClientRect().top;
-    const space = win.innerWidth >= 760 ? 18 : DOTS_SPACE;
+    const space = main.classList.contains('fanta-team-formation') ? 0 : win.innerWidth >= 760 ? 18 : DOTS_SPACE;
     const footer = host !== main ? [...host.querySelectorAll(':scope>#live-channel-status')].reduce((sum,el)=>{
      if(!shown(el))return sum;
      const style=win.getComputedStyle(el);

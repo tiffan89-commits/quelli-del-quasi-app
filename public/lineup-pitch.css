@@ -34,27 +34,28 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 /* Each team has one slide and two sides of the same pitch. */
 .match-page .lineup-paged .pitch-slides{overflow-y:hidden;transition:none}
 .match-page .lineup-paged .pitch-heading{margin:0 0 3px;min-height:15px}
-.match-page .pitch-flip-card{position:relative;display:grid;height:var(--match-pitch-height);perspective:1000px}
-.match-page .pitch-flip-face{grid-area:1/1;min-width:0;min-height:0;backface-visibility:hidden;transition:transform .32s ease}
-.match-page .pitch-flip-face[inert]{pointer-events:none}
-.match-page .pitch-flip-back{transform:rotateY(180deg)}
-.match-page .pitch-flip-card.is-flipped .pitch-flip-front{transform:rotateY(-180deg)}
-.match-page .pitch-flip-card.is-flipped .pitch-flip-back{transform:rotateY(0)}
+.pitch-flip-card{position:relative;display:grid;grid-template:minmax(0,1fr)/minmax(0,1fr);perspective:1000px}
+.match-page .pitch-flip-card{height:var(--match-pitch-height)}
+.pitch-flip-face{grid-area:1/1;min-width:0;min-height:0;backface-visibility:hidden;transition:transform .32s ease}
+.pitch-flip-face[inert]{pointer-events:none}
+.pitch-flip-back{transform:rotateY(180deg)}
+.pitch-flip-card.is-flipped .pitch-flip-front{transform:rotateY(-180deg)}
+.pitch-flip-card.is-flipped .pitch-flip-back{transform:rotateY(0)}
 .match-page .pitch-flip-card :is(.football-pitch,.lineup-sticker-list,.pitch-bench-room){height:100%;box-sizing:border-box;padding-bottom:35px}
 .match-page .pitch-flip-front .lineup-sticker-list{align-content:start;overflow:auto}
-.match-page .pitch-flip-button{
+.pitch-flip-button{
  position:absolute;right:6px;bottom:4px;z-index:2;display:flex;flex-direction:column;align-items:center;gap:1px;
  min-width:52px;min-height:31px;padding:2px 5px;border:1px solid #bfc6a77a;border-radius:8px;
  background:#10251f;color:#f6f3e7;font-size:9px;font-weight:700;line-height:1.1;white-space:nowrap
 }
-.match-page .pitch-flip-button svg{width:16px;height:16px}
-@media(prefers-reduced-motion:reduce){.match-page .pitch-flip-face{transition:none}}
-.match-page .pitch-bench-room{
+.pitch-flip-button svg{width:16px;height:16px}
+@media(prefers-reduced-motion:reduce){.pitch-flip-face{transition:none}}
+.pitch-bench-room{
  box-sizing:border-box;display:flex;flex-direction:column;height:calc(var(--match-pitch-height) + 18px);margin:0;padding:6px;
  border:1px solid #9b734e;border-radius:12px;background:repeating-linear-gradient(90deg,#493527 0,#493527 18px,#513b2a 18px,#513b2a 36px)
 }
-.match-page .bench-room-label{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:2px 6px 4px;color:#f5e2bd;font-size:12px}
-.match-page .bench-room-label b{text-transform:uppercase;letter-spacing:.11em}
+.bench-room-label{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:2px 6px 4px;color:#f5e2bd;font-size:12px}
+.bench-room-label b{text-transform:uppercase;letter-spacing:.11em}
 .match-page .pitch-bench-room .lineup-role-tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:0 0 3px;overflow:visible}
 .match-page .pitch-bench-room .lineup-role-tabs button{min-height:24px;padding:2px 5px;font-size:10px}
 .match-page .pitch-bench-room .bench-stickers{
@@ -102,12 +103,16 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 .match-page .match-headline .team-logo svg{width:19px;height:21px}
 .match-page .match-headline .match-page-score{flex:none;margin:0;font-size:clamp(19px,5vw,25px)}
 .match-page .match-headline [data-live-detail-status]{flex:none;margin:0;font-size:11px;white-space:nowrap}
-.pitch-details-edge{flex:0 0 100%;scroll-snap-align:start;align-self:stretch}
+.pitch-slides:has(.pitch-details-edge:not([hidden])) .pitch-team{scroll-snap-stop:always}
+.pitch-details-edge{flex:0 0 32px;scroll-snap-align:end;align-self:stretch}
 .pitch-details-edge[hidden],.match-page .match-detail-drill[hidden]{display:none}
 .match-page .match-details-body{touch-action:pan-y pinch-zoom}
 .match-page .match-details-body>h3{margin:3px 0;font-size:16px}
 .match-page .match-details-body .events-columns{grid-template-columns:minmax(0,1fr);gap:4px}
 .match-page .match-details-body .events-columns h3{font-size:14px;margin:4px 0}
+.match-availability h4{margin:8px 0 3px;font-size:14px}
+.match-availability-row{display:flex;justify-content:space-between;gap:8px;min-height:25px;padding:3px 5px;border-bottom:1px solid var(--line);font-size:12px}
+.match-availability-row span{color:var(--muted);text-align:right}
 .match-page .match-event-row{display:grid;grid-template-columns:28px 22px minmax(0,1fr);gap:5px;align-items:center;min-height:25px;padding:2px 5px;margin:0}
 .match-page .match-event-row svg{width:17px;height:17px;vertical-align:middle}
 .match-page .match-event-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}

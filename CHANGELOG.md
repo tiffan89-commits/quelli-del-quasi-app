@@ -5,7 +5,10 @@
 
 # Unreleased
 
-- Le panchine sono sul retro del campo, raggiungibili dal pulsante di ribaltamento. Lo swipe passa tra le squadre e apre i dettagli solo se ci sono eventi.
+- Le panchine sono sul retro del campo, raggiungibili dal pulsante di ribaltamento. Un breve swipe a sinistra dalla seconda squadra apre i dettagli con gli eventi o, prima del calcio d’inizio, con gli indisponibili e i giocatori in dubbio.
+- In Squadra → Formazione il campo usa lo spazio fino alla barra in basso, senza la riga del modulo. Il retro mostra la panchina nell’ordine salvato. Le quote mancanti sono indicate con un punto interrogativo e una legenda in fondo alla schedina.
+- Nel Verdetto le schedine sbagliate per un solo esito sono visibili direttamente nel riquadro della giornata.
+- Schedine del Bar più compatte, con ritratto quadrato e profilo del pronosticatore sul retro della scheda.
 
 - Intestazione delle partite Serie A su una riga. I dettagli si aprono scorrendo dall’intestazione o oltre l’ultima panchina e mostrano gli eventi e i rigori.
 
