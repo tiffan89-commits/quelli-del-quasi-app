@@ -58,6 +58,15 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views']){
    await db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
   }
+  const snapshot=(kind,sportsStorage,other={})=>readSnapshot(state=>state,{
+   kind,league:leagueId,competition:roundId,team:fixtureId,connect,sportsStorage,...other,
+  });
+  for(const kind of ['live','results','match','analysis']){
+   assert.deepEqual(await snapshot(kind,'rows'),await snapshot(kind,'snapshot'),kind);
+  }
+  const loginSnapshot=(storage,sessionToken)=>snapshot('game',storage,{tokenHash:sha(sessionToken)});
+  assert.deepEqual(await loginSnapshot('rows','unknown'),await loginSnapshot('snapshot','unknown'));
+  assert.equal((await loginSnapshot('rows',token)).leagues[0].id,leagueId);
   const saved=await saveBarSlip(token,input,{connect,sportsStorage:'rows',now:()=>Date.parse('2026-11-08T19:00:00Z')});
   assert.equal(saved.receipt.member.credits,490);
   assert.equal((await state()).rounds[0].slips[0].acceptedOdds[fixtureId],2.5);
@@ -84,6 +93,10 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   const app=await appSnapshot();
   assert.equal(app.rounds[0].slips[0].prize,25);
   assert.equal(app.leagues[0].members[0].credits,515);
+  assert.equal((await snapshot('live','rows')).rounds[0].slips[0].prize,25);
+  assert.deepEqual((await snapshot('results','rows')).rounds[0].matches[0].score,[1,0]);
+  assert.deepEqual((await snapshot('match','rows')).football.calendar.rounds[0].matches[0].score,[1,0]);
+  assert.equal((await snapshot('analysis','rows')).rounds[0].slips[0].odds,2.5);
   const replay=await batch();
   assert.equal(replay.metrics.dbWrites,0);
   assert.equal(replay.metrics.cacheWrites,0);
