@@ -7,6 +7,7 @@ import {pointTerms} from '../../scoring.mjs';
 import { slipSummary, isClosed, sourceOf,roundAvailability } from '../slip-state.mjs';
 import { inlineResultView } from '../slip-results.mjs';
 import {orderSlipMatches} from '../../match-layout.mjs';
+import {teamCode,pickCode} from '../bar-slips.mjs';
 
 export const MAIN = ['1', 'X', '2'];
 export const EXTRA = ['1X', '12', 'X2', 'Under 2.5', 'Over 2.5', 'Goal', 'No Goal'];
@@ -44,11 +45,11 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
     const extraOn = EXTRA.includes(picks[m.id]), open = openMatch === m.id;
     const meta = fanta && fantasyMeta ? fantasyMeta(m) : (m.kickoff ? date(m.kickoff) : '');
     const live = m.status === 'LIVE', status = live ? 'In corso' : m.score ? 'Risultato finale' : (meta || '');
-    return '<article class="v2-match" data-match-card="' + esc(m.id) + '" data-result-score="' + esc(JSON.stringify(live ? m.liveScore || null : m.score || null)) + '"><button type="button" class="v2-match-head match-link" data-detail="' + esc(m.id) + '"><div><b class="slip-teams">' + teamLabel(m.home,{home:true,vs:m.away}) + '<span class="slip-versus">–</span>' + teamLabel(m.away,{home:false,vs:m.home}) + '</b><small data-match-status>' + esc(status) + '</small></div><span class="inline-result" data-inline-result aria-live="polite">' + inlineResultView(m) + '</span></button>' +
+    return '<article class="v2-match" data-match-card="' + esc(m.id) + '" data-result-score="' + esc(JSON.stringify(live ? m.liveScore || null : m.score || null)) + '"><button type="button" class="v2-match-head match-link" data-detail="' + esc(m.id) + '" aria-label="' + esc(m.home+' – '+m.away) + '"><div><b class="slip-teams">' + teamLabel(m.home,{home:true,vs:m.away,short:teamCode(m.home)}) + '<span class="slip-versus">–</span>' + teamLabel(m.away,{home:false,vs:m.home,short:teamCode(m.away)}) + '</b><small data-match-status>' + esc(status) + '</small></div><span class="inline-result" data-inline-result aria-live="polite">' + inlineResultView(m) + '</span></button>' +
       '<div class="v2-odds-main">' + MAIN.map(p => option(m, p, picks, closed||!ready, esc, fmt, pointsOnly,round)).join('') +
-      (pointsOnly ? '' : '<button type="button" class="v2-more' + (extraOn ? ' is-on' : '') + '" data-v2-more="' + esc(m.id) + '" aria-expanded="' + open + '" aria-label="Altri mercati">' + (open ? '–' : '+') + '</button>') + '</div>' +
+      (pointsOnly ? '' : '<button type="button" class="v2-more' + (extraOn ? ' is-on' : '') + '" data-v2-more="' + esc(m.id) + '" data-short-pick="' + esc(open?'−':extraOn?pickCode(picks[m.id]):'+') + '" aria-expanded="' + open + '" aria-label="' + esc(extraOn?'Altri mercati · '+show(picks[m.id]):'Altri mercati') + '">' + (open ? '–' : '+') + '</button>') + '</div>' +
       (open && !pointsOnly ? '<div class="v2-odds-extra">' + EXTRA.map(p => option(m, p, picks, closed||!ready, esc, fmt, pointsOnly,round)).join('') + '</div>' : '') +
-      '<div data-pick-feedback></div></article>';
+      '<div class="sr-only" data-pick-feedback></div></article>';
   }).join('');
   const quick = quickStakes(max), left = (round.matches?.length || 0) - chosen;
   const saved = !!round.slip && !sum.dirty;
@@ -58,10 +59,10 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
     ? ['v2-error is-hint', 'status', 'Mancano ' + left + (left === 1 ? ' partita' : ' partite') + ': scegli un esito per ognuna per confermare.']
     : ['v2-error', 'alert', 'Controlla la puntata (1–' + max + ') e i crediti disponibili.'];
   const label = saved ? 'Confermata ✓' : round.slip ? 'Salva' : 'Conferma';
-  return '<section class="v2-slip" data-slip-round="'+esc(round.id||'')+'" data-slip-match-list><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
+  return '<section class="v2-slip" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
     '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><p class="v2-sub">' + chosen + ' / ' + (round.matches?.length || 0) + ' esiti · ' +
-    (availability==='non ancora aperta'?'non ancora aperta':closed ? 'chiusa' : 'chiude ' + esc(date(round.deadline || round.kickoff))) + ' · una scelta per partita</p>' + rows +
-    '<p class="tiny muted">Punti per gli esiti indovinati, crediti per la puntata moltiplicata per la quota totale. Quote uguali per tutti. <a href="#" data-v2-go="regolamento">Regolamento</a></p></section>' +
+    (availability==='non ancora aperta'?'non ancora aperta':closed ? 'chiusa' : 'chiude ' + esc(date(round.deadline || round.kickoff))) + ' · una scelta per partita</p><div data-os-content data-slip-match-list>' + rows +
+    '<p class="tiny muted slip-explainer">Punti per gli esiti, crediti per la quota totale. <a href="#" data-v2-go="regolamento">Regolamento</a></p></div></section>' +
     (!ready ? '' : '<div class="v2-slipbar"><div class="v2-slip-summary"><p class="v2-state ' + state[0] + '" role="status" title="'+esc(state[1])+'">' + esc(left>0?'Mancano '+left+(left===1?' partita':' partite'):hint?'Controlla puntata e saldo':saved?'Confermata ✓':state[1]) + '</p>' +
       (pointsOnly ? '' : '<div class="v2-slip-meta"><details class="v2-stake-picker"><summary data-v2-stake-menu aria-label="Modifica la puntata in crediti"><b data-v2-stake-current>'+fmt(stake)+' cr</b><span aria-hidden="true">⌃</span></summary><div class="v2-stake-panel"><p>Quanto metti sul bancone?</p><div class="v2-stakes">' + quick.map(v =>
         '<button type="button" class="v2-stake' + (Number(stake) === v ? ' is-on' : '') + '" data-v2-stake="' + v + '">' + v + (v === max ? ' max' : '') + '</button>').join('') +

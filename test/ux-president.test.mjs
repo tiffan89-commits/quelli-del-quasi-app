@@ -6,8 +6,9 @@ import {renderLeagueChip} from '../public/src/v2/league-switcher.mjs';
 import {tabForPage,routeForTab,renderTabBar} from '../public/src/v2/tabs.mjs';
 import {renderLeagueSheet} from '../public/src/v2/league-switcher.mjs';
 test('panel keeps only permitted closed groups, escaped summaries and contextual links',()=>{
- const html=presidentPanel({name:'<script>',groups:{persone:{summary:'18 membri',html:'<form id="unchanged"></form>'}}}),{document}=parseHTML(html);
+ const html=presidentPanel({groups:{persone:{summary:'18 membri',html:'<form id="unchanged"></form>'}}}),{document}=parseHTML(html);
  assert.deepEqual([...document.querySelectorAll('.president-group')].map(d=>d.dataset.presidentSection),['persone']);assert.equal(document.querySelectorAll('details[open]').length,0);assert.ok(document.querySelector('#unchanged'));assert.ok(!document.querySelector('script'));assert.equal(tabForPage('admin'),null);
+ assert.equal(document.querySelector('.president-heading').textContent,'Il tuo banco di comando');assert.equal(document.querySelector('.president-context'),null);
  assert.equal(presidentTodos([]),'');assert.equal(barPresidentTasks({nativeFantaLink:{}}).length,0);
 });
 test('settings entry is shown to every member, outside league selector button',()=>{

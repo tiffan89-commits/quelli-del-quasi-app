@@ -176,9 +176,8 @@ function teamPanel(m, side, view) {
 export function renderGiornata({ round, matchup, side, view = 'campo' }) {
   if (!round) return '<div class="fanta-loading" role="status">Carichiamo la giornata…</div>';
   return `<div class="fanta-round">
-    ${roundHead(round)}
-    ${matchupRail(round, matchup?.id)}
-    ${matchup ? scoreboard(matchup, side) + teamPanel(matchup, side, view) + comparison(matchup) : '<div class="fanta-loading" role="status">Carichiamo la sfida…</div>'}
+    <div data-os-header>${roundHead(round)}${matchupRail(round, matchup?.id)}</div>
+    <div data-os-content>${matchup ? scoreboard(matchup, side) + teamPanel(matchup, side, view) + comparison(matchup) : '<div class="fanta-loading" role="status">Carichiamo la sfida…</div>'}</div>
   </div>`;
 }
 

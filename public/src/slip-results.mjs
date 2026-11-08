@@ -37,6 +37,8 @@ export function patchSlipResults(root,round,picks,closed){
   const pick=row.dataset.savedPick||picks[m.id],f=predictionStatus(m,pick,closed);
   if(row.classList.contains('bar-bet')){row.classList.toggle('win',!!f?.winning);row.classList.toggle('lose',!!f&&!f.winning);}
   for(const b of row.querySelectorAll('[data-pick]')){const selected=b.dataset.value===pick;for(const c of ['pick-winning','pick-losing'])b.classList.toggle(c,selected&&f?.className===c);if(closed)b.disabled=true;}
+  const extra=row.querySelector('[data-v2-more]');
+  if(extra){const selected=!!pick&&!['1','X','2'].includes(pick);for(const c of ['pick-winning','pick-losing'])extra.classList.toggle(c,selected&&f?.className===c);}
   const feedback=row.querySelector('[data-pick-feedback]');if(feedback){const html=f?`<p class="pick-feedback ${f.className}" role="status"><b>${f.winning?'✓':'✕'} ${esc(pick)} · ${f.label}</b><small>${f.note}</small></p>`:'';if(feedback.innerHTML!==html)feedback.innerHTML=html;}
   const check=row.querySelector('[data-result-check]');if(check)check.textContent=f?(f.winning?'✓':'✕'):'';
   const saved=row.querySelector('[data-result-pick]');if(saved){saved.classList.remove('win','lose');for(const c of ['pick-winning','pick-losing'])saved.classList.toggle(c,f?.className===c);}

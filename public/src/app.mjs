@@ -525,7 +525,7 @@ function navIcon(id) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[id] || paths.schedina}</svg>`;
 }
 function shell(content) {
-  return `${!state.user ? '<header><div class="brand"><img class="brand-logo" src="/league-logo.svg" alt="Logo Quelli del Quasi" width="38" height="44">QUELLI DEL <b>QUASI.</b></div></header>' : ""}${state.user && (state.user.emailVerified || state.user.demo) && L() ? renderLeagueChip(L(), state.user.id, esc, fmt, barModeSwitch(), me(), 'crediti Bar',page==='profilo') + (['classifiche','storico'].includes(page) ? '<div class="v2-lega-nav">' + renderLegaSections(page, isLeagueAdmin(L(), state.user.id), esc) + "</div>" : "") : ""}${state.user && (state.user.emailVerified || state.user.demo) && !L() ? `<header class="v2-top">${barModeSwitch()}${presidentEntry('data-bar-page="profilo"')}</header>` : ""}${content}${state.user && (state.user.emailVerified || state.user.demo) ? renderTabBar(tabForPage(page, sourceScope)) : ""}${chatLauncherView(L(),state.user)}`;
+  return `${!state.user ? '<header><div class="brand"><img class="brand-logo" src="/league-logo.svg" alt="Logo Quelli del Quasi" width="38" height="44">QUELLI DEL <b>QUASI.</b></div></header>' : ""}${state.user && (state.user.emailVerified || state.user.demo) && L() ? renderLeagueChip(L(), state.user.id, esc, fmt, barModeSwitch(), me(), 'crediti Bar',['admin','profilo'].includes(page)) + (['classifiche','storico'].includes(page) ? '<div class="v2-lega-nav">' + renderLegaSections(page, isLeagueAdmin(L(), state.user.id), esc) + "</div>" : "") : ""}${state.user && (state.user.emailVerified || state.user.demo) && !L() ? `<header class="v2-top">${barModeSwitch()}${presidentEntry('data-bar-page="profilo"')}</header>` : ""}${content}${state.user && (state.user.emailVerified || state.user.demo) ? renderTabBar(tabForPage(page, sourceScope)) : ""}${chatLauncherView(L(),state.user)}`;
 }
 function slipsPage(l, r, m) {
   if(sourceScope==='fantacalcio')return '<section class="card"><h1>Le schedine Fanta hanno il loro posto.</h1><p>Le trovi nella sezione Schedine del Fanta, insieme alla tua lega.</p><button type="button" class="primary" id="open-native-slips">Apri le schedine Fanta</button></section>';
@@ -556,7 +556,7 @@ function slipsPage(l, r, m) {
         "</select></label>"
       : "";
   const tabs =
-    '<div class="slip-section-buttons" aria-label="Le Schedine">' +
+    '<div class="slip-section-buttons" data-os-header aria-label="Le Schedine">' +
     [
       ["mine", "La mia schedina", "La mia"],
       ["bar", "Le schedine del Bar", "Del Bar"],
@@ -579,7 +579,7 @@ function slipsPage(l, r, m) {
     "</div>";
   const body =
     slipScope === 'standings' && sourceScope === 'seriea' ? serieATable() : slipScope === "community"
-      ? (r ? roundSelector(l, r) : '') + communityView(
+      ? (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : '') + '<div data-os-content data-os-flow>'+communityView(
           l,
           sourceScope,
           state.user,
@@ -588,12 +588,12 @@ function slipsPage(l, r, m) {
           fmt,
           competitionScope,
           r,
-        )
+        )+'</div>'
       : sourceScope === "fantacalcio" && !r
         ? fantasyEmpty(l)
         : slipScope === "bar"
           ? otherSlips(l, r)
-          : (r ? roundSelector(l, r) : "") +
+          : (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : "") +
             (draftConflict ? '<div class="notice"><b>La schedina è stata aggiornata da un altro dispositivo.</b><p>Puoi tenere la versione salvata oppure recuperare la bozza locale e rivederla.</p><button class="secondary" id="keep-server">Tieni quella salvata</button> <button class="secondary" id="recover-draft">Recupera la bozza</button></div>' : "") +
             renderSlipV2({ round: r, picks, stake, credits: m.credits, openMatch: activeMatchId, esc, fmt, date });
   return (
@@ -687,7 +687,7 @@ function render() {
   document.querySelectorAll('[data-president-group]').forEach(b=>b.addEventListener('click',()=>{presidentGroup=b.dataset.presidentGroup;}));
   document.querySelector('[data-president-copy-link]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/invito/'+encodeURIComponent(l.code));notify('Link copiato.');}catch{notify('Copia il codice della lega.');}});
   document.querySelector('[data-president-activate]')?.addEventListener('click',()=>{document.getElementById('v2-open-leagues')?.click();document.querySelector('[data-existing-bar]')?.click();});
-  document.querySelectorAll('[data-president-mode]').forEach(b=>b.addEventListener('click',()=>{writeAppRoute({mode:'fanta',page:'presidente',league:l.nativeFantaLink?.leagueId});closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:l.nativeFantaLink?.leagueId,initialTab:'presidente',onBar:openBarTarget});}));
+  document.querySelectorAll('[data-president-section]').forEach(section=>section.addEventListener('toggle',()=>{if(!section.open&&presidentGroup===section.dataset.presidentSection)presidentGroup=null;}));
   bindNew(l, r);
   $("#edit-suggested-nickname")?.addEventListener("click",()=>{const section=$(".profile-account");if(section)section.open=true;const field=$("#profile-name input");field?.scrollIntoView({block:"center",behavior:"smooth"});field?.focus({preventScroll:true});});
   if(liveStatus)showLiveStatus(liveStatus);
@@ -1144,12 +1144,12 @@ function matchStatus(m) {
     return "Risultato in aggiornamento";
   return m.kickoff ? date(m.kickoff) : "Orario da definire";
 }
-function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt)+portfolioShell();}
+function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt,null,portfolioShell());}
 function adminBudget() { return ""; }
 function profile({embedded=false}={}) {
   const u = state.user,
     required = !u.emailVerified && !u.demo;
-  return `${nicknameNotice(u,{profile:true})}${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${required ? '<div class="notice" role="status">Per continuare devi inserire e confermare un indirizzo email. Punti, crediti e schedine restano salvati.</div>' : ""}${renderAppInvite()}<details class="card profile-account" ${required?"open":""}><summary>I tuoi dati e sicurezza</summary><div class="split" style="margin-top:24px"><div class="card"><h3>I tuoi dati</h3>${u.username?`<p class="muted">Username del vecchio account: <b>${esc(u.username)}</b></p>`:""}<p class="muted">Email: ${esc(u.email || "Non inserita")}</p><p class="${u.emailVerified ? "green" : "orange"}">${u.emailVerified ? "✓ Email verificata" : "Email da verificare"}</p>${u.pendingEmail ? `<p class="muted">Conferma in attesa: ${esc(u.pendingEmail)}</p>` : ""}<form id="profile-name"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary">Salva soprannome</button></form></div><form id="account-email" class="card"><h3>${required ? "Attiva il tuo account" : "Email e sicurezza"}</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail || u.email || "")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button><p class="tiny muted">Apri il link ricevuto, poi torna qui. Premi Aggiorna dopo aver confermato.</p>${u.pendingEmail || (u.email && !u.emailVerified) ? '<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>' : ""}</form></div></details>${!required?'<details class="card profile-reminder-settings"><summary>Avvisi e promemoria</summary><section class="card profile-alerts"><h2>Il bar ti chiama</h2><label class="reminder-toggle"><input id="reminder-preference" type="checkbox" '+(u.remindersEnabled!==false?'checked':'')+'><span>Promemoria schedina · due ore prima</span></label><p class="tiny muted">Un avviso sul dispositivo per ogni lega prima della chiusura, anche se hai già salvato.'+(L()?' Notifiche sul telefono dopo il tuo consenso.</p><button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button>':'</p>')+'</section>':''}${!required&&!u.demo?'<section class="card profile-email-reminders"><label class="reminder-toggle"><input id="email-reminder-preference" type="checkbox" '+(u.emailRemindersEnabled?'checked':'')+'><span>Ricevi avvisi via mail se ho dimenticato di inserire la schedina</span></label><p class="tiny muted">Una sola email a un’ora dalla chiusura, solo se manca la schedina. Niente pubblicità, niente newsletter. Puoi disattivarla anche dal link nell’email.</p></section>':''}${!required?'</details>':''}${!required && state.user?.emailVerified && !state.user.demo ? supportSection() : ""}${embedded?'':settingsLogout()}`;
+  return `${nicknameNotice(u,{profile:true})}${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${required ? '<div class="notice" role="status">Per continuare devi inserire e confermare un indirizzo email. Punti, crediti e schedine restano salvati.</div>' : ""}${renderAppInvite()}${embedded?'<section class="profile-account profile-embedded">':'<details class="card profile-account" '+(required?'open':'')+'><summary>I tuoi dati e sicurezza</summary>'}<div class="split"><div class="card"><h3>I tuoi dati</h3>${u.username?`<p class="muted">Username del vecchio account: <b>${esc(u.username)}</b></p>`:""}<p class="muted">Email: ${esc(u.email || "Non inserita")}</p><p class="${u.emailVerified ? "green" : "orange"}">${u.emailVerified ? "✓ Email verificata" : "Email da verificare"}</p>${u.pendingEmail ? `<p class="muted">Conferma in attesa: ${esc(u.pendingEmail)}</p>` : ""}<form id="profile-name"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary">Salva soprannome</button></form></div><form id="account-email" class="card"><h3>${required ? "Attiva il tuo account" : "Email e sicurezza"}</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail || u.email || "")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button><p class="tiny muted">Apri il link ricevuto, poi torna qui. Premi Aggiorna dopo aver confermato.</p>${u.pendingEmail || (u.email && !u.emailVerified) ? '<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>' : ""}</form></div>${embedded?'</section>':'</details>'}${!required?(embedded?'<section class="profile-reminder-settings profile-embedded"><h3>Avvisi e promemoria</h3>':'<details class="card profile-reminder-settings"><summary>Avvisi e promemoria</summary>')+'<section class="card profile-alerts"><h2>Il bar ti chiama</h2><label class="reminder-toggle"><input id="reminder-preference" type="checkbox" '+(u.remindersEnabled!==false?'checked':'')+'><span>Promemoria schedina · due ore prima</span></label><p class="tiny muted">Un avviso sul dispositivo per ogni lega prima della chiusura, anche se hai già salvato.'+(L()?' Notifiche sul telefono dopo il tuo consenso.</p><button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button>':'</p>')+'</section>':''}${!required&&!u.demo?'<section class="card profile-email-reminders"><label class="reminder-toggle"><input id="email-reminder-preference" type="checkbox" '+(u.emailRemindersEnabled?'checked':'')+'><span>Ricevi avvisi via mail se ho dimenticato di inserire la schedina</span></label><p class="tiny muted">Una sola email a un’ora dalla chiusura, solo se manca la schedina. Niente pubblicità, niente newsletter. Puoi disattivarla anche dal link nell’email.</p></section>':''}${!required?(embedded?'</section>':'</details>'):''}${!required && state.user?.emailVerified && !state.user.demo ? supportSection() : ""}${embedded?'':settingsLogout()}`;
 }
 function updateDashboard() {
   const region = $('#league-dashboard');
@@ -1251,7 +1251,7 @@ function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p c
             )
             .join(
               "",
-            )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field">Vincitori aggiuntivi (uno per riga)<textarea name="extra">${esc(l.rules.winners.filter((x) => !["points", "credits"].includes(x)).join("\n"))}</textarea></label><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
+            )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
 function barMembers(l){return '<ul class="bar-members">'+l.members.map(m=>'<li><span>'+esc(m.name)+'</span>'+(m.uid===l.admin?'<small>Presidente</small>':'')+'</li>').join('')+'</ul>';}
 const HUB_ICON={gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 11a3 3 0 1 0 0-6M21 20c0-2.6-1.7-4.8-4-5.6"/>',rules:'<path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6"/>',invite:'<path d="M4 12l16-8-6 16-3-6z"/>',chat:'<path d="M4 5h16v11H9l-5 4z"/>'};
 const hubIcon=k=>'<span class="lega-tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24">'+HUB_ICON[k]+'</svg></span>';
@@ -1259,24 +1259,22 @@ const hubIcon=k=>'<span class="lega-tile-icon" aria-hidden="true"><svg viewBox="
 function barLeagueInfo(l){
  const admin=isLeagueAdmin(l,state.user.id),tasks=admin?barPresidentTasks(l).length:0;
  const rules=(l.rules?.mode==='classic'?'Classica':'Ponderata')+(Number.isFinite(Number(l.rules?.maxStake))?' · max '+fmt(Number(l.rules.maxStake))+' cr':'');
- return '<section class="hero lega-hub-head"><span class="eyebrow">LA TUA LEGA</span><h1>'+esc(l.name)+'</h1><p>'+l.members.length+' al bancone</p></section><div class="lega-hub">'+
+ return '<section class="hero lega-hub-head" data-os-header><span class="eyebrow">LA TUA LEGA</span><h1>'+esc(l.name)+'</h1><p>'+l.members.length+' al bancone</p></section><div data-os-content><div class="lega-hub">'+
   (admin?'<button type="button" class="lega-tile is-admin" data-bar-page="admin">'+hubIcon('gear')+'<b>Pannello del presidente</b><small>'+(tasks?tasks+(tasks===1?' cosa da fare':' cose da fare'):'Tutto in ordine')+'</small></button>':'')+
   '<details class="lega-tile lega-tile-members"><summary>'+hubIcon('people')+'<b>Partecipanti · '+l.members.length+'</b><small>Chi è al bancone</small></summary>'+barMembers(l)+'</details>'+
   '<button type="button" class="lega-tile" data-bar-page="regolamento">'+hubIcon('rules')+'<b>Regolamento del Bar</b><small>'+esc(rules)+'</small></button>'+
   '<button type="button" class="lega-tile" data-bar-page="admin" data-president-group="persone">'+hubIcon('invite')+'<b>Invita nella tua lega</b><small>WhatsApp, link o codice</small></button>'+
   '<button type="button" class="lega-tile" id="league-open-chat">'+hubIcon('chat')+'<b>Chiacchiere da bar</b><small>Apri la chat della lega</small></button>'+
-  '</div>'+leagueActions();
+  '</div>'+leagueActions()+'</div>';
 }
 function leagueAdmin(l){
  const admin=isLeagueAdmin(l,state.user.id);
  const color=LEAGUE_COLORS.find(([v])=>v===l.branding?.accent)?.[1]||LEAGUE_COLORS[0][1];
- const fanta=l.nativeFantaLink?'<button type="button" data-president-mode="fanta">Fanta →</button>':'';
- const activate='<button type="button" class="secondary" data-president-activate>Attiva il Fanta di questa lega</button>';
- return presidentPanel({name:l.name,mode:'bar',other:fanta,open:presidentGroup,footer:settingsLogout(),tasks:admin?barPresidentTasks(l):[],groups:{
+
+ return presidentPanel({mode:'bar',open:presidentGroup,footer:settingsLogout(),tasks:admin?barPresidentTasks(l):[],groups:{
  persone:{summary:l.members.length+' membri · inviti'+(admin?' e premi':''),html:'<section class="president-invite"><h2>Invita nella tua lega</h2>'+(l.code?'<div class="money">'+esc(l.code)+'</div><div class="league-invite-actions"><button class="secondary" id="copy">Copia codice</button>'+whatsappInvite(l,esc)+'<button type="button" class="secondary" data-president-copy-link>Copia link</button></div>':'<p>Invito non disponibile.</p>')+'</section>'+(admin?leagueMembers(l,true):barMembers(l))},
  regole:{summary:(l.rules.mode==='weighted'?'Ponderata':'Classica')+' · '+l.rules.initial+' cr iniziali · max '+l.rules.maxStake,html:admin?barRulesForm(l):'<button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button>'},
  ...(admin?{
- calendario:{summary:l.nativeFantaLink?'Fanta attivo · competizioni e asta':l.fantaCreation?'Fanta in preparazione':'Il Fanta non è attivo',html:l.nativeFantaLink?'<p>Competizioni, rose e asta si gestiscono dal Fanta della stessa lega.</p>'+fanta:randomLeagueControls(l,state.user)||activate},
  identita:{summary:'Simbolo '+(l.branding?.emblem||'Q')+' · '+color,html:brandingForm(l)}
  }:{}),
  account:{summary:'Soprannome, email, avvisi e assistenza',html:profile({embedded:true})},
@@ -1753,10 +1751,7 @@ function bind(l, r) {
           winners: [
             ...(d.points ? ["points"] : []),
             ...(d.credits ? ["credits"] : []),
-            ...d.extra
-              .split("\n")
-              .map((x) => x.trim())
-              .filter(Boolean),
+            ...(l.rules.winners||[]).filter(x=>!["points","credits"].includes(x)),
           ],
         };
       act("rules", { rules }, "Regole salvate");
@@ -1796,7 +1791,10 @@ function bind(l, r) {
 function serieATable() {
   const t = state.standings;
   if (!t) return '<div class="card">Classifica in aggiornamento.</div>';
-  return `<section class="hero"><div class="eyebrow">SERIE A · ${t.season}/${String(t.season + 1).slice(-2)}</div><h1>IL CAMPIONATO.<br><em>QUI CONTANO I GOL.</em></h1><p>Punti, risultati e gol del campionato.</p></section><div class="card serie-table-card"><table class="serie-table"><thead><tr>${["#", "Squadra", "Pt", "PG", "V", "N", "P", "GF", "GS", "DR"].map((x) => `<th scope="col">${x}</th>`).join("")}</tr></thead><tbody>${t.rows.map((x, i) => `<tr data-ranking-team="${esc(x.name)}"><td>${i + 1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played", "won", "drawn", "lost", "gf", "gs", "dr"].map((k) => `<td>${x[k]}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="tiny muted">PG: partite giocate · V/N/P: vinte, pareggiate, perse · GF/GS: gol fatti e subiti · DR: differenza reti.</p><div class="notice">${esc(t.note)} ${t.finals} risultati finali disponibili · aggiornamento ${date(t.updatedAt)}.</div>`;
+  const columns=["#","Squadra","Pt","PG","V","N","P","GF","GS","DR"];
+  const table=(rows,start)=>`<div class="serie-standings-page"><div class="serie-table-card"><table class="serie-table"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map((x,i)=>`<tr data-ranking-team="${esc(x.name)}"><td>${start+i+1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played","won","drawn","lost","gf","gs","dr"].map(k=>`<td>${x[k]}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+  const middle=Math.ceil(t.rows.length/2);
+  return `<div class="serie-standings-note" data-os-header><h1 class="sr-only">Classifica Serie A</h1><small>PG: giocate · V/N/P: vinte, pari, perse · GF/GS: gol fatti/subiti · DR: differenza reti.</small>${t.updatedAt?`<time datetime="${esc(t.updatedAt)}">Ultimo aggiornamento ${esc(date(t.updatedAt))}</time>`:''}</div><div data-os-content class="serie-standings">${table(t.rows.slice(0,middle),0)}${middle<t.rows.length?table(t.rows.slice(middle),middle):''}</div>`;
 }
 function otherSlips(l, r) {
   if (!l || !r)
@@ -2169,7 +2167,8 @@ function bindNew(l, r) {
     };
   if ($("#share-verdict"))
     $("#share-verdict").onclick = () => {
-      const d=popup(),show=uid=>{d.innerHTML='<button type="button" class="secondary" id="close-modal">Chiudi ×</button>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);d.querySelector('#close-modal').onclick=()=>d.close();d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));};show();
+      const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar'});
+      const show=uid=>{d.innerHTML='<div class="verdict-page-toolbar"><button type="button" class="secondary" id="close-modal">← Verdetto</button></div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);d.querySelector('#close-modal').onclick=()=>d.close();d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));};show();
     };
   bindChoices(r);
   if ($("#stake"))
@@ -2390,17 +2389,17 @@ function switchLeague(id) {
 }
 function brandingForm(l) {
   if (l.admin !== state.user.id) return "";
+  const emblem=l.branding?.emblem||'Q',accent=l.branding?.accent||LEAGUE_COLORS[0][0];
+  const names=new Set(['Lime','Menta','Ambra','Lilla','Rosa','Corallo','Prato','Blu','Cielo','Avio']);
+  const colors=LEAGUE_COLORS.filter(([color,label])=>color===accent||names.has(label));
+  const emblems=LEAGUE_EMBLEMS.filter(value=>['⚽','🏆','🍺','🔥','🦅','🐺','⭐','⚡'].includes(value));
   return (
-    '<form id="branding-form"><div class="branding-preview"><span class="league-emblem" id="branding-preview">' +
-    esc(l.branding?.emblem || "Q") +
-    '</span><p class="muted">Il simbolo e il colore del vostro bar.</p></div><label class="field">Sigla o simbolo<input name="emblem" list="league-emblems" maxlength="8" value="' +
-    esc(l.branding?.emblem || "Q") +
-    '" required></label><datalist id="league-emblems">' +
-    LEAGUE_EMBLEMS.map((v) => '<option value="' + esc(v) + '"></option>').join(
-      "",
-    ) +
-    '</datalist><p class="tiny muted">Fino a 8 caratteri: lettere anche accentate, numeri, spazi e . &amp; _ - oppure uno dei simboli proposti.</p><div class="emblem-presets" aria-label="Simboli della lega">' +
-    LEAGUE_EMBLEMS.map(
+    '<form id="branding-form"><div class="branding-identity"><span class="league-emblem" id="branding-preview" aria-hidden="true">' +
+    esc(emblem) +
+    '</span><label class="field">Sigla <small>Max 4</small><input name="emblem" maxlength="4" value="' +
+    esc(emblem) +
+    '" required></label></div><div class="emblem-presets" role="group" aria-label="Simboli della lega">' +
+    emblems.map(
       (v) =>
         '<button type="button" class="secondary" data-emblem="' +
         esc(v) +
@@ -2408,13 +2407,13 @@ function brandingForm(l) {
         esc(v) +
         "</button>",
     ).join("") +
-    '</div><fieldset class="theme-palette"><legend>Colore del template</legend>' +
-    LEAGUE_COLORS.map(
+    '</div><fieldset class="theme-palette"><legend>Colore</legend>' +
+    colors.map(
       ([color, label]) =>
         '<label class="theme-option" title="'+esc(label)+'"><input type="radio" name="accent" data-color-name="'+esc(label)+'" aria-label="'+esc(label)+'" value="' +
         color +
         '" ' +
-        ((l.branding?.accent || LEAGUE_COLORS[0][0]) === color
+        (accent === color
           ? "checked"
           : "") +
         ' required><span style="--swatch:' +
@@ -2483,9 +2482,9 @@ let liveDisplayFailures=0;
 function showLiveStatus(value){
  if(value!==liveStatus)liveDisplayFailures=value.state==='ready'?0:liveDisplayFailures+1;
  liveStatus=value;const el=$('#live-channel-status');if(!el)return;
- const show=page==='schedina'&&(value.state==='ready'||liveDisplayFailures>=3);el.hidden=!show;
+ const show=page==='schedina'&&slipScope!=='standings'&&(value.state==='ready'||liveDisplayFailures>=3);el.hidden=!show;
  if(!show){el.textContent='';return;}
- const text=value.state==='ready'?'Live · aggiornato alle '+new Date(value.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'}):'Aggiornamento in pausa. I risultati già caricati restano disponibili.';
+ const text=value.state==='ready'?'Ultimo aggiornamento '+new Date(value.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'}):'Aggiornamento in pausa';
  if(el.textContent!==text)el.textContent=text;
 }
 function applyLive(data){

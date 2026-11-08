@@ -9,9 +9,9 @@ export function closeMatchPage({back=true}={}){
  if(back&&globalThis.history?.state?.qdqMatchPage){skipPop=true;globalThis.history.back();}
  else if(!back&&globalThis.history?.state?.qdqMatchPage){const {qdqMatchPage,...state}=history.state;history.replaceState(state,'',location.href);}
 }
-export function openMatchPage({onClose,document:doc=globalThis.document}={}){
+export function openMatchPage({onClose,document:doc=globalThis.document,kind='match',label='Dettaglio della partita'}={}){
  if(active)closeMatchPage({back:false});
- const root=doc.createElement('main');root.id='match-page-root';root.className='match-page';root.setAttribute('aria-label','Dettaglio della partita');root.tabIndex=-1;
+ const root=doc.createElement('main');root.id='match-page-root';root.className='match-page'+(kind==='postcard'?' verdict-page':'');root.setAttribute('aria-label',label);root.tabIndex=-1;
  root.open=true;root.close=()=>closeMatchPage();
  active={root,scroll:globalThis.scrollY||0,focus:doc.activeElement,onClose,doc};
  doc.getElementById('app').after(root);doc.body.classList.add('match-page-active');

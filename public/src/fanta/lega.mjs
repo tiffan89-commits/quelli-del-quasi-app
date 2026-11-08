@@ -67,13 +67,13 @@ export function auctionSection(l) {
     ${['running','scheduled','ended'].includes(a.status)?'<button type="button" class="primary" data-go="asta">Entra nella sala →</button>':''}
   </div></section>`;
 }
-function rules(l, ui={}) {
+function rules(l) {
   const r = l.rules;
-  return `${l.isAdmin&&ui.adminTools?`<details class="fanta-block"><summary>Impostazioni schedina</summary><form data-fanta-slips-form class="fanta-lg-form"><label class="ux-feature-toggle"><span>Schedina del Fanta attiva</span><input class="fanta-switch" type="checkbox" name="enabled" ${l.league.slipsEnabled!==false?'checked':''}></label><button type="submit" class="secondary">Salva impostazione</button></form></details>`:''}<section class="fanta-block is-first fanta-rules">
+  return `<section class="fanta-block is-first fanta-rules">
     <h3>Bonus e malus</h3>
     <ul class="fanta-rule-list">${r.scoring.map(([k, v]) => `<li><span>${esc(k)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
     <h3>Il voto</h3><p>Il voto statistico considera la prestazione, il contesto della gara e il piazzamento nel rating. Bonus e malus compongono il fantavoto.</p>
-    <details class="fanta-rating-rules"><summary>Migliori e peggiori in campo</summary><p>Vale un solo contributo: quello più alto in valore assoluto tra partita e squadra. A pari rating si condivide il piazzamento; senza rating non si applica alcun contributo.</p><div class="fanta-table-scroll"><table class="rule-table"><thead><tr><th>Piazzamento</th><th>Migliori partita</th><th>Migliori squadra</th><th>Peggiori partita</th><th>Peggiori squadra · sconfitta</th><th>Peggiori squadra · vittoria/pareggio</th></tr></thead><tbody><tr><td>1°</td><td>+0,5</td><td>+0,3</td><td>-0,5</td><td>-0,3</td><td>-0,1</td></tr><tr><td>2°</td><td>+0,3</td><td>+0,18</td><td>-0,3</td><td>-0,18</td><td>-0,06</td></tr><tr><td>3°</td><td>+0,1</td><td>+0,06</td><td>-0,1</td><td>-0,06</td><td>-0,02</td></tr><tr><td>4°</td><td>+0,05</td><td>+0,03</td><td>-0,05</td><td>-0,03</td><td>-0,01</td></tr></tbody></table></div><p>Nel live il confronto è provvisorio. Un gol mantiene almeno la sufficienza; un rigore parato mantiene almeno 6,5.</p></details>
+    <section class="fanta-rating-rules"><h3>Migliori e peggiori in campo</h3><p>Vale un solo contributo: quello più alto in valore assoluto tra partita e squadra. A pari rating si condivide il piazzamento; senza rating non si applica alcun contributo.</p><div class="fanta-table-scroll"><table class="rule-table"><thead><tr><th>Piazzamento</th><th>Migliori partita</th><th>Migliori squadra</th><th>Peggiori partita</th><th>Peggiori squadra · sconfitta</th><th>Peggiori squadra · vittoria/pareggio</th></tr></thead><tbody><tr><td>1°</td><td>+0,5</td><td>+0,3</td><td>-0,5</td><td>-0,3</td><td>-0,1</td></tr><tr><td>2°</td><td>+0,3</td><td>+0,18</td><td>-0,3</td><td>-0,18</td><td>-0,06</td></tr><tr><td>3°</td><td>+0,1</td><td>+0,06</td><td>-0,1</td><td>-0,06</td><td>-0,02</td></tr><tr><td>4°</td><td>+0,05</td><td>+0,03</td><td>-0,05</td><td>-0,03</td><td>-0,01</td></tr></tbody></table></div><p>Nel live il confronto è provvisorio. Un gol mantiene almeno la sufficienza; un rigore parato mantiene almeno 6,5.</p></section>
     <h3>Modificatore difesa</h3><p>${esc(r.modifier.rule)}</p>
     <ul class="fanta-rule-list">${r.modifier.bands.map(([k, v]) => `<li><span>Media ${esc(k)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
     <h3>Dai punti ai gol</h3><p>${esc(r.goals)}</p>
@@ -103,31 +103,33 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   const pilot=l.league.kind==='pilot',group=ui.group||'classifica',tabs=SUBS.filter(([k])=>LEGA_GROUPS[group].includes(k)&&(!pilot||k!=='competizioni')),sub=tabs.some(([k])=>k===ui.sub)?ui.sub:tabs[0][0];
   const body = { classifica: standings, calendario: calendar, asta: auctionSection, regole: rules, partecipanti: members,competizioni:renderCompetitions,schedine:()=>ui.slipsHtml||'<p>Classifica schedine in arrivo.</p>' }[sub](l, ui, now);
   return `<div class="fanta-lega">
-    <header class="fanta-sq-head"><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1>${esc(l.league.name.replace(/^Random League/i,'Lega pilota'))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
-    <div class="v2-chips fanta-lg-tabs" role="tablist">${tabs.map(([k, label]) => `<button type="button" role="tab" class="v2-chip${sub === k ? ' is-active' : ''}" data-lega-sub="${k}" aria-selected="${sub === k}">${label}${k === 'asta' && l.auction.status === 'running' ? ' <i class="fanta-lg-live"></i>' : ''}</button>`).join('')}</div>
+    <header class="fanta-sq-head" data-os-header><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1>${esc(l.league.name.replace(/^Random League/i,'Lega pilota'))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
+    <div class="v2-chips fanta-lg-tabs" data-os-header role="tablist">${tabs.map(([k, label]) => `<button type="button" role="tab" class="v2-chip${sub === k ? ' is-active' : ''}" data-lega-sub="${k}" aria-selected="${sub === k}">${label}${k === 'asta' && l.auction.status === 'running' ? ' <i class="fanta-lg-live"></i>' : ''}</button>`).join('')}</div>
+    ${sub!=='asta'?'<div data-os-content>':''}
     ${body}
     ${group==='lega'?leagueActions({bridge:true}):''}
     ${l.isAdmin && l.importReview?.length ? `<details class="fanta-block"><summary>Import · ${l.importReview.length} elementi da controllare</summary><ul class="fanta-rule-list">${l.importReview.map(p=>`<li><span>${esc(p.team)}${p.name?' · '+esc(p.name):''}${p.round?' · Giornata '+p.round:''}</span><small>${esc(p.issue)}</small></li>`).join('')}</ul></details>` : ''}
+    ${sub!=='asta'?'</div>':''}
   </div>`;
 }
 
 export function fantaPresidentTasks(l){
  if(!l?.isAdmin)return [];
  const tasks=[],free=l.league.maxMembers-(l.members?l.members.filter(m=>m.human).length:l.league.humanMembers??l.league.maxMembers);
- if(free>0)tasks.push({text:free+' squadre guidate dal computer',group:'persone',action:'Invita'});
- if(l.league.kind!=='pilot')tasks.push({text:({ended:'Asta conclusa',scheduled:'Asta programmata',running:'Asta in corso'})[l.auction.status]||'Asta non programmata',group:'calendario',action:'Gestisci asta',auction:true});
+ if(l.league.kind!=='pilot')tasks.push({action:'Gestisci asta',auction:true});
+ if(free>0)tasks.push({group:'persone',action:'Invita'});
+ tasks.push({group:'persone',action:'Partecipanti ›'});
  if(l.competition?.status==='draft')tasks.push({text:'Competizione da avviare',group:'competizioni',action:'Verifica'});
  return tasks;
 }
 export function renderFantaPresident(l,ui={},now=Date.now()){
  if(!l)return '<div class="fanta-loading" role="status">Carichiamo il pannello…</div>';
  const a={...ui,adminTools:!!l.isAdmin,inSettings:true},count=l.members.filter(m=>m.human).length,bar=ui.bar;
- return presidentPanel({name:l.league.name,mode:'fanta',footer:settingsLogout({bridge:true}),open:ui.presidentGroup,tasks:fantaPresidentTasks(l),other:bar?'<button type="button" data-mode="bar" data-bar-page="admin">Bar →</button>':'',groups:{
+ return presidentPanel({mode:'fanta',footer:settingsLogout({bridge:true}),open:ui.presidentGroup,tasks:fantaPresidentTasks(l),groups:{
  persone:{summary:count+'/'+l.league.maxMembers+' allenatori · '+(l.league.maxMembers-count)+' computer',html:members(l,a)},
- regole:{summary:l.rules.budget+' crediti · '+(l.league.slipsEnabled!==false?'schedina attiva':'schedina disattivata'),html:rules(l,a)},
+ regole:{summary:l.rules.budget+' crediti · bonus, malus e formazione',html:rules(l)},
  ...(l.isAdmin?{
  ...(l.league.kind==='pilot'?{}:{
- calendario:{summary:({running:'Asta in corso',scheduled:'Asta programmata',ended:'Asta conclusa'})[l.auction.status]||'Nessuna asta programmata',html:'<button type="button" class="primary" data-auction-manage="1">Gestisci asta →</button>'},
  competizioni:{summary:(l.competitions?.length||1)+' competizioni',html:renderCompetitions(l,a)}
  }),
  identita:{summary:bar?'Colori e simbolo condivisi con il Bar':'Identità della lega',html:bar?'<p>Il simbolo, il colore e il motto sono comuni a Bar e Fanta.</p><button type="button" class="secondary" data-mode="bar" data-bar-page="admin">Modifica identità nel Bar</button>':'<p>Lo stemma della tua squadra si modifica dalla pagina Oggi.</p>'}

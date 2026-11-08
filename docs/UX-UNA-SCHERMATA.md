@@ -6,6 +6,12 @@ Branch: `feat/una-schermata`, nato da `origin/main` 0.31.3 (`c9140f5`). Nessuna 
 Nel Bar e nel Fanta nessuna sezione scorre in verticale. Ogni sezione mostra l'essenziale in una schermata; quello che non ci sta passa a pagine da scorrere di lato (swipe, puntini, rotella/frecce/← → su desktop).
 
 ## Come funziona
+
+### Aggiornamento Friends & Family
+- I blocchi `data-os-header` restano fermi. Il contenitore `data-os-content` ospita le colonne e mantiene la pagina corrente durante le patch live. Schedine, classifiche, Squadra e Lega usano questa separazione.
+- Gli accordion delle sezioni paginate aprono un dettaglio a destra, con ritorno tramite pulsante o swipe verso destra. Se un dettaglio eccede lo spazio, scorre in verticale all’interno della schermata.
+- La cartolina usa il telaio della pagina partita. Il calendario della squadra resta in una sola pagina e carica quattro giornate alla volta.
+- In Impostazioni resta solo «Il tuo banco di comando» nell’intestazione. Gli inviti e la gestione membri restano raggiungibili dai collegamenti della lega. Gestisci asta resta nel pannello del presidente del Fanta dove l’asta è disponibile.
 ### Motore: `public/src/one-screen.mjs` + `public/one-screen.css`
 - `startOneScreen()` è chiamato da `app.mjs` (dopo `loadAppStyles()`) e da `fanta-mode.mjs` (`enterFanta`), sempre con guardia `typeof startOneScreen==='function'`. Il test `interface-live` toglie gli import: la guardia serve.
 - Quando c'è `#app > .v2-tabbar` e la pagina non è esclusa, aggiunge `html.os-on` e `main.os-root`. `#app > main` diventa un contenitore a **colonne CSS** (`column-fill:auto`), alto quanto lo spazio tra intestazione e barra in basso (`--os-h`). Ogni colonna è una pagina.

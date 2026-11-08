@@ -269,23 +269,28 @@ function rosterView(data, d) {
   </div>`;
 }
 
-export function renderTeamCalendar(data){return `<section class="fanta-team-calendar"><h2>Calendario e risultati</h2>${data.calendar?.length?orderRounds(data.calendar,data.round.number,'round').map(m=>`<button type="button" class="fanta-team-fixture ${m.round===data.round.number?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}"><small>Giornata ${m.round}${m.round===data.round.number?' · attuale':''} · ${esc(m.kickoff?new Date(m.kickoff).toLocaleDateString('it-IT',{day:'numeric',month:'short'}):'Da definire')}</small><span>${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><strong>${m.home.goals==null?'–':m.home.goals} : ${m.away.goals==null?'–':m.away.goals}</strong><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span><small>${m.home.points==null?'Da giocare':pts(m.home.points)+' · '+pts(m.away.points)+' FP'+(m.official?' · Finale':' · Provvisorio')}</small></button>`).join(''):'<p class="fanta-note">Il calendario arriva con l’avvio della competizione.</p>'}</section>`;}
+export const TEAM_CALENDAR_PAGE=4;
+export function renderTeamCalendar(data,limit=TEAM_CALENDAR_PAGE){
+ const fixtures=orderRounds(data.calendar||[],data.round.number,'round');
+ const rows=fixtures.slice(0,limit).map(m=>`<button type="button" class="fanta-team-fixture ${m.round===data.round.number?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}"><small>Giornata ${m.round}${m.round===data.round.number?' · attuale':''} · ${esc(m.kickoff?new Date(m.kickoff).toLocaleDateString('it-IT',{day:'numeric',month:'short'}):'Da definire')}</small><span>${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><strong>${m.home.goals??'–'} : ${m.away.goals??'–'}</strong><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span><small>${m.home.points==null?'Da giocare':pts(m.home.points)+' · '+pts(m.away.points)+' FP'+(m.official?' · Finale':' · Provvisorio')}</small></button>`).join('');
+ return `<section class="fanta-team-calendar" aria-label="Calendario e risultati">${rows||'<p class="fanta-note">Il calendario arriva con l’avvio della competizione.</p>'}${fixtures.length>limit?'<button type="button" class="secondary fanta-calendar-more" data-sq-calendar-more aria-label="Mostra altre giornate">+ Altre giornate</button>':''}</section>`;
+}
 export function renderTeamRoster(data,tools=''){return `<div class="fanta-ps-head"><div><h2 id="fanta-sheet-title">${esc(data.team.name)}</h2><small>Rosa · ${data.roster.length} giocatori</small></div><button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div>${tools}${rosterView(data,{slots:{},bench:[]})}`;}
 export function renderSquadra(sq, now = Date.now()) {
   if (!sq?.data) return '<div class="fanta-loading" role="status">Carichiamo la tua squadra…</div>';
   const { data } = sq;
   return `<div class="fanta-squadra">
-    <header class="fanta-sq-head">
+    <header class="fanta-sq-head" data-os-header>
       <button type="button" class="fanta-edit-crest" data-action="edit-logo" aria-label="Modifica il logo di ${esc(data.team.name)}">${teamLogo(data.team,{eager:true})}<span>Modifica logo ✎</span></button><div class="fanta-team-heading"><span class="eyebrow">La tua squadra</span>
       <h1>${esc(data.team.name)}</h1>
       <p>${data.roster.length} giocatori · crediti spesi ${data.budget.spent??'–'}/${data.budget.total}</p>${data.budget.unrefunded?`<small>${data.budget.unrefunded} crediti non rimborsati dagli svincoli.</small>`:''}</div>
     </header>
-    <div class="v2-chips" role="tablist">
+    <div class="v2-chips" data-os-header role="tablist">
       <button type="button" role="tab" class="v2-chip${sq.sub === 'formazione' ? ' is-active' : ''}" data-sq-sub="formazione" aria-selected="${sq.sub === 'formazione'}">Formazione</button>
       <button type="button" role="tab" class="v2-chip${sq.sub === 'rosa' ? ' is-active' : ''}" data-sq-sub="rosa" aria-selected="${sq.sub === 'rosa'}">Rosa</button>
       <button type="button" role="tab" class="v2-chip${sq.sub === 'calendario' ? ' is-active' : ''}" data-sq-sub="calendario" aria-selected="${sq.sub === 'calendario'}">Calendario e risultati</button>
     </div>
-    ${sq.sub === 'calendario'?renderTeamCalendar(data):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}
+    <div data-os-content ${sq.sub==='calendario'?'data-os-flow':''}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarLimit):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}</div>
   </div>`;
 }
 

@@ -204,7 +204,7 @@ test("live results render inside the slip, calendar remains clickable, standings
       vm.runInContext('navigatePage('+JSON.stringify(target)+')',ctx);
       assert.equal(vm.runInContext('page',ctx),target==='profilo'?'admin':target);
       assert.match(html,/aria-current="page"/);
-      if(target==='profilo')assert.match(html,/Impostazioni/);
+      if(target==='profilo')assert.match(html,/Il tuo banco di comando/);
       if(target==='lega')assert.match(html,/class="dash-hero"/);
     }
     assert.equal(requestCount,beforeNavigation,'menus must render synchronously without requesting state, even when the server cannot respond');

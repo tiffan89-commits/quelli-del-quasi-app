@@ -14,9 +14,9 @@ const NOTIFY = [
 export function renderIo(me, leagues, activeLeagueId, ui = {}, demo = false) {
   if (!me) return '<div class="fanta-loading" role="status">Carichiamo il tuo profilo…</div>';
   const n = me.settings?.notify || {};
-  const notifications=`    <section class="fanta-block is-first"><div class="dash-section-head"><div><h2>Notifiche del Fanta</h2><small>${ui.saved ? 'Salvate ✓' : 'Scegli quali avvisi ricevere'}</small></div></div>
+  const notifications=`    <section class="fanta-block is-first${ui.settingsOnly?' fanta-notify-compact':''}"><div class="dash-section-head"><div><h2>Notifiche del Fanta</h2><small>${ui.saved ? 'Salvate ✓' : 'Scegli quali avvisi ricevere'}</small></div></div>
       <ul class="fanta-io-toggles">${NOTIFY.filter(([k])=>!ui.pilot||k!=='auction').map(([k, title, sub]) => `<li><label>
-        <span><b>${title}</b><small>${sub}</small></span>
+        <span><b>${title}</b><small${ui.settingsOnly?' class="sr-only"':''}>${sub}</small></span>
         <input type="checkbox" class="fanta-switch" data-notify="${k}"${n[k] ? ' checked' : ''}>
       </label></li>`).join('')}</ul>
     </section>

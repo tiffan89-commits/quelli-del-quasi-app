@@ -5,6 +5,9 @@
 
 # Unreleased
 
+- Friends & Family: intestazioni fisse durante lo scorrimento dei contenuti, schedina live compatta con gli esiti colorati, cartolina su pagina dedicata e classifica Serie A in due pagine.
+- Impostazioni più compatte nel Bar e nel Fanta. I dettagli si aprono a destra e si torna con Indietro o con uno swipe. Il calendario della squadra carica altre giornate con il pulsante +. Nel Fanta, Gestisci asta è nel pannello del presidente e gli interruttori delle notifiche sono compatti.
+
 - Studio formazione: sotto i 620 px la panchina si apre da destra. Il trascinamento nel pannello cambia la priorità delle riserve, oltre il bordo sinistro schiera sul campo. Su tablet e PC la panchina resta sotto il campo e la maglia segue il puntatore durante il trascinamento.
 
 - Una sezione, una schermata: nel Bar e nel Fanta le sezioni non scorrono più in verticale. Contenuti ristrutturati: Oggi diviso in Adesso/Obiettivi (Fanta: Adesso/Sfida/Classifica), schedina a righe compatte, classifica con la tua riga sempre a vista, Quasi in griglia, Lega del Bar a riquadri, verdetto e albo compatti, squadra con il campo a tutta pagina e la panchina nella pagina dopo. Quello che non sta nello schermo passa a pagine da scorrere di lato, con una riga minima di puntini sopra la barra in basso; il documento non scorre più e un eventuale scorrimento verticale resta dentro la pagina, sopra la barra in basso. Il pulsante della chat resta flottante. Collegamenti, schede e aggiornamenti live portano alla pagina giusta. Asta, pagina partita, Studio formazione e landing restano fuori dalla paginazione.

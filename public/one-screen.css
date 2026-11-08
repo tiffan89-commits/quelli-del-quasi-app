@@ -3,14 +3,19 @@
 html.os-on,html.os-on body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* Il documento non scorre mai (anche su iOS, che ignora overflow:hidden sul body): l'unico scorrimento verticale possibile è dentro la pagina, che finisce sopra la barra in basso. */
 html.os-on body{position:fixed;inset:0;width:100%}
-html.os-on body #app>main.os-root{
+html.os-on body #app>main.os-root:not(.os-split),
+html.os-on body #app>main.os-split [data-os-content]{
  height:var(--os-h,calc(100dvh - 200px));box-sizing:border-box;margin-bottom:0;
  padding-top:10px!important;padding-bottom:0!important;padding-inline:14px!important;
  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;column-count:1;column-gap:28px;column-fill:auto;
  touch-action:pan-y pinch-zoom;scrollbar-width:none
 }
-html.os-on body #app>main.os-root::-webkit-scrollbar{display:none}
-html.os-nocols.os-on body #app>main.os-root{columns:auto;overflow-y:auto}
+html.os-on body #app>main.os-split{height:auto;min-height:0;overflow:visible;margin-bottom:0;padding:0!important}
+html.os-on body #app>main.os-split [data-os-content]{width:100%;max-width:100%;padding-top:2px!important}
+html.os-on body #app>main.os-split [data-os-header]{margin-inline:14px}
+html.os-on body #app>main.os-split [data-os-content][data-os-flow],
+html.os-nocols.os-on body #app .os-track{columns:auto;overflow-y:auto}
+html.os-on body #app .os-track::-webkit-scrollbar{display:none}
 
 /* Niente tagli a metà di una scheda, di una riga o di un titolo. */
 html.os-on main.os-root :is(article,li,figure,tr,summary,button,a,label,fieldset,thead,img,svg,canvas,
@@ -70,3 +75,20 @@ html.os-on .os-pin td{padding:0 4px}
 @media (min-width:760px){html.os-on .os-pin:not([hidden]){left:50%;right:auto;width:min(560px,calc(100% - 28px));transform:translateX(-50%)}}
 html.os-on main.os-root>.footer.os-solo{display:none}
 html.os-on #app>.os-segs{order:0!important}
+html.os-on main.os-split>.footer{margin:0!important;padding:3px 10px!important}
+html.os-on main.os-split>#live-channel-status{margin:0!important;padding:0 14px 3px!important}
+html.os-on main.os-split>#live-channel-status:empty{display:none}
+html.os-on body #app>main.os-root.os-drill:not(.os-split),
+html.os-on body #app>main.os-split [data-os-content].os-drill{columns:auto;overflow-x:hidden;overflow-y:auto}
+.os-track.os-drill.os-drill-parent>:not(.os-drill-path),
+.os-track.os-drill .os-drill-parent>:not(.os-drill-path){display:none!important}
+.os-track.os-drill .os-drill-path{display:block!important;max-height:none!important;overflow:visible!important}
+.os-track.os-drill .os-drill-target>summary{display:none!important}
+.os-drill-nav{display:flex;align-items:center;gap:10px;margin:4px 14px 8px;min-height:38px}
+.os-drill-nav button{flex:none;min-height:36px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--lime);font:600 13px 'DM Sans',sans-serif}
+.os-drill-nav strong{font-size:15px;overflow-wrap:anywhere}
+html.os-on .os-track details:not(.member-menu,.v2-stake-picker)>summary{position:relative;padding-inline-end:25px;list-style:none}
+html.os-on .os-track details:not(.member-menu,.v2-stake-picker)>summary::-webkit-details-marker{display:none}
+html.os-on .os-track details:not(.member-menu,.v2-stake-picker)>summary::after{
+ content:'›';position:absolute;inset-inline-end:9px;top:50%;transform:translateY(-50%);color:var(--lime);font-size:22px;line-height:1
+}
