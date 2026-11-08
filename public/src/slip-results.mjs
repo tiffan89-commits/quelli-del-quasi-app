@@ -1,4 +1,5 @@
 import {predictionStatus} from '../prediction.mjs';
+import {editingEventLocked} from './slip-state.mjs';
 import {orderSlipMatches} from '../match-layout.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function inlineResultView(m){
@@ -28,18 +29,25 @@ export function patchSlipResults(root,round,picks,closed){
   const m=round.matches.find(m=>m.id===(row.dataset.matchCard||row.dataset.resultRow));if(!m)continue;
   const score=m.status==='LIVE'?m.liveScore:m.score,previous=row.dataset.resultScore?JSON.parse(row.dataset.resultScore):null;
   const result=row.querySelector('[data-inline-result]');if(result){const html=inlineResultView(m);if(result.innerHTML!==html)result.innerHTML=html;}
-  const status=row.querySelector('[data-match-status]');if(status&&(m.status==='LIVE'||m.score))status.textContent=m.status==='LIVE'?'In corso':'Risultato finale';
+  const status=row.querySelector('[data-match-status]');if(status&&row.closest('[data-slip-source]')?.dataset.slipSource!=='seriea'&&(m.status==='LIVE'||m.score))status.textContent=m.status==='LIVE'?'In corso':'Risultato finale';
   if(increasedScore(previous||(m.status==='LIVE'?[0,0]:null),score)){
    row.classList.remove('goal-flash');void row.offsetWidth;row.classList.add('goal-flash');
    row.addEventListener('animationend',()=>row.classList.remove('goal-flash'),{once:true});
   }
   row.dataset.resultScore=JSON.stringify(score||null);
-  const pick=row.dataset.savedPick||picks[m.id],f=predictionStatus(m,pick,closed);
+  const locked=round.eventBetting?editingEventLocked(round,m):closed;
+  const pick=row.hasAttribute('data-saved-pick')?row.dataset.savedPick:round.eventBetting&&locked?round.slip?.picks?.[m.id]:picks[m.id],f=predictionStatus(m,pick,locked);
   if(row.classList.contains('bar-bet')){row.classList.toggle('win',!!f?.winning);row.classList.toggle('lose',!!f&&!f.winning);}
-  for(const b of row.querySelectorAll('[data-pick]')){const selected=b.dataset.value===pick;for(const c of ['pick-winning','pick-losing'])b.classList.toggle(c,selected&&f?.className===c);if(closed)b.disabled=true;}
+  for(const b of row.querySelectorAll('[data-pick]')){const selected=b.dataset.value===pick;for(const c of ['pick-winning','pick-losing'])b.classList.toggle(c,selected&&f?.className===c);if(locked)b.disabled=true;}
+  const extra=row.querySelector('[data-v2-more]');
+  if(extra){const selected=!!pick&&!['1','X','2'].includes(pick);for(const c of ['pick-winning','pick-losing'])extra.classList.toggle(c,selected&&f?.className===c);}
   const feedback=row.querySelector('[data-pick-feedback]');if(feedback){const html=f?`<p class="pick-feedback ${f.className}" role="status"><b>${f.winning?'✓':'✕'} ${esc(pick)} · ${f.label}</b><small>${f.note}</small></p>`:'';if(feedback.innerHTML!==html)feedback.innerHTML=html;}
   const check=row.querySelector('[data-result-check]');if(check)check.textContent=f?(f.winning?'✓':'✕'):'';
   const saved=row.querySelector('[data-result-pick]');if(saved){saved.classList.remove('win','lose');for(const c of ['pick-winning','pick-losing'])saved.classList.toggle(c,f?.className===c);}
  }
  reorderSlipRows(root,round);
+}
+
+export function slipNotice(missingOdds=false){
+ return '<p class="tiny muted slip-play-note" data-os-footer'+(missingOdds?'':' hidden')+'>? = Quota in arrivo</p>';
 }

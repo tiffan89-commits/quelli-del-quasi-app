@@ -9,7 +9,7 @@ test('one compact status contains missing picks; stake choices stay in a closed 
 });
 test('quick amounts close the picker, custom decimals are preserved, Escape restores focus and save returns its promise',async()=>{
  const {document,window}=parseHTML('<html><body><div id="root">'+render(make(),{m1:'1',m2:'1',m3:'1'})+'</div></body></html>'),root=document.querySelector('#root'),amounts=[];const pending=Promise.resolve('saved');
- bindSlipV2(root,{onStake:n=>amounts.push(n),onSave:()=>pending,onPick(){},onToggle(){},onGo(){}});
+ bindSlipV2(root,{onStake:n=>amounts.push(n),onSave:()=>pending,onPick(){},onToggle(){}});
  const picker=root.querySelector('details');picker.setAttribute('open','');root.querySelector('[data-v2-stake="20"]').click();assert.deepEqual(amounts,[20]);assert.equal(picker.hasAttribute('open'),false);
  picker.setAttribute('open','');const field=root.querySelector('#stake');field.value='6.5';field.oninput();assert.deepEqual(amounts,[20,6.5]);assert.equal(picker.hasAttribute('open'),true);
  const event=new window.Event('keydown',{bubbles:true,cancelable:true});event.key='Escape';picker.dispatchEvent(event);assert.equal(picker.hasAttribute('open'),false);

@@ -4,6 +4,9 @@ import {
   pointTerms,
   marketProbability,
   migrateScoring,
+  roundPointRules,
+  slipPointTerms,
+  QUOTA_SCORING,
 } from "../lib/scoring.mjs";
 import {
   DEFAULT_RULES,
@@ -13,6 +16,44 @@ import {
   stateFor,
 } from "../lib/game.mjs";
 import { emptyState } from "../lib/db.mjs";
+test("Serie A changes from round twelve, preserves round eleven and keeps Fanta rules separate",()=>{
+ const base={rules:DEFAULT_RULES};
+ assert.equal(roundPointRules({...base,sourceId:'seriea:2026:11'}),DEFAULT_RULES);
+ assert.equal(roundPointRules({...base,sourceId:'seriea:2026:12'}).scoring,QUOTA_SCORING);
+ assert.equal(roundPointRules({...base,sourceId:'seriea:2026:12',source:'fantacalcio'}),DEFAULT_RULES);
+ assert.equal(roundPointRules({...base,sourceId:'seriea:2026:12',pointsOnly:true}),DEFAULT_RULES);
+ const match={id:'m',odds:{'1':1.5}},slip={picks:{m:'1'},acceptedOdds:{m:1.35},pointTerms:{m:{pick:'1',correct:1,wrong:-0.5,source:'esito secco'}}};
+ assert.equal(slipPointTerms({...base,sourceId:'seriea:2026:11'},match,slip).wrong,-0.5);
+ assert.deepEqual(slipPointTerms({...base,sourceId:'seriea:2026:12'},match,slip),{pick:'1',correct:1.35,wrong:0,source:QUOTA_SCORING});
+});
+
+test("round twelve credits accepted quotes as points, waits for missing winning quotes and settles idempotently",()=>{
+ const s=emptyState(),u={id:'u',name:'Mister',emailVerified:true};
+ s.users.push(u);
+ const l=newLeague(s,u,'Test',true),r={id:'r',league:l.id,sourceId:'seriea:2026:12',rules:{...DEFAULT_RULES},kickoff:new Date(Date.now()+86400000).toISOString(),matches:[
+  {id:'a',odds:{'1':1.35},status:'NS'},
+  {id:'b',odds:{Goal:2.8},status:'NS'},
+  {id:'c',odds:{'2':2.2},status:'NS'},
+  {id:'d',odds:{},status:'NS'},
+ ],slips:[]};
+ s.rounds.push(r);
+ placeSlip(s,l,r,u,{picks:{a:'1',b:'Goal',c:'2',d:'Under 2.5'},stake:10});
+ assert.equal(stateFor(s,u).leagues[0].rounds[0].rules.scoring,QUOTA_SCORING);
+ assert.equal(stateFor(s,u).leagues[0].rounds[0].matches[1].pointOffers.Goal.correct,2.8);
+ r.kickoff=new Date(Date.now()-1000).toISOString();
+ r.matches.forEach((m,i)=>Object.assign(m,{score:i===1?[1,1]:[1,0],status:'FT'}));
+ r.matches[0].odds['1']=1.9;
+ assert.equal(settle(s,l,r),false);
+ assert.equal(l.members[0].points,0);
+ assert.equal(r.slips[0].creditsSettled,true);
+ r.matches[3].odds['Under 2.5']=1.35;
+ assert.equal(settle(s,l,r),true);
+ assert.equal(r.slips[0].points,5.5);
+ assert.equal(l.members[0].points,5.5);
+ assert.equal(l.members[0].credits,490);
+ assert.equal(settle(s,l,r),false);
+ assert.equal(l.members[0].points,5.5);
+});
 test("normalized market probabilities remove the bookmaker margin and use numeric frozen prices", () => {
   const odds = {
     1: 2,

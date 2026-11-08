@@ -38,7 +38,7 @@ test('only rounds belonging to the selected native league and competition are re
 test('native app opens dedicated slips, keeps slip picks away from lineup handlers, and moves results under Oggi',async()=>{
  const {mountFanta}=await import('../public/src/fanta/app.mjs'),{createDemoFantaApi}=await import('../public/src/fanta/demo-api.mjs');
  const f=fixture(),document=f.root.ownerDocument,window=document.defaultView,demo=createDemoFantaApi({delay:0}),leagues=await demo.leagues(),h=await demo.home(leagues[0].id);
- h.league={...h.league,id:'a'};h.competition={id:'camp',name:'Campionato'};h.competitions=[h.competition];
+ h.round.state='in-corso';h.league={...h.league,id:'a'};h.competition={id:'camp',name:'Campionato'};h.competitions=[h.competition];
  const keys=['document','window','navigator','localStorage','scrollTo','setInterval','clearInterval'],saved=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));let app;const timers=[];
  Object.defineProperties(globalThis,{document:{value:document,configurable:true},window:{value:window,configurable:true},navigator:{value:{onLine:true},configurable:true},localStorage:{value:f.storage,configurable:true},scrollTo:{value:()=>{},configurable:true},setInterval:{value:fn=>{timers.push(fn);return timers.length;},configurable:true},clearInterval:{value:()=>{},configurable:true}});
  const click=el=>el.dispatchEvent(new window.Event('click',{bubbles:true}));
@@ -49,7 +49,13 @@ test('native app opens dedicated slips, keeps slip picks away from lineup handle
   assert.equal(f.root.querySelectorAll('nav [data-tab]').length,5);
   click(f.root.querySelector('[data-tab="oggi"]'));assert.equal(f.root.querySelector('.fanta-today-tabs'),null);assert.ok(f.root.querySelector('[data-tab="schedine"]'));
   const tile=f.root.querySelector('.fanta-match-link');assert.ok(tile);assert.equal(Number(tile.dataset.round),h.round.number);assert.equal(tile.querySelector('button'),null);
-  click(tile);await new Promise(resolve=>setTimeout(resolve,10));assert.ok(f.root.querySelector('.fanta-round-head'));assert.equal(f.root.querySelector('.fanta-today-tabs'),null);assert.equal(f.root.querySelector('h1')?.textContent,String(h.round.number));
+  click(tile);await new Promise(resolve=>setTimeout(resolve,10));
+  const studio=f.root.querySelector('.fanta-live-studio');
+  assert.ok(studio);assert.match(studio.querySelector('h1').textContent,new RegExp('Giornata '+h.round.number));
+  assert.equal(studio.querySelector('.fanta-view,.fanta-sb'),null);
+  assert.ok(studio.querySelector('.pitch-slides'));
+  click(studio.querySelector('[data-action="close-live-studio"]'));
+  assert.equal(f.root.querySelector('.fanta-live-studio'),null);assert.ok(f.root.querySelector('.fanta-match-link'));
  }finally{app?.destroy();for(const [k,v]of saved){if(v)Object.defineProperty(globalThis,k,v);else delete globalThis[k];}}
 });
 test('the existing local clock locks a native slip at kickoff without a request',()=>{
@@ -71,7 +77,9 @@ test('opening a native slip match reads saved XIs once, renders club jerseys and
  resolve(matchup);await pending;
  const page=f.root.ownerDocument.getElementById('match-page-root');
  assert.match(page.innerHTML,/>ROSSI<\/text>/);
- assert.match(page.textContent,/Gol ×2/);
+ assert.equal(page.querySelectorAll('.is-goals').length,2);
+ assert.equal(page.querySelector('.lineup-votes'),null);
+ assert.equal(page.querySelectorAll('.match-headline .team-logo').length,2);
  assert.match(page.textContent,/Formazione non ancora salvata/);
  assert.equal(page.querySelectorAll('.fanta-shirt-back').length,2);
  const {document:giornata}=parseHTML(renderGiornata({round:{round:{number:11,state:'in-corso'},rounds:[],matchups:[]},matchup,side:'home',view:'campo'}));

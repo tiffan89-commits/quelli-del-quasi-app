@@ -26,11 +26,14 @@ test('home banner resolves own league, competition, round and matchup without fe
  const h={league:{id:'native'},competition:{id:'native:main'},round:{number:8},match:{home:{name:'Casa'},away:{name:'Ospiti'}}};
  assert.equal(findBarSlip(h,[]),null);
  assert.equal(findBarSlip({...h,competition:{id:'other'}},[{id:'bar',rounds:[round]}]),null);
- const bar=findBarSlip(h,[{id:'bar',rounds:[round]}]);assert.equal(bar.league,'bar');assert.equal(bar.round,'r');assert.equal(bar.match,'m');assert.equal(bar.closed,true);
+ assert.equal(findBarSlip(h,[{id:'bar',rounds:[round]}]).saved,false);
+ const bar=findBarSlip(h,[{id:'bar',rounds:[{...round,slip:{savedAt:'2026-10-31T12:00Z'}}]}]);assert.equal(bar.saved,true);assert.equal(bar.league,'bar');assert.equal(bar.round,'r');assert.equal(bar.match,'m');assert.equal(bar.closed,true);
  const home={...h,bar,me:{teamId:'a',teamName:'Casa',position:1,points:12,fantapoints:200,form:[]},lineup:{},standings:[],round:{number:8,state:'in-corso'},match:{...h.match,live:{home:{points:70},away:{points:60}}}};
- const html=renderHome(home);assert.match(html,/Segui la schedina/);assert.match(html,/data-bar-league="bar".*data-bar-round="r"/);assert.match(html,/fanta-bar-odds/);
- assert.match(renderHome({...home,bar:{...bar,closed:false}}),/Compila la schedina/);
- const {document}=parseHTML(html),tile=document.querySelector('.fanta-match-link');assert.equal(tile.dataset.round,'8');assert.ok(tile.textContent.includes('La tua sfida'));assert.equal(tile.querySelector('[data-mode="bar"]'),null);assert.ok(document.querySelector('.fanta-bar-link'));
+ const html=renderHome(home);assert.match(html,/Segui la schedina/);assert.match(html,/data-bar-league="bar".*data-bar-round="r"/);assert.doesNotMatch(renderHome({...home,bar:{...bar,saved:false}}),/Segui la schedina/);
+ assert.match(renderHome({...home,bar:{...bar,closed:false}}),/Segui la schedina/);
+ const ordered=renderHome({...home,nextLineup:{round:9,formation:'4-3-3',savedAt:'2026-11-02T12:00Z'},lastResult:{round:7,matchupId:'last',home:{name:'Casa',goals:2},away:{name:'Ospiti',goals:1}}});
+ assert.match(ordered,/fanta-match-link[\s\S]+data-round="7" data-mu="last"[\s\S]+Salvata/);
+ const {document}=parseHTML(html),tile=document.querySelector('.fanta-match-link');assert.equal(tile.dataset.round,'8');assert.ok(tile.textContent.includes('Live'));assert.equal(tile.querySelector('[data-mode="bar"]'),null);assert.ok(document.querySelector('.fanta-bar-link'));
  const own={id:'a',name:'La mia squadra',branding:{type:'design',design:{text:'MIA',shape:'shield'}}},away={...home,match:{...home.match,home:{id:'other',name:'Altri'},away:own}};
  assert.equal(homeTeam(away),own);assert.equal(homeTeam({...away,match:null,standings:[{team:own}]}),own);
  const crest=parseHTML(renderHome(away)).document.querySelector('.fanta-hero-crest');assert.match(crest.textContent,/MIA/);assert.equal(crest.dataset.action,'edit-logo');assert.match(crest.getAttribute('aria-label'),/La mia squadra/);
@@ -39,13 +42,12 @@ test('live fantasy score and player votes patch in place, preserving formations 
  const html=fantasyMatchView(match,round,esc,(h,a)=>h+' – '+a,String);
  assert.match(html,/1 – 0/);assert.match(html,/Fantapunti live/);
  const {document}=parseHTML('<html><body><dialog>'+html+'</dialog></body></html>'),root=document.querySelector('dialog');
- root.querySelector('.live-score').setAttribute('data-live-detail-score','');
- const section=root.querySelector('.lineup-section'),pitch=root.querySelector('.pitch-slides'),accordion=root.querySelector('.lineup-votes');accordion.open=true;
+ const section=root.querySelector('.lineup-section'),pitch=root.querySelector('.pitch-slides');assert.equal(root.querySelector('.lineup-votes'),null);
  const updated=structuredClone(match);updated.liveScore=[2,0];updated.fantasyPoints=[74,60];updated.details.teams[0].players[0]={id:'p',grade:7,fantagrade:10,events:[{label:'Gol'},{label:'Gol'}]};
  patchFantasyMatch(root,updated);
- assert.equal(root.querySelector('.lineup-section'),section);assert.equal(root.querySelector('.pitch-slides'),pitch);assert.equal(accordion.open,true);
- assert.equal(root.querySelector('.live-score').textContent,'2 – 0');assert.match(root.querySelector('[data-fantasy-points]').textContent,/74 – 60/);
- assert.equal(root.querySelector('[data-fantasy-grade="pitch"]').textContent,'10');assert.equal(root.querySelector('[data-fantasy-events]').textContent,'Gol ×2');
+ assert.equal(root.querySelector('.lineup-section'),section);assert.equal(root.querySelector('.pitch-slides'),pitch);assert.equal(root.querySelector('.lineup-votes'),null);
+ assert.equal(root.querySelector('[data-live-detail-score]').textContent,'2 – 0');assert.match(root.querySelector('[data-fantasy-points]').textContent,/74 – 60/);
+ assert.equal(root.querySelector('[data-fantasy-grade="pitch"]').textContent,'10');assert.equal(root.querySelectorAll('.is-goals').length,2);
 });
 test('DB-only minute snapshot carries fantasy points and revisions without downloading all formations',async()=>{
  const f=await fixtureDb();try{

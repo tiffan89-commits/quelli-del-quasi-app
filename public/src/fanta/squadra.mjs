@@ -1,8 +1,10 @@
+import {playerSurname} from '../player-label.mjs';
 import {playerVisual} from './player-visual.mjs';
 import {teamLogo} from './team-logo.mjs';
+import {renderPitchFlip} from '../lineup-pitch.mjs';
 // Pagina "Squadra": formazione della giornata sul campo (modulo, titolari, panchina, salvataggio) e rosa.
 // La bozza della formazione vive solo nel browser finché non si salva; il server controlla scadenza e regole.
-import { esc, pts, countdown, timeAgo, fixtureTime, orderRounds } from './formato.mjs';
+import { esc, pts, countdown, timeAgo, fixtureTime } from './formato.mjs';
 import { shirt, KITS } from './maglie.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
@@ -124,26 +126,13 @@ export function quickAdd(draft, roster, id, benchMax) {
 
 // ---------- Rendering ----------
 
-export function surname(player) {
-  const explicit=typeof player==='object'&&(player?.surname||player?.lastName||player?.lastname);
-  if(explicit)return String(explicit).trim();
-  const name=String(typeof player==='object'?player?.name||'':player||'').trim().replace(/\s+/g,' ');
-  // Abbreviated provider names already identify the surname, including compound names.
-  const abbreviated=name.replace(/^(?:\p{L}\.\s*)+/u,'').replace(/\s+\p{Lu}\.$/u,'');
-  if(abbreviated!==name)return abbreviated;
-  const parts=name.split(' ');if(parts.length<2)return name;
-  // Preserve registered compound surnames when only a display name is available.
-  if(/^(?:Juan Jesus|Carlos Augusto|Kolo Muani|Zambo Anguissa)$/i.test(name))return name;
-  let start=parts.length-1;
-  while(start>0&&/^(?:de|del|della|di|da|do|dos|das|van|von|der|den|el|le|la|kolo|zambo)$/i.test(parts[start-1]))start--;
-  return parts.slice(start).join(' ');
-}
+export const surname = playerSurname;
 const codeOf = club => KITS[club]?.code || String(club||'').slice(0, 3).toUpperCase();
 export const nextLabel = n => n?.opponent ? `${n.home ? '' : '@ '}${codeOf(n.opponent)}` : '–';
 const statusBadge = s => STATUS[s?.type] ? `<i class="fanta-st is-${s.type}" title="${esc(s.note)}">${STATUS[s.type][0]}</i>` : '';
 const avg = n => n == null ? '–' : pts(n, 2);
 
-function slotToken(slot, p, locked) {
+function slotToken(slot, p) {
   if (!p) {
     return `<div class="fanta-slot" aria-label="${ROLE_NAMES[slot[0]]}: posto vuoto"><span class="fanta-slot-ring"><b>–</b></span><small>${ROLE_NAMES[slot[0]]}</small></div>`;
   }
@@ -153,31 +142,17 @@ function slotToken(slot, p, locked) {
   </div>`;
 }
 
-function pitchEditor(d, byId, locked) {
+function savedPitch(d, byId) {
   const rows = 'ACDP'.split('').map(role => `<div class="fanta-pitch-row">${Object.keys(d.slots).filter(s => s[0] === role)
-    .map(s => slotToken(s, byId.get(d.slots[s]), locked)).join('')}</div>`).join('');
+    .map(s => slotToken(s, byId.get(d.slots[s]))).join('')}</div>`).join('');
   return `<div class="fanta-pitch is-editor" aria-label="Formazione ${esc(d.formation)}"><div class="fanta-pitch-lines" aria-hidden="true"></div>${rows}</div>`;
 }
 
-function benchList(d, byId, max, locked) {
-  const rows = d.bench.map((id, i) => {
-    const p = byId.get(id);
-    return `<li class="fanta-bench-row" data-drop="bench:${i}"${locked ? '' : ` data-drag-id="${esc(id)}" data-drag-from="bench"`}>
-      <span class="fanta-bench-n">${locked ? i + 1 : `<i class="fanta-handle" data-drag-handle aria-hidden="true">⠿</i>${i + 1}`}</span>
-      <span class="fanta-mini-shirt">${playerVisual(p)}</span>
-      <span class="fanta-role is-${p.role}">${p.role}</span>
-      <span class="fanta-p-name"><b>${esc(surname(p))}</b><small>${esc(p.club)} · ${esc(nextLabel(p.next))}</small></span><span class="fanta-roster-stats"><b>${avg(p.stats?.avgFanta)}</b><small>FM</small></span>
-      ${statusBadge(p.status)}
-      ${locked ? '' : `<span class="fanta-bench-actions">
-        <button type="button" data-bench-move="${esc(id)}" data-step="-1" ${i ? '' : 'disabled'} aria-label="Sposta su">↑</button>
-        <button type="button" data-bench-move="${esc(id)}" data-step="1" ${i < d.bench.length - 1 ? '' : 'disabled'} aria-label="Sposta giù">↓</button>
-        <button type="button" data-bench-remove="${esc(id)}" aria-label="Togli dalla panchina">×</button></span>`}
-    </li>`;
-  }).join('');
-  return `<section class="fanta-bench-edit" data-drop="bench">
-    <div class="dash-section-head"><div><h2>Panchina</h2><small>${benchCount(d.bench, max)} · entrano in quest'ordine, solo nello stesso ruolo</small></div></div>
-    ${rows ? `<ol>${rows}</ol>` : '<p class="fanta-note is-wait">Panchina vuota: chi resta senza voto non potrà essere sostituito.</p>'}
-    ${!locked && hasRoom(d.bench, max) ? '<button type="button" class="secondary fanta-add" data-bench-add="1">+ Aggiungi in panchina</button>' : ''}
+function savedBench(d, byId) {
+  const players=d.bench.map(id=>byId.get(id));
+  return `<section class="pitch-bench-room fanta-saved-bench" aria-label="Panchina">
+    <div class="bench-room-label"><b>Panchina</b><span>${players.length} giocatori</span></div>
+    ${players.length?`<ol>${players.map((p,i)=>`<li><small class="fanta-saved-bench-order">${i+1}</small>${slotToken(p.role,p)}</li>`).join('')}</ol>`:'<p class="fanta-note">Panchina vuota.</p>'}
   </section>`;
 }
 
@@ -246,7 +221,7 @@ function formationView(data, sq, now) {
   const d=draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster),byId=new Map(data.roster.map(p=>[p.id,p]));
   const studio=data.round.locked?'':'<button type="button" class="fanta-studio-open" data-studio="open">'+(sq.dirty?'Riprendi lo studio formazione →':data.lineup?'Modifica nello studio formazione →':'Apri lo studio formazione →')+'</button>';
   const note=sq.dirty?'<p class="fanta-note is-info">Hai modifiche nello studio ancora da salvare. Qui vedi la formazione salvata.</p>':'';
-  return studio+deadlineCard(data,d,{...sq,dirty:false},now)+note+'<p class="fanta-view-module">Modulo <b>'+esc(d.formation)+'</b></p><div class="fanta-board is-readonly"><div class="fanta-board-pitch">'+pitchEditor(d,byId,true)+'</div><div class="fanta-board-side">'+benchList(d,byId,data.rules.benchMax,true)+'</div></div>';
+  return studio+deadlineCard(data,d,{...sq,dirty:false},now)+note+renderPitchFlip(savedPitch(d,byId),savedBench(d,byId),'Panchina',!!sq.benchFlipped);
 }
 
 function rosterView(data, d) {
@@ -269,23 +244,42 @@ function rosterView(data, d) {
   </div>`;
 }
 
-export function renderTeamCalendar(data){return `<section class="fanta-team-calendar"><h2>Calendario e risultati</h2>${data.calendar?.length?orderRounds(data.calendar,data.round.number,'round').map(m=>`<button type="button" class="fanta-team-fixture ${m.round===data.round.number?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}"><small>Giornata ${m.round}${m.round===data.round.number?' · attuale':''} · ${esc(m.kickoff?new Date(m.kickoff).toLocaleDateString('it-IT',{day:'numeric',month:'short'}):'Da definire')}</small><span>${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><strong>${m.home.goals==null?'–':m.home.goals} : ${m.away.goals==null?'–':m.away.goals}</strong><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span><small>${m.home.points==null?'Da giocare':pts(m.home.points)+' · '+pts(m.away.points)+' FP'+(m.official?' · Finale':' · Provvisorio')}</small></button>`).join(''):'<p class="fanta-note">Il calendario arriva con l’avvio della competizione.</p>'}</section>`;}
+export const TEAM_CALENDAR_PAGE=4;
+export function teamCalendarWindow(data,{earlier=0,later=0}={}){
+ const fixtures=[...(data.calendar||[])].sort((a,b)=>a.round-b.round);
+ const current=data.calendarCurrent??data.round.number;
+ const index=fixtures.findIndex(m=>m.round>=current);
+ const active=Math.max(0,index<0?fixtures.length-1:index);
+ const start=Math.max(0,active-2-earlier),end=Math.min(fixtures.length,active+2+later);
+ return {fixtures:fixtures.slice(start,end),current,hasEarlier:start>0,hasLater:end<fixtures.length};
+}
+export function renderTeamCalendar(data,range){
+ const {fixtures,current,hasEarlier,hasLater}=teamCalendarWindow(data,range);
+ const rows=fixtures.map(m=>{
+  const score=Number.isFinite(m.home.goals)&&Number.isFinite(m.away.goals)?`${m.home.goals}–${m.away.goals}`:'';
+  return `<button type="button" class="fanta-team-fixture ${m.round===current?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}">
+    <span class="team-calendar-sides">${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><strong class="team-calendar-score">${score}</strong><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span>
+    <small>Giornata ${m.round} · ${m.official?'Finale':score?'Provvisorio':'Da giocare'}${m.home.points!=null?' · '+pts(m.home.points)+'–'+pts(m.away.points)+' FP':''}</small>
+  </button>`;
+ }).join('');
+ return `<section class="fanta-team-calendar" aria-label="Calendario e risultati">${hasEarlier?'<button type="button" class="secondary fanta-calendar-more" data-sq-calendar-previous>‹ Giornate precedenti</button>':''}${rows||'<p class="fanta-note">Il calendario arriva con l’avvio della competizione.</p>'}${hasLater?'<button type="button" class="secondary fanta-calendar-more" data-sq-calendar-more aria-label="Mostra altre giornate">+ Altre giornate</button>':''}</section>`;
+}
 export function renderTeamRoster(data,tools=''){return `<div class="fanta-ps-head"><div><h2 id="fanta-sheet-title">${esc(data.team.name)}</h2><small>Rosa · ${data.roster.length} giocatori</small></div><button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div>${tools}${rosterView(data,{slots:{},bench:[]})}`;}
 export function renderSquadra(sq, now = Date.now()) {
   if (!sq?.data) return '<div class="fanta-loading" role="status">Carichiamo la tua squadra…</div>';
   const { data } = sq;
   return `<div class="fanta-squadra">
-    <header class="fanta-sq-head">
+    <header class="fanta-sq-head" data-os-header>
       <button type="button" class="fanta-edit-crest" data-action="edit-logo" aria-label="Modifica il logo di ${esc(data.team.name)}">${teamLogo(data.team,{eager:true})}<span>Modifica logo ✎</span></button><div class="fanta-team-heading"><span class="eyebrow">La tua squadra</span>
       <h1>${esc(data.team.name)}</h1>
       <p>${data.roster.length} giocatori · crediti spesi ${data.budget.spent??'–'}/${data.budget.total}</p>${data.budget.unrefunded?`<small>${data.budget.unrefunded} crediti non rimborsati dagli svincoli.</small>`:''}</div>
     </header>
-    <div class="v2-chips" role="tablist">
+    <div class="v2-chips" data-os-header role="tablist">
       <button type="button" role="tab" class="v2-chip${sq.sub === 'formazione' ? ' is-active' : ''}" data-sq-sub="formazione" aria-selected="${sq.sub === 'formazione'}">Formazione</button>
       <button type="button" role="tab" class="v2-chip${sq.sub === 'rosa' ? ' is-active' : ''}" data-sq-sub="rosa" aria-selected="${sq.sub === 'rosa'}">Rosa</button>
       <button type="button" role="tab" class="v2-chip${sq.sub === 'calendario' ? ' is-active' : ''}" data-sq-sub="calendario" aria-selected="${sq.sub === 'calendario'}">Calendario e risultati</button>
     </div>
-    ${sq.sub === 'calendario'?renderTeamCalendar(data):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}
+    <div data-os-content ${sq.sub==='formazione'?'class="fanta-team-formation" data-os-flow':''}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarRange):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}</div>
   </div>`;
 }
 

@@ -10,19 +10,12 @@ export const PAGE_TO_TAB = {
   calendario: 'fanta',
   seriea: 'seriea',
   altri: 'fanta',
-  classifiche: 'lega', quasi: 'lega', chat: 'lega', storico: 'lega', regolamento: 'lega', admin: 'lega',
+  classifiche: 'lega', quasi: 'lega', chat: 'lega', regolamento: 'lega', admin: 'lega',
   fantaquasi: 'fanta',
   profilo: 'io',
 };
 
-// Sotto-sezioni della tab Lega. 'admin' compare solo se l'utente è admin della lega attiva.
-export function legaSections(isAdmin) {
-  const s=[['classifiche','Classifica'],['storico','Storico']];
-
-  return s;
-}
-
-export function tabForPage(page){if(page==='admin')return null;return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',storico:'classifica',quasi:'quasi',barleague:'legainfo',regolamento:'legainfo',profilo:'profilo'})[page]||'oggi';}
+export function tabForPage(page){if(page==='impostazioni')return null;if(page==='admin')return 'legainfo';return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',quasi:'quasi',barleague:'legainfo',regolamento:'legainfo',profilo:'profilo'})[page]||'oggi';}
 export function defaultSource(){return 'seriea';}
 export function routeForTab(tab){return {page:({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',legainfo:'barleague',profilo:'profilo'})[tab]||'lega',sourceScope:'seriea'};}
 export function renderTabBar(active, { hasFanta = true } = {}) {
@@ -30,16 +23,10 @@ export function renderTabBar(active, { hasFanta = true } = {}) {
     TABS.filter(t => t.id!=='profilo'&&(hasFanta || t.id !== 'fanta')).map(t =>
       '<button type="button" class="v2-tab' + (t.id === active ? ' is-active' : '') + '" data-v2-tab="' + t.id + '"' +
       (t.id === active ? ' aria-current="page"' : '') + '>' +
-      '<svg viewBox="0 0 24 24" aria-hidden="true">' + t.icon + '</svg><span>' + t.label + '</span></button>'
+      '<svg viewBox="0 0 24 24" aria-hidden="true">' + t.icon + '</svg><span>' + t.label + '</span>'+(t.id==='legainfo'?'<b class="league-unread" data-chat-badge hidden></b>':'')+'</button>'
     ).join('') + '</nav>';
 }
 
 export function bindTabBar(onTab) {
   document.querySelectorAll('[data-v2-tab]').forEach(b => { b.onclick = () => onTab(b.dataset.v2Tab); });
-}
-
-export function renderLegaSections(active, isAdmin, esc) {
-  return '<div class="v2-chips" role="tablist">' + legaSections(isAdmin).map(([id, label]) =>
-    '<button type="button" role="tab" class="v2-chip' + (id === active ? ' is-active' : '') + '" aria-selected="' + (id === active) + '" data-v2-lega="' + esc(id) + '">' + esc(label) + '</button>'
-  ).join('') + '</div>';
 }

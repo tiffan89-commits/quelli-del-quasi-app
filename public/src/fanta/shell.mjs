@@ -26,13 +26,13 @@ export function topBar({ mode, league, credits,slipCredits,user,hideCredits=fals
         <span class="league-add" aria-hidden="true">+</span>
       </button>`
     : '<span></span>';
-  return `<header class="v2-top fanta-top">${chip}<div class="ux-controls">${modeSwitch(mode)}<div class="ux-balances">${Number.isFinite(slipCredits)?`<div class="v2-credits"><b>${slipCredits}</b><span>crediti schedina</span></div>`:''}${Number.isFinite(credits)?`<div class="v2-credits"><b>${credits}</b><span>crediti asta</span></div>`:''}</div>${presidentEntry('data-tab="presidente"')}</div><p class="ux-mode-label">Fanta · la tua squadra e le sfide della lega</p></header>`;
+  return `<header class="v2-top fanta-top">${chip}<div class="ux-controls">${modeSwitch(mode)}<div class="ux-balances">${Number.isFinite(slipCredits)?`<div class="v2-credits"><b>${slipCredits}</b><span>crediti schedina</span></div>`:''}${Number.isFinite(credits)?`<div class="v2-credits"><b>${credits}</b><span>crediti asta</span></div>`:''}</div>${presidentEntry('data-tab="impostazioni"')}</div><p class="ux-mode-label">Fanta · la tua squadra e le sfide della lega</p></header>`;
 }
 
 export function tabBar(active) {
   return `<nav class="v2-tabbar" aria-label="Navigazione Fanta">${FANTA_TABS.map(([id, label]) =>
     `<button type="button" class="v2-tab${id === active ? ' is-active' : ''}" data-tab="${id}"${id === active ? ' aria-current="page"' : ''}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[id]}</svg><span>${label}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[id]}</svg><span>${label}</span>${id==='lega'?'<b class="league-unread" data-chat-badge hidden></b>':''}
     </button>`).join('')}</nav>`;
 }
 

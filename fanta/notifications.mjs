@@ -22,10 +22,10 @@ export const queueAuctionOpened=queueAuctionNotice;
 export async function queueFantaNotifications({connect=connection,now=Date.now}={}){
  const c=await connect();try{
   const rounds=(await c.query(`SELECT r.*,t.id AS team_id,t.user_id,l.name FROM fanta.rounds r JOIN fanta.leagues l ON l.id=r.league_id JOIN fanta.teams t ON t.league_id=l.id AND t.user_id IS NOT NULL WHERE l.rules->>'disabledAt' IS NULL AND (r.deadline BETWEEN $1 AND $2 OR (r.official AND EXISTS(SELECT 1 FROM fanta.results z JOIN fanta.matchups m ON m.id=z.matchup_id WHERE m.competition_id=r.competition_id AND m.round=r.number AND z.official AND NOT z.historical AND z.updated_at>=$3)))`,[new Date(now()-2*3600000).toISOString(),new Date(now()+2*3600000).toISOString(),new Date(now()-24*3600000).toISOString()])).rows;
-  const enqueue=async(uid,kind,key,title,body,league)=>{await c.query('INSERT INTO fanta.notifications(id,user_id,kind,data,expires_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',[idFor([uid,kind,key]),uid,kind,JSON.stringify({title,body,league,kind:'fanta',url:'/?mode=fanta&fantaLeague='+encodeURIComponent(league)}),new Date(now()+12*3600000).toISOString()]);};
+  const enqueue=async(uid,kind,key,title,body,league,lineup=null)=>{await c.query('INSERT INTO fanta.notifications(id,user_id,kind,data,expires_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',[idFor([uid,kind,key]),uid,kind,JSON.stringify({title,body,league,kind:'fanta',url:'/?mode=fanta&fantaLeague='+encodeURIComponent(league),...(lineup?{lineup}:{})}),new Date(lineup?.deadline||now()+12*3600000).toISOString()]);};
   for(const r of rounds){
    const age=now()-Date.parse(r.deadline),has=(await c.query('SELECT 1 FROM fanta.lineups WHERE competition_id=$1 AND round=$2 AND team_id=$3',[r.competition_id,r.number,r.team_id])).rows.length;
-   if(age<0&&age>=-2*3600000&&!has)await enqueue(r.user_id,'lineupReminder',r.competition_id+':'+r.number,'Il Fanta sta per chiudere','Manca la formazione: il mister è ancora al bar?',r.league_id);
+   if(age<0&&age>=-2*3600000&&!has)await enqueue(r.user_id,'lineupReminder',r.competition_id+':'+r.number,'Il Fanta sta per chiudere','Manca la formazione: il mister è ancora al bar?',r.league_id,{deadline:r.deadline,competition:r.competition_id,round:r.number,team:r.team_id});
    if(age>=0&&age<15*60000)await enqueue(r.user_id,'roundStart',r.competition_id+':'+r.number,'Si gioca!','La giornata è iniziata. Le scuse sono già pronte.',r.league_id);
    if(r.official&&age>=0)await enqueue(r.user_id,'results',r.competition_id+':'+r.number,'Il conto della giornata','Risultati e voti ufficiali sono pronti nel Fanta.',r.league_id);
   }
@@ -40,11 +40,19 @@ export async function deliverFantaNotifications({connect=connection,env=process.
  const c=await connect(),lease=new Date(now()+90000).toISOString();let jobs;
  try{await c.query('BEGIN');jobs=(await c.query(`SELECT n.*,s.data AS settings FROM fanta.notifications n LEFT JOIN fanta.notification_settings s ON s.user_id=n.user_id WHERE NOT EXISTS(SELECT 1 FROM fanta.leagues k WHERE k.id=n.data->>'league' AND k.rules->>'disabledAt' IS NOT NULL) AND n.delivered_at IS NULL AND n.attempts<4 AND n.expires_at>$1 AND (n.lease_until IS NULL OR n.lease_until<$1) ORDER BY n.id LIMIT 5 FOR UPDATE OF n SKIP LOCKED`,[new Date(now()).toISOString()])).rows;for(const j of jobs)await c.query('UPDATE fanta.notifications SET lease_until=$2,attempts=attempts+1 WHERE id=$1',[j.id,lease]);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
  let delivered=0;
- for(const j of jobs){const c=await connect();let target;try{target=(await c.query(DELIVERY_SQL,[j.user_id])).rows[0];}finally{c.release();}let success=true;
-  if(target&&j.settings?.notify?.[j.kind]!==false&&recipientAllowed(target.user.email,env)){
+ for(const j of jobs){const c=await connect();let target,mailLineup=false;
+  try{
+   target=(await c.query(DELIVERY_SQL,[j.user_id])).rows[0];
+   const lineup=j.kind==='lineupReminder'&&j.data.lineup;
+   if(env.FANTA_EMAIL_ENABLED==='true'&&target?.user.emailVerified&&target.user.emailRemindersEnabled&&lineup&&Date.parse(lineup.deadline)>now()&&recipientAllowed(target.user.email,env)&&mailReady(env)){
+    const saved=await c.query('SELECT 1 FROM fanta.lineups WHERE competition_id=$1 AND round=$2 AND team_id=$3',[lineup.competition,lineup.round,lineup.team]);
+    mailLineup=saved.rows.length===0;
+   }
+  }finally{c.release();}let success=true;
+  if(target&&recipientAllowed(target.user.email,env)){
    const keys={publicKey:env.WEB_PUSH_PUBLIC_KEY||target.keys?.publicKey,privateKey:env.WEB_PUSH_PRIVATE_KEY||target.keys?.privateKey};
-   for(const device of target.devices||[])try{if(keys.publicKey&&keys.privateKey)await sendPush(device.subscription,JSON.stringify({...j.data,tag:'fanta-'+j.id}),{TTL:3600,vapidDetails:{subject:env.WEB_PUSH_SUBJECT||'mailto:account@quellidelquasi.com',...keys}});}catch(e){if(![404,410].includes(e.statusCode))success=false;}
-   if(env.FANTA_EMAIL_ENABLED==='true'&&target.user.emailRemindersEnabled&&['lineupReminder','results'].includes(j.kind)&&mailReady(env))try{const queue={},message={to:[target.user.email],subject:j.data.title,html:'<p>'+j.data.body+'</p><p><a href="'+(env.APP_BASE_URL||'https://quellidelquasi.com')+'/?mode=fanta">Apri il Fanta</a></p>'};const id=queueMail(queue,message,env);await deliverMail(queue.mailOutbox.find(m=>m.id===id),undefined,env);}catch{success=false;}
+   if(j.settings?.notify?.[j.kind]!==false)for(const device of target.devices||[])try{if(keys.publicKey&&keys.privateKey)await sendPush(device.subscription,JSON.stringify({...j.data,tag:'fanta-'+j.id}),{TTL:3600,vapidDetails:{subject:env.WEB_PUSH_SUBJECT||'mailto:account@quellidelquasi.com',...keys}});}catch(e){if(![404,410].includes(e.statusCode))success=false;}
+   if(mailLineup)try{const queue={},message={to:[target.user.email],subject:j.data.title,html:'<p>'+j.data.body+'</p><p><a href="'+(env.APP_BASE_URL||'https://quellidelquasi.com')+'/?mode=fanta">Apri il Fanta</a></p>'};const id=queueMail(queue,message,env);await deliverMail(queue.mailOutbox.find(m=>m.id===id),undefined,env);}catch{success=false;}
   }else if(target&&!recipientAllowed(target.user.email,env))blockedDelivery('fanta-notification',env);
   const end=await connect();try{await end.query('UPDATE fanta.notifications SET delivered_at=$2,lease_until=NULL WHERE id=$1 AND lease_until=$3',[j.id,success?new Date(now()).toISOString():null,lease]);if(success)delivered++;}finally{end.release();}
  }

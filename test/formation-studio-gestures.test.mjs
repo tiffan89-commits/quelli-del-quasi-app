@@ -28,6 +28,37 @@ test('compact editor shows opponent initials, roles and legal drop targets, neve
  assert.ok(!document.querySelector('.fs-grid').textContent.includes('2026-11-03'));
  assert.match(document.querySelector('.fs-legend').textContent,/Probabilità effettiva/);assert.match(document.querySelector('.fs-legend').textContent,/Stimata/);
 });
+test('side bench reorders by the saved bench index until the pointer crosses onto the field',()=>{
+ const {window,document}=parseHTML('<html><body><div id="root"></div></body></html>');
+ const old={window:globalThis.window,document:globalThis.document};Object.assign(globalThis,{window,document});
+ const root=document.getElementById('root'),controller=new AbortController(),data={roster,round:{number:12,deadline:'2026-11-20'},rules:{formations:['4-4-2']}};
+ let draft=studioDraft(draftFrom(null,roster),roster),target;
+ root.innerHTML=renderStudio({data,draft},{role:'tutti',sideBench:true,benchOpen:true},0);
+ const pane=root.querySelector('#fs-bench-panel'),grip=root.querySelector('[data-bench-grip="p1"]'),shirt=root.querySelector('[data-st-player="p1"]');
+ pane.getBoundingClientRect=()=>({left:190});shirt.getBoundingClientRect=()=>({left:205,top:110,width:80,height:100});
+ document.elementFromPoint=()=>target;
+ const fire=(el,type,x,y)=>{
+  const event=new window.Event(type,{bubbles:true,cancelable:true});
+  Object.assign(event,{clientX:x,clientY:y,pointerId:1,pointerType:'touch',button:0,isPrimary:true});
+  el.dispatchEvent(event);
+ };
+ try{
+  assert.equal(root.querySelector('[data-st-bench-panel="open"]').getAttribute('aria-expanded'),'true');
+  target=root.querySelector('[data-drop="bench:2"]');
+  enableDrag(root,{signal:controller.signal,canDrop:(item,drop)=>canDropOn(draft,roster,item,drop,null),onDrop:(item,drop)=>{draft=dropOn(draft,item,drop,null,roster);}});
+  fire(grip,'pointerdown',225,200);fire(window,'pointermove',225,250);
+  assert.equal(root.querySelectorAll('.fs-token.is-droppable').length,0);
+  fire(window,'pointerup',225,250);
+  assert.deepEqual(draft.bench,['p0','p2','p1','p3']);
+  target=root.querySelector('[data-st-slot="D0"]');
+  fire(shirt,'pointerdown',225,150);fire(window,'pointermove',170,150);
+  assert.equal(root.querySelector('.fs').classList.contains('is-drag-to-field'),true);
+  assert.equal(root.querySelectorAll('.fs-token.is-droppable').length,4);
+  fire(window,'pointerup',170,150);
+  assert.equal(draft.slots.D0,'p1');assert.deepEqual(draft.bench,['p0','p2','p3']);
+  assert.equal(document.querySelector('.fanta-ghost'),null);
+ }finally{controller.abort();Object.assign(globalThis,old);}
+});
 test('touch drag separates horizontal scrolling from upward placement and highlights only matching roles',()=>{
  const {window,document}=parseHTML('<html><body><div id="root"><button id="source" data-drag-id="p1" data-drag-from="list" data-drag-axis="up">D</button>'+['P0','D0','D1','C0','A0'].map(s=>'<button data-drop="slot:'+s+'"></button>').join('')+'</div></body></html>');
  const old={window:globalThis.window,document:globalThis.document};globalThis.window=window;globalThis.document=document;
@@ -169,7 +200,7 @@ test('one reserve shelf orders the saved bench, swaps by role, and never drops a
 });
 
 test('studio surnames and fantamedia stay available for field, bench and free players',()=>{
- assert.equal(surname('Franco Mastantuono'),'Mastantuono');assert.equal(surname('F. Mastantuono'),'Mastantuono');assert.equal(surname('Randal Kolo Muani'),'Kolo Muani');assert.equal(surname('David de Gea'),'de Gea');assert.equal(surname('Juan Jesus'),'Juan Jesus');assert.equal(surname({name:'Full Display Name',surname:'Surname with space'}),'Surname with space');
+ assert.equal(surname('Franco Mastantuono'),'Mastantuono');assert.equal(surname('F. Mastantuono'),'Mastantuono');assert.equal(surname('Randal Kolo Muani'),'Kolo');assert.equal(surname('David de Gea'),'de Gea');assert.equal(surname('Juan Jesus'),'Jesus');assert.equal(surname({name:'Full Display Name',surname:'Surname with space'}),'Surname');
  const players=roster.map((p,i)=>({...p,name:['David de Gea','Franco Mastantuono','K. De Bruyne','Randal Kolo Muani'][i],stats:{...p.stats,avgFanta:i===2?null:6.5}}));
  const d=draftFrom(null,players);d.slots.P0=players[0].id;d.slots.D0=players[1].id;d.bench=[players[2].id];
  const {document}=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'tutti'},0));
@@ -178,7 +209,7 @@ test('studio surnames and fantamedia stay available for field, bench and free pl
  assert.equal(document.querySelectorAll('.fs-pitch .fs-fm').length,2);
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[2].id+'"] .fs-fm').textContent,'– FM');
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-fm').textContent,'6,50 FM');
- assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO MUANI');
+ assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO');
  const bench=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'panchina'},0)).document;assert.equal(bench.querySelector('.fs-grid .fs-tile .fs-shirt svg text').textContent,'DE BRUYNE');assert.ok(bench.querySelector('.fs-grid .fs-fm'));
 });
 

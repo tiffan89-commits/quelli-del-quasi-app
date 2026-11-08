@@ -28,7 +28,7 @@ export function renderLeagueChip(league, uid, esc, fmt, mode='', account=null, c
     '<span class="v2-league-name">' + esc(league.name) + '</span>' +
     '<span class="auction-index-dot" data-auction-indicator="*" aria-label="Asta in corso" hidden></span><span class="league-add" aria-hidden="true">+</span></button><div class="ux-controls">' + mode +
     (me ? '<div class="v2-credits"><b>' + fmt(me.credits ?? 0) + '</b><span>'+esc(caption)+'</span></div>' : '') +
-    presidentEntry()+'</div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
+    presidentEntry('data-bar-page="impostazioni"',profileActive)+'</div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
 }
 
 export function renderLeagueSheet(leagues, activeId, uid, esc) {

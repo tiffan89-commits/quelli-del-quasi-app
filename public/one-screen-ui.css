@@ -1,0 +1,587 @@
+/* Una sezione = una schermata: contenuti ristrutturati, sezione per sezione.
+   Tutto è sotto html.os-on, quindi asta, pagina partita e landing non lo vedono.
+   Si cambia solo l'aspetto: markup, data-attribute e gestori restano quelli dell'app. */
+
+/* ---------- Barra delle sottosezioni (segmenti) ---------- */
+html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs){
+ display:flex!important;flex-wrap:nowrap;gap:3px!important;margin:0 0 10px!important;padding:3px!important;
+ border:1px solid var(--line);border-radius:999px;background:#0f1c18;overflow-x:auto;scrollbar-width:none;mask-image:none
+}
+html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs)>button{
+ flex:1 1 0!important;min-width:0;min-height:32px!important;padding:5px 8px!important;border:0!important;border-radius:999px!important;
+ background:transparent!important;color:var(--muted)!important;font:600 12px/1.1 'DM Sans',sans-serif!important;white-space:nowrap;box-shadow:none!important
+}
+html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs)>button:is(.on,[aria-pressed="true"],[aria-selected="true"]){background:var(--white,#f6f3e7)!important;color:#10200f!important}
+html.os-on main.os-root .slip-section-buttons>button[data-short] .seg-long{display:none}
+html.os-on main.os-root .slip-section-buttons>button[data-short]::after{content:attr(data-short)}
+
+/* ---------- Schedina: giornata, righe partita compatte ---------- */
+html.os-on main.os-root .round-selector{margin:0 0 4px!important}
+html.os-on main.os-root .round-selector .quasi-select-button{min-height:38px!important;padding:6px 12px!important;font-size:13px!important;border-radius:999px!important}
+html.os-on main.os-root .v2-slip .v2-eyebrow,
+html.os-on main.os-root .v2-slip .v2-title,
+html.os-on main.os-root .v2-slip .v2-points-legend{display:none}
+html.os-on main.os-root .v2-match{
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px!important;
+ margin:0!important;padding:7px 0!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;background:none!important;box-shadow:none!important
+}
+html.os-on main.os-root .v2-match-head{display:flex;align-items:center;gap:6px;min-width:0;min-height:0!important;padding:0!important;border:0!important;background:none!important;text-align:left}
+html.os-on main.os-root .v2-match-head>div{min-width:0}
+html.os-on main.os-root .v2-match .slip-teams{display:flex;flex-wrap:wrap;align-items:center;gap:0 4px;font-size:13px!important;line-height:1.2}
+html.os-on main.os-root .v2-match .slip-team-label{display:inline-flex;align-items:center;gap:4px;min-height:0!important;font-size:13px!important}
+html.os-on main.os-root .v2-match .slip-team-label :is(svg,img){width:16px!important;height:16px!important;flex:none}
+html.os-on main.os-root .v2-match [data-match-status]{display:block;font-size:11px!important;color:var(--muted)}
+html.os-on main.os-root .v2-match .inline-result:empty{display:none}
+html.os-on main.os-root .v2-odds-main{display:grid!important;grid-template-columns:repeat(3,50px) 28px!important;gap:4px!important}
+html.os-on main.os-root .v2-odd{min-height:0!important;height:48px;padding:3px 2px!important;gap:0!important;border-radius:9px!important;justify-content:center}
+html.os-on main.os-root .v2-odd>b{font-size:13px!important;line-height:1.1}
+html.os-on main.os-root .v2-odd>span[data-odd]{font-size:0!important;line-height:1}
+html.os-on main.os-root .v2-odd>span[data-odd]::after{content:attr(data-odd);font-size:11px;font-weight:600}
+html.os-on main.os-root .v2-odd>span:not([data-odd]){font-size:9px!important;line-height:1.1}
+html.os-on main.os-root .v2-odd .v2-odd-points{font-size:9px!important;line-height:1.1;white-space:nowrap}
+html.os-on main.os-root .v2-more{min-height:0!important;height:48px;padding:0!important;border-style:dashed!important;border-radius:9px!important}
+html.os-on main.os-root .v2-odds-extra,html.os-on main.os-root .v2-match [data-pick-feedback]{grid-column:1/-1}
+html.os-on main.os-root .v2-match [data-pick-feedback]:empty{display:none}
+html.os-on main.os-root .v2-slip>.tiny{margin:8px 0 0;font-size:11px}
+html.os-on main.os-root .v2-odd .v2-odd-points{font-size:0!important;display:flex;gap:3px;justify-content:center}
+html.os-on main.os-root .v2-odd .v2-odd-points>em{font-size:9.5px;font-style:normal;font-weight:700}
+html.os-on main.os-root .v2-odd .v2-odd-points>span{display:none}
+
+/* ---------- Bar · Oggi: avviso presidente in una striscia, mossa e conto compatti ---------- */
+html.os-on main.os-root .president-todos{display:flex;align-items:center;gap:10px;margin:0 0 10px!important;padding:6px 6px 6px 12px!important;border-radius:12px;background:#1b2f23;border-color:#3b5a3f}
+html.os-on main.os-root .president-todos h2{margin:0!important;font-size:11px!important;letter-spacing:.12em;text-transform:uppercase;color:var(--lime);white-space:nowrap}
+html.os-on main.os-root .president-todos ul{flex:1;min-width:0}
+html.os-on main.os-root .president-todos li{min-height:32px!important;gap:8px!important;font-size:12px!important}
+html.os-on main.os-root .president-todos li+li{border-top:1px solid #3b5a3f}
+html.os-on main.os-root .president-todos li>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.os-on main.os-root .president-todos .text-button{min-height:30px!important;padding:0 6px}
+html.os-on main.os-root .league-dashboard{gap:10px!important}
+html.os-on main.os-root .league-dashboard>.dash-hero{height:104px!important;margin:0!important}
+html.os-on main.os-root .dash-hero-copy h1{font-size:23px!important;margin:4px 0!important}
+html.os-on main.os-root .dash-next{padding:12px 14px!important;gap:8px 12px!important;margin:0!important}
+html.os-on main.os-root .dash-next h2{font-size:24px!important;margin:2px 0!important}
+html.os-on main.os-root .dash-next p{font-size:12px!important;margin:0!important}
+html.os-on main.os-root .dash-cta{min-height:42px!important}
+html.os-on main.os-root .dash-last-round{min-height:0!important;padding:10px 14px!important;margin:0!important}
+html.os-on main.os-root .dash-last-round strong{font-size:22px!important}
+html.os-on main.os-root .dash-summary{gap:10px!important;margin:0!important}
+html.os-on main.os-root .dash-numbers>button{min-height:0!important;padding:8px 10px!important}
+html.os-on main.os-root .home-league-invite{margin:10px 0 0!important}
+html.os-on main.os-root .dash-last-round{display:flex!important;align-items:center;justify-content:space-between}
+html.os-on main.os-root .dash-last-round>span:first-child{display:flex;align-items:baseline;gap:8px}
+html.os-on main.os-root .dash-last-round strong{font-size:18px!important}
+html.os-on main.os-root .dash-numbers small,html.os-on main.os-root .dash-numbers span{font-size:10.5px}
+html.os-on main.os-root .portfolio-mini{padding:8px 14px!important}
+html.os-on main.os-root .portfolio-mini svg{height:30px!important;margin-top:4px!important}
+/* Obiettivi: griglia 2 colonne al posto del carosello */
+html.os-on main.os-root .dash-goals{border:0!important;padding-top:0!important}
+html.os-on main.os-root .goal-rail{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important;overflow:visible!important;padding:0!important;margin:8px 0 0!important}
+html.os-on main.os-root .goal-token{flex:none!important;min-height:0!important;padding:10px 12px!important;gap:3px!important}
+html.os-on main.os-root .goal-token strong{font-size:15px!important;line-height:1.15}
+html.os-on main.os-root .goal-token .goal-state{width:22px;height:22px;font-size:13px}
+html.os-on main.os-root .goal-panel{grid-column:1/-1}
+html.os-on main.os-root .dash-last-round{min-height:0!important;padding:8px 14px!important}
+html.os-on main.os-root .dash-last-round small{display:none}
+html.os-on main.os-root .dash-last-round strong{font-size:16px!important;line-height:1.2}
+html.os-on main.os-root .dash-last-round>span:last-child{font-size:12px}
+html.os-on main.os-root .dash-numbers>button{padding:6px 10px!important}
+html.os-on main.os-root .dash-numbers strong,html.os-on main.os-root .dash-numbers b{font-size:22px!important;line-height:1.1!important}
+html.os-on main.os-root .home-league-invite>*{min-height:40px!important}
+html.os-on main.os-root>.footer{break-inside:avoid}
+html.os-on main.os-root .league-dashboard>.dash-hero{height:92px!important}
+html.os-on main.os-root .dash-hero-copy{bottom:12px!important}
+html.os-on main.os-root .dash-hero-copy p{display:none}
+html.os-on main.os-root .dash-next{padding:10px 14px!important}
+html.os-on main.os-root .dash-cta{min-height:38px!important}
+/* Footer legale: due righe piccole, sempre in fondo all'ultima pagina. */
+html.os-on main.os-root>.footer{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 10px;margin-top:8px!important;padding:6px 0 2px!important;font-size:9.5px!important;line-height:1.3!important}
+html.os-on main.os-root>.footer .footer-line{margin:0!important;font-size:9.5px!important;text-align:center}
+html.os-on main.os-root .portfolio-mini svg{display:none!important}
+html.os-on main.os-root .portfolio-mini{padding:9px 14px!important}
+
+/* ---------- Bar · Classifica: Punti/Crediti a segmenti, righe da 40 px, la tua riga fissa ---------- */
+html.os-on main.os-root:has(.ranking-metric)>.round-heading{display:none}
+html.os-on main.os-root .ranking-rows{padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
+html.os-on main.os-root .ranking-metric{display:flex!important;gap:3px!important;margin:0 0 6px!important;padding:3px!important;border:1px solid var(--line);border-radius:999px;background:#0f1c18}
+html.os-on main.os-root .ranking-metric>button{flex:1;min-height:32px!important;padding:5px 8px!important;border:0!important;border-radius:999px!important;background:transparent!important;color:var(--muted)!important;font:600 12px 'DM Sans',sans-serif!important;box-shadow:none!important}
+html.os-on main.os-root .ranking-metric>button[aria-pressed="true"]{background:var(--white,#f6f3e7)!important;color:#10200f!important}
+html.os-on main.os-root .rankrow>summary{min-height:40px!important;padding:0 4px!important;gap:10px!important;font-size:14px}
+html.os-on main.os-root .rankrow.is-me>summary,html.os-on .os-pin{background:#1b2f23}
+html.os-on main.os-root .rankrow.is-me>summary{border-radius:10px}
+html.os-on main.os-root .ranking-rows>p.tiny{margin:6px 0 0!important;font-size:11px}
+html.os-on .os-pin .pill{font-size:9px;padding:1px 5px}
+
+/* ---------- Schede di sezione dell'app (.v2-chips) come barra a segmenti ---------- */
+html.os-on #app>.v2-lega-nav{margin:8px 14px 0!important;padding:0!important}
+html.os-on :is(#app>.v2-lega-nav,main.os-root) .v2-chips{display:flex!important;flex-wrap:nowrap!important;gap:3px!important;margin:0!important;padding:3px!important;border:1px solid var(--line);border-radius:999px;background:#0f1c18;overflow-x:auto;scrollbar-width:none;justify-content:stretch!important}
+html.os-on main.os-root .v2-chips{margin:0 0 10px!important}
+html.os-on :is(#app>.v2-lega-nav,main.os-root) .v2-chips>.v2-chip{flex:1 1 auto!important;min-height:32px!important;padding:5px 10px!important;border:0!important;border-radius:999px!important;background:transparent!important;color:var(--muted)!important;font:600 12px/1.1 'DM Sans',sans-serif!important;white-space:nowrap;box-shadow:none!important}
+html.os-on :is(#app>.v2-lega-nav,main.os-root) .v2-chips>.v2-chip:is(.is-active,[aria-selected="true"]){background:var(--white,#f6f3e7)!important;color:#10200f!important}
+
+/* ---------- Lega del Bar: riquadri (markup nuovo, vale sempre) ---------- */
+.lega-hub-head{padding:14px 16px!important;min-height:0!important;margin:0 0 10px!important}
+.lega-hub-head h1{font-size:24px!important;margin:2px 0!important}
+.lega-hub-head p{margin:0!important;font-size:12px}
+.lega-hub{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 10px}
+.lega-tile{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:96px;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--white,#f6f3e7);font:inherit;text-align:left;cursor:pointer}
+.lega-tile>b,.lega-tile>summary>b{font-size:15px;line-height:1.2}
+.lega-tile small{color:var(--muted);font-size:12px;line-height:1.3}
+.lega-tile.is-admin{border-color:#5b6b2f;background:#1d2a14}
+.lega-tile-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#1d3328}
+.lega-tile-icon svg{width:18px;height:18px;fill:none;stroke:var(--lime);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+details.lega-tile{padding:0}
+details.lega-tile>summary{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:96px;padding:12px;list-style:none;cursor:pointer}
+details.lega-tile>summary::-webkit-details-marker{display:none}
+details.lega-tile[open]{grid-column:1/-1}
+details.lega-tile[open]>summary{min-height:0}
+details.lega-tile .bar-members{margin:0;padding:0 12px 8px}
+.lega-hub+.league-actions{margin-top:0}
+@media (min-width:760px){.lega-hub{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.lega-tile-detail[open] .bar-members{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+.lega-tile-detail[open] .bar-members li{min-height:38px}
+
+/* ---------- Bar · Quasi: squadra a griglia 3 colonne, premi nella seconda sottosezione ---------- */
+html.os-on main.os-root:has(.quasi-roster-grid)>.hero{display:none}
+html.os-on main.os-root details.my-league{padding:0!important;border:0!important;background:none!important}
+html.os-on main.os-root details.my-league>summary{display:none}
+html.os-on main.os-root .quasi-roster-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;padding:0!important}
+html.os-on main.os-root .league-quasi-card{min-height:0!important;padding:4px 4px 6px!important;gap:2px!important;border-radius:12px!important}
+html.os-on main.os-root .quasi-roster-open{gap:2px!important}
+html.os-on main.os-root .quasi-scene-small{height:78px!important;min-height:0!important}
+html.os-on main.os-root .quasi-card-name{font-size:11.5px!important;line-height:1.2;min-height:0!important}
+html.os-on main.os-root .quasi-roster-meta{min-height:0!important;gap:2px!important;font-size:10px}
+html.os-on main.os-root .quasi-roster-meta .quasi-edit-button{min-height:26px!important;padding:2px 8px!important;font-size:11px!important}
+html.os-on main.os-root .quasi-roster-hint{margin:6px 0 0!important;font-size:11px}
+html.os-on main.os-root #rewards-collection{margin-top:0!important}
+html.os-on main.os-root #rewards-collection[open]{padding:0;border:0;background:none}
+.reward-tile-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:450px;margin:0 auto 6px;break-inside:avoid}
+.reward-tile-grid .reward-tile{box-sizing:border-box;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:4px;aspect-ratio:1;min-width:0;padding:7px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--white);font:600 11px/1.2 'DM Sans',sans-serif;overflow-wrap:anywhere}
+.reward-tile-art{display:grid;place-items:center;min-height:0}
+.reward-tile-art :is(svg,img){width:100%;height:100%;min-height:0;max-height:80px;object-fit:contain}
+.reward-tile-art .reward-mark{width:42px;height:42px;font-size:22px}
+
+/* ---------- Schedina › Il verdetto: card compatte, rivale e albo leggibili a colpo d'occhio ---------- */
+html.os-on main.os-root .bar-intro{display:none}
+html.os-on main.os-root .community-grid{gap:10px!important;margin:6px 0 10px!important}
+html.os-on main.os-root .community-grid>.card{min-height:0!important;padding:12px 14px!important}
+html.os-on main.os-root .community-grid h2,html.os-on main.os-root :is(.card:has(>.honours-grid)) h2{font-size:20px!important;line-height:1.15!important;margin:4px 0!important}
+html.os-on main.os-root .community-grid p{font-size:12px!important;margin:0!important}
+html.os-on main.os-root .card:has(>.honours-grid){padding:12px 14px!important}
+html.os-on main.os-root .honours-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+html.os-on main.os-root .honour{min-height:0!important;padding:8px 10px!important;border-top:0!important;border:1px solid var(--line)!important;border-radius:12px}
+html.os-on main.os-root .community-grid>.card{margin:0!important}
+html.os-on main.os-root .community-grid{display:grid!important;gap:8px!important}
+html.os-on main.os-root .honours-grid{align-items:start}
+html.os-on main.os-root .honour>*:not(:first-child){font-size:11px!important;margin:2px 0 0!important}
+html.os-on main.os-root .honour :is(.pill,.badge,span[class*="badge"],small:last-child){padding:2px 6px!important;font-size:10.5px!important;min-height:0!important}
+html.os-on main.os-root .honour h3,html.os-on main.os-root .honour strong{font-size:14px!important;margin:0!important}
+
+/* ---------- Fanta · Oggi: squadra in una card, mossa, sfida e classifica nelle sottosezioni ---------- */
+html.os-on main.os-root .president-todos ul{display:flex;flex-direction:column}
+html.os-on main.os-root .fanta-home{gap:10px!important}
+html.os-on main.os-root .fanta-hero{padding:12px 14px!important;border-radius:16px!important;margin:0!important}
+html.os-on main.os-root .fanta-hero .eyebrow{font-size:9px!important;letter-spacing:1.6px!important}
+html.os-on main.os-root .fanta-hero-identity{grid-template-columns:56px minmax(0,1fr)!important;gap:12px!important;margin-top:6px!important}
+html.os-on main.os-root .fanta-hero-copy h1{font-size:24px!important;line-height:1!important;margin:0 0 2px!important}
+html.os-on main.os-root .fanta-hero-manager{font-size:12px!important}
+html.os-on main.os-root .fanta-hero-stats{margin-top:10px!important;gap:8px!important}
+html.os-on main.os-root .fanta-hero-stats dd,html.os-on main.os-root .fanta-hero-stats strong{font-size:22px!important;line-height:1.1!important;margin:0!important}
+html.os-on main.os-root .fanta-hero-stats dt{font-size:10.5px!important}
+html.os-on main.os-root .fanta-next{padding:12px 14px!important;margin:0!important}
+html.os-on main.os-root .fanta-next h2{font-size:22px!important}
+html.os-on main.os-root .fanta-next p{font-size:12px!important;margin:2px 0 0!important}
+html.os-on main.os-root .fanta-home>.fanta-block{margin:0!important}
+html.os-on main.os-root .fanta-match-link{min-height:0!important;padding:12px 14px!important}
+html.os-on main.os-root .fanta-vs{min-height:0!important;padding:6px 0!important}
+html.os-on main.os-root .fanta-table td,html.os-on main.os-root .fanta-table th{padding-top:6px!important;padding-bottom:6px!important}
+html.os-on main.os-root .fanta-hero-crest{width:56px!important;max-width:56px}
+html.os-on main.os-root .fanta-hero-crest>.team-logo{width:56px!important}
+html.os-on main.os-root .fanta-hero-crest :is(.fanta-crest-edit,[class*="edit"]){transform:scale(.75);transform-origin:bottom right}
+html.os-on main.os-root .fanta-table td small,html.os-on main.os-root .fanta-table td .muted{font-size:10.5px!important}
+
+/* ---------- Fanta · Squadra: intestazione in una riga, campo a tutta pagina, panchina nella pagina dopo ---------- */
+html.os-on main.os-root .fanta-squadra{gap:8px!important}
+html.os-on main.os-root .fanta-squadra>.fanta-sq-head{display:grid!important;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:10px!important;min-height:0!important;margin:0 0 8px!important;padding:0!important}
+html.os-on main.os-root .fanta-squadra>.fanta-sq-head .fanta-edit-crest{width:40px!important;min-height:0!important;padding:0!important}
+html.os-on main.os-root .fanta-squadra>.fanta-sq-head .fanta-edit-crest .team-logo{width:40px!important;height:auto!important}
+html.os-on main.os-root .fanta-squadra>.fanta-sq-head .fanta-edit-crest>span:not(.team-logo){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+html.os-on main.os-root .fanta-team-heading .eyebrow{display:none}
+html.os-on main.os-root .fanta-team-heading h1{font-size:20px!important;line-height:1.05!important;margin:0!important}
+html.os-on main.os-root .fanta-team-heading p{font-size:11.5px!important;margin:1px 0 0!important}
+html.os-on main.os-root .fanta-squadra>.v2-chips{margin:0 0 8px!important}
+html.os-on main.os-root .fanta-squadra .fanta-studio-open{min-height:0!important;padding:9px 14px!important;margin:0 0 8px!important;font-size:13px!important}
+html.os-on main.os-root .fanta-deadline{display:flex!important;align-items:center;justify-content:space-between;gap:8px;min-height:0!important;padding:6px 12px!important;margin:0 0 6px!important}
+html.os-on main.os-root .fanta-deadline>div:first-child{display:flex;align-items:center;gap:8px;min-width:0}
+html.os-on main.os-root .fanta-deadline b{font-size:13px!important;white-space:nowrap}
+html.os-on main.os-root .fanta-deadline .v2-state{font-size:11px!important;min-height:0!important;padding:2px 8px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.os-on main.os-root .fanta-deadline .dash-clock{display:flex;align-items:baseline;gap:6px}
+html.os-on main.os-root .fanta-deadline .dash-clock span{font-size:11px!important}
+html.os-on main.os-root .fanta-deadline .dash-clock strong{font-size:16px!important}
+html.os-on main.os-root .fanta-view-module{margin:0 0 6px!important;font-size:12px}
+html.os-on main.os-root .fanta-board{display:block!important}
+html.os-on main.os-root .fanta-board-side{break-before:column;-webkit-column-break-before:always}
+/* Rosa: righe da una riga e mezza, niente a capo */
+html.os-on main.os-root .fanta-roster-row{min-height:0!important;padding:5px 0!important;gap:6px!important}
+html.os-on main.os-root .fanta-roster-row .fanta-p-name{min-width:0}
+html.os-on main.os-root .fanta-roster-row .fanta-p-name>b{font-size:13px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+html.os-on main.os-root .fanta-roster-row .fanta-p-name>small{font-size:11px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+html.os-on main.os-root .fanta-roster-row .fanta-mini-shirt{transform:scale(.9)}
+html.os-on main.os-root .fanta-group{margin:0 0 6px!important}
+html.os-on main.os-root .fanta-group>h4{margin:6px 0 2px!important}
+html.os-on main.os-root .fanta-roster-legend{margin:0 0 2px!important}
+
+/* ---------- Fanta · Classifica: niente titolone, tabella a righe basse (le colonne in più scorrono di lato) ---------- */
+html.os-on main.os-root .fanta-lega:has([data-lega-sub="calendario"])>.fanta-sq-head{display:none}
+html.os-on main.os-root .fanta-lega>.v2-chips{margin:0 0 8px!important}
+html.os-on main.os-root .fanta-table-scroll{margin:0!important}
+html.os-on main.os-root .fanta-table tbody td{padding-top:4px!important;padding-bottom:4px!important;height:auto!important}
+html.os-on main.os-root .fanta-table tbody td :is(img,svg,.team-logo){width:24px!important;height:24px!important}
+html.os-on main.os-root .fanta-table tbody td small{display:block;font-size:10.5px!important;line-height:1.2}
+html.os-on main.os-root .fanta-table tbody td b,html.os-on main.os-root .fanta-table tbody td strong{font-size:13.5px!important;line-height:1.2}
+/* Fanta · Lega: intestazione della lega compatta */
+html.os-on main.os-root .fanta-lega>.fanta-sq-head{display:block!important;min-height:0!important;margin:0 0 8px!important;padding:10px 14px!important;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+html.os-on main.os-root .fanta-lega>.fanta-sq-head h1{font-size:20px!important;line-height:1.1!important;margin:2px 0!important}
+html.os-on main.os-root .fanta-lega>.fanta-sq-head .eyebrow{font-size:9.5px!important;letter-spacing:1.4px!important;display:block}
+html.os-on main.os-root .fanta-lega>.fanta-sq-head p{font-size:11.5px!important;margin:0!important}
+html.os-on main.os-root .fanta-lega:has(>.v2-chips [data-lega-sub="calendario"])>.fanta-sq-head{display:none!important}
+html.os-on main.os-root .fanta-table .fanta-team-identity{gap:8px!important}
+html.os-on main.os-root .fanta-table .fanta-team-identity .team-logo{width:24px!important;flex:0 0 24px}
+/* Sul telefono la classifica Fanta tiene # · Squadra · PG · Pt · FP, così si sfoglia per pagine invece di scorrere dentro un riquadro. */
+@media (max-width:520px){
+ html.os-on main.os-root .fanta-table-scroll>.fanta-table{min-width:0!important;width:100%!important;table-layout:auto!important}
+ html.os-on main.os-root .fanta-table-scroll>.fanta-table col{width:auto!important}
+ html.os-on main.os-root .fanta-table-scroll>.fanta-table :is(th,td):nth-child(n+4):nth-child(-n+8){display:none!important}
+}
+/* Il campo della formazione sta sempre nella prima pagina, insieme a scadenza e modulo. */
+html.os-on main.os-root .fanta-board-pitch{max-height:calc(var(--os-h) - 210px);display:flex;justify-content:center}
+html.os-on main.os-root .fanta-board-pitch>.fanta-pitch.is-editor{height:auto!important;max-height:calc(var(--os-h) - 210px);aspect-ratio:auto}
+
+/* The page frame stays still. Only the contents below it change columns. */
+html.os-on main.os-split .v2-slip,
+html.os-on main.os-split :is(.fanta-native-slips,.fanta-lega,.fanta-squadra,.fanta-round){margin:0!important;padding:0!important;display:block}
+html.os-on main.os-split .fanta-board-pitch,
+html.os-on main.os-split .fanta-board-pitch>.fanta-pitch.is-editor{max-height:clamp(160px,calc(var(--os-h) - 110px),540px)}
+html.os-on main.os-split .fanta-lg-tabs[data-os-header],
+html.os-on main.os-split .fanta-squadra>.v2-chips[data-os-header]{margin-inline:14px!important}
+html.os-on main.os-split .fanta-squadra>.fanta-sq-head[data-os-header],
+html.os-on main.os-split .fanta-lega>.fanta-sq-head[data-os-header]{margin-inline:14px!important}
+html.os-on main.os-split .slip-section-buttons[data-os-header],
+html.os-on main.os-split .fanta-slip-tabs[data-os-header]{margin:0 14px 8px!important}
+html.os-on main.os-split .bar-head{margin-block:0 6px}
+html.os-on main.os-split .bar-round{width:100%}
+
+/* A result updates the score and the selected odds, without growing the row. */
+html.os-on main.os-root .v2-match{padding:4px 0!important;gap:2px 5px!important}
+html.os-on main.os-root .v2-match-head.match-link{min-width:0;min-height:42px!important;display:flex;align-items:center;gap:5px}
+html.os-on main.os-root .v2-match .slip-teams{flex-wrap:nowrap;gap:2px;white-space:nowrap}
+html.os-on main.os-root .v2-match .slip-team-label{gap:2px;min-width:0}
+html.os-on main.os-root .v2-match .slip-team-name{overflow:hidden;text-overflow:ellipsis}
+html.os-on main.os-root .v2-match .slip-team-code{display:none;text-decoration:none}
+html.os-on main.os-root .v2-match [data-match-status]{display:none}
+html.os-on main.os-root .v2-match .inline-result{flex:none;min-width:0;gap:1px;line-height:1}
+html.os-on main.os-root .v2-match .inline-result>small{display:none}
+html.os-on main.os-root .v2-match .inline-score{font-size:16px;white-space:nowrap}
+html.os-on main.os-root .v2-match .inline-live{font-size:8px;white-space:nowrap}
+html.os-on main.os-root .v2-match .v2-more{font-size:0!important}
+html.os-on main.os-root .v2-match .v2-more::after{content:attr(data-short-pick);font-size:12px}
+html.os-on main.os-root .v2-match :is(.v2-odd,.v2-more).pick-winning{background:#3c713f!important;color:#fff!important;border-color:#83c777!important;box-shadow:none!important}
+html.os-on main.os-root .v2-match :is(.v2-odd,.v2-more).pick-losing{background:#843a39!important;color:#fff!important;border-color:#ec7771!important;box-shadow:none!important}
+html.os-on main.os-root .v2-match .v2-odd:is(.pick-winning,.pick-losing) .v2-odd-points>em{color:inherit}
+@media(max-width:620px){
+ html.os-on main.os-root .v2-match .slip-team-name{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ html.os-on main.os-root .v2-match .slip-team-code{display:inline;font-size:10px;font-weight:750}
+ html.os-on main.os-root .v2-match .slip-team-label :is(svg,img,.team-logo){width:14px!important;height:14px!important}
+ html.os-on main.os-root .v2-match .slip-versus{font-size:10px}
+ html.os-on main.os-root .v2-match .v2-odds-main{grid-template-columns:repeat(3,clamp(30px,9vw,42px)) 25px!important;gap:3px!important}
+ html.os-on main.os-root .v2-match .v2-odd,html.os-on main.os-root .v2-match .v2-more{height:37px}
+ html.os-on main.os-root .v2-match .v2-odd>span[data-odd]::after{font-size:9.5px}
+ html.os-on main.os-root .v2-match .v2-odd-points{gap:1px}
+ html.os-on main.os-root .v2-match .v2-odd-points>em{font-size:7.5px}
+ html.os-on main.os-root .v2-match .inline-score{font-size:13px}
+}
+
+/* Each pair gets a full-width flex page so Safari cannot fragment its cards. */
+html.os-on main.os-root .bar-table{padding-block:2px 0!important}
+html.os-on main.os-root .bar-table .bar-head{padding-block:0!important;min-height:0!important;margin-block:0 4px!important}
+.bar-slip-page{display:grid;gap:4px}
+html.os-on body #app>main.os-split [data-os-strip]{display:flex;columns:auto;gap:0;padding-inline:0!important}
+html.os-on main.os-root .bar-slip-page{flex:0 0 100%;min-width:0;height:100%;box-sizing:border-box;padding:0 14px;overflow:hidden;align-content:start;grid-auto-rows:min(248px,calc((var(--os-h) - 4px)/2))}
+html.os-on main.os-root .bar-tile{min-width:0;min-height:0;max-width:570px;width:100%;margin:0 auto;padding:4px;gap:2px}
+html.os-on main.os-root .bar-tile.pitch-flip-card{padding-bottom:27px}
+html.os-on main.os-root .bar-tile .bar-who{grid-template-columns:34px minmax(0,1fr);gap:6px;line-height:1}
+html.os-on main.os-root .bar-tile .bar-quasi{width:34px;height:34px}
+html.os-on main.os-root .bar-tile .bar-quasi .quasi-scene{width:100%;height:100%!important;aspect-ratio:1}
+html.os-on main.os-root .bar-table .bar-round .quasi-select-button,
+html.os-on main.os-root .bar-table .bar-round select{min-height:32px!important;padding-block:3px!important;font-size:12px!important}
+html.os-on main.os-root .bar-tile .bar-id h3{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.os-on main.os-root .bar-tile .bar-archetype{font-size:10px;min-height:0;margin:0}
+html.os-on main.os-root .bar-tile .bar-id{padding-right:0}
+html.os-on main.os-root .bar-tile .bar-quip{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;padding:2px 5px;margin:0;min-height:0;font-size:10px;line-height:1.1}
+html.os-on main.os-root .bar-tile .bar-bets{flex:1;min-height:0;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(28px,1fr);gap:3px}
+html.os-on main.os-root .bar-tile .bar-bet{min-height:0!important;min-width:0;gap:2px;padding:1px 0;line-height:1}
+html.os-on main.os-root .bar-tile .bar-bet strong{font-size:clamp(13px,3.8vw,22px)}
+html.os-on main.os-root .bar-tile .bar-teams{font-size:clamp(8px,2.2vw,11px)}
+html.os-on main.os-root .bar-tile .bar-stub{display:flex;flex:1;flex-direction:column;min-height:0;padding:4px}
+html.os-on main.os-root .bar-tile .bar-stub-head{padding-bottom:2px;margin-bottom:2px;gap:4px;font-size:10px;letter-spacing:.02em}
+html.os-on main.os-root .bar-tile .bar-stub-head span+span{font-size:10px}
+@media(max-height:735px){html.os-on main.os-root .bar-tile .bar-quip{-webkit-line-clamp:1}}
+@media(min-width:760px){html.os-on main.os-root .bar-slip-page{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.fanta-slip-balance{margin:2px 0 5px;color:var(--muted);font-size:11px}
+.serie-standings .serie-table{min-width:0;width:100%;table-layout:fixed;font-size:clamp(9px,2.8vw,14px)}
+.serie-standings .serie-table :is(th,td){padding:0 1px;height:clamp(17px,calc((var(--os-h,530px) - 12px)/21),26px)}
+.serie-standings .serie-table :is(th,td):first-child{width:7%}
+.serie-standings .serie-table :is(th,td):nth-child(2){width:33%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.serie-standings .serie-table .team-logo{width:16px;height:16px;flex:none}
+.serie-standings .serie-table .team-label svg{width:15px;height:16px}
+.serie-standings .serie-table .team-label>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.serie-standings .serie-table-card{padding-block:2px!important}
+
+.president-group[data-president-section="persone"]:not([open]){display:none}
+html.os-on main.os-root .president-panel .president-heading{margin-inline:14px}
+html.os-on main.os-root .president-panel .president-heading{min-height:0;padding:7px 0 4px}
+html.os-on main.os-root .president-panel .president-heading h1{font-size:12px;margin:0}
+
+html.os-on main.os-root .president-panel .president-group>summary{padding:10px 27px 10px 12px}
+html.os-on main.os-root .president-panel .president-group{margin-bottom:6px}
+html.os-on main.os-root .president-panel .president-body{padding:2px 10px 10px}
+.president-panel .profile-embedded>.split{gap:6px}
+.president-panel .profile-embedded .card{margin:4px 0;padding:5px 0}
+.president-panel .profile-embedded :is(h2,h3,p){margin:3px 0}
+.president-panel .profile-embedded h3{font-size:17px}
+.president-panel .profile-embedded .field{gap:3px;margin:4px 0;font-size:12px}
+.president-panel .profile-embedded .field input{min-height:34px;padding:5px 8px}
+.president-panel .profile-embedded :is(.secondary,.primary){min-height:33px;padding:5px 9px}
+.president-panel .inline-support>summary{min-height:38px;align-content:center;font-weight:700;color:var(--lime)}
+.branding-identity{display:flex;align-items:center;gap:10px;margin:0 0 7px}
+.branding-identity .league-emblem{min-width:46px;width:46px;height:46px;margin:0}
+.branding-identity .field{width:100px;margin:0;font-size:12px}
+.branding-identity .field input{min-height:35px;padding:5px 8px}
+.branding-identity small{color:var(--muted)}
+.president-panel #branding-form .theme-palette{gap:2px;padding:5px 0}
+.president-panel #branding-form .theme-option{width:29px;height:29px;min-height:29px}
+.president-panel #branding-form .theme-swatch{width:21px;height:21px}
+.president-panel #branding-form .emblem-presets button{min-height:29px;padding:3px 6px}
+.president-panel #branding-form>.field{margin:5px 0}
+html.os-on main.os-root .verdict-content .community-grid{grid-template-columns:minmax(0,1fr)}
+html.os-on main.os-root .verdict-content .community-grid>.card{padding:8px 10px!important}
+html.os-on main.os-root .verdict-content .verdict-honours>summary{font-size:13px;font-weight:700}
+.verdict-almost{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.verdict-almost h3{margin:0 0 4px;font-size:14px}
+.verdict-almost .almost-row{padding:4px 0}
+.verdict-almost .almost-row strong{margin-right:8px}
+.verdict-almost .almost-row p{margin:2px 0;font-size:12px}
+html.os-on main.os-root .verdict-content .verdict-honours{padding:7px 10px;margin-block:5px}
+.os-drill-target .community-grid{display:block!important}
+.os-track.os-drill .os-drill-parent.community-grid{display:block!important}
+.fanta-notify-compact .fanta-io-toggles{gap:3px}
+.fanta-notify-compact .fanta-io-toggles label{min-height:34px;padding:3px 8px;gap:6px}
+.fanta-notify-compact .fanta-io-toggles b{font-size:12px}
+.fanta-notify-compact .fanta-switch{flex:none}
+html.os-on main.os-root .president-todos-fanta{display:block}
+html.os-on main.os-root .president-todos-fanta ul{flex-direction:row;flex-wrap:wrap;gap:2px 8px}
+html.os-on main.os-root .president-todos-fanta li+li{border-top:0}
+html.os-on main.os-root .president-todos-fanta .text-button{padding-inline:3px}
+html.os-on main.os-root .fanta-rules .fanta-rule-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:10px}
+html.os-on main.os-root .fanta-rules .fanta-rule-list li{padding:3px 0;gap:4px}
+html.os-on main.os-root .fanta-rating-rules .rule-table{min-width:0;table-layout:fixed;font-size:10px;overflow-wrap:anywhere}
+html.os-on main.os-root .fanta-rating-rules .rule-table :is(th,td){padding:3px 2px}
+.fanta-calendar-more{display:block;margin:8px auto}
+html.os-on main.os-root .fanta-team-fixture{margin-block:4px;padding:5px 8px;gap:2px}
+html.os-on main.os-root .fanta-team-fixture .team-logo{width:20px;height:20px}
+.fanta-team-fixture .team-calendar-score{display:block;font:700 22px/1 'Barlow Condensed',sans-serif;color:var(--lime)}
+.fanta-team-fixture .team-calendar-sides i{font-style:normal;color:var(--muted)}
+
+body.match-page-active main.match-page.verdict-page{
+ width:min(100%,550px);height:var(--postcard-height,calc(100dvh - var(--ux-header-height,64px) - var(--app-tabbar-height,84px)));
+ overflow:auto;overscroll-behavior:contain;padding:4px 12px!important
+}
+.match-page.bar-rules-page .rule-close{position:sticky;top:var(--ux-header-height,64px);z-index:2}
+.verdict-page-toolbar{display:flex;justify-content:flex-start;margin-bottom:4px}
+.verdict-page-toolbar .secondary{min-height:34px;padding:4px 9px}
+.verdict-page .verdict-postcard{padding:8px 12px;text-align:center}
+.verdict-page .verdict-postcard h2{font-size:23px;margin:2px 0}
+.verdict-page .verdict-postcard>p{margin:2px 0;font-size:12px}
+.verdict-page .postcard-winner{margin:5px auto}
+.verdict-page .postcard-quasi{width:min(65vw,var(--postcard-quasi-width,140px))}
+.verdict-page .postcard-quasi .quasi-scene-caption{display:none}
+.verdict-page .postcard-quasi .quasi-scene-person{inset:9% 8% 7%}
+.verdict-page .postcard-winner h3{font-size:23px;margin:2px 0}
+.verdict-page .postcard-quip{font-size:11px;line-height:1.2}
+.verdict-page .postcard-bets{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.verdict-page .postcard-bets .bar-bet{min-height:32px;padding:3px}
+.verdict-page .postcard-bets .bar-teams{font-size:8px}
+.verdict-page .postcard-totals{padding:5px 0;font-size:12px}
+.verdict-page .verdict-postcard>small{display:none}
+.verdict-page .verdict-postcard>.v2-chips{flex-wrap:nowrap;overflow:auto;scrollbar-width:none}
+@media(max-height:730px){
+ .verdict-page .verdict-page-toolbar .secondary{min-height:28px;padding-block:3px}
+ .verdict-page .verdict-postcard{padding:4px 9px}
+ .verdict-page .verdict-postcard h2,.verdict-page .postcard-winner h3{font-size:19px;line-height:1.1}
+ .verdict-page .postcard-winner{margin:3px auto}
+ .verdict-page .verdict-postcard>.v2-chips{margin:2px 0;gap:3px}
+ .verdict-page .verdict-postcard>.v2-chips>.v2-chip{min-height:25px;padding:3px 7px;font-size:10px}
+ .verdict-page .bar-stub{padding:5px}
+ .verdict-page .bar-stub-head{padding-bottom:3px;margin-bottom:4px}
+ .verdict-page .postcard-bets .bar-bet{gap:1px;padding:2px}
+ .verdict-page .postcard-bets .bar-bet strong{font-size:16px}
+ .verdict-page .postcard-totals{padding-block:3px}
+ .verdict-page .postcard-totals b{display:inline}
+}
+
+html.os-on main.os-root .fanta-home-compact{display:block!important}
+html.os-on main.os-root .fanta-home-compact>[data-fanta-auction-banner]:empty{display:none}
+html.os-on main.os-root .fanta-home-compact .fanta-hero{padding:8px 12px!important;gap:4px}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-identity{grid-template-columns:40px minmax(0,1fr)!important;gap:8px!important;margin-top:1px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest{width:40px!important;height:auto!important;min-height:0!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest>.team-logo{width:40px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-copy h1{font-size:21px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{margin:3px 0 0!important;gap:6px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-stats dd{font-size:17px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-form{margin-top:1px;gap:6px}
+html.os-on main.os-root .fanta-home-compact .fanta-form i{width:16px;height:16px;font-size:9px}
+.fanta-home-match-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:6px;text-align:left;font-size:13px;margin-bottom:3px}
+.fanta-home-match-head small{text-align:right;color:var(--muted);font-size:10px}
+.fanta-home-match-head>span,.fanta-last-result>span:last-child{color:var(--lime)}
+.fanta-home-match .fanta-vs{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;border-radius:8px;gap:6px;padding-inline:5px!important}
+.fanta-home-match .fanta-vs-team{display:grid;grid-template-columns:22px minmax(0,1fr);gap:2px 5px;text-align:left}
+.fanta-home-match .fanta-vs-team .team-logo{grid-row:1/span 2;width:22px;height:24px;margin:0}
+.fanta-home-match .fanta-vs-team b{font-size:15px}
+.fanta-home-match .fanta-vs-team small{font-size:10px}
+.fanta-home-score{font:700 23px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+.fanta-home-compact .final-verification-note{margin:3px 2px 0;font-size:10px}
+.fanta-home-compact .fanta-bar-link,.fanta-home-compact .fanta-last-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 10px;min-height:35px;margin-top:4px;text-align:left;font-size:13px}
+.fanta-home-compact .fanta-last-result{grid-template-columns:minmax(0,1fr) auto auto}
+.fanta-last-result small{display:block;color:var(--muted);font-size:10px}
+.fanta-last-result strong{font:700 21px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+html.os-on main.os-root .president-todos-fanta .president-action{min-height:34px;padding:5px 10px;border-radius:9px;font-size:12px}
+html.os-on main.os-root .fanta-league-auction .fanta-lg-card{margin:2px 0 8px;padding:10px 12px}
+html.os-on main.os-root .fanta-league-auction .fanta-lg-card :is(h2,h3,p){margin:3px 0}
+html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-name{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;overflow-wrap:anywhere;line-height:1.1}
+html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-code{display:none}
+@media(max-width:620px){
+ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-teams{display:grid;gap:3px}
+ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-label{font-size:11px}
+ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-versus{display:none}
+}
+
+.lega-tile-detail>summary{position:relative}
+.lega-tile-next{position:absolute;right:11px;top:11px;color:var(--lime);font-size:20px;line-height:1}
+.lega-tile-detail.os-drill-target{border:0;background:none;padding:0}
+.lega-tile-detail.os-drill-target>.fanta-block{margin:0;padding-top:0;border-top:0}
+.lega-tile-detail.os-drill-target .fanta-lg-members{margin-top:4px}
+.v2-tab:has(>.league-unread){position:relative}
+.league-unread{position:absolute;top:1px;left:calc(50% + 6px);display:grid;place-items:center;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#c54447;color:white;font:800 10px/1 'DM Sans',sans-serif}
+.league-unread[hidden]{display:none}
+html.os-on main.os-root .fanta-home-compact .fanta-hero{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);column-gap:10px;align-items:center;background:linear-gradient(135deg,#2a5541,var(--fanta-pitch) 72%,#19382b)}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-identity{display:contents}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest{grid-column:2;grid-row:1/span 4;width:100%!important;max-width:130px;justify-self:center}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest>.team-logo{width:100%!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{grid-template-columns:repeat(3,max-content);gap:0 13px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-copy h1{overflow-wrap:anywhere}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-form{grid-column:1}
+.dash-recap-details .round-recap{margin:0}
+.dash-recap-details .recap-empty h2{margin:3px 0;font-size:18px}
+.dash-recap-details .recap-empty p{margin:0;font-size:11px}
+
+@media(max-height:700px) and (max-width:759px){
+ .lega-hub{gap:7px}
+ .lega-hub .lega-tile,.lega-hub .lega-tile>summary{min-height:70px;gap:3px}
+ .lega-hub button.lega-tile,.lega-hub .lega-tile>summary{padding:7px 9px}
+ .lega-hub .lega-tile-icon{width:22px;height:22px;border-radius:7px}
+ .lega-hub .lega-tile-icon svg{width:15px;height:15px}
+ .lega-hub .lega-tile b{font-size:13px}
+ .lega-hub .lega-tile small{font-size:10px}
+}
+
+.invite-hub-tile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:0;gap:0}
+.invite-hub-tile>button{display:flex;flex-direction:column;align-items:flex-start;align-self:stretch;justify-content:center;gap:4px;background:none;border:0;padding:8px 4px 8px 10px;color:inherit;font:inherit;text-align:left}
+.invite-hub-tile>button>b{font-size:14px;line-height:1.15}
+.invite-hub-tile>.whatsapp-invite{width:34px;height:34px;min-width:34px;min-height:34px;padding:5px;margin-right:6px;border-color:#52795a;color:#80d294}
+.invite-hub-tile>.whatsapp-invite svg{width:17px;height:17px}
+.president-todos-fanta .whatsapp-invite{width:30px;min-width:30px;height:30px;min-height:30px;padding:5px;color:#80d294}
+.president-todos-fanta .whatsapp-invite svg{width:15px;height:15px}
+@media(max-width:360px){
+ html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{gap:0 7px!important}
+ .invite-hub-tile>button>b{font-size:12px}
+}
+
+html.os-on main.os-root .fanta-other-slips .bar-tile{display:block;break-inside:avoid;margin:0 auto 8px;padding:5px}
+html.os-on main.os-root .fanta-other-slips .bar-who{margin:0 0 4px}
+html.os-on main.os-root .fanta-other-slips .bar-stub{display:block}
+html.os-on main.os-root .fanta-other-slips .bar-bets{grid-template-columns:repeat(var(--fanta-slip-matches),minmax(0,1fr));grid-auto-rows:auto}
+html.os-on main.os-root .fanta-other-slips .bar-bet{height:46px;justify-content:center}
+html.os-on main.os-root .fanta-other-slips :is(.bar-teams,.bar-score){white-space:nowrap}
+html.os-on main.os-root .fanta-other-slips .inline-live{font-size:7px}
+html.os-on main.os-root :is(.round-selector,.bar-table .bar-round,.fanta-slip-round) .quasi-select-button{min-height:44px!important;padding:7px 13px!important;font-size:14px!important}
+@media(max-width:360px){
+ html.os-on main.os-root .fanta-other-slips .bar-teams{font-size:7px}
+ html.os-on main.os-root .fanta-other-slips .bar-bets{gap:2px}
+}
+
+.slip-play-note{margin:0;padding:3px 10px 0;text-align:center;font-size:10px;line-height:1.2}
+.slip-play-note i{font-style:normal;margin:0 3px}
+.slip-play-note [hidden]{display:none!important}
+.slip-event-clock{display:block;color:var(--lime);font-size:9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+body[data-game-mode] .quasi-select-button{padding-inline-end:36px!important;text-align:left;line-height:1.25}
+body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11px 12px;overflow-wrap:anywhere}
+
+.v2-slip[data-slip-source="seriea"] .v2-match-head{justify-content:space-between}
+.v2-slip[data-slip-source="seriea"] [data-match-status]{font-size:clamp(8px,2.45vw,11px);line-height:1.2}
+.slip-match-indicator{flex:none;display:grid;place-items:center;align-self:center;min-width:0}
+.slip-match-indicator .inline-result:empty{display:none}
+.slip-match-indicator .slip-event-clock{font-size:clamp(8px,2.5vw,12px);font-weight:750}
+.president-panel .profile-name-form{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+.president-panel .profile-name-form button{margin-bottom:4px}
+.profile-email-value{overflow-wrap:anywhere}
+.profile-password{margin-top:12px;padding-top:8px;border-top:1px solid var(--line)}
+.profile-password button{margin:3px 5px 3px 0}
+.account-alerts,.account-alerts+.fanta-notify-compact{padding:3px 0;margin:0;background:none;border:0}
+.account-alerts h2,.account-alerts+.fanta-notify-compact h2{font-size:18px;margin:3px 0}
+.account-toggle:not([hidden]){display:flex;min-height:34px;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.account-toggle+.account-toggle{border-top:1px solid var(--line)}
+.account-toggle .fanta-switch{flex:none}
+.account-alerts #enable-device-alerts{margin:4px 0}
+.fanta-team-calendar .fanta-calendar-more{display:block;margin:4px auto;min-height:32px;padding:4px 14px}
+.fanta-team-calendar .fanta-team-fixture.is-current{border:2px solid var(--league-accent,var(--lime))}
+
+.lega-hub .lega-tile-detail>summary::after,.lega-hub .lega-tile-next{right:11px!important;top:50%!important;transform:translateY(-50%)!important}
+.lega-hub .lega-tile:has(.lega-tile-next){position:relative;padding-inline-end:26px}
+.president-heading:has(.league-settings-back){display:flex;gap:8px;align-items:center}
+.president-panel:has(.league-settings-back),.fanta-squadra,.auction-wizard{touch-action:pan-y pinch-zoom}
+.support-fields{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,2fr);gap:8px}
+#support-form .field{gap:3px;margin:4px 0;font-size:12px}
+#support-form :is(input,textarea,.quasi-select-button){min-width:0;min-height:38px;padding:5px 8px}
+#support-form textarea{min-height:68px}
+#support-form button[type=submit],#support-form button:not([type]){min-height:38px;padding:6px 12px}
+.fanta-competitions details.competition-tool:not([open]){border:1px solid var(--line);border-radius:12px;padding:7px 9px;margin:6px 0;background:var(--panel)}
+.logo-editor-top [data-logo-close]{width:40px;height:40px;min-height:0;display:grid;place-items:center;padding:0;font-size:21px;line-height:1;border:1px solid var(--lime);color:var(--lime)}
+html.os-on main.os-root .league-dashboard>.dash-hero:has(.dash-numbers){height:148px!important}
+.dash-hero-copy>.dash-numbers{grid-template-columns:repeat(3,minmax(0,1fr));border:0;gap:4px;margin:4px 0 0}
+.dash-hero-copy .dash-numbers button{display:grid;gap:1px;padding:2px 4px;text-align:left;min-width:0;background:#0c1815bb;border:1px solid #ffffff28;border-radius:5px}
+.dash-hero-copy .dash-numbers strong{font-size:18px;margin:0}
+.dash-hero-copy .dash-numbers :is(span,small){font-size:9px;white-space:nowrap}
+
+/* Bar e Fanta condividono il ritmo e la cornice delle schede Home. */
+.home-sections{--home-card-gap:8px;--home-card-padding:12px;--home-card-radius:14px}
+.home-sections>.home-card{box-sizing:border-box;border:1px solid var(--line);border-radius:var(--home-card-radius);background:var(--panel);overflow:hidden;break-inside:avoid}
+html.os-on main.os-root .home-sections>:is(.fanta-hero,.dash-hero){border-radius:var(--home-card-radius)}
+html.os-on main.os-root :is(.league-dashboard.home-sections>*~*,.fanta-home-compact.home-sections>:not([data-fanta-auction-banner]:empty)~*){margin-top:var(--home-card-gap)!important}
+html.os-on main.os-root .home-sections>:is(.dash-next,.dash-summary,.dash-last-round,.fanta-last-result){padding:var(--home-card-padding)!important}
+html.os-on main.os-root .home-sections>.dash-next{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 10px!important}
+html.os-on main.os-root .home-sections .dash-next h2{font-size:20px!important;margin:2px 0!important}
+html.os-on main.os-root .home-sections .dash-next .dash-clock strong{font-size:20px}
+html.os-on main.os-root .home-sections .dash-next p{font-size:12px!important;margin:0!important}
+html.os-on main.os-root .home-sections .dash-cta{min-height:36px!important;margin-top:3px;padding:5px 10px}
+html.os-on main.os-root .home-sections .fanta-home-match{padding:0!important}
+html.os-on main.os-root .home-sections .fanta-match-link,html.os-on main.os-root .home-sections .home-card>.fanta-last-result{padding:var(--home-card-padding)!important}
+.home-sections .home-card>.fanta-bar-link{width:calc(100% - 2 * var(--home-card-padding));margin:0 var(--home-card-padding) var(--home-card-padding)}
+.home-sections .dash-recap-details{margin:0;padding:0;border:0}
+html.os-on main.os-root .home-sections .dash-recap-details .round-recap{border:0;margin:0;padding:0;background:none}
+.home-sections .recap-heading h2{font-size:21px}
+.home-sections .recap-grid{gap:8px;margin:10px 0 0}
+.home-sections .recap-grid b{font-size:22px;margin-top:2px}
+.home-sections .recap-gift{margin-top:8px}
+.home-sections .dash-last-round>span:last-child{text-align:right}
+@media(min-width:900px){html.os-on main.os-root .league-dashboard.home-sections>*~*{margin-top:0!important}}

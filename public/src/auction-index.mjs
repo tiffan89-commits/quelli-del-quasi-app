@@ -19,6 +19,10 @@ export function trackAuctionBadges(user,leagues,doc=globalThis.document){
  void loadSportsClient().then(io=>{
   if(sessionKey!==key)return;
   const current=socket=io('/auction-index',{path:'/socket.io',transports:['websocket'],withCredentials:true});
+  current.on('chat:update',data=>{
+   if(socket===current)doc.dispatchEvent(new doc.defaultView.CustomEvent('quasi:chat-update',{detail:data}));
+  });
+  current.io?.on('reconnect',()=>{if(socket===current)doc.dispatchEvent(new doc.defaultView.Event('quasi:chat-reconnect'));});
   current.on('auction:index',ids=>{
    if(socket!==current||!Array.isArray(ids))return;
    const next=new Set(ids);

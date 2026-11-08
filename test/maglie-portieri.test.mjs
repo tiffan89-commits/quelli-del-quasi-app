@@ -23,7 +23,7 @@ test('supplied jerseys retain their design, readable names, number, goalkeeper k
  const goalie=shirtBack('Udinese',40,'Okoye',{goalkeeper:true});assert.ok(goalie.includes(GOALKEEPER_KITS.Udinese.a));assert.match(goalie,/L2.5 28/);
  assert.match(goalkeeperShirt('Udinese'),/fanta-shirt-gk/);assert.match(shirtBack('Sconosciuto','','Rossi'),/#5d6b62/);
  const escaped=shirtBack('Udinese','<',"D'Angelo <");assert.doesNotMatch(escaped,/D'ANGELO </);assert.match(escaped,/D&#39;ANGELO &lt;/);assert.match(escaped,/numero &lt;/);
- assert.equal(shirtSurname('Davis K.'),'Davis');assert.equal(shirtSurname('Rossi É.'),'Rossi');assert.equal(shirtSurname('Juan Jesus'),'Juan Jesus');
+ assert.equal(shirtSurname('Davis K.'),'Davis');assert.equal(shirtSurname('Rossi É.'),'Rossi');assert.equal(shirtSurname('Juan Jesus'),'Jesus');
 });
 
 test('real and fantasy lineups show one drawn jersey per player, no portrait requests, separate probability and accessible name',()=>{

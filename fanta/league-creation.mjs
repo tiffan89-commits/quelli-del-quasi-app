@@ -1,5 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {newLeague,fail} from '../lib/game.mjs';
+import {welcomeLeagueChat} from '../lib/league-chat.mjs';
 import {DEFAULT_RULES} from './rules.mjs';
 import {availableTeamNames} from './team-names.mjs';
 export async function createLeaguePair(c,s,user,input,{season=2026,now=Date.now()}={}){
@@ -24,6 +25,7 @@ export async function createLeaguePair(c,s,user,input,{season=2026,now=Date.now(
  await c.query(`INSERT INTO fanta.competitions(id,league_id,name,kind,status) VALUES($1,$2,'Campionato','league','draft')`,[id+':main',id]);
  await c.query(`INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key,active) VALUES($1,$2,$2||':main',$3,true) ON CONFLICT(bar_league_id) DO UPDATE SET fanta_league_id=EXCLUDED.fanta_league_id,competition_id=EXCLUDED.competition_id,competition_key=EXCLUDED.competition_key,active=true WHERE NOT fanta.bar_links.active`,[bar.id,id,'native:'+id]);
  await c.query(`INSERT INTO fanta.creation_jobs(id,bar_id,owner_uid,size,name,status,league_id,roster_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[requestId,bar.id,user.id,size,bar.name,status,id,mode]);
+ if(s.leagues.length>count)welcomeLeagueChat(s,bar,now);
  bar.nativeFantaLink={leagueId:id,competitionId:id+':main',coachIds:initialMembers};bar.fantaSlipsEnabled=true;bar.fantaCreation={jobId:requestId,status,rosterMode:mode,size};
  return {ok:true,league:bar.id,fantaLeague:id,reused:s.leagues.length===count,creationStatus:status,...(status==='queued'?{jobId:requestId}:{}),message:mode==='random'?'Bar e Fanta creati. Le rose equilibrate saranno disponibili tra qualche minuto.':'Bar e Fanta creati. Squadre vuote pronte per l’asta iniziale.'};
 }

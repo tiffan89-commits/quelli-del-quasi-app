@@ -1,4 +1,22 @@
 // Shared scoring terms: the display and settlement use the same calculation.
+export const QUOTA_SCORING='seriea-quota-v1';
+
+export function roundPointRules(round){
+  if(round.pointsOnly||round.virtualBookmaker||round.source&&round.source!=='seriea')return round.rules;
+  // Round 11 of the 2026/27 season started before the change.
+  const id=/^seriea:(\d{4}):(\d+)$/.exec(round.sourceId||'');
+  const season=Number(id?.[1]??(round.source==='seriea'?round.season:0));
+  const number=Number(id?.[2]??round.number);
+  return season>2026||season===2026&&number>=12?{...round.rules,scoring:QUOTA_SCORING,wrong:0}:round.rules;
+}
+
+export function slipPointTerms(round,match,slip){
+  const pick=slip.picks?.[match.id],saved=slip.pointTerms?.[match.id],rules=roundPointRules(round);
+  if(rules.scoring!==QUOTA_SCORING)return saved||pointTerms(match,pick,rules);
+  if(saved?.source===QUOTA_SCORING&&saved.pick===pick&&Number.isFinite(saved.correct))return saved;
+  return pointTerms(match,pick,rules,slip.acceptedOdds?.[match.id]);
+}
+
 const quarter = (n) => Math.round(n * 4) / 4,
   clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const families = [
@@ -36,7 +54,11 @@ export function marketProbability(match, pick) {
     source: "probabilità di base · quote non disponibili",
   };
 }
-export function pointTerms(match,pick,rules){
+export function pointTerms(match,pick,rules,acceptedOdd){
+  if(rules.scoring===QUOTA_SCORING){
+    const odd=acceptedOdd??match.odds?.[pick];
+    return {pick,correct:Number.isFinite(odd)&&odd>1?odd:null,wrong:0,source:QUOTA_SCORING};
+  }
   if(rules.scoring==='difficulty-v2'&&['1','X','2'].includes(pick))return {pick,correct:1,wrong:-0.5,source:'esito secco'};
   if (rules.mode === "classic")
     return { pick, correct: rules.correct, wrong: rules.wrong };

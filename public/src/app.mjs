@@ -1,17 +1,18 @@
 import {joinInvite} from './invite-join.mjs';
-import {openMatchPage} from './match-page.mjs';
+import {bindSwipeBack,openMatchPage} from './match-page.mjs';
 import {barHomeInvite} from './bar-home-invite.mjs';
 import {leagueActions} from './league-actions.mjs';
-import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from './president-panel.mjs';
+import {settingsLogout,presidentEntry,presidentPanel,barPresidentTasks,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
 import {paintAuctionBadges,trackAuctionBadges} from './auction-index.mjs';
 import {nicknameNotice} from './nickname-notice.mjs';
-import {pointTerms} from '../scoring.mjs';
+import {pointTerms,QUOTA_SCORING} from "../scoring.mjs";
 import {applySlipReceipt} from './slip-receipt.mjs';
 import {loadAppStyles} from './app-styles.mjs';
 import {saveOnce,identifySlipSave} from './save-guard.mjs';
 import {readAppRoute,writeAppRoute} from './routes.mjs';
 import {placeAppFooter,restoreAppFooter} from './app-footer.mjs';
+import {startOneScreen} from './one-screen.mjs';
 import {leagueCreationFields,leagueCreationPayload} from './league-create-form.mjs';
 import {displayCache,clearDisplayCaches} from './display-cache.mjs';
 import {randomLeagueControls,bindRandomLeagues} from './random-leagues.mjs';
@@ -24,12 +25,14 @@ import {barModeSwitch,enterFanta,leaveFanta,preferredFanta,clearFantaSessions} f
 import {createLiveChannel,requestJson,mergeLiveSnapshot,patchRegion,patchDashboard} from "./live-channel.mjs";
 import {withButtonFeedback} from './action-feedback.mjs';
 import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
-import {footballStatistics,bindFootballStatistics} from './football-statistics.mjs';
+import {playerSurname} from './player-label.mjs';
+import {ballIcon,substitutionMark} from './pitch-events.mjs';
+import {footballPenalties} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
-import { renderSlipV2, patchSlipV2, bindSlipV2, stakeInputValue } from "./v2/slip-v2.mjs";
+import { renderSlipV2, patchSlipV2, bindSlipV2,tickSlipEventClocks } from "./v2/slip-v2.mjs";
 import { quasiScene, showQuasi } from "./quasi-scene.mjs";
-import {barSlipsView,barVerdictPatch,barProfileView} from "./bar-slips.mjs";
-import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource, renderLegaSections } from "./v2/tabs.mjs";
+import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from "./bar-slips.mjs";
+import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource } from "./v2/tabs.mjs";
 import { renderLeagueChip, bindLeagueSwitcher, isLeagueAdmin } from "./v2/league-switcher.mjs";
 import { showLanding, hideLanding, markSession, pendingInvite, clearPendingInvite } from "./v2/landing.mjs";
 const PUBLIC_AUTH_HASHES={login:'accesso',register:'registrati',forgot:'recupera',resend:'reinvia',demo:'demo'};
@@ -38,7 +41,7 @@ const initialPublicMode=Object.keys(PUBLIC_AUTH_HASHES).find(k=>PUBLIC_AUTH_HASH
 let v2Invite = pendingInvite(), landingDismissed = !!v2Invite||!!initialPublicMode, forceDemo = initialPublicMode==='demo';
 let initialDemoRequested=initialPublicMode==='demo';
 import {inlineResultView,patchSlipResults} from './slip-results.mjs';
-import {renderLineup,bindLineupPitch} from './lineup-pitch.mjs';
+import {renderLineup,bindLineupPitch,matchAvailability,setPitchFlip} from './lineup-pitch.mjs';
 let studioModule;const loadStudio=()=>studioModule??=import('./quasi-studio.mjs');
 window.addEventListener?.('quasi:idle',()=>{if(state.user&&!studioModule)loadStudio().catch(()=>{studioModule=null;});});
 
@@ -48,9 +51,12 @@ import {fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi} from './fanta-quasi.mjs'
 import {achievementBoard} from './achievement-board.mjs';
 
 import { LEAGUE_COLORS, LEAGUE_EMBLEMS, applyLeagueTheme } from "./league-theme.mjs";
-import { whatsappInvite } from './league-invite.mjs';
-import {renderAppInvite,bindAppInvites} from './app-invite.mjs';
-import {progressionView,portfolioBody,bindProgression,rewardsView,bindRewards} from './progression-ui.mjs';
+import {hubHead,hubTile} from './league-hub.mjs';
+import {shareLeagueInvite,whatsappInvite} from './league-invite.mjs';
+import {createFantaApi} from './fanta/api.mjs';
+import {renderFantaNotificationSettings} from './fanta/io.mjs';
+import {bindAppInvites,performAppInvite,signupShareData,appWhatsappInvite} from './app-invite.mjs';
+import {rewardsView,bindRewards} from './progression-ui.mjs';
 import {bindStyledSelects,syncStyledSelects,closeStyledSelect} from './styled-select.mjs';
 
 
@@ -62,9 +68,9 @@ import { calendarSections } from "./calendar-order.mjs";
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
-  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
+  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,nextSlipPreview,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
   deadlineOf,
-  isClosed,
+  isClosed,editingClosed,editingEventLocked,editablePicks,
   slipSummary,
   fingerprint,
   draftKey,
@@ -73,7 +79,7 @@ import {
   cleanPicks,
 } from "./slip-state.mjs";
 import { communityView, createVerdictCard } from "./community.mjs";
-import { chatView, bindChat, stopChat } from "./chat.mjs";
+import { chatView, bindChat, stopChat, refreshChat } from "./chat.mjs";
 import {
   requestChatConsent,
   maybeInvitePwaNotifications,
@@ -92,7 +98,6 @@ import { groupMatches } from "/match-layout.mjs";
 import { predictionStatus } from "/prediction.mjs";
 let sourceScope = "seriea",
   competitionScope = null,
-  opponentId = null,
   offline = false,
   lastRefresh = null,
   draftWarning = false,
@@ -176,41 +181,20 @@ function notify(t) {
   e.hidden = false;
   setTimeout(() => (e.hidden = true), 4500);
 }
-function chatLauncherView(league,user){
- if(!league||!user||!user.demo&&!user.emailVerified)return '';
- const n=league.chat?.unread||0;
- return `<button type="button" class="support-fab chat-fab" id="open-chat" aria-label="Apri Chiacchiere da bar" aria-controls="league-chat-widget" aria-expanded="false"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M7 8h10M7 12h7"/></svg><span class="chat-fab-label">Chiacchiere da bar</span><b class="chat-fab-unread" ${n?'':'hidden'}>${n>99?'99+':n}</b></button>`;
-}
-let chatLeagueId=null;
+let chatLeagueId=null,chatOpen=false,chatContext=null,chatReturnFocus=null;
 function chatLeague(){return state.leagues.find(l=>l.id===chatLeagueId)||L();}
 function syncChatLauncher(league=L()){
- if(!document.createElement)return;
- const markup=chatLauncherView(league,state.user);
- if(!markup){document.querySelectorAll('#open-chat').forEach(b=>b.remove());chatLeagueId=null;closeLeagueChat();return;}
- chatLeagueId=league.id;
- let button=document.querySelector('#app #open-chat')||document.getElementById('open-chat');
- if(!button){const holder=document.createElement('div');holder.innerHTML=markup;button=holder.firstElementChild;}
- document.querySelectorAll('#open-chat').forEach(b=>{if(b!==button)b.remove();});
- if(button.parentElement!==document.body)document.body.append(button);
- button.onclick=openLeagueChat;bindSupportDrag();chatBadge();
+ const next=league?.id||null;
+ if(chatContext&&next!==chatLeagueId)closeLeagueChat();
+ chatLeagueId=next;chatBadge();
 }
-
-let chatOpen = false,
-  chatContext = null;
-function chatBadge() {
-  const button = $("#open-chat");
-  if (!button) return;
-  button.setAttribute("aria-expanded", String(chatOpen));
-  button.setAttribute(
-    "aria-label",
-    chatOpen ? "Riduci Chiacchiere da bar" : "Apri Chiacchiere da bar",
-  );
-  const badge = button.querySelector(".chat-fab-unread"),
-    n = chatLeague()?.chat?.unread || 0;
-  if (badge) {
-    badge.hidden = !n;
-    badge.textContent = n > 99 ? "99+" : String(n);
-  }
+function chatBadge(){
+ const count=state.leagues.reduce((sum,l)=>sum+(l.chat?.unread||0),0);
+ for(const badge of document.querySelectorAll('[data-chat-badge]')){
+  badge.hidden=!count;
+  badge.textContent=count>99?'99+':String(count);
+  badge.setAttribute('aria-label',count===1?'1 messaggio da leggere':count+' messaggi da leggere');
+ }
 }
 function closeLeagueChat() {
   chatOpen = false;
@@ -219,7 +203,8 @@ function closeLeagueChat() {
   if (widget) widget.hidden = true;
   chatContext = null;
   chatBadge();
-  $("#open-chat")?.focus?.();
+  if(chatReturnFocus?.isConnected)chatReturnFocus.focus({preventScroll:true});
+  chatReturnFocus=null;
 }
 function updateChatWidget() {
   if (!document.createElement) return;
@@ -247,7 +232,7 @@ function updateChatWidget() {
   if (chatContext !== key) {
     stopChat();
     widget.innerHTML =
-      '<header class="chat-widget-header"><div><strong>Chiacchiere da bar</strong><small id="chat-widget-league"></small></div><button class="secondary" id="chat-minimize" aria-label="Riduci la chat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button></header>' +
+      '<header class="chat-widget-header"><div><strong>Chiacchiere da bar</strong><small id="chat-widget-league"></small></div><button class="secondary" id="chat-minimize" aria-label="Chiudi la chat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>' +
       chatView(league, user);
     widget.querySelector("#chat-widget-league").textContent = league.name;
     widget.querySelector("#chat-minimize").onclick = closeLeagueChat;
@@ -258,6 +243,7 @@ function updateChatWidget() {
       api,
       notify,
       consent: chatConsent,
+      onNotify:enabled=>{league.chat={...league.chat,notify:enabled};},
       onUnread: (n) => {
         league.chat = { ...league.chat, unread: n };
         chatBadge();
@@ -267,20 +253,21 @@ function updateChatWidget() {
   }
   chatBadge();
 }
-function openLeagueChat() {
+function openLeagueChat(trigger=document.activeElement) {
   if (chatOpen) {
     closeLeagueChat();
     return;
   }
   const league = chatLeague();
   if (!league) return;
+  chatReturnFocus=trigger;
   chatConsent = requestChatConsent({ user: state.user, league });
   chatOpen = true;
   updateChatWidget();
 }
 let barDemo=null,initialViewReady=Promise.resolve();
 async function prepareDemo(){const session=(await import('./demo-session.mjs')).getDemoSession();await session.ready;barDemo=session.bar;state=structuredClone(barDemo.state);if(!state.leagues.some(l=>l.id===leagueId))leagueId=state.leagues[0].id;return session;}
-async function openBarDemo(target={}){await prepareDemo();await loadAppStyles();if(target?.page==='logout'){await returnToLanding();return;}leaveFanta();leagueId=target?.league||leagueId;page=({profilo:'profilo',invita:'profilo',schedina:'schedina',admin:'admin',regolamento:'regolamento'})[target?.page]||'lega';sourceScope=target?.sourceScope||'seriea';selectedRoundId=target?.round||null;hydrateDraft();render();writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page,league:leagueId});}
+async function openBarDemo(target={}){await prepareDemo();await loadAppStyles();if(target?.page==='logout'){await returnToLanding();return;}leaveFanta();leagueId=target?.league||leagueId;page=({profilo:'profilo',impostazioni:'impostazioni',invita:'profilo',schedina:'schedina',admin:'admin',regolamento:'regolamento'})[target?.page]||'lega';sourceScope=target?.sourceScope||'seriea';selectedRoundId=target?.round||null;hydrateDraft();render();writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page,league:leagueId});}
 const accountAttempts=new Map();
 async function api(path, data, options = {}) {
   if(barDemo&&state.user?.demo){const result=await barDemo.api(path,data);return options.meta?{data:result,etag:null}:result;}
@@ -302,7 +289,10 @@ let displayedSlipRoundId=null;
 const publicSlipView=()=>slipScope==='bar'||slipScope==='community';
 function availableRounds() {
  const all=(L()?.rounds||[]).filter(r=>!r.archived&&sourceOf(r)===sourceScope&&(sourceScope!=='fantacalcio'||!competitionScope||r.competitionKey===competitionScope));
- const rounds=selectableSlipRounds(all,Date.now(),state.calendar);
+ const now=Date.now(),rounds=selectableSlipRounds(all,now,state.calendar);
+ const pilot=sourceScope==='seriea'&&globalThis.document?.querySelector('meta[name="qdq-release-channel"]')?.content==='friends';
+ const preview=pilot&&nextSlipPreview(all,now);
+ if(preview)rounds.push(preview);
  return rounds.sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
 }
 
@@ -310,7 +300,7 @@ function R() {
   const rounds = availableRounds();
   return (
     rounds.find((r) => r.id === selectedRoundId) ||
-    defaultSlipRound(rounds,Date.now(),state.calendar)
+    rounds.find(r=>r.preview) || defaultSlipRound(rounds,Date.now(),state.calendar)
   );
 }
 function me() {
@@ -349,7 +339,7 @@ async function refresh(reset = false) {
       slipSummary(previousRound, picks, stake, me()?.credits ?? Infinity).dirty;
     if (wasDirty && !reset) persistDraft();
     state = next;for(const league of state.leagues)for(const round of league.rounds||[])round.publicChoicesAvailable=!!round.closed&&Array.isArray(round.publicSlips);sportsFeedBlockedUntil=0;
-    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega':'lega';if(route?.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
+    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega':'lega';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
     if(requestedSlip&&state.leagues.some(l=>l.id===requestedSlip)){
       leagueId=requestedSlip;const round=L().rounds.find(r=>r.id===requestedSlipRound);page='schedina';slipScope='mine';if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}
       requestedSlip=null;requestedSlipRound=null;const params=new URLSearchParams(location.search);params.delete('slip');params.delete('round');window.history.replaceState(null,'',location.pathname+(params.size?'?'+params:''));
@@ -370,7 +360,7 @@ async function refresh(reset = false) {
       } catch {}
     if (state.user && state.user.id !== previousUser && page !== "schedina") sourceScope = 'seriea';
     if (requestedChat && state.leagues.some((l) => l.id === requestedChat)) {
-      leagueId = requestedChat;
+      leagueId = requestedChat;page="barleague";
       chatOpen = true;
       requestedChat = null;
       const params = new URLSearchParams(location.search);
@@ -455,7 +445,7 @@ function hydrateDraft() {
     r?.slip?.picks,
     r?.pointsOnly ? 0 : r?.slip?.stake || 10,
   );
-  viewKey = state.user && L() && r ? draftKey(state.user.id, L().id, r) : null;
+  viewKey = state.user && L() && r && !r.preview ? draftKey(state.user.id, L().id, r) : null;
   draftConflict = null;
   picks = { ...(r?.slip?.picks || {}) };
   stake = r?.pointsOnly ? 0 : r?.slip?.stake || 10;
@@ -468,12 +458,22 @@ function hydrateDraft() {
       stake = d.stake;
     }
   }
+  reconcileSlipDraft(r);
   for (const [id, p] of Object.entries(picks))
     market[id] = Object.keys(groups).find((g) => groups[g].includes(p));
 }
+function reconcileSlipDraft(round){
+  if(!round?.eventBetting)return;
+  picks=editablePicks(round,picks);
+  if(slipSummary(round,picks,stake).fixedStake)stake=round.slip.stake;
+}
+function eventLockKey(round){
+  return round?.eventBetting?round.id+':'+round.matches.map(m=>(editingEventLocked(round,m)?'1':'0')+(m.kickoff||m.officialKickoff||'')).join('|'):'';
+}
+let displayedEventLocks='';
 function persistDraft() {
   const r = R();
-  if (!viewKey || !r || isClosed(r)) return;
+  if (!viewKey || !r || editingClosed(r)) return;
   if (draftConflict) {
     draftWarning = !saveDraft(localStorage, viewKey, {
       round: r,
@@ -524,7 +524,7 @@ function navIcon(id) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[id] || paths.schedina}</svg>`;
 }
 function shell(content) {
-  return `${!state.user ? '<header><div class="brand"><img class="brand-logo" src="/league-logo.svg" alt="Logo Quelli del Quasi" width="38" height="44">QUELLI DEL <b>QUASI.</b></div></header>' : ""}${state.user && (state.user.emailVerified || state.user.demo) && L() ? renderLeagueChip(L(), state.user.id, esc, fmt, barModeSwitch(), me(), 'crediti Bar',page==='profilo') + (['classifiche','storico'].includes(page) ? '<div class="v2-lega-nav">' + renderLegaSections(page, isLeagueAdmin(L(), state.user.id), esc) + "</div>" : "") : ""}${state.user && (state.user.emailVerified || state.user.demo) && !L() ? `<header class="v2-top">${barModeSwitch()}${presidentEntry('data-bar-page="profilo"')}</header>` : ""}${content}${state.user && (state.user.emailVerified || state.user.demo) ? renderTabBar(tabForPage(page, sourceScope)) : ""}${chatLauncherView(L(),state.user)}`;
+  return `${!state.user ? '<header><div class="brand"><img class="brand-logo" src="/league-logo.svg" alt="Logo Quelli del Quasi" width="38" height="44">QUELLI DEL <b>QUASI.</b></div></header>' : ""}${state.user && (state.user.emailVerified || state.user.demo) && L() ? renderLeagueChip(L(), state.user.id, esc, fmt, barModeSwitch(), me(), 'crediti Bar',page==='impostazioni') : ""}${state.user && (state.user.emailVerified || state.user.demo) && !L() ? `<header class="v2-top">${barModeSwitch()}${presidentEntry('data-bar-page="impostazioni"')}</header>` : ""}${content}${state.user && (state.user.emailVerified || state.user.demo) ? renderTabBar(tabForPage(page, sourceScope)) : ""}`;
 }
 function slipsPage(l, r, m) {
   if(sourceScope==='fantacalcio')return '<section class="card"><h1>Le schedine Fanta hanno il loro posto.</h1><p>Le trovi nella sezione Schedine del Fanta, insieme alla tua lega.</p><button type="button" class="primary" id="open-native-slips">Apri le schedine Fanta</button></section>';
@@ -555,44 +555,42 @@ function slipsPage(l, r, m) {
         "</select></label>"
       : "";
   const tabs =
-    '<div class="slip-section-buttons" aria-label="Le Schedine">' +
+    '<div class="slip-section-buttons" data-os-header aria-label="Le Schedine">' +
     [
-      ["mine", "La mia schedina"],
-      ["bar", "Le schedine del Bar"],
-      ["community", "Il verdetto"],
-      ...(sourceScope==='seriea'?[["standings","Classifica Serie A"]]:[]),
+      ["mine", "La mia schedina", "La mia"],
+      ["bar", "Le schedine del Bar", "Del Bar"],
+      ["community", "Il verdetto", "Verdetto"],
+      ...(sourceScope==='seriea'?[["standings","Classifica Serie A","Serie A"]]:[]),
     ]
       .map(
-        ([id, t]) =>
+        ([id, t, short]) =>
           '<button data-slip-scope="' +
           id +
           '" class="' +
           (slipScope === id ? "on" : "") +
           '" aria-pressed="' +
           (slipScope === id) +
-          '">' +
+          '" data-short="' + short + '"><span class="seg-long">' +
           t +
-          "</button>",
+          "</span></button>",
       )
       .join("") +
     "</div>";
   const body =
     slipScope === 'standings' && sourceScope === 'seriea' ? serieATable() : slipScope === "community"
-      ? (r ? roundSelector(l, r) : '') + communityView(
+      ? (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : '') + '<div data-os-content class="verdict-content">'+communityView(
           l,
           sourceScope,
-          state.user,
-          opponentId,
           esc,
           fmt,
           competitionScope,
           r,
-        )
+        )+'</div>'
       : sourceScope === "fantacalcio" && !r
         ? fantasyEmpty(l)
         : slipScope === "bar"
           ? otherSlips(l, r)
-          : (r ? roundSelector(l, r) : "") +
+          : (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : "") +
             (draftConflict ? '<div class="notice"><b>La schedina è stata aggiornata da un altro dispositivo.</b><p>Puoi tenere la versione salvata oppure recuperare la bozza locale e rivederla.</p><button class="secondary" id="keep-server">Tieni quella salvata</button> <button class="secondary" id="recover-draft">Recupera la bozza</button></div>' : "") +
             renderSlipV2({ round: r, picks, stake, credits: m.credits, openMatch: activeMatchId, esc, fmt, date });
   return (
@@ -620,26 +618,28 @@ function render() {
     return;
   }
   if(state.adminOnly){location.replace('/admin.html');return;}
-  loadAppStyles();
+  loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();
   sourceScope='seriea';
   const l = L(),
     r = R(),
     m = me();
-  if(page==='profilo'&&l&&(state.user.emailVerified||state.user.demo)){page='admin';presidentGroup='account';}
+  if(page==='profilo'&&(state.user.emailVerified||state.user.demo)){page='impostazioni';presidentGroup='account';}
   const content =
-    (!state.user.emailVerified && !state.user.demo) || page === "profilo"
+    (!state.user.emailVerified && !state.user.demo)
       ? profile()
-      : page === "seriea"
+      : page === "impostazioni"
+        ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,footer:settingsLogout(),groups:accountGroups()})
+        : page === "seriea"
         ? serieATable()
         : page === "altri"
           ? otherSlips(l, r)
           : page === "regolamento"
-            ? regulation(l, r)
+            ? '<button type="button" class="secondary" data-page="barleague">← Chiudi regolamento</button>'+regulation(l, r)
             : !l
               ? onboarding()
               : page === "fantaquasi" ? fantaQuasiPage(l, state.user, esc)
               : page === "barleague" ? barLeagueInfo(l)
-              : page === "quasi" ? '<section class="hero"><div class="eyebrow">LA TUA LEGA</div><h1>I Quasi</h1><p>'+esc(l.name)+' · '+l.members.length+' al bancone.</p></section><details class="card my-league" open><summary>La squadra dei Quasi</summary>'+rosterView(l,state.user.id)+'</details>'+rewardsView(state.user,esc)
+              : page === "quasi" ? '<section class="hero"><div class="eyebrow">LA TUA LEGA</div><h1>I Quasi</h1><p>'+esc(l.name)+' · '+l.members.length+' al bancone.</p></section>'+rewardsView(state.user)+'<details class="card my-league" open><summary>La squadra dei Quasi</summary>'+rosterView(l,state.user.id)+'</details>'
               : page === "schedina" ? slipsPage(l, r, m)
                 : page === "classifiche"
                   ? ranking(l)
@@ -649,23 +649,26 @@ function render() {
                       ? settings(l, r)
                       : page === "calendario"
                         ? calendarPage()
-                        : leagueHistory(l);
+                        : settings(l, r);
   document.body.dataset.gameMode='bar';
   const palette = LEAGUE_COLORS.map(([color]) => color);
   applyLeagueTheme(L());
   $("#app").innerHTML = shell(
     '<main><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
       ((page==='lega'||page==='quasi')?nicknameNotice(state.user):'')+content +
-      '<footer class="footer"><p class="footer-line"><span>© ' + new Date().getFullYear() + ' QUELLI DEL QUASI. Infinite scuse.</span> <span aria-hidden="true">·</span> <span>Crediti virtuali · Nessun denaro reale</span> <span aria-hidden="true">·</span> <span>Niente pubblicità, per sempre.</span> <span aria-hidden="true">·</span> <span><a href="https://www.api-football.com/" rel="dofollow" title="Sports data by API-FOOTBALL">Powered by API-FOOTBALL</a></span></p></footer><p id="live-channel-status" class="live-channel-status tiny muted" role="status" aria-live="polite"></p></main>',
+      '<p id="live-channel-status" class="live-channel-status tiny muted" role="status" aria-live="polite"></p></main>',
   );
 
   displayedSlipRoundId=page==='schedina'?r?.id:null;
+  displayedEventLocks=page==='schedina'?eventLockKey(r):'';
   retainAppHeader($('#app'));
   paintAuctionBadges();
   placeAppFooter($('#app'));
   syncChatLauncher(l);
   bind(l, r);
   bindPresidentPanel($('#app'));
+  const panel=document.querySelector('.president-panel:has(.league-settings-back)');
+  if(panel)bindSwipeBack(panel,()=>navigatePage('barleague'),'right',()=>!panel.querySelector('.os-drill'));
   const deleteLeagueForm=$('#president-delete-league');
   if(deleteLeagueForm?.elements&&l){
     const field=deleteLeagueForm.elements.phrase,button=deleteLeagueForm.querySelector('button'),error=deleteLeagueForm.querySelector('[role=alert]');
@@ -686,7 +689,7 @@ function render() {
   document.querySelectorAll('[data-president-group]').forEach(b=>b.addEventListener('click',()=>{presidentGroup=b.dataset.presidentGroup;}));
   document.querySelector('[data-president-copy-link]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/invito/'+encodeURIComponent(l.code));notify('Link copiato.');}catch{notify('Copia il codice della lega.');}});
   document.querySelector('[data-president-activate]')?.addEventListener('click',()=>{document.getElementById('v2-open-leagues')?.click();document.querySelector('[data-existing-bar]')?.click();});
-  document.querySelectorAll('[data-president-mode]').forEach(b=>b.addEventListener('click',()=>{writeAppRoute({mode:'fanta',page:'presidente',league:l.nativeFantaLink?.leagueId});closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:l.nativeFantaLink?.leagueId,initialTab:'presidente',onBar:openBarTarget});}));
+  document.querySelectorAll('[data-president-section]').forEach(section=>section.addEventListener('toggle',()=>{if(!section.open&&presidentGroup===section.dataset.presidentSection)presidentGroup=null;}));
   bindNew(l, r);
   $("#edit-suggested-nickname")?.addEventListener("click",()=>{const section=$(".profile-account");if(section)section.open=true;const field=$("#profile-name input");field?.scrollIntoView({block:"center",behavior:"smooth"});field?.focus({preventScroll:true});});
   if(liveStatus)showLiveStatus(liveStatus);
@@ -752,7 +755,7 @@ function roundSelector(l, r) {
           (x.id === r?.id ? "selected" : "") +
           ">" +
           esc(x.title) +
-          (x.archived?" · archivio":" · "+roundAvailability(x)) +
+          (x.archived?" · archivio":x.preview?" · anteprima":" · "+roundAvailability(x)) +
           "</option>",
       )
       .join("") +
@@ -1039,9 +1042,7 @@ function summaryHint(d) {
       ? "Controlla puntata, limite e crediti disponibili."
       : d.count < d.total
         ? "Mancano " + (d.total - d.count) + " pronostici."
-        : d.missing
-          ? "Puoi confermare anche con quote in arrivo."
-          : "Tutto pronto. Conferma per partecipare.";
+        : "Tutto pronto. Conferma per partecipare.";
 }
 function updateSlipUI() {
   const r = R(),
@@ -1086,19 +1087,14 @@ function updateSlipUI() {
       : "La bozza resta su questo dispositivo. Partecipa solo la schedina confermata.";
 }
 async function saveCurrentSlip() {
-  const r = R();
-  if (
-    busy ||
-    offline ||
-    draftConflict ||
-    !slipSummary(r, picks, stake, me().credits).canSave
-  )
+  const r=R(),summary=slipSummary(r,picks,stake,me().credits);
+  if(busy||offline||draftConflict||!summary.canSave)
     return;
   const key = viewKey,
     payload = {
       league: L().id,
       round: r.id,
-      picks: structuredClone(picks),
+      picks: summary.picks,
       stake: r.pointsOnly ? 0 : stake,
       baseSavedAt: editBaseSavedAt,
     };
@@ -1143,12 +1139,20 @@ function matchStatus(m) {
     return "Risultato in aggiornamento";
   return m.kickoff ? date(m.kickoff) : "Orario da definire";
 }
-function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt)+portfolioShell();}
+function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt);}
 function adminBudget() { return ""; }
 function profile({embedded=false}={}) {
-  const u = state.user,
-    required = !u.emailVerified && !u.demo;
-  return `${nicknameNotice(u,{profile:true})}${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${required ? '<div class="notice" role="status">Per continuare devi inserire e confermare un indirizzo email. Punti, crediti e schedine restano salvati.</div>' : ""}${renderAppInvite()}<details class="card profile-account" ${required?"open":""}><summary>I tuoi dati e sicurezza</summary><div class="split" style="margin-top:24px"><div class="card"><h3>I tuoi dati</h3>${u.username?`<p class="muted">Username del vecchio account: <b>${esc(u.username)}</b></p>`:""}<p class="muted">Email: ${esc(u.email || "Non inserita")}</p><p class="${u.emailVerified ? "green" : "orange"}">${u.emailVerified ? "✓ Email verificata" : "Email da verificare"}</p>${u.pendingEmail ? `<p class="muted">Conferma in attesa: ${esc(u.pendingEmail)}</p>` : ""}<form id="profile-name"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary">Salva soprannome</button></form></div><form id="account-email" class="card"><h3>${required ? "Attiva il tuo account" : "Email e sicurezza"}</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail || u.email || "")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button><p class="tiny muted">Apri il link ricevuto, poi torna qui. Premi Aggiorna dopo aver confermato.</p>${u.pendingEmail || (u.email && !u.emailVerified) ? '<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>' : ""}</form></div></details>${!required?'<details class="card profile-reminder-settings"><summary>Avvisi e promemoria</summary><section class="card profile-alerts"><h2>Il bar ti chiama</h2><label class="reminder-toggle"><input id="reminder-preference" type="checkbox" '+(u.remindersEnabled!==false?'checked':'')+'><span>Promemoria schedina · due ore prima</span></label><p class="tiny muted">Un avviso sul dispositivo per ogni lega prima della chiusura, anche se hai già salvato.'+(L()?' Notifiche sul telefono dopo il tuo consenso.</p><button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button>':'</p>')+'</section>':''}${!required&&!u.demo?'<section class="card profile-email-reminders"><label class="reminder-toggle"><input id="email-reminder-preference" type="checkbox" '+(u.emailRemindersEnabled?'checked':'')+'><span>Ricevi avvisi via mail se ho dimenticato di inserire la schedina</span></label><p class="tiny muted">Una sola email a un’ora dalla chiusura, solo se manca la schedina. Niente pubblicità, niente newsletter. Puoi disattivarla anche dal link nell’email.</p></section>':''}${!required?'</details>':''}${!required && state.user?.emailVerified && !state.user.demo ? supportSection() : ""}${embedded?'':settingsLogout()}`;
+ const u=state.user,required=!u.emailVerified&&!u.demo;
+ const email=`<p class="profile-email-value">${esc(u.email||"Email non inserita")}${u.emailVerified?' <span class="green" role="img" aria-label="Email verificata">✓</span>':''}</p>`;
+ const verification=required?`<form id="account-email" class="profile-password"><h3>Email e sicurezza</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail||u.email||"")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button>${u.pendingEmail||u.email?'<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>':''}</form>`:'';
+ const password=u.emailVerified&&u.hasLocalPassword?`<form id="account-password" class="profile-password"><h3>Cambia password</h3><label class="field">Password attuale<input name="currentPassword" type="password" required maxlength="200" autocomplete="current-password"></label><label class="field">Nuova password<input name="newPassword" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label><label class="field">Conferma nuova password<input name="confirmPassword" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label><button class="secondary">Salva password</button></form>`:'';
+ return `${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${nicknameNotice(u,{profile:true})}<section class="profile-account profile-embedded">${email}<form id="profile-name" class="profile-name-form"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary" aria-label="Salva soprannome">Salva</button></form>${verification}${password}</section>${embedded?'':settingsLogout()}`;
+}
+function accountGroups(settings){
+ const u=state.user;
+ const toggle=(id,label,checked=false,attrs='')=>`<label class="account-toggle" ${attrs}><span>${label}</span><input type="checkbox" role="switch" class="fanta-switch" id="${id}" ${checked?'checked':''}></label>`;
+ const bar=`<section class="account-alerts"><h2>Il bar ti chiama</h2>${toggle('chat-notify-preference','Messaggi di Chiacchiere da bar',false,'data-chat-preference-row hidden')}${toggle('reminder-preference','Promemoria schedina - due ore prima',u.remindersEnabled!==false)}${toggle('email-reminder-preference','Promemoria mail schedina o formazione - due ore prima',u.emailRemindersEnabled)}<button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button></section>`;
+ return {account:{summary:'Soprannome e accesso',html:profile({embedded:true})},avvisi:{summary:'Bar e Fanta',html:bar+renderFantaNotificationSettings(settings,{disabled:!settings,compact:true})},...(u.emailVerified&&!u.demo?{assistenza:{summary:'Segnalazioni e suggerimenti',html:supportSection()}}:{})};
 }
 function updateDashboard() {
   const region = $('#league-dashboard');
@@ -1224,25 +1228,14 @@ function maybeRevealRewards(){
   d.showModal();
  }catch{rewardRevealOpen=false;}
 }
-function portfolioShell(){return '<section class="dash-portfolio" id="portfolio-shell" aria-label="La Borsa del Quasi"><div id="portfolio-lazy"></div></section>';}
-function bindLazySections(l){
- if(!l)return;
- const target=document.querySelector('#portfolio-lazy');
- if(target&&!target.dataset.loaded){
-  target.dataset.loaded='true';
-  target.outerHTML=progressionView(l,'seriea',esc,fmt,null,{serieAOnly:true});
-  bindProgression(l,'seriea',esc,fmt,()=>{});
- }
-}
 function fantasyNudge(){return '';}
 
 function settings(l,r){
- return (isLeagueAdmin(l,state.user.id)?presidentTodos(barPresidentTasks(l)):'')+randomLeagueControls(l,state.user)+'<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>'+barHomeInvite(l,state.user,esc)+fantasyNudge(l)+'<div id="league-objectives">'+achievementBoard(l,esc,dashboardSource,dashboardCompetition,{calendar:state.calendar})+'</div>';
+ return randomLeagueControls(l,state.user)+'<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>'+barHomeInvite(l,state.user,esc)+fantasyNudge(l)+'<div id="league-objectives">'+achievementBoard(l,esc,dashboardSource,dashboardCompetition,{calendar:state.calendar})+'</div>';
 }
 let presidentGroup=null;
 function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p class="muted">La modalità ponderata distingue gli esiti secchi dalle doppie chance. Le giornate già create conservano le proprie regole.</p><button type="button" class="secondary" id="balanced-rules">Ripristina ponderazione automatica</button>${adminBudget()}<div class="notice">Crediti iniziali per i nuovi iscritti. Le regole aggiornate si applicano alle giornate acquisite successivamente; le giornate già create mantengono le proprie regole.</div>${[
             ["initial", "Crediti iniziali"],
-            ["maxStake", "Puntata massima"],
           ]
             .map(
               ([k, t]) =>
@@ -1250,24 +1243,31 @@ function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p c
             )
             .join(
               "",
-            )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field">Vincitori aggiuntivi (uno per riga)<textarea name="extra">${esc(l.rules.winners.filter((x) => !["points", "credits"].includes(x)).join("\n"))}</textarea></label><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
+            )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
 function barMembers(l){return '<ul class="bar-members">'+l.members.map(m=>'<li><span>'+esc(m.name)+'</span>'+(m.uid===l.admin?'<small>Presidente</small>':'')+'</li>').join('')+'</ul>';}
+// Lega del Bar: una schermata a riquadri. Stessi pulsanti e destinazioni di prima.
 function barLeagueInfo(l){
- return '<section class="hero"><span class="eyebrow">LA TUA LEGA</span><h1>'+esc(l.name)+'</h1><p>'+l.members.length+' al bancone</p></section><details class="card"><summary>Regolamento del Bar</summary><button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button></details><details class="card"><summary>Partecipanti · '+l.members.length+'</summary>'+barMembers(l)+'</details><details class="card"><summary>Invita nella tua lega</summary><button type="button" class="secondary" data-bar-page="admin" data-president-group="persone">Apri inviti</button></details><section class="card"><h2>Chiacchiere da bar</h2><button type="button" class="secondary" id="league-open-chat">Apri la chat della lega</button></section>'+leagueActions();
+ const admin=isLeagueAdmin(l,state.user.id),tasks=admin?barPresidentTasks(l).length:0;
+ const rules=l.rules?.mode==='classic'?'Classica':'Ponderata';
+ return hubHead(l.name,l.members.length+' al bancone')+'<div data-os-content><div class="lega-hub">'+
+  (admin?hubTile('gear','Pannello del presidente',tasks?tasks+(tasks===1?' cosa da fare':' cose da fare'):'Tutto in ordine',{action:'data-bar-page="admin"',admin:true}):'')+
+  hubTile('people','Partecipanti · '+l.members.length,'Chi è al bancone',{html:admin?leagueMembers(l,true):barMembers(l)})+
+  hubTile('rules','Regolamento del Bar',rules,{action:'data-bar-page="regolamento"',arrow:true})+
+  (l.code?hubTile('invite','Invita nella tua lega','Condividi l’invito',{action:'data-share-league',whatsapp:whatsappInvite(l,esc,{iconOnly:true})}):'')+
+  hubTile('chat','Chiacchiere da bar','Apri la chat della lega',{action:'data-league-chat aria-controls="league-chat-widget"'})+
+  hubTile('invite','Invita a usare l’app','Condividi il link per registrarsi',{action:'data-share-app-signup',whatsapp:appWhatsappInvite({data:signupShareData(),iconOnly:true})})+
+  '</div>'+leagueActions()+'</div>';
 }
 function leagueAdmin(l){
  const admin=isLeagueAdmin(l,state.user.id);
+ if(!admin)return barLeagueInfo(l);
  const color=LEAGUE_COLORS.find(([v])=>v===l.branding?.accent)?.[1]||LEAGUE_COLORS[0][1];
- const fanta=l.nativeFantaLink?'<button type="button" data-president-mode="fanta">Fanta →</button>':'';
- const activate='<button type="button" class="secondary" data-president-activate>Attiva il Fanta di questa lega</button>';
- return presidentPanel({name:l.name,mode:'bar',other:fanta,open:presidentGroup,footer:settingsLogout(),tasks:admin?barPresidentTasks(l):[],groups:{
- persone:{summary:l.members.length+' membri · inviti'+(admin?' e premi':''),html:'<section class="president-invite"><h2>Invita nella tua lega</h2>'+(l.code?'<div class="money">'+esc(l.code)+'</div><div class="league-invite-actions"><button class="secondary" id="copy">Copia codice</button>'+whatsappInvite(l,esc)+'<button type="button" class="secondary" data-president-copy-link>Copia link</button></div>':'<p>Invito non disponibile.</p>')+'</section>'+(admin?leagueMembers(l,true):barMembers(l))},
- regole:{summary:(l.rules.mode==='weighted'?'Ponderata':'Classica')+' · '+l.rules.initial+' cr iniziali · max '+l.rules.maxStake,html:admin?barRulesForm(l):'<button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button>'},
+
+ return presidentPanel({mode:'bar',title:'Pannello del presidente',back:'data-bar-page="barleague"',open:presidentGroup,tasks:admin?barPresidentTasks(l):[],groups:{
+ regole:{summary:(l.rules.mode==='weighted'?'Ponderata':'Classica')+' · '+l.rules.initial+' cr iniziali',html:admin?barRulesForm(l):'<button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button>'},
  ...(admin?{
- calendario:{summary:l.nativeFantaLink?'Fanta attivo · competizioni e asta':l.fantaCreation?'Fanta in preparazione':'Il Fanta non è attivo',html:l.nativeFantaLink?'<p>Competizioni, rose e asta si gestiscono dal Fanta della stessa lega.</p>'+fanta:randomLeagueControls(l,state.user)||activate},
  identita:{summary:'Simbolo '+(l.branding?.emblem||'Q')+' · '+color,html:brandingForm(l)}
  }:{}),
- account:{summary:'Soprannome, email, avvisi e assistenza',html:profile({embedded:true})},
  ...(l.admin===state.user.id&&state.user.emailVerified&&!state.user.demo?{elimina:{summary:'Bar, Fanta e storico',html:'<form id="president-delete-league"><p>Eliminerai definitivamente <b>'+esc(l.name)+'</b>, il suo Bar, il Fanta collegato e lo storico di gioco. Gli account dei partecipanti restano attivi.</p><label class="field">Scrivi <strong>ELIMINA LEGA E STORICO</strong><input name="phrase" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label><button class="secondary league-delete-action" disabled>Elimina la lega</button><p role="alert"></p></form>'}}:{})
  }});
 }
@@ -1279,6 +1279,12 @@ function calendarStatus(m) {
     : m.kickoff
       ? date(m.kickoff)
       : "Da disputare";
+}
+function openBarRules(){
+  const view=openMatchPage({label:'Regolamento del Bar',swipeBack:'both'});
+  view.classList.add('bar-rules-page');
+  view.innerHTML='<button type="button" class="secondary rule-close" id="close-modal">← Chiudi regolamento</button>'+regulation(L(),R());
+  view.querySelector('.rule-close').onclick=()=>view.close();
 }
 function regulation(l, r) {
   const rules = r?.rules ||
@@ -1302,6 +1308,7 @@ function regulation(l, r) {
       },
       winners: ["points", "credits"],
     };
+  const quotaScoring=rules.scoring===QUOTA_SCORING;
   const markets = [
     ["1", "Vince la squadra di casa"],
     ["X", "Pareggio"],
@@ -1314,7 +1321,7 @@ function regulation(l, r) {
     ["Under 2.5", "Al massimo 2 gol totali"],
     ["Over 2.5", "Almeno 3 gol totali"],
   ];
-  return `<section class="hero"><div class="eyebrow">PRIMA LE REGOLE, POI LE SCUSE</div><h1>IL REGOLAMENTO.<br><em>IL VAR NON ACCETTA RECLAMI.</em></h1><p>Una schedina completa, due classifiche e la consueta fiducia mal riposta nel novantesimo.</p></section><div class="rule-grid"><article class="card"><h3>1. Entra nella lega</h3><p>Registrati con email e password, poi attiva l’account dal link ricevuto via email. Crea una lega oppure usa il codice di invito. Chi crea la lega ne è l’amministratore.</p><p>Si gioca solo con crediti virtuali, senza acquisti o premi in denaro. La dotazione iniziale prevista dalle regole ${r ? "della giornata selezionata" : "attuali"} è <b>${fmt(rules.initial)} crediti</b>.</p></article><article class="card"><h3>2. Compila tutta la schedina</h3><p>Scegli <b>un solo pronostico per ciascuna partita</b> della giornata. Devi completarli tutti prima di salvare. La puntata minima è 1 credito; il massimo è <b>${fmt(rules.maxStake)} crediti</b>.</p><p>Puoi salvare già ora le giornate future e modificare scelte e puntata fino al calcio d’inizio della prima partita della giornata. Da quel momento tutte le scelte si bloccano, anche per le partite successive.</p></article><article class="card rule-wide"><h3>3. Scegli il tuo grado di ottimismo</h3><p>Gli esiti si riferiscono ai tempi regolamentari, recupero incluso. Under/Over usa la soglia di 2,5 gol.</p><table class="rule-table"><thead><tr><th>Esito</th><th>Quando è corretto</th><th>Punti se corretto</th></tr></thead><tbody>${markets.map(([p, t]) => `<tr><td><b>${p.replace("2.5", "2,5")}</b></td><td>${t}</td><td>${["difficulty-v1","difficulty-v2"].includes(rules.scoring) && !["1", "X", "2"].includes(p) ? "Variabile · vedi la partita" : fmt(rules.scoring==="difficulty-v2"&&["1","X","2"].includes(p)?1:rules.mode==="classic"?rules.correct:(rules.marketPoints?.[p]??1))}</td></tr>`).join("")}</tbody></table><p class="tiny muted">Modalità ${rules.mode === "classic" ? "classica: ogni esito corretto vale lo stesso punteggio." : "ponderata: i punteggi corretti dipendono dal mercato scelto."} ${["difficulty-v1","difficulty-v2"].includes(rules.scoring) ? "Doppie chance, Goal/No Goal e Under/Over hanno premi e penalità basati sulla probabilità delle quote, senza margine bookmaker, a passi di 0,25: una scelta più probabile rende meno e costa di più se sbagliata, fino a −2. I valori sono mostrati su ogni scelta e fissati alla conferma. Senza quote si usa una probabilità di base dichiarata." : "Ogni pronostico sbagliato vale " + fmt(rules.wrong) + " punti."} Le impostazioni dell’amministratore prevalgono sui valori predefiniti.</p></article><article class="card"><h3>4. Quote: arrivano anche dopo di te</h3><p>Puoi salvare la schedina anche senza quote. Dove mancano vedrai “in arrivo”: compariranno automaticamente, insieme alla vincita potenziale, senza modificare i tuoi pronostici.</p><p>Le quote reali sono la media di almeno due bookmaker, arrotondata a due decimali e congelata alla prima acquisizione. Dopo ogni recupero, se la giornata ha già quote reali ma ne manca qualcuna, quelle assenti vengono completate subito. In ogni caso da 72 ore prima della prima partita della giornata, con orari confermati, le quote ancora mancanti sono sostituite da stime del rendimento stagionale: gol fatti e subiti, medie del campionato, fattore campo e modello di Poisson con margine del 5%. Con pochi dati il modello usa maggiormente le medie di campionato. Ogni stima è etichettata, congelata alla pubblicazione e valida per tutti: non viene sostituita dalle quote arrivate dopo. Si può compilare e salvare anche prima. Se gli orari vengono confermati o anticipati tardivamente, non è possibile garantire retroattivamente le 72 ore.</p></article><article class="card"><h3>5. Crediti: serve la perfezione</h3><p>La puntata viene scalata al salvataggio; se la modifichi viene addebitata o restituita soltanto la differenza. Vinci crediti soltanto se indovini tutti gli esiti validi.</p><p><b>Ritorno lordo = puntata × prodotto delle quote.</b> Comprende la puntata iniziale. Esempio: 10 crediti × quota totale 12 = 120 crediti accreditati, con guadagno netto di 110. Se sbagli anche una sola partita non ricevi crediti, ma partecipi comunque alla classifica punti.</p></article><article class="card"><h3>6. Punti: anche quasi conta</h3><p>I punti si sommano partita per partita, indipendentemente dalla vincita in crediti. Con i valori predefiniti, 9 pronostici corretti e 1 sbagliato valgono <b>${fmt(9*pointTerms({},"1",rules).correct+pointTerms({},"1",rules).wrong)} punti</b> (9 × ${fmt(pointTerms({},"1",rules).correct)} ${pointTerms({},"1",rules).wrong<0?"−":"+"} ${fmt(Math.abs(pointTerms({},"1",rules).wrong))}).</p><p>La giornata selezionata usa ${rules.mode === "classic" ? `+${fmt(rules.correct)} per ogni esito corretto` : "i valori per mercato indicati nella tabella"} ${["difficulty-v1","difficulty-v2"].includes(rules.scoring) ? "con la penalità indicata per la scelta confermata" : "e " + fmt(rules.wrong) + " per ogni errore"}. Nessuna schedina salvata significa nessuna puntata e nessun punto per quella giornata.</p></article><article class="card"><h3>7. Risultati e casi particolari</h3><p>Nella schedina bloccata il pronostico scelto diventa verde se vincente sul punteggio attuale e rosso se perdente. Finché si gioca il colore è provvisorio e può cambiare. Il live è provvisorio. I punteggi e i crediti vengono assegnati automaticamente solo quando tutte le partite valide della giornata sono finite e i risultati sono confermati dal fornitore finale. Gol e cartellini sono consultabili nei dettagli, quando disponibili.</p><p>Una partita rinviata resta in attesa. Se un evento viene annullato e marcato nullo non assegna punti e pesa quota 1. Se tutti gli eventi sono nulli la puntata viene restituita. Se mancano quote di una schedina interamente corretta, i crediti restano in attesa: non si inventano moltiplicatori.</p></article><article class="card rule-wide"><h3>8. La gloria, in due classifiche</h3><p>Tutti i membri vedono la classifica punti e quella dei crediti residui. Il bilancio personale è la differenza fra crediti residui e dotazione iniziale. A pari merito la posizione è condivisa.</p><p><b>Vincitori previsti:</b> ${(rules.winners || []).map((w) => (w === "points" ? "primo in classifica punti" : w === "credits" ? "primo in classifica crediti" : esc(w))).join(" · ") || "da definire dall’amministratore"}.</p><p>L’amministratore può configurare dotazione, puntata massima, punti per esito e categorie dei vincitori. La nuova ponderazione aggiorna i default della lega e le giornate ancora aperte. Le giornate chiuse mantengono i propri punteggi; premi e penalità di ogni pronostico sono fissati alla conferma.</p><p class="tiny muted">${r ? "Valori mostrati: " + esc(r.title) + ". Puoi cambiare giornata dalla schedina." : "Valori mostrati: impostazioni attuali della lega."} Stemmi e nomi delle squadre appartengono ai rispettivi titolari e sono usati per identificarle; nessuna affiliazione è implicita.</p></article></div>`;
+  return `<section class="hero"><div class="eyebrow">PRIMA LE REGOLE, POI LE SCUSE</div><h1>IL REGOLAMENTO.<br><em>IL VAR NON ACCETTA RECLAMI.</em></h1><p>Una schedina completa, due classifiche e la consueta fiducia mal riposta nel novantesimo.</p></section><div class="rule-grid"><article class="card"><h3>1. Entra nella lega</h3><p>Registrati con email e password, poi attiva l’account dal link ricevuto via email. Crea una lega oppure usa il codice di invito. Chi crea la lega ne è l’amministratore.</p><p>Si gioca solo con crediti virtuali, senza acquisti o premi in denaro. La dotazione iniziale prevista dalle regole ${r ? "della giornata selezionata" : "attuali"} è <b>${fmt(rules.initial)} crediti</b>.</p></article><article class="card"><h3>2. Compila tutta la schedina</h3><p>Scegli <b>un solo pronostico per ciascuna partita</b> della giornata. Devi completarli tutti prima di salvare. La puntata parte da 1 credito e usa il saldo disponibile.</p><p>Scegli solo le partite che vuoi giocare. Ogni esito si blocca al suo calcio d’inizio. La puntata si blocca quando inizia la prima partita che hai scelto.</p></article><article class="card rule-wide"><h3>3. Scegli il tuo grado di ottimismo</h3><p>Gli esiti si riferiscono ai tempi regolamentari, recupero incluso. Under/Over usa la soglia di 2,5 gol.</p><table class="rule-table"><thead><tr><th>Esito</th><th>Quando è corretto</th><th>Punti se corretto</th></tr></thead><tbody>${markets.map(([p, t]) => `<tr><td><b>${p.replace("2.5", "2,5")}</b></td><td>${t}</td><td>${quotaScoring?"Quota dell’esito":["difficulty-v1","difficulty-v2"].includes(rules.scoring) && !["1", "X", "2"].includes(p) ? "Variabile · vedi la partita" : fmt(rules.scoring==="difficulty-v2"&&["1","X","2"].includes(p)?1:rules.mode==="classic"?rules.correct:(rules.marketPoints?.[p]??1))}</td></tr>`).join("")}</tbody></table><p class="tiny muted">${quotaScoring?"Ogni esito corretto vale la quota accettata alla conferma. Gli esiti sbagliati valgono zero punti.":`Modalità ${rules.mode === "classic" ? "classica: ogni esito corretto vale lo stesso punteggio." : "ponderata: i punteggi corretti dipendono dal mercato scelto."} ${["difficulty-v1","difficulty-v2"].includes(rules.scoring) ? "Doppie chance, Goal/No Goal e Under/Over hanno premi e penalità basati sulla probabilità delle quote, senza margine bookmaker, a passi di 0,25: una scelta più probabile rende meno e costa di più se sbagliata, fino a −2. I valori sono mostrati su ogni scelta e fissati alla conferma. Senza quote si usa una probabilità di base dichiarata." : "Ogni pronostico sbagliato vale " + fmt(rules.wrong) + " punti."} Le impostazioni dell’amministratore prevalgono sui valori predefiniti.`}</p></article><article class="card"><h3>4. Quote: arrivano anche dopo di te</h3><p>${quotaScoring?"Le quote mancanti sono indicate con ?. Se un esito corretto attende ancora la quota, i suoi punti vengono assegnati appena la quota è disponibile.":"Puoi salvare la schedina anche senza quote. Dove mancano vedrai “in arrivo”: compariranno automaticamente, insieme alla vincita potenziale, senza modificare i tuoi pronostici."}</p><p>Le quote reali sono la media di almeno due bookmaker, arrotondata a due decimali e congelata alla prima acquisizione. Dopo ogni recupero, se la giornata ha già quote reali ma ne manca qualcuna, quelle assenti vengono completate subito. In ogni caso da 72 ore prima della prima partita della giornata, con orari confermati, le quote ancora mancanti sono sostituite da stime del rendimento stagionale: gol fatti e subiti, medie del campionato, fattore campo e modello di Poisson con margine del 5%. Con pochi dati il modello usa maggiormente le medie di campionato. Ogni stima è etichettata, congelata alla pubblicazione e valida per tutti: non viene sostituita dalle quote arrivate dopo. Si può compilare e salvare anche prima. Se gli orari vengono confermati o anticipati tardivamente, non è possibile garantire retroattivamente le 72 ore.</p></article><article class="card"><h3>5. Crediti: serve la perfezione</h3><p>La puntata viene scalata al salvataggio; se la modifichi viene addebitata o restituita soltanto la differenza. Vinci crediti se indovini tutte le partite che hai scelto. Quelle saltate valgono zero punti e non incidono sul ritorno.</p><p><b>Ritorno lordo = puntata × prodotto delle quote.</b> Comprende la puntata iniziale. Esempio: 10 crediti × quota totale 12 = 120 crediti accreditati, con guadagno netto di 110. Se sbagli anche una sola partita giocata non ricevi crediti, ma partecipi comunque alla classifica punti.</p></article><article class="card"><h3>6. Punti: anche quasi conta</h3><p>${quotaScoring?"I punti si sommano partita per partita. Due esiti corretti a quota 1,35 e 2,80 valgono 4,15 punti complessivi, anche se sbagli le altre partite.":`I punti si sommano partita per partita, indipendentemente dalla vincita in crediti. Con i valori predefiniti, 9 pronostici corretti e 1 sbagliato valgono <b>${fmt(9*pointTerms({},"1",rules).correct+pointTerms({},"1",rules).wrong)} punti</b> (9 × ${fmt(pointTerms({},"1",rules).correct)} ${pointTerms({},"1",rules).wrong<0?"−":"+"} ${fmt(Math.abs(pointTerms({},"1",rules).wrong))}).</p><p>La giornata selezionata usa ${rules.mode === "classic" ? `+${fmt(rules.correct)} per ogni esito corretto` : "i valori per mercato indicati nella tabella"} ${["difficulty-v1","difficulty-v2"].includes(rules.scoring) ? "con la penalità indicata per la scelta confermata" : "e " + fmt(rules.wrong) + " per ogni errore"}.`} Nessuna schedina salvata significa nessuna puntata e nessun punto per quella giornata.</p></article><article class="card"><h3>7. Risultati e casi particolari</h3><p>Nella schedina bloccata il pronostico scelto diventa verde se vincente sul punteggio attuale e rosso se perdente. Finché si gioca il colore è provvisorio e può cambiare. Il live è provvisorio. I punteggi e i crediti vengono assegnati automaticamente solo quando tutte le partite valide della giornata sono finite e i risultati sono confermati dal fornitore finale. Gol e cartellini sono consultabili nei dettagli, quando disponibili.</p><p>Una partita rinviata resta in attesa. Se un evento viene annullato e marcato nullo non assegna punti e pesa quota 1. Se tutti gli eventi sono nulli la puntata viene restituita. Se mancano quote di una schedina interamente corretta, i crediti restano in attesa: non si inventano moltiplicatori.</p></article><article class="card rule-wide"><h3>8. La gloria, in due classifiche</h3><p>Tutti i membri vedono la classifica punti e quella dei crediti residui. Il bilancio personale è la differenza fra crediti residui e dotazione iniziale. A pari merito la posizione è condivisa.</p><p><b>Vincitori previsti:</b> ${(rules.winners || []).map((w) => (w === "points" ? "primo in classifica punti" : w === "credits" ? "primo in classifica crediti" : esc(w))).join(" · ") || "da definire dall’amministratore"}.</p><p>L’amministratore può configurare dotazione, punti per esito e categorie dei vincitori. Per la Serie A, dalla giornata 12 del 2026/27 il punteggio segue le quote. Ogni giornata precedente conserva il proprio regolamento.</p><p class="tiny muted">${r ? "Valori mostrati: " + esc(r.title) + ". Puoi cambiare giornata dalla schedina." : "Valori mostrati: impostazioni attuali della lega."} Stemmi e nomi delle squadre appartengono ai rispettivi titolari e sono usati per identificarle; nessuna affiliazione è implicita.</p></article></div>`;
 }
 function calendarPage() {return serieACalendarPage();}
 
@@ -1354,130 +1361,12 @@ function serieACalendarPage() {
         .join("")}</details>`,
   )}`;
 }
-function leagueHistory(l) {
-  return `<h2 style="margin-bottom:25px">Il conto delle tue certezze</h2><div class="card">${l.ledger.length ? l.ledger.map((x) => `<div class="rankrow"><span>↗</span><div>${esc(x.reason)}<small>${date(x.created)}</small></div><b class="${x.amount >= 0 ? "green" : "orange"}">${x.amount >= 0 ? "+" : ""}${fmt(x.amount)} cr</b></div>`).join("") : "Nessun movimento. La tua reputazione è ancora intatta."}</div><h2>Giornate archiviate</h2>${l.rounds
-    .filter((x) => x.settled)
-    .map(
-      (x) =>
-        `<div class="card" style="margin-top:15px"><h3>${esc(x.title)}</h3>${x.matches.map((m) => `<div class="row"><span>${fixtureTeams(m.home, m.away)}</span><b>${m.score?.join(" – ")}</b></div>`).join("")}</div>`,
-    )
-    .join("") || '<div class="card" style="margin-top:15px"><p class="tiny muted">Nessuna giornata chiusa per ora: i risultati finali compariranno qui.</p></div>'}`;
-}
-let supportPosition = null;
-try {
-  const pos = JSON.parse(localStorage.getItem("quasiChatPosition"));
-  if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y))
-    supportPosition = pos;
-} catch {}
-function bindSupportDrag() {
-  const button = $("#open-chat");
-  if (!button?.addEventListener||button.dataset.chatDragBound) return;
-  button.dataset.chatDragBound='true';
-  let drag = null,
-    suppressClick = false;
-  const place = () => {
-    if (!supportPosition || !button.isConnected) return;
-    const nav = $(".v2-slipbar") || $(".v2-tabbar") || $(".bottom-nav"),
-      bounds = nav?.getBoundingClientRect(),
-      w = button.offsetWidth,
-      h = button.offsetHeight;
-    const maxX = Math.max(8, window.innerWidth - w - 8),
-      maxY = Math.max(8, (bounds?.top>window.innerHeight/2?bounds.top:window.innerHeight-24) - h - 12);
-    const x = Math.max(
-        8,
-        Math.min(maxX, supportPosition.x * window.innerWidth),
-      ),
-      y = Math.max(8, Math.min(maxY, supportPosition.y * window.innerHeight));
-    button.style.left = x + "px";
-    button.style.top = y + "px";
-    button.style.right = "auto";
-    button.style.bottom = "auto";
-  };
-  place();
-  button.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    const rect = button.getBoundingClientRect();
-    drag = {
-      id: e.pointerId,
-      x: e.clientX,
-      y: e.clientY,
-      left: rect.left,
-      top: rect.top,
-      moved: false,
-    };
-    suppressClick = false;
-    button.setPointerCapture(e.pointerId);
-  });
-  button.addEventListener("pointermove", (e) => {
-    if (!drag || drag.id !== e.pointerId) return;
-    const dx = e.clientX - drag.x,
-      dy = e.clientY - drag.y;
-    if (!drag.moved && Math.hypot(dx, dy) < 7) return;
-    drag.moved = true;
-    button.classList.add("dragging");
-    supportPosition = {
-      x: (drag.left + dx) / window.innerWidth,
-      y: (drag.top + dy) / window.innerHeight,
-    };
-    place();
-    e.preventDefault();
-  });
-  const finish = (e) => {
-    if (!drag || drag.id !== e.pointerId) return;
-    suppressClick = drag.moved;
-    if (drag.moved)
-      try {
-        localStorage.setItem(
-          "quasiChatPosition",
-          JSON.stringify(supportPosition),
-        );
-      } catch {}
-    drag = null;
-    button.classList.remove("dragging");
-  };
-  button.addEventListener("pointerup", finish);
-  button.addEventListener("pointercancel", finish);
-  button.addEventListener(
-    "click",
-    (e) => {
-      if (suppressClick) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        suppressClick = false;
-      }
-    },
-    true,
-  );
-}
-window.addEventListener?.("resize", () => {
-  bindSupportDragPosition();
-});
-function bindSupportDragPosition() {
-  const b = $("#open-chat");
-  if (!b || !supportPosition) return;
-  const nav = ($(".v2-slipbar") || $(".v2-tabbar") || $(".bottom-nav"))?.getBoundingClientRect();
-  b.style.left =
-    Math.max(
-      8,
-      Math.min(
-        window.innerWidth - b.offsetWidth - 8,
-        supportPosition.x * window.innerWidth,
-      ),
-    ) + "px";
-  b.style.top =
-    Math.max(
-      8,
-      Math.min(
-        (nav?.top>window.innerHeight/2?nav.top:window.innerHeight-24) - b.offsetHeight - 12,
-        supportPosition.y * window.innerHeight,
-      ),
-    ) + "px";
-}
 function navigatePage(next) {
   if(next===page)return;
+  if(next!=='chat'&&chatOpen)closeLeagueChat();
   if(next==='schedina'){persistDraft();selectedRoundId=null;slipScope='mine';hydrateDraft();}
   sourceScope='seriea';dashboardSource='seriea';
-  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',quasi:'quasi',profilo:'profilo',storico:'classifica/storico',regolamento:'regolamento',admin:'admin',barleague:'lega'})[next]||next,league:L()?.id});
+  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',barleague:'lega'})[next]||next,league:L()?.id});
   if (next === "chat") { openLeagueChat(); return; }
   persistDraft();
   page = next;
@@ -1487,7 +1376,7 @@ function navigatePage(next) {
   window.scrollTo(0, 0);
 }
 function nativeSlipServices(){return {
- account:{view:()=>profile({embedded:true}),bind:bindAccount},
+ account:{groups:accountGroups,bind:(onChanged,barLeague)=>bindAccount(onChanged,{manageFanta:false,barLeague})},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
  save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
@@ -1513,11 +1402,30 @@ function openBarTarget(target) {
   if(target?.page==='invita')document.querySelector('[data-app-invite]')?.scrollIntoView({block:'start'});
   if(target?.match)[...document.querySelectorAll('[data-match-card]')].find(row=>row.dataset.matchCard===target.match)?.scrollIntoView({block:'center'});
 }
-function bindAccount(onChanged=()=>{}) {
+function bindAccount(onChanged=()=>{},{manageFanta=true,barLeague}={}) {
+  const chatSetting=$('#chat-notify-preference'),room=barLeague??chatLeague();
+  const chatRow=chatSetting?.closest?.('[data-chat-preference-row]');
+  if(chatRow&&room&&!state.user?.demo){
+    chatRow.hidden=false;
+    chatSetting.checked=!!room.chat?.notify;
+    chatSetting.onchange=async()=>{
+      const desired=chatSetting.checked;
+      chatSetting.disabled=true;
+      try{
+        if(desired){
+          if(!pushSupported()||await Notification.requestPermission()!=='granted')throw Error('Autorizza gli avvisi sul dispositivo per ricevere i messaggi.');
+          await enableLeagueNotifications({league:room,user:state.user,api});
+        }else await api('chat-preferences',{league:room.id,notify:false});
+        room.chat={...room.chat,notify:desired};
+        notify(desired?'Avvisi della chat attivi.':'Avvisi della chat silenziati.');
+      }catch(error){chatSetting.checked=!desired;notify(error.message);}
+      finally{chatSetting.disabled=false;}
+    };
+  }
   if($("#edit-suggested-nickname"))$("#edit-suggested-nickname").onclick=()=>{const d=$(".profile-account");if(d)d.open=true;$("#profile-name input")?.focus();};
   if($('#email-reminder-preference'))$('#email-reminder-preference').onchange=async e=>{const enabled=e.target.checked;try{await api('profile-email-reminders',{enabled});state.user.emailRemindersEnabled=enabled;notify(enabled?'Promemoria email attivato':'Promemoria email disattivato');}catch(error){e.target.checked=!enabled;notify(error.message);}};
   if($('#reminder-preference'))$('#reminder-preference').onchange=async e=>{const enabled=e.target.checked;try{await api('profile-reminders',{enabled});state.user.remindersEnabled=enabled;notify(enabled?'Promemoria schedina attivi':'Promemoria schedina disattivati');}catch(error){e.target.checked=!enabled;notify(error.message);}};
-  if($('#enable-device-alerts'))$('#enable-device-alerts').onclick=async e=>{if(state.user?.demo){notify('Nella demo gli avvisi sono simulati. Non attiviamo notifiche sul dispositivo.');return;}if(!pushSupported()){notify('Apri la PWA installata per attivare gli avvisi sul dispositivo.');return;}const permission=Notification.requestPermission();e.target.disabled=true;try{if(await permission!=='granted')throw Error('Consenso non concesso. Puoi cambiarlo nelle impostazioni del dispositivo.');await enableLeagueNotifications({league:L(),user:state.user,api});notify('Avvisi attivati su questo dispositivo');}catch(error){notify(error.message);}finally{e.target.disabled=false;}};
+  if($('#enable-device-alerts'))$('#enable-device-alerts').onclick=async e=>{if(state.user?.demo){notify('Nella demo gli avvisi sono simulati. Non attiviamo notifiche sul dispositivo.');return;}if(!pushSupported()){notify('Apri la PWA installata per attivare gli avvisi sul dispositivo.');return;}const permission=Notification.requestPermission();e.target.disabled=true;try{if(await permission!=='granted')throw Error('Consenso non concesso. Puoi cambiarlo nelle impostazioni del dispositivo.');await enableLeagueNotifications({league:room||L(),user:state.user,api,notifyChat:false});notify('Avvisi attivati su questo dispositivo');}catch(error){notify(error.message);}finally{e.target.disabled=false;}};
   if ($("#profile-name"))
     $("#profile-name").onsubmit = async (e) => {
       e.preventDefault();
@@ -1560,12 +1468,44 @@ function bindAccount(onChanged=()=>{}) {
         busy = false;
       }
     };
+  const password=$('#account-password');
+  if(password)password.onsubmit=async event=>{
+    event.preventDefault();
+    const data=Object.fromEntries(new FormData(password)),button=password.querySelector('button');
+    if(data.newPassword!==data.confirmPassword){notify('Le nuove password non coincidono.');return;}
+    button.disabled=true;
+    try{await api('change-password',data);password.reset();notify('Password aggiornata.');}catch(error){notify(error.message);}finally{button.disabled=false;}
+  };
+  if(manageFanta)bindBarFantaAlerts();
   bindSupportInline();
   if($("#logout"))$("#logout").onclick=e=>void returnToLanding(e.currentTarget);
 }
+function bindBarFantaAlerts(){
+ const section=document.querySelector('[data-president-section="avvisi"]');
+ if(!section)return;
+ const toggles=[...section.querySelectorAll('[data-notify]')];
+ let pending=false,settings;
+ let client;
+ const paint=()=>{for(const toggle of toggles){toggle.disabled=pending||!settings;toggle.checked=settings?.notify?.[toggle.dataset.notify]!==false;}};
+ const load=async()=>{if(!section.open||pending||settings)return;pending=true;try{client??=state.user.demo?(await import('./demo-session.mjs')).getDemoSession().fanta:createFantaApi({userId:state.user.id});settings=(await client.me()).settings;}catch(error){notify(error.message);}finally{pending=false;paint();}};
+ section.addEventListener('toggle',load);
+ void load();
+ for(const toggle of toggles)toggle.onchange=async()=>{
+   if(pending||!settings)return;
+   const next={...settings,notify:{...settings.notify,[toggle.dataset.notify]:toggle.checked}};
+   pending=true;for(const input of toggles)input.disabled=true;
+   try{await client.saveSettings(next);settings=next;}catch(error){notify(error.message);}finally{pending=false;paint();}
+ };
+}
 function bind(l, r) {
   bindRandomLeagues(document);
-  if($('#league-open-chat'))$('#league-open-chat').onclick=()=>openLeagueChat();
+  for(const button of document.querySelectorAll('[data-share-league]'))button.onclick=()=>void shareLeagueInvite(l,{notify});
+  const chatButton=$('[data-league-chat]');if(chatButton)chatButton.onclick=()=>openLeagueChat(chatButton);
+  const appInvite=$('[data-share-app-signup]');if(appInvite)appInvite.onclick=async()=>{
+    const data=signupShareData(),result=await performAppInvite('share',{data});
+    if(result.manual)window.prompt('Copia il link per registrarsi',data.url);
+    else if(result.message)notify(result.message);
+  };
   if($('#open-native-slips'))$('#open-native-slips').onclick=()=>openNativeSlips();
   const fantaSelect=document.querySelector('[data-fanta-bar-select]');if(fantaSelect)fantaSelect.onchange=e=>{persistDraft();leagueId=e.target.value;sourceScope='fantacalcio';competitionScope=null;selectedRoundId=null;hydrateDraft();render();};
   bindAppInvites();
@@ -1584,13 +1524,11 @@ function bind(l, r) {
     void navigatePage(x.page);
   };
   bindTabBar((t) => v2go(routeForTab(t,L(),state.leagues)));
-  document.querySelectorAll("[data-v2-lega]").forEach((b) => (b.onclick = () => v2go({ page: b.dataset.v2Lega })));
   if (state.user) bindLeagueSwitcher({ leagues: state.leagues, activeId: L()?.id, uid: state.user.id, esc,
     onSelect: (id) => { try { persistDraft(); } catch {} leagueId = id; sourceScope = defaultSource(L()); selectedRoundId = null; competitionScope = null; hydrateDraft(); try { localStorage.setItem("quasi-active-league:" + state.user.id, id); } catch {} render(); window.scrollTo(0, 0); liveChannel.wake(); },
     onSubmit: submitLeague });
   bindDashboard();
   updateObjectives();
-  bindLazySections(l);
   if (page === "quasi" && l) bindRoster(l, openStudio);
   if (page === "fantaquasi") bindFantaQuasi({ api, user: state.user, notify, onDone: () => { render(); if(page==='fantaquasi')document.querySelector('.fq-signup')?.scrollIntoView({block:'center',behavior:'smooth'}); } });
   if(state.user?.demo){
@@ -1598,7 +1536,6 @@ function bind(l, r) {
     top.innerHTML='<span>Stai esplorando la demo</span><button type="button" class="public-home-button">← Pagina iniziale</button>';
     top.querySelector('button').onclick=e=>void returnToLanding(e.currentTarget);document.getElementById('app').prepend(top);
   }
-  if(document.querySelector('#league-portfolio .portfolio-body'))bindProgression(l,'seriea',esc,fmt,()=>{});
   bindRewards(state.user,esc,(slot,id)=>{void openStudio(id);});
   bindStyledSelects();
   document.querySelectorAll('[data-close-section]').forEach(b=>b.onclick=()=>{const d=b.closest('details');if(d){d.open=false;d.querySelector('summary')?.scrollIntoView({block:'nearest'});}});
@@ -1610,7 +1547,6 @@ function bind(l, r) {
         else expandedLiveMatches.delete(d.dataset.liveId);
       }),
   );
-  bindSupportDrag();
   document.querySelectorAll("[data-slip-scope]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -1619,7 +1555,6 @@ function bind(l, r) {
         render();
       }),
   );
-  if ($("#open-chat")) $("#open-chat").onclick = openLeagueChat;
   if ($("#open-studio")) $("#open-studio").onclick = openStudio;
   document.querySelectorAll("[data-ranking]").forEach(
     (b) =>
@@ -1632,7 +1567,7 @@ function bind(l, r) {
     .querySelectorAll("[data-analyze]")
     .forEach(
       (b) =>
-        (b.onclick = () => openAnalysis(b.dataset.analyze, b.dataset.round)),
+        (b.onclick = () => flipAnalysis(b)),
     );
   if($('#ranking-select'))$('#ranking-select').onchange=e=>{
     persistDraft();rankingScope=e.target.value;
@@ -1689,7 +1624,7 @@ function bind(l, r) {
         ),
         q = r.matches.reduce((a, x) => a * (x.odds?.[picks[x.id]] || 1), 1);
       $("#potential").textContent = missing
-        ? "Quote in arrivo"
+        ? "?"
         : Object.keys(picks).length === r.matches.length
           ? fmt(q * stake) + " crediti"
           : "—";
@@ -1729,7 +1664,7 @@ function bind(l, r) {
       let d = Object.fromEntries(new FormData(e.target)),
         rules = {
           initial: +d.initial,
-          maxStake: +d.maxStake,
+          maxStake: l.rules.maxStake,
           correct: +d.correct,
           wrong: +d.wrong,
           mode: d.mode,
@@ -1741,10 +1676,7 @@ function bind(l, r) {
           winners: [
             ...(d.points ? ["points"] : []),
             ...(d.credits ? ["credits"] : []),
-            ...d.extra
-              .split("\n")
-              .map((x) => x.trim())
-              .filter(Boolean),
+            ...(l.rules.winners||[]).filter(x=>!["points","credits"].includes(x)),
           ],
         };
       act("rules", { rules }, "Regole salvate");
@@ -1784,14 +1716,16 @@ function bind(l, r) {
 function serieATable() {
   const t = state.standings;
   if (!t) return '<div class="card">Classifica in aggiornamento.</div>';
-  return `<section class="hero"><div class="eyebrow">SERIE A · ${t.season}/${String(t.season + 1).slice(-2)}</div><h1>IL CAMPIONATO.<br><em>QUI CONTANO I GOL.</em></h1><p>Punti, risultati e gol del campionato.</p></section><div class="card serie-table-card"><table class="serie-table"><thead><tr>${["#", "Squadra", "Pt", "PG", "V", "N", "P", "GF", "GS", "DR"].map((x) => `<th scope="col">${x}</th>`).join("")}</tr></thead><tbody>${t.rows.map((x, i) => `<tr data-ranking-team="${esc(x.name)}"><td>${i + 1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played", "won", "drawn", "lost", "gf", "gs", "dr"].map((k) => `<td>${x[k]}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="tiny muted">PG: partite giocate · V/N/P: vinte, pareggiate, perse · GF/GS: gol fatti e subiti · DR: differenza reti.</p><div class="notice">${esc(t.note)} ${t.finals} risultati finali disponibili · aggiornamento ${date(t.updatedAt)}.</div>`;
+  const columns=["#","Squadra","Pt","PG","V","N","P","GF","GS","DR"];
+  const rows=t.rows.map((x,i)=>`<tr data-ranking-team="${esc(x.name)}"><td>${i+1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played","won","drawn","lost","gf","gs","dr"].map(k=>`<td>${x[k]}</td>`).join('')}</tr>`).join('');
+  return `<h1 class="sr-only">Classifica Serie A</h1><div data-os-content data-os-flow class="serie-standings"><div class="serie-table-card"><table class="serie-table"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function otherSlips(l, r) {
   if (!l || !r)
     return '<div class="card">Entra in una lega per consultare le schedine.</div>';
   return barSlipsView({ l, r, uid: state.user.id, fmt, rounds: availableRounds(), sourceOf });
 }
-// Verdicts for the whole table arrive in one light request; tiles and popup share the same cache.
+// Verdicts for the whole table arrive in one light request shared by both sides of every tile.
 const barVerdicts = new Map(),
   barVerdictPending = new Map();
 function applyAcknowledgedSlip(result){const ok=applySlipReceipt(state,result);if(ok)barVerdicts.delete(result.receipt.league+':'+result.receipt.round);return ok;}
@@ -1818,6 +1752,7 @@ function bindBarSlips() {
   const root = document.querySelector(".bar-table"),
     l = L(),
     r = R();
+  bindBarSlipPages(root);
   if (!root || !l || !r?.closed || r.pointsOnly || sourceOf(r) === "fantacalcio") return;
   const round = r.id;
   loadBarVerdicts(r)
@@ -1835,41 +1770,26 @@ function bindBarSlips() {
     }),
   );
 }
-function popup() {
-  activeMatchId = null;
-  let d = $("#match-modal");
-  if (!d) {
-    d = document.createElement("dialog");
-    d.id = "match-modal";
-    document.body.appendChild(d);
-    d.addEventListener("click", (e) => {
-      if (e.target === d) d.close();
-    });
-  }
-  d.dataset.match = "";
-  d.classList.remove("bar-profile-dialog");
-  d.innerHTML =
-    '<button class="secondary" id="close-modal">Chiudi ×</button><p class="muted">Caricamento…</p>';
-  if (!d.open) d.showModal();
-  $("#close-modal").onclick = () => d.close();
-  return d;
-}
-async function openAnalysis(uid, round) {
-  const r = (L()?.rounds || []).find((x) => x.id === round) || R(),
-    d = popup();
-  d.classList.add("bar-profile-dialog");
-  $("#close-modal").onclick = () => d.close();
+async function flipAnalysis(button) {
+  const flipped=button.getAttribute('aria-pressed')==='true';
+  setPitchFlip(button,!flipped);
+  const back=button.closest('.bar-tile').querySelector('[data-bar-profile]');
+  if(flipped||back.dataset.profileState==='ready'||back.dataset.profileState==='loading')return;
+  const l=L(),uid=button.dataset.analyze,r=l?.rounds?.find(x=>x.id===button.dataset.round)||R();
+  back.dataset.profileState='loading';
+  back.innerHTML='<p role="status">Caricamento…</p>';
   try {
     const players = await loadBarVerdicts(r),
       a = players.find((x) => x.uid === uid);
     if (!a) throw new Error("Nessun profilo disponibile per questa giornata");
-    const member = L().members.find((m) => m.uid === uid) || {},
+    const member = l.members.find((m) => m.uid === uid) || {},
       slip = (r.publicSlips || []).find((x) => x.uid === uid);
-    d.innerHTML = barProfileView(a, { name: member.name || "Giocatore", avatar: member.avatar, slip, fmt });
+    back.innerHTML = barProfileView(a, { name: member.name || "Giocatore", avatar: member.avatar, slip, round:r, fmt });
+    back.dataset.profileState='ready';
   } catch (e) {
-    d.innerHTML = `<button class="secondary" id="close-modal">Chiudi ×</button><p class="muted">${esc(e.message)}</p>`;
+    back.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
+    back.dataset.profileState='error';
   }
-  $("#close-modal").onclick = () => d.close();
 }
 function eventColumns(data, events) {
   const norm = (s) =>
@@ -1894,8 +1814,12 @@ function eventColumns(data, events) {
     else if (e.side === "away" || key(e.team) === key(data.away)) away.push(e);
     else unknown.push(e);
   }
-  const event = (e) =>
-    `<div class="event-item"><b class="green">${esc(e.minute)}</b> ${matchEventLabel(e)}<strong style="display:block">${esc((e.players || []).join(", ") || "")}${e.incoming?' → '+esc(e.incoming):''}</strong>${e.kind==='var'?'<small>'+esc(e.detail||'')+'</small>':''}</div>`;
+  const event=e=>{
+    const icon=e.kind==='goal'||e.kind==='own-goal'?ballIcon(e.kind==='own-goal'):e.kind==='substitution'?substitutionMark():({yellow:'🟨',red:'🟥','penalty-missed':'✕','penalty-saved':'🧤',var:'▣'})[e.kind];
+    const names=[(e.players||[]).map(playerSurname).filter(Boolean).join(', '),playerSurname(e.incoming)].filter(Boolean).join(' → ');
+    const description=[names,e.kind==='var'?e.detail:''].filter(Boolean).join(' · ');
+    return `<div class="event-item match-event-row"><b class="green">${esc(e.minute)}</b><span role="img" aria-label="${esc(matchEventLabel(e))}">${icon}</span><strong title="${esc(description)}">${esc(description)}</strong></div>`;
+  };
   return `<div class="events-columns"><section><h3>${esc(data.home)}</h3>${home.length ? home.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section><section><h3>${esc(data.away)}</h3>${away.length ? away.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section></div>${unknown.length ? '<div class="notice">Squadra non indicata dalla fonte</div>' + unknown.map(event).join("") : ""}`;
 }
 
@@ -1907,6 +1831,13 @@ async function matchSnapshot(match,round=null){
  if(cached&&cached.revision===revision&&Date.now()-cached.at<ttl)return {...match,...cached.data};
  if(!detailPending.has(key))detailPending.set(key,api('match?'+params).then(data=>{detailCache.set(key,{data,revision,at:Date.now()});if(state.user?.id===key.split(':')[0])displayCache('bar:'+state.user.id).set(key,{data,revision,at:Date.now()});if(detailCache.size>60)detailCache.delete(detailCache.keys().next().value);return data;}).finally(()=>detailPending.delete(key)));
  return {...match,...await detailPending.get(key)};
+}
+const liveMatchStatus=status=>['LIVE','1H','HT','2H','ET','BT','P'].includes(status);
+const matchDetailScore=match=>(liveMatchStatus(match.status)?match.liveScore||match.score:match.score)?.join('–')||'—';
+function matchDetailStatus(match){
+  if(['FT','AET','PEN'].includes(match.status))return 'Finale';
+  if(liveMatchStatus(match.status))return match.clock?'Live · '+match.clock:'Live';
+  return 'Da giocare';
 }
 async function openMatch(id, quiet = false) {
   const fantasyRound = L()?.rounds.find(
@@ -1927,12 +1858,11 @@ async function openMatch(id, quiet = false) {
       match,
       fantasyRound,
       esc,
-      (home,away)=>fixtureTeams(home,away,true),
+      name=>teamLabel(name,{fantasy:true}),
       fmt,
     );
     d.dataset.match = id;
     d.dataset.fantasyRevision=match.detailRevision||match.details?.at||'';
-    const fantasyScore=d.querySelector(".live-score");if(fantasyScore)fantasyScore.setAttribute("data-live-detail-score", "");
     d.querySelectorAll('details[open]').forEach(x=>x.open=false);
     const bookmaker=d.querySelector('details.card');if(bookmaker)d.append(bookmaker);
     bindLineupPitch(d);
@@ -1967,17 +1897,43 @@ async function openMatch(id, quiet = false) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
-    dialog.innerHTML = `<button class="secondary" id="close-modal" >Chiudi ×</button><div class="eyebrow">LA PARTITA</div><h2 class="match-page-title">${fixtureTeams(data.home,data.away,false)}</h2><div class="match-page-score" data-live-detail-score>${data.score ? data.score.join(" – ") : data.liveScore ? data.liveScore.join(" – ") : "—"}</div><p class="muted" data-live-detail-status>${data.status === "FT" ? "Finale" + (data.officialConfirmed ? " · confermato" : " · in attesa di conferma") : data.status === "LIVE" ? "In corso · " + esc(data.clock || "minuto non disponibile") : "Da giocare"}</p>${lineupView(data)}<details class="match-statistics"><summary>Dettagli della partita</summary><div data-live-detail-events>${events.length ? eventColumns(data, events) : data.status === "NS" ? "" : '<div class="notice">Gol e cartellini non ancora disponibili.</div>'}</div></details>`;
-    $("#close-modal").onclick = () => {
-      activeMatchId = null;
-      dialog.dataset.match = "";
-      dialog.close();
+    const availability=matchAvailability(data),hasDetails=!!(events.length||availability);
+    const details=`<div class="match-details-body">
+      <h3>Dettagli della partita</h3>
+      <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
+      <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
+      <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
+    </div>`;
+    dialog.innerHTML = `<div class="match-headline">
+      <button type="button" class="secondary match-nav-button match-close" id="close-modal" aria-label="Chiudi partita">×</button>
+      <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,fantasy:false})}</h2>
+      <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
+      <button type="button" class="secondary match-nav-button" data-match-details-button aria-label="Dettagli della partita" ${hasDetails?'':'hidden'}>›</button>
+    </div>${renderLineup(data,{paged:true,details,detailsAvailable:hasDetails})}`;
+    dialog.querySelector('#close-modal').onclick=()=>dialog.close();
+    const arrow=dialog.querySelector('[data-match-details-button]');
+    let returnPage=null;
+    const carousel=bindLineupPitch(dialog,{onPage:showing=>{
+      if(!showing&&arrow.textContent==='‹')returnPage=null;
+      if(arrow.textContent===(showing?'‹':'›'))return;
+      arrow.textContent=showing?'‹':'›';
+      arrow.setAttribute('aria-label',showing?'Torna alle formazioni':'Dettagli della partita');
+    }});
+    arrow.onclick=()=>{
+      if(dialog._pitchPage===carousel.teamCount){carousel.go(returnPage??carousel.teamCount-1);return;}
+      returnPage=dialog._pitchPage;
+      carousel.go(carousel.teamCount);
     };
-    const numbers=document.createElement('div');numbers.setAttribute('data-live-detail-statistics','');numbers.innerHTML=footballStatistics(data);
-    dialog.querySelector('[data-live-detail-events]')?.after(numbers);
-    bindFootballStatistics(numbers);
-    dialog.querySelectorAll('details[open]').forEach(x=>x.open=false);
-    bindLineupPitch(dialog);
+    const headline=dialog.querySelector('.match-headline');
+    let start=null;
+    headline.addEventListener('touchstart',event=>{start=event.touches.length===1?event.touches[0]:null;},{passive:true});
+    headline.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+    headline.addEventListener('touchend',event=>{
+      const first=start,point=event.changedTouches[0];start=null;
+      if(!first||!point)return;
+      const dx=point.clientX-first.clientX,dy=point.clientY-first.clientY;
+      if(Math.abs(dx)>=22&&Math.abs(dx)>Math.abs(dy)*1.4)carousel.go(dialog._pitchPage+(dx<0?1:-1));
+    },{passive:true});
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
     if (!quiet) {
@@ -1991,9 +1947,8 @@ async function openMatch(id, quiet = false) {
   }
 }
 
-function lineupView(data){return renderLineup(data);}
 function supportSection() {
-  return '<details class="card inline-support"><summary>Invia un suggerimento o segnala un bug</summary><p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field">Messaggio<textarea name="message" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form></details>';
+  return '<p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><div class="support-fields"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label></div><label class="field">Messaggio<textarea name="message" rows="3" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form>';
 }
 function bindSupportInline() {
   const form = $("#support-form");
@@ -2150,14 +2105,27 @@ function bindNew(l, r) {
       hydrateDraft();
       render();
     };
-  if ($("#rival-switch"))
-    $("#rival-switch").onchange = (e) => {
-      opponentId = e.target.value;
-      render();
-    };
   if ($("#share-verdict"))
     $("#share-verdict").onclick = () => {
-      const d=popup(),show=uid=>{d.innerHTML='<button type="button" class="secondary" id="close-modal">Chiudi ×</button>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);d.querySelector('#close-modal').onclick=()=>d.close();d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));};show();
+      const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar',swipeBack:true});
+      const fit=()=>{
+        const card=d.querySelector('.verdict-postcard'),portrait=d.querySelector('.postcard-quasi');
+        if(!card||!portrait)return;
+        const nav=document.querySelector('.v2-tabbar')?.getBoundingClientRect();
+        const bottom=nav?.top>window.innerHeight/2?nav.top:window.innerHeight;
+        d.style.setProperty('--postcard-height',Math.floor(bottom-d.getBoundingClientRect().top)+'px');
+        const width=Math.floor(portrait.clientWidth+(bottom-card.getBoundingClientRect().bottom-10)*.8);
+        d.style.setProperty('--postcard-quasi-width',Math.max(76,Math.min(220,width))+'px');
+      };
+      const show=uid=>{
+        d.innerHTML='<div class="verdict-page-toolbar"><button type="button" class="secondary" id="close-modal">← Verdetto</button></div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);
+        d.querySelector('#close-modal').onclick=()=>d.close();
+        d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));
+        fit();
+      };
+      window.addEventListener('resize',fit);
+      d.addEventListener('close',()=>window.removeEventListener('resize',fit),{once:true});
+      show();
     };
   bindChoices(r);
   if ($("#stake"))
@@ -2184,7 +2152,7 @@ function bindNew(l, r) {
       for(const selector of ['[data-v2-stake-current]','[data-v2-slip-total]']){const current=bar.querySelector(selector),next=fresh.querySelector(selector);if(current&&next){current.textContent=next.textContent;current.title=next.title;}}
       bar.querySelectorAll("[data-v2-stake]").forEach(b => b.classList.toggle("is-on", Number(b.dataset.v2Stake) === stake));
       const stakeInput = bar.querySelector("#stake");
-      if (stakeInput && stakeInput !== document.activeElement) stakeInput.value = stakeInputValue(stake, Number(R()?.rules?.maxStake || 20));
+      if(stakeInput&&stakeInput!==document.activeElement){const freshInput=fresh.querySelector('#stake');if(freshInput)stakeInput.value=freshInput.value;}
       bar.querySelector(".v2-error")?.remove();
       if (fresh.querySelector(".v2-error")) bar.append(fresh.querySelector(".v2-error"));
     };
@@ -2194,14 +2162,13 @@ function bindNew(l, r) {
     };
     const choiceHandlers={
       onPick: (id, value) => {
-        if (isClosed(r) || busy) return;
+        if(busy||editingEventLocked(r,r.matches.find(m=>m.id===id)))return;
         if (picks[id] === value) delete picks[id]; else picks[id] = value;
         persistDraft(); redrawChoices();
       },
       onToggle: (id) => { activeMatchId = activeMatchId === id ? null : id; redrawChoices(); },
-      onStake: (value) => { if (busy || isClosed(r)) return; stake = value; persistDraft(); controls(); },
+      onStake: (value) => { if(busy||editingClosed(r)||slipSummary(r,picks,stake).fixedStake)return; stake = value; persistDraft(); controls(); },
       onSave: async () => { const pending = saveCurrentSlip(); controls(); await pending; controls(); },
-      onGo: (target) => { void navigatePage(target); },
     };
     bindSlipV2(document,choiceHandlers);
     controls();
@@ -2378,17 +2345,17 @@ function switchLeague(id) {
 }
 function brandingForm(l) {
   if (l.admin !== state.user.id) return "";
+  const emblem=l.branding?.emblem||'Q',accent=l.branding?.accent||LEAGUE_COLORS[0][0];
+  const names=new Set(['Lime','Menta','Ambra','Lilla','Rosa','Corallo','Prato','Blu','Cielo','Avio']);
+  const colors=LEAGUE_COLORS.filter(([color,label])=>color===accent||names.has(label));
+  const emblems=LEAGUE_EMBLEMS.filter(value=>['⚽','🏆','🍺','🔥','🦅','🐺','⭐','⚡'].includes(value));
   return (
-    '<form id="branding-form"><div class="branding-preview"><span class="league-emblem" id="branding-preview">' +
-    esc(l.branding?.emblem || "Q") +
-    '</span><p class="muted">Il simbolo e il colore del vostro bar.</p></div><label class="field">Sigla o simbolo<input name="emblem" list="league-emblems" maxlength="8" value="' +
-    esc(l.branding?.emblem || "Q") +
-    '" required></label><datalist id="league-emblems">' +
-    LEAGUE_EMBLEMS.map((v) => '<option value="' + esc(v) + '"></option>').join(
-      "",
-    ) +
-    '</datalist><p class="tiny muted">Fino a 8 caratteri: lettere anche accentate, numeri, spazi e . &amp; _ - oppure uno dei simboli proposti.</p><div class="emblem-presets" aria-label="Simboli della lega">' +
-    LEAGUE_EMBLEMS.map(
+    '<form id="branding-form"><div class="branding-identity"><span class="league-emblem" id="branding-preview" aria-hidden="true">' +
+    esc(emblem) +
+    '</span><label class="field">Sigla <small>Max 4</small><input name="emblem" maxlength="4" value="' +
+    esc(emblem) +
+    '" required></label></div><div class="emblem-presets" role="group" aria-label="Simboli della lega">' +
+    emblems.map(
       (v) =>
         '<button type="button" class="secondary" data-emblem="' +
         esc(v) +
@@ -2396,13 +2363,13 @@ function brandingForm(l) {
         esc(v) +
         "</button>",
     ).join("") +
-    '</div><fieldset class="theme-palette"><legend>Colore del template</legend>' +
-    LEAGUE_COLORS.map(
+    '</div><fieldset class="theme-palette"><legend>Colore</legend>' +
+    colors.map(
       ([color, label]) =>
         '<label class="theme-option" title="'+esc(label)+'"><input type="radio" name="accent" data-color-name="'+esc(label)+'" aria-label="'+esc(label)+'" value="' +
         color +
         '" ' +
-        ((l.branding?.accent || LEAGUE_COLORS[0][0]) === color
+        (accent === color
           ? "checked"
           : "") +
         ' required><span style="--swatch:' +
@@ -2459,7 +2426,9 @@ if ("serviceWorker" in navigator)
       state.leagues.some((l) => l.id === e.data.league)
     ) {
       persistDraft();
-      leagueId = e.data.league;
+      closeLeagueChat();leaveFanta();
+      leagueId = e.data.league;page='barleague';
+      writeAppRoute({mode:'bar',page:'lega',league:leagueId});
       chatOpen = true;
       hydrateDraft();
       render();
@@ -2471,16 +2440,16 @@ let liveDisplayFailures=0;
 function showLiveStatus(value){
  if(value!==liveStatus)liveDisplayFailures=value.state==='ready'?0:liveDisplayFailures+1;
  liveStatus=value;const el=$('#live-channel-status');if(!el)return;
- const show=page==='schedina'&&(value.state==='ready'||liveDisplayFailures>=3);el.hidden=!show;
+ const show=page==='schedina'&&slipScope!=='standings'&&value.state!=='ready'&&liveDisplayFailures>=3;el.hidden=!show;
  if(!show){el.textContent='';return;}
- const text=value.state==='ready'?'Live · aggiornato alle '+new Date(value.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'}):'Aggiornamento in pausa. I risultati già caricati restano disponibili.';
+ const text='Aggiornamento in pausa';
  if(el.textContent!==text)el.textContent=text;
 }
 function applyLive(data){
   if(L()?.id!==data.league)return;
   mergeLiveSnapshot(state,data);
   if(preferredFanta())return;
-  if(R()&&isClosed(R()))document.querySelectorAll("#save-slip,#stake,[data-v2-stake]").forEach(e=>e.disabled=true);
+  if(R()&&editingClosed(R()))document.querySelectorAll("#save-slip,#stake,[data-v2-stake]").forEach(e=>e.disabled=true);
   if(R())patchSlipResults($('#app'),R(),picks,isClosed(R()));
   const matches=[...(L().rounds||[]),...(state.calendar?.rounds||[])].flatMap(r=>r.matches);
   const credit=$('.v2-credits b');if(credit){const value=fmt(me()?.credits||0);if(credit.textContent!==value)credit.textContent=value;}
@@ -2505,19 +2474,44 @@ function applyLive(data){
         }).catch(()=>{});
         return;
       }
-      const score=dialog.querySelector('[data-live-detail-score]'),value=(m.status==='LIVE'?m.liveScore:m.score)?.join(' – ')||'—';
+      const score=dialog.querySelector('[data-live-detail-score]'),value=matchDetailScore(m);
       if(score&&score.textContent!==value)score.textContent=value;
-      const status=dialog.querySelector('[data-live-detail-status]'),label=m.status==='LIVE'?'In corso · '+(m.clock||'minuto non disponibile'):m.status==='FT'?'Finale'+(m.officialConfirmed?' · confermato':' · in attesa di conferma'):'Da giocare';
+      const status=dialog.querySelector('[data-live-detail-status]'),label=matchDetailStatus(m);
       if(status&&status.textContent!==label)status.textContent=label;
-      const events=dialog.querySelector('[data-live-detail-events]');if(events){const html=eventColumns(m,(m.details?.events||[]).filter(isMatchEvent));if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events>'+html+'</div>');events.dataset.revision=html;}}
-      const numbers=dialog.querySelector('[data-live-detail-statistics]');if(numbers){const html=footballStatistics(m);if(numbers.dataset.revision!==html){patchRegion(numbers,'<div data-live-detail-statistics>'+html+'</div>');numbers.dataset.revision=html;bindFootballStatistics(dialog);}}
+      const events=dialog.querySelector('[data-live-detail-events]');
+      const availability=dialog.querySelector('[data-match-availability]');
+      if(events&&Array.isArray(m.details?.events)){
+        const items=m.details.events.filter(isMatchEvent),html=items.length?eventColumns(m,items):'';
+        if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events'+(items.length?'':' hidden')+'>'+html+'</div>');events.dataset.revision=html;}
+      }
+      if(availability&&(m.lineups||matchDetailStatus(m)!=='Da giocare')){
+        const html=matchAvailability(m);
+        if(availability.dataset.revision!==html){patchRegion(availability,'<div data-match-availability'+(html?'':' hidden')+'>'+html+'</div>');availability.dataset.revision=html;}
+      }
+      if(events&&availability){
+        const hidden=events.hidden&&availability.hidden;
+        dialog.querySelector('.pitch-details-panel').hidden=hidden;
+        dialog.querySelector('[data-match-details-button]').hidden=hidden;
+      }
+      const penalties=dialog.querySelector('[data-live-detail-penalties]');
+      if(penalties&&events){
+        if(m.details?.penalties!==undefined){const html=footballPenalties(m,{compact:true});if(penalties.dataset.revision!==html){patchRegion(penalties,'<div data-live-detail-penalties>'+html+'</div>');penalties.dataset.revision=html;}}
+        penalties.hidden=events.hidden;
+      }
     }
   }
 }
 document.addEventListener('quasi:chat-context',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league||l.id===e.detail?.league);syncChatLauncher(linked||null);if(linked)updateChatWidget();});
+document.addEventListener('quasi:chat-update',e=>{
+ const {league,unread,latest,revision,read,changed}=e.detail||{},entry=state.leagues.find(l=>l.id===league);
+ if(!entry||!Number.isSafeInteger(unread)||latest<(entry.chat?.latest||0)||revision<(entry.chat?.revision||0)||read<(entry.chat?.read||0))return;
+ entry.chat={...entry.chat,unread,latest,revision,read};chatBadge();
+ if(changed&&chatOpen&&chatLeagueId===league)refreshChat();
+});
+document.addEventListener('quasi:chat-reconnect',()=>{if(state.user&&!state.user.demo)void refresh();});
 document.addEventListener('quasi:fanta-team-claimed',()=>{void refresh();});
-document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked)syncChatLauncher(linked);openLeagueChat();});
-document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['join-league','create-league'].includes(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','regolamento','admin','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}void navigatePage(target.dataset.barPage==='invita'?'profilo':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
+document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked){syncChatLauncher(linked);openLeagueChat(e.detail.trigger);}});
+document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['join-league','create-league'].includes(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'profilo':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
 const liveChannel=createSportsPush({
   context:()=>!preferredFanta()&&state.user&&!state.user.demo&&state.user.emailVerified&&L()?{mode:'bar',league:L().id}:null,
@@ -2533,6 +2527,11 @@ setInterval(() => {
   if(page==='schedina'&&publicSlipView()&&R()?.id!==displayedSlipRoundId){hydrateDraft();render();}
   const countdown = document.querySelector('[data-dashboard-countdown][data-deadline]');
   if(countdown)countdown.textContent=countdownLabel(countdown.dataset.deadline);
+  if(page==='schedina'&&R()?.eventBetting){
+    tickSlipEventClocks();
+    if(!busy&&eventLockKey(R())!==displayedEventLocks){reconcileSlipDraft(R());persistDraft();render();}
+    return;
+  }
   if (
     page === "schedina" &&
     R() &&
@@ -2552,7 +2551,7 @@ setInterval(() => {
 
 
 window.addEventListener("pagehide", persistDraft);
-window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega';if(route.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
+window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega';if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
 // Formations remain a stable DB snapshot. The live channel patches only scores,
 // events and small numeric regions, never formations, accordions or portraits.
 

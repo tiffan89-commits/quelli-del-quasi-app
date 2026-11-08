@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {registerAccount,requestAccountMail,activateAccount,resetAccountPassword,setAccountEmail,GENERIC_MAIL} from '../lib/account.mjs';
+import {registerAccount,requestAccountMail,activateAccount,resetAccountPassword,changeAccountPassword,setAccountEmail,GENERIC_MAIL} from '../lib/account.mjs';
 import {decodeMail,mailReady,sendMail} from '../lib/mail.mjs';
 import {checkPassword,session,userFor,stateFor} from '../lib/game.mjs';
 const env={RESEND_API_KEY:'unit-test-not-real',MAIL_FROM:'Fanta <test@example.test>',APP_BASE_URL:'https://example.test'};
@@ -47,3 +47,17 @@ test('existing legacy sessions expose only profile until email verification; lea
 
 test('owner-authorized legacy recovery verifies the supplied mailbox only when its single-use reset link is used',async()=>{const {inviteLegacyRecovery}=await import('../lib/account.mjs');const {s,u}=verified();delete u.email;delete u.emailVerified;const before={password:u.password,leagues:JSON.stringify(s.leagues)};const oldSession=session(s,u.id);const config={operation:'test-owner-recovery-001',username:'mister',email:'legacy@example.test'};const op=inviteLegacyRecovery(s,config,env,now);assert.equal(u.email,undefined);assert.equal(u.pendingEmail,'legacy@example.test');assert.equal(u.password,before.password);assert.equal(userFor(s,oldSession),undefined);const link=token(s);assert.equal(inviteLegacyRecovery(s,config,env,now).mailId,op.mailId);resetAccountPassword(s,link,'New-legacy-password-123',env,now+1000);assert.equal(u.email,'legacy@example.test');assert.equal(u.emailVerified,true);assert.equal(checkPassword(u,'New-legacy-password-123'),true);assert.equal(JSON.stringify(s.leagues),before.leagues);assert.throws(()=>resetAccountPassword(s,link,'New-legacy-password-123',env,now+2000))});
 test('legacy recovery cannot replace an existing email or create a duplicate mailbox association',async()=>{const {inviteLegacyRecovery}=await import('../lib/account.mjs');const {s,u}=verified();const cfg={operation:'test-owner-recovery-002',username:'mister',email:'new@example.test'};assert.throws(()=>inviteLegacyRecovery(s,cfg,env,now));delete u.email;delete u.emailVerified;s.users.push({id:'other',email:'new@example.test'});assert.throws(()=>inviteLegacyRecovery(s,cfg,env,now))});
+
+test('changing a local password requires the old one, preserves only this session and rejects social-only accounts',()=>{
+ const {s,u}=verified(),current=session(s,u.id),other=session(s,u.id);
+ requestAccountMail(s,p.email,'reset',env,now+1000);const previousLink=token(s);
+ const next={currentPassword:p.password,newPassword:'New-local-password',confirmPassword:'New-local-password'};
+ assert.equal(changeAccountPassword(s,u,current,{...next,currentPassword:'wrong'}),false);
+ assert.throws(()=>changeAccountPassword(s,u,current,{...next,confirmPassword:'mismatch'}),/non coincidono/);
+ assert.equal(changeAccountPassword(s,u,current,next),true);
+ assert.ok(checkPassword(u,next.newPassword));assert.equal(checkPassword(u,p.password),false);
+ assert.equal(userFor(s,current),u);assert.equal(userFor(s,other),undefined);
+ assert.throws(()=>resetAccountPassword(s,previousLink,'Another-password',env,now+2000));
+ const social={...u,password:undefined};assert.equal(stateFor(s,social).user.hasLocalPassword,false);
+ assert.throws(()=>changeAccountPassword(s,social,current,next),/non disponibile/);
+});

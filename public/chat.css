@@ -224,22 +224,6 @@
     margin-bottom: 12px;
   }
 }
-.chat-fab svg {
-  flex-shrink: 0;
-}
-.chat-fab-unread {
-  position: absolute;
-  right: -5px;
-  top: -7px;
-  min-width: 21px;
-  height: 21px;
-  padding: 2px 5px;
-  border-radius: 12px;
-  background: #f7cf7b;
-  color: #162219;
-  border: 2px solid var(--bg);
-  font-size: 11px;
-}
 .push-invite {
   max-width: 480px;
 }
@@ -255,16 +239,6 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 22px;
-}
-@media (max-width: 900px) {
-  .chat-fab .chat-fab-label {
-    display: none;
-  }
-  .chat-fab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
 }
 
 /* The chat remains outside the page render tree. */
@@ -369,9 +343,6 @@
 .league-chat-widget .chat-empty > span {
   display: none;
 }
-#open-chat[aria-expanded="true"] {
-  box-shadow: 0 0 0 3px var(--line);
-}
 @media (max-width: 600px) {
   .league-chat-widget {
     right: 12px;
@@ -389,15 +360,17 @@
   }
 }
 
-/* A single floating launcher across both products, outside their render trees. */
-#open-chat.chat-fab{position:fixed!important;right:18px;bottom:calc(98px + env(safe-area-inset-bottom,0px));z-index:1002;width:52px!important;height:52px!important;min-width:52px;min-height:52px;padding:13px!important;border-radius:50%;display:grid;place-items:center;background:var(--lime);color:#10231c;border:1px solid #ffffff44;box-shadow:0 6px 24px #0006!important}
-#open-chat.chat-fab .chat-fab-unread{top:-4px;right:-4px}#open-chat.chat-fab .chat-fab-label{display:none}
-body:has(.v2-slipbar) #open-chat.chat-fab{bottom:calc(215px + env(safe-area-inset-bottom,0px))}
-body.fs-open #open-chat,body.fs-open #league-chat-widget,html.studio-active #open-chat,html.studio-active #league-chat-widget,body:has(dialog.fanta-logo-editor[open]) #open-chat,body:has(dialog.fanta-logo-editor[open]) #league-chat-widget,body.public-area #open-chat,body.public-area #league-chat-widget,html.app-booting #open-chat,body:has(.mode-splash) #open-chat{display:none!important}
-@media(min-width:1024px){#open-chat.chat-fab{bottom:24px}.league-chat-widget{bottom:90px}body:has(.v2-slipbar) #open-chat.chat-fab{bottom:110px}}
-@media(max-width:600px){#open-chat.chat-fab{right:14px}.league-chat-widget{bottom:calc(158px + env(safe-area-inset-bottom,0px));height:min(590px,calc(100dvh - 200px))}}
+/* Keep the league chat out of the fullscreen editors. */
+body.fs-open #league-chat-widget,html.studio-active #league-chat-widget,body:has(dialog.fanta-logo-editor[open]) #league-chat-widget,body.public-area #league-chat-widget{display:none!important}
 
-body{--chat-clearance:98px}body:has(.v2-slipbar){--chat-clearance:215px}
-.league-chat-widget{bottom:calc(var(--chat-clearance) + 60px + env(safe-area-inset-bottom,0px));height:min(650px,calc(100dvh - var(--chat-clearance) - 90px - env(safe-area-inset-bottom,0px)))}
-@media(min-width:1024px){body{--chat-clearance:24px}body:has(.v2-slipbar){--chat-clearance:110px}}
 
+
+.league-chat-widget[hidden],.chat-notifications[hidden]{display:none}
+.chat-message.is-system{background:#1d3328;border-style:dashed}
+@media(max-width:1023px){
+ .league-chat-widget{left:8px;right:8px;width:auto;bottom:calc(var(--app-tabbar-height,66px) + 7px);height:min(650px,calc(100dvh - var(--app-tabbar-height,66px) - var(--ux-header-height,70px) - 16px))}
+}
+@media(prefers-reduced-motion:no-preference){
+ .league-chat-widget:not([hidden]){animation:league-chat-in .2s ease-out}
+ @keyframes league-chat-in{from{transform:translateX(18px);opacity:0}to{transform:translateX(0);opacity:1}}
+}

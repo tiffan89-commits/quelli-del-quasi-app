@@ -1,3 +1,4 @@
+import {bindStyledSelects} from './styled-select.mjs';
 import {mountAdminInsights} from './admin-insights.mjs';
 import {adminView,bindAdmin,clearAdminState,setAdminData} from './admin.mjs';
 import {requestJson} from './live-channel.mjs';
@@ -20,6 +21,7 @@ async function render(){
  setAdminData(overview);
  root.innerHTML=brand+adminView(esc,operations(),'<section id="admin-insights" aria-label="Analisi e suggerimenti"><p>Prepariamo il polso del bar…</p></section>');
  bindAdmin({api,render,esc,onData:d=>overview=d,onLogout:async()=>{await api('logout',{});clearAdminState();current=null;overview=null;challenge=null;sessionStorage.removeItem('quasi-admin-challenge');location.replace('/');}});
+ bindStyledSelects(root);
  disposeInsights=mountAdminInsights(document.querySelector('#admin-insights'),api);
  const inspect=async id=>{const target=document.querySelector('#admin-league-detail');target.textContent='Caricamento…';try{const d=await api('platform-leagues?'+new URLSearchParams({league:id}));target.innerHTML=`<h3>${esc(d.league.name)}</h3><div class="admin-table-wrap"><table class="rule-table"><tr><th>Username</th><th>Nome</th><th>Email</th><th>Punti</th><th>Crediti</th></tr>${d.users.map(u=>`<tr><td>${esc(u.username)}</td><td>${esc(u.name)}</td><td>${esc(u.email||'—')}</td><td>${u.membership.points||0}</td><td>${u.membership.credits}</td></tr>`).join('')}</table></div><details><summary>Record della lega e giornate (${d.rounds.length})</summary><pre>${esc(JSON.stringify(d,null,2))}</pre></details>`;}catch(e){target.textContent=e.message;}};
  document.querySelectorAll('[data-inspect-league]').forEach(b=>b.onclick=()=>inspect(b.dataset.inspectLeague));

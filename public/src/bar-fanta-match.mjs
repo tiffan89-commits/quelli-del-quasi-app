@@ -1,15 +1,19 @@
 import {renderFantasyLineup} from './lineup-pitch.mjs';
+export function fantasyMatchHeadline(match,teamLabel,closeAttribute){
+ const score=(match.status==='LIVE'?match.liveScore:match.score)?.join(' – ')||'—';
+ return `<div class="match-headline fantasy-match-headline"><button type="button" class="secondary match-nav-button match-close" ${closeAttribute} aria-label="Chiudi partita">×</button><h2 class="match-page-title">${teamLabel(match.home)}<b class="match-page-score" data-live-detail-score>${score}</b>${teamLabel(match.away)}</h2></div>`;
+}
 export function fantasyMatchView(
   match,
   round,
   esc,
-  fixtureTeams,
+  teamLabel,
   fmt,
   connection = null,
 ) {
   const details = match.details,
     model = match.oddsModel;
-  return `<button class="secondary" id="close-modal">Chiudi ×</button><div class="eyebrow" style="margin-top:25px">IL FANTA DEL TUO BAR · GIORNATA ${round.number}</div><h2 style="margin:20px 0">${fixtureTeams(match.home, match.away)}</h2><p class="live-score">${(match.status==='LIVE'?match.liveScore:match.score)?.join(" – ") || "Da giocare"}</p>${match.fantasyPoints ? '<p class="muted" data-fantasy-points>Fantapunti ' + (match.status==='FT'?'finali':'live') + ': ' + match.fantasyPoints.map(fmt).join(" – ") + "</p>" : ""}${
+  return `${fantasyMatchHeadline(match,teamLabel,'id="close-modal"')}${match.fantasyPoints ? '<p class="muted" data-fantasy-points>Fantapunti ' + (match.status==='FT'?'finali':'live') + ': ' + match.fantasyPoints.map(fmt).join(" – ") + "</p>" : ""}${
     model
       ? `<details class="card"><summary>Il bookmaker del bar · quote virtuali</summary><p class="tiny muted">${esc(model.note)}</p><div class="odds-model-grid">${Object.entries(
           match.odds,
@@ -19,5 +23,5 @@ export function fantasyMatchView(
             "",
           )}</div><p class="tiny muted">Gol attesi ${model.expectedGoals.map(fmt).join(" – ")} · storico ${model.samples.join(" / ")} partite · fantapunti medi ${model.meanFantasyPoints.map((x) => (x === null ? "n.d." : fmt(x))).join(" / ")} · giocatori con storico ${model.knownPlayers.join(" / ")}. Le quote accettate sono fissate quando confermi la schedina.</p></details>`
       : ""
-  }<div class="row"><h3>Formazioni e bonus/malus</h3>${details?.complete ? '<span class="pill">Definitiva</span>' : ''}</div><p class="tiny muted">${details?.provisional ? 'Provvisorie' : ''}</p>${details ? renderFantasyLineup(details) : '<p class="muted">Formazioni non ancora disponibili.</p>'}`;
+  }${details ? renderFantasyLineup(details,{paged:true,showExtras:false}) : '<p class="muted">Formazioni non ancora disponibili.</p>'}`;
 }

@@ -23,7 +23,11 @@ test('Socket.IO pushes committed snapshots, isolates rooms, acknowledges all pee
   const changes=[],statuses=[],snapshots=[];let initialIndex;
   sockets.push(index,passive);index.on('auction:index',ids=>{initialIndex=ids;});index.on('auction:index-change',msg=>changes.push(msg));
   passive.on('auction:status',msg=>statuses.push(msg.data));passive.on('auction:update',(msg,ack)=>{snapshots.push(msg.data);ack({version:msg.data.version});});
-  await waitFor(()=>initialIndex&&statuses.length===1);assert.deepEqual(initialIndex,[]);assert.equal(statuses[0].status,'none');
+  await waitFor(()=>initialIndex&&statuses.length===1);
+  const inbox=[];index.on('chat:update',msg=>inbox.push(msg));
+  hub.chatUpdate({league:'private-bar',changed:true,recipients:[{uid:'u2',unread:7}]});
+  hub.chatUpdate({league:'own-bar',changed:true,recipients:[{uid:'u1',unread:1}]});
+  await waitFor(()=>inbox.length===1);assert.deepEqual(inbox,[{league:'own-bar',unread:1,changed:true}]);assert.deepEqual(initialIndex,[]);assert.equal(statuses[0].status,'none');
   a.emit('auction:room',true);b.emit('auction:room',true);await waitFor(()=>peers.every(s=>s.present?.length===2));assert.deepEqual(a.present,['t1','t2']);
   const denied=connect('invalid');await new Promise(r=>denied.once('connect_error',r));assert.equal(denied.connected,false);
   const wrong=connect('token2','another-league');await new Promise(r=>wrong.once('connect_error',r));assert.equal(wrong.connected,false);

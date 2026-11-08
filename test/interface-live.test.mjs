@@ -1,7 +1,10 @@
+import {hubHead,hubTile} from '../public/src/league-hub.mjs';
+import {appWhatsappInvite,signupShareData} from '../public/src/app-invite.mjs';
+import {renderFantaNotificationSettings} from '../public/src/fanta/io.mjs';
 import {clubShirt} from '../public/src/club-crest.mjs';
 import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
-import {pointTerms} from '../public/scoring.mjs';
+import {pointTerms,QUOTA_SCORING} from '../public/scoring.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
 import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
@@ -40,13 +43,13 @@ import { calendarSections } from "../public/src/calendar-order.mjs";
 import { leagueDashboard, countdownLabel } from '../public/src/league-dashboard.mjs';
 import { avatarSvg, AVATAR_OPTIONS } from '../public/src/avatar.mjs';
 import {quasiScene,showQuasi} from '../public/src/quasi-scene.mjs';
-import {barSlipsView,barVerdictPatch,barProfileView} from '../public/src/bar-slips.mjs';
+import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from '../public/src/bar-slips.mjs';
 import {rosterView} from '../public/src/quasi-roster.mjs';
 import {achievementBoard} from '../public/src/achievement-board.mjs';
 import {renderLineup} from '../public/src/lineup-pitch.mjs';
 import { whatsappInvite } from '../public/src/league-invite.mjs';
 import {renderAppInvite,bindAppInvites} from '../public/src/app-invite.mjs';
-import {progressionView,portfolioBody,rewardsView} from '../public/src/progression-ui.mjs';
+import {rewardsView} from '../public/src/progression-ui.mjs';
 import {roomSvg} from '../public/src/locker-rooms.mjs';
 import {fantaQuasiTeaser,fantaQuasiPage} from '../public/src/fanta-quasi.mjs';
 import {REWARD_SLOTS} from '../public/src/reward-catalog.mjs';
@@ -110,7 +113,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     readAppRoute,writeAppRoute,saveOnce,applySlipReceipt,loadAppStyles(){},displayCache,clearDisplayCaches,retainAppHeader(){},barModeSwitch,preferredFanta:()=>false,leaveFanta(){},clearFantaSessions(){},enterFanta(){fantaEntries++;},
     createSportsPush(){return {start(){},wake(){},stop(){}};},trackAuctionBadges(){},paintAuctionBadges(){},
     createLiveChannel(){return {start(){},wake(){},stop(){}};},requestJson:async()=>{requestCount++;if(blockRequests)return new Promise(resolve=>pendingRequests.push(resolve));return state;},
-    barSlipsView,barVerdictPatch,barProfileView,
+    barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,renderFantaNotificationSettings,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
     ...v2Tabs, leagueActions,barHomeInvite,settingsLogout,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
@@ -124,13 +127,14 @@ test("live results render inside the slip, calendar remains clickable, standings
     LEAGUE_EMBLEMS,
     clearAdminState() {},
     calendarSections,
+    hubHead,hubTile,appWhatsappInvite,signupShareData,
     leagueDashboard, countdownLabel, quasiScene, rosterView, achievementBoard, avatarSvg, AVATAR_OPTIONS, whatsappInvite,renderAppInvite,bindAppInvites,
-    fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},showQuasi,barSlipsView,barVerdictPatch,barProfileView,
+    fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},showQuasi,barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,
     bindRoster(){},openQuasiStudio(){},renderLineup,bindLineupPitch(){},
-    progressionView,portfolioBody,rewardsView,roomSvg,REWARD_SLOTS,
+    rewardsView,roomSvg,REWARD_SLOTS,
     bindProgression(){},bindRewards(){},bindStyledSelects(){},syncStyledSelects(){},closeStyledSelect(){},pushSupported(){return false;},enableLeagueNotifications(){},
     ...slipState,
-    communityView,pointTerms,
+    communityView,pointTerms,QUOTA_SCORING,
     createVerdictCard,
     integrationBindings() {},
     playerRanking,
@@ -200,9 +204,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1], /data-v2-tab="oggi"/);
   const beforeNavigation=requestCount;blockRequests=true;
   try{
-    for(const target of ['profilo','classifiche','calendario','quasi','storico','regolamento','admin','lega','schedina']){
+    for(const target of ['profilo','classifiche','calendario','quasi','regolamento','admin','lega','schedina']){
       vm.runInContext('navigatePage('+JSON.stringify(target)+')',ctx);
-      assert.equal(vm.runInContext('page',ctx),target==='profilo'?'admin':target);
+      assert.equal(vm.runInContext('page',ctx),target==='profilo'?'impostazioni':target);
       assert.match(html,/aria-current="page"/);
       if(target==='profilo')assert.match(html,/Impostazioni/);
       if(target==='lega')assert.match(html,/class="dash-hero"/);
@@ -217,7 +221,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html,/1 – 0/);
   assert.match(html,/43&#39;/);
   assert.doesNotMatch(html,/Il Marcatore|Il Difensore/);
-  assert.match(html, /id="open-chat"/);
+  assert.doesNotMatch(html, /id="open-chat"/);assert.match(html,/data-chat-badge/);
   const nav = html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1];
   assert.equal(nav.includes("Movimenti"), false);
   assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.match(html,/aria-label="Apri impostazioni"/);assert.doesNotMatch(html,/class="ux-profile"/);
@@ -234,7 +238,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.equal(html.includes("Il Marcatore"), false);
   vm.runInContext("page='profilo';render()", ctx);
   assert.doesNotMatch(html, /Movimenti e giornate archiviate/);
-  assert.match(html, /inline-support/);
+  assert.match(html, /data-president-section="assistenza"/);
   assert.doesNotMatch(
     html,
     /profile-regulation|id="switch"|id="support-modal"/,
@@ -244,13 +248,11 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /league-regulation|Regolamento della lega|Movimenti e giornate archiviate|Entra o crea una nuova lega|class="card my-league"/);
   assert.match(html, /class="dash-hero"/);
   assert.match(html, /id="day-objectives"/);
-  assert.match(html, /class="dash-summary"/);
+  assert.match(html, /class="dash-summary home-card"/);
   assert.doesNotMatch(html, /Il Fantacalcio del Quasi|Scegli la tua squadra/);
-  assert.doesNotMatch(html,/id="portfolio-lazy"/);
+  assert.doesNotMatch(html,/Borsa del Quasi|portfolio-mini/);
   vm.runInContext("page='regolamento';render()", ctx);
   assert.match(html, /IL REGOLAMENTO/);
-  vm.runInContext("page='storico';render()", ctx);
-  assert.match(html, /Il conto delle tue certezze/);
   vm.runInContext("page='quasi';render()", ctx);
   assert.match(html, /league-quasi-card/);
   assert.match(html, /data-v2-tab="quasi"/);
@@ -260,7 +262,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='lega';render()", ctx);
   assert.match(html, /data-home-league-invite/);
   vm.runInContext("page='classifiche';render()",ctx);
-  assert.doesNotMatch(html,/data-v2-lega="admin"/);
+  assert.doesNotMatch(html,/data-v2-lega=|Borsa del Quasi|Giornate archiviate/);
   vm.runInContext("page='lega';render()",ctx);
   assert.doesNotMatch(html,/id="league-switch"|brand-logo|reload-data/);
   assert.match(html,/id="v2-open-leagues"/);
@@ -277,7 +279,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='classifiche';rankingScope='seriea';render()", ctx);
   assert.match(html,/data-ranking-metric="points"/);assert.doesNotMatch(html,/Vittorie casa/);
   vm.runInContext("page='schedina';sourceScope='seriea';slipScope='standings';render()",ctx);
-  assert.match(html,/Classifica Serie A/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori/);assert.match(html,/serie-table-card/);
+  assert.match(html,/Classifica Serie A/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori|differenza reti|Ultimo aggiornamento/);assert.match(html,/serie-table-card/);
   vm.runInContext("slipScope='mine'",ctx);
   vm.runInContext("page='schedina';rankingScope='league';render()", ctx);
   assert.doesNotMatch(html, /data-source="fantacalcio"/);
@@ -318,6 +320,8 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /id="fantasy-connect"/);
   vm.runInContext("page='admin';render()",ctx);
   assert.doesNotMatch(html, /id="fantasy-connect"/);
+  assert.doesNotMatch(html,/aria-label="Invita con WhatsApp"/);
+  vm.runInContext("page='barleague';render()",ctx);
   assert.match(html,/aria-label="Invita con WhatsApp"/);
   assert.doesNotMatch(html,/quasi-roster-grid/);
   assert.doesNotMatch(html, /Collega competizione/);
@@ -336,8 +340,8 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='admin';render()",ctx);
   assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita nella tua lega/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);
   vm.runInContext("page='profilo';render()",ctx);
-  assert.ok(html.indexOf('inline-support')<html.indexOf('profile-logout'));
-  assert.ok(html.indexOf('inline-support')>html.indexOf('profile-reminder-settings'));
+  assert.ok(html.indexOf('id="support-form"')<html.indexOf('profile-logout'));
+  assert.ok(html.indexOf('data-president-section="assistenza"')>html.indexOf('data-president-section="avvisi"'));
   vm.runInContext("state={user:null,leagues:[]};page='profilo'",ctx);
   workerMessage({data:{type:'open-slip',league:state.leagues[0].id,round:state.leagues[0].rounds[0].id}});
   await vm.runInContext('refresh(true)',ctx);

@@ -1,9 +1,12 @@
 /* UX 0.29.46, block 1: one footer and one allowance for fixed controls. */
 body[data-game-mode] main,body.v2-on main,body.v2-on:has(.v2-slipbar) main{padding-bottom:var(--app-bottom-space,calc(84px + var(--safe-bp)))!important}
-body[data-game-mode] .footer[data-app-footer]{margin:20px 0 0;padding:12px 0 0;text-align:center;display:block}
-body[data-game-mode] .footer .analytics-footer{display:flex;align-items:center;justify-content:center;gap:14px;margin:0;padding:4px 0 0;min-height:32px;font:11px/1.4 'DM Sans',sans-serif}
-body[data-game-mode] .footer .analytics-footer a,body[data-game-mode] .footer .analytics-footer button{color:var(--muted);font:inherit}
-body[data-game-mode] .footer .analytics-footer button{padding:6px 0;min-height:30px}
+.v2-tabbar:has(>[data-app-footer]){display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto minmax(12px,auto);row-gap:0}
+.v2-tabbar>[data-app-footer]{grid-column:1/-1;align-self:center;margin:0;text-align:center;color:var(--muted);font-size:9.5px;line-height:12px}
+@media(min-width:1024px){body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){height:auto;min-height:60px}}
+body[data-game-mode] .analytics-footer[hidden]{display:none}
+[data-app-footer]{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;column-gap:8px}
+[data-app-footer] .analytics-footer{display:inline-flex;margin:0;padding:0;gap:7px;font:inherit}
+[data-app-footer] .analytics-footer button{min-height:0;padding:0;line-height:inherit}
 body[data-game-mode] .data-attribution{display:none}
 
 /* Block 2: the stake chooser expands only on demand, above a one-row bar. */
@@ -40,7 +43,7 @@ body[data-game-mode] main>.hero{padding:16px 18px;margin-bottom:16px;min-height:
 body .slip-section-buttons,.fanta-slip-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:7px;padding:3px 0 7px;margin:6px 0 12px;scrollbar-width:thin;scroll-snap-type:x proximity;mask-image:linear-gradient(90deg,#000 96%,transparent)}body .slip-section-buttons>button,.fanta-slip-tabs>button{flex:0 0 auto;min-height:40px;white-space:nowrap;padding:8px 13px;font-size:12px;border-radius:22px;scroll-snap-align:start}
 body .ranking-metric{display:flex;gap:5px;margin:0 0 12px}.ranking-metric>button{flex:1;border:1px solid var(--line);border-radius:20px;min-height:40px;background:transparent;color:var(--muted);font:600 13px 'DM Sans',sans-serif}.ranking-metric>button[aria-pressed=true]{background:var(--white);color:var(--bg)}
 body details.rankrow{display:block;padding:0;border-bottom:1px solid var(--line);margin:0;min-height:0}.rankrow>summary{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:44px;list-style:none;cursor:pointer;font:13px/1.25 'DM Sans',sans-serif}.rankrow>summary::-webkit-details-marker{display:none}.rankrow>summary>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rankrow>summary>b:last-child{font-size:15px;text-align:right;white-space:nowrap}.rankrow .pill{display:inline-flex;padding:2px 4px;font-size:8px;vertical-align:middle}.rankrow .rank-balance{padding:0 0 8px 34px;margin:0;font-size:11px;color:var(--muted)}details.rankrow:not([open])>.rank-balance{display:none}
-.dash-summary{margin:12px 0;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}.dash-summary .dash-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border:0;border-radius:0}.dash-summary .dash-numbers button{min-width:0;padding:14px 7px}.dash-summary .dash-numbers strong{font-size:25px}.dash-summary .dash-numbers span,.dash-summary .dash-numbers small{font-size:10px}.dash-recap-details{padding:8px 14px;border-top:1px solid var(--line)}.dash-recap-details>summary{font-size:12px;cursor:pointer;min-height:34px;line-height:34px}.dash-recap-details:not([open])>.round-recap{display:none}.dash-recap-details .round-recap{border:0;margin:0;padding:8px 0}.portfolio-mini{display:block;width:100%;border:0;border-top:1px solid var(--line);background:transparent;color:var(--lime);text-align:left;padding:10px 14px;font-size:12px}.portfolio-mini span{display:flex;justify-content:space-between}.portfolio-mini svg{display:block;width:100%;height:45px;margin-top:7px}.portfolio-mini-empty{font-size:11px;color:var(--muted);padding:8px 14px;margin:0}.dash-portfolio{margin-top:16px}
+.dash-summary{margin:12px 0;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}.dash-summary .dash-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border:0;border-radius:0}.dash-summary .dash-numbers button{min-width:0;padding:14px 7px}.dash-summary .dash-numbers strong{font-size:25px}.dash-summary .dash-numbers span,.dash-summary .dash-numbers small{font-size:10px}.dash-recap-details{padding:8px 14px;border-top:1px solid var(--line)}.dash-recap-details .round-recap{border:0;margin:0;padding:8px 0}.portfolio-mini{display:block;width:100%;border:0;border-top:1px solid var(--line);background:transparent;color:var(--lime);text-align:left;padding:10px 14px;font-size:12px}.portfolio-mini span{display:flex;justify-content:space-between}.portfolio-mini svg{display:block;width:100%;height:45px;margin-top:7px}.portfolio-mini-empty{font-size:11px;color:var(--muted);padding:8px 14px;margin:0}.dash-portfolio{margin-top:16px}
 @media(max-width:699px){body .dash-hero{height:120px;border-radius:16px}body .dash-hero-copy{left:16px;bottom:18px;max-width:65%}body .dash-hero-copy h1{font-size:25px;line-height:1.05;margin:6px 0}body .dash-hero-copy p{font-size:10px;max-width:210px}body .dash-hero-copy .eyebrow{font-size:9px;letter-spacing:1px}body .dash-scene-person{width:36%;right:0;bottom:-10%;height:110%}body .dash-scene-edit{font-size:8px;right:8px;bottom:6px;padding:4px 6px}body .dash-next{padding:15px;gap:8px;margin:12px 0}body .dash-next h2{font-size:23px}body .dash-next p{font-size:12px}body .dash-next .dash-clock strong{font-size:22px}body .dash-next .dash-cta{margin-top:4px;min-height:42px;padding:9px 12px}.fanta-hero{padding:16px!important}.fanta-hero .fanta-hero-crest{width:90px;height:90px}.fanta-hero h1{font-size:clamp(25px,7.2vw,34px);line-height:1.05}}
 
 /* Shared settings and league actions: identical one-row header in Bar/Fanta. */
@@ -147,3 +150,12 @@ body.match-page-active main.match-page{max-width:650px!important;margin-inline:a
 .fanta-token>.pitch-event-ring{min-height:17px;max-width:80px}.fanta-events .ev-goal>svg,.fanta-events .ev-own>svg,.fanta-events .ev-assist>svg{width:17px;height:17px}.fanta-events .ev-own,.fanta-events .ev-assist{display:inline-flex;background:none;padding:0}
 
 .fanta-lineup .fanta-p,.fanta-lineup .fanta-p.is-to-play{grid-template-columns:28px minmax(0,1fr) 62px}.fanta-cols-row .fanta-cols{display:block;width:62px;text-align:right}
+
+@media(max-width:1023px){
+ body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){
+  grid-template-rows:44px 12px;height:auto;min-height:0;
+  padding:2px max(4px,env(safe-area-inset-right,0px)) calc(max(6px,env(safe-area-inset-bottom,0px)) + 1px) max(4px,env(safe-area-inset-left,0px))!important
+ }
+ body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab{height:44px;min-height:0;padding-block:1px!important;gap:2px}
+ body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab svg{width:19px;height:19px}
+}

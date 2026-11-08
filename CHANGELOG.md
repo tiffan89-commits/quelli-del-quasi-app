@@ -5,6 +5,52 @@
 
 # Unreleased
 
+- Le schede delle home Bar e Fanta condividono bordi, margini e spazi interni, inclusa Ultima partita. Il disegno del Quasi in cache è un SVG valido anche quando viene caricato come immagine.
+
+- I Quasi riutilizzano il disegno personalizzato e caricano subito lo sfondo corretto. Impostazioni personali e Pannello del presidente sono separati. Privacy e preferenze statistiche sono nel footer.
+- Le Home di Bar e Fanta mostrano i riquadri di giornata, il calendario Squadra centra i punteggi e le viste di lega si chiudono con il gesto inverso.
+
+- Le dirette delle schedine Fanta mostrano il punteggio al centro degli stemmi. Il calendario Squadra apre intorno alla giornata corrente e permette di caricare quattro giornate alla volta in entrambe le direzioni.
+- Il retro delle schedine del Bar riprende la cartolina, con Quasi al centro, sottotitoli variati e rischio accanto al nome. Data e orario restano sotto le squadre, con il conto alla rovescia a lato.
+- Account, Avvisi e Assistenza sono condivisi da Bar e Fanta. Gli account con password locale possono cambiarla. I promemoria via email partono due ore prima e rispettano il consenso.
+
+- Menu di selezione leggibili, con freccia centrata e più spazio per le opzioni. Le immagini pubbliche ricorrenti vengono riutilizzate dalla cache locale.
+
+- Le schedine accettano una selezione di partite, ciascuna giocabile fino al suo calcio d’inizio. La puntata usa il saldo disponibile e il ritorno considera solo le partite pronosticate. Le partite saltate entrano nello sfottò del Bar.
+
+- Lega Bar e Fanta condividono la griglia di azioni. Gli inviti usano la condivisione del dispositivo e il link all’app apre la registrazione.
+- Chiacchiere da bar si apre da Lega, con il contatore dei non letti aggiornato in diretta e un benvenuto del sistema nelle nuove leghe. Gli avvisi si gestiscono nelle impostazioni account.
+- La Home del Fanta mostra Live e Ultima partita, con più spazio per lo stemma e un riquadro per la prossima formazione. Le altre schedine Fanta mostrano gli esiti su una sola riga e i selettori di giornata usano menu personalizzati. La Home del Bar mostra subito il conto e il retro della scheda pronosticatore ha una grafica aggiornata.
+
+- In Fanta Oggi la sfida live ha precedenza sulla prossima formazione. Banner più compatti, collegamento diretto all’ultimo risultato e accesso alla schedina quando è salvata.
+- Nello Studio Live i voti e il giudizio del calciatore si aprono dal basso. Barra inferiore più compatta, nomi completi nelle schedine Serie A e impaginazione laterale nel riepilogo asta di Lega.
+
+- Dalla giornata 12 della Serie A 2026/27 ogni pronostico corretto assegna la quota accettata in punti e gli errori valgono zero.
+
+- Classifica Serie A in una sola vista. Le schedine del Bar scorrono a coppie con esiti più grandi e mostrano il rischio accanto al nome sul retro, senza il testo introduttivo e l’evoluzione.
+- I dettagli della partita scorrono nello stesso carosello delle formazioni e si richiudono con lo swipe inverso. La X e la freccia sono accanto al risultato.
+- Le sfide del Fanta si seguono nello Studio Live a schermo intero, con selezione integrata, voti sul campo e panchina sul retro. Calendario e risultati dà precedenza alle giornate concluse e apre la sfida toccata direttamente nello Studio Live.
+- Il copyright è sotto le icone della barra di navigazione di Bar e Fanta.
+
+- Le panchine sono sul retro del campo, raggiungibili dal pulsante di ribaltamento. Un breve swipe a sinistra dalla seconda squadra apre i dettagli con gli eventi o, prima del calcio d’inizio, con gli indisponibili e i giocatori in dubbio.
+- In Squadra → Formazione il campo usa lo spazio fino alla barra in basso, senza la riga del modulo. Il retro mostra la panchina nell’ordine salvato. Le quote mancanti sono indicate con un punto interrogativo e una legenda in fondo alla schedina.
+- Nel Verdetto le schedine sbagliate per un solo esito sono visibili direttamente nel riquadro della giornata.
+- Schedine del Bar più compatte, con ritratto quadrato e profilo del pronosticatore sul retro della scheda.
+
+- Intestazione delle partite Serie A su una riga. I dettagli si aprono scorrendo dall’intestazione o oltre l’ultima panchina e mostrano gli eventi e i rigori.
+
+- Schedine più compatte senza riepilogo degli esiti, testo a piè pagina e orario dell’ultimo aggiornamento. Friends & Family può provare in anteprima la prossima schedina Serie A mentre le quote sono in arrivo.
+
+- Il piè di pagina di Bar e Fanta mostra solo il copyright, sull’ultima pagina dei contenuti. Privacy e preferenze statistiche sono nelle impostazioni account. La classifica Serie A mostra direttamente le squadre e dal Verdetto scompare il confronto Faccia a faccia. La cartolina mostra il Quasi più grande con il nome una sola volta. Rimosse le sezioni Borsa del Quasi e Storico dal Bar. I tuoi premi si apre di lato in una griglia di immagini e nomi. Dalla Lega l’invito apre direttamente la condivisione e il regolamento del Bar si chiude tornando alla schermata di partenza.
+
+- Dettaglio partita con quattro schermate laterali. Ogni squadra mostra i titolari sul campo e tutti i giocatori a disposizione su una panchina dedicata. Gli eventi Serie A si aprono da una voce in alto e mostrano minuto, icona e cognomi su una riga.
+
+- Friends & Family: intestazioni fisse durante lo scorrimento dei contenuti, schedina live compatta con gli esiti colorati, cartolina su pagina dedicata e classifica Serie A in due pagine.
+- Impostazioni più compatte nel Bar e nel Fanta. I dettagli si aprono a destra e si torna con Indietro o con uno swipe. Il calendario della squadra carica altre giornate con il pulsante +. Nel Fanta, Gestisci asta è nel pannello del presidente e gli interruttori delle notifiche sono compatti.
+
+- Studio formazione: sotto i 620 px la panchina si apre da destra. Il trascinamento nel pannello cambia la priorità delle riserve, oltre il bordo sinistro schiera sul campo. Su tablet e PC la panchina resta sotto il campo e la maglia segue il puntatore durante il trascinamento.
+
+- Una sezione, una schermata: nel Bar e nel Fanta le sezioni non scorrono più in verticale. Contenuti ristrutturati: Oggi diviso in Adesso/Obiettivi (Fanta: Adesso/Sfida/Classifica), schedina a righe compatte, classifica con la tua riga sempre a vista, Quasi in griglia, Lega del Bar a riquadri, verdetto e albo compatti, squadra con il campo a tutta pagina e la panchina nella pagina dopo. Quello che non sta nello schermo passa a pagine da scorrere di lato, con una riga minima di puntini sopra la barra in basso; il documento non scorre più e un eventuale scorrimento verticale resta dentro la pagina, sopra la barra in basso. Il pulsante della chat resta flottante. Collegamenti, schede e aggiornamenti live portano alla pagina giusta. Asta, pagina partita, Studio formazione e landing restano fuori dalla paginazione.
 - L’asta si segnala con un banner stabile e un indicatore nelle leghe, aggiornati in push. La sala si apre quando il partecipante lo sceglie.
 - Countdown in sovraimpressione, Quasi in sala d’attesa, evidenza del sorpasso, avvisi acustici di fine tempo e rose apribili dai partecipanti.
 - Il presidente può eliminare la propria lega Bar e Fanta con conferma testuale.

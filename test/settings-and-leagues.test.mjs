@@ -25,21 +25,22 @@ test('plus opens the existing join/create sheet and switches forms without reque
  try{bindLeagueSwitcher({leagues:[],uid:'member',esc:String});document.querySelector('.league-add').closest('button').onclick();assert.equal(document.getElementById('v2-sheet-root').hidden,false);document.querySelector('[data-v2-action="join"]').onclick();assert.equal(document.getElementById('v2-form-join').hidden,false);assert.equal(document.getElementById('v2-form-create').hidden,true);document.querySelector('[data-v2-action="create"]').onclick();assert.equal(document.getElementById('v2-form-join').hidden,true);assert.equal(document.getElementById('v2-form-create').hidden,false);}finally{globalThis.document=oldDocument;globalThis.addEventListener=oldAdd;}
 });
 
-test('member settings include invites and the shared account, but no president controls or labels',async()=>{
+test('a Fanta member who opens the president route returns to the league without management controls',async()=>{
  const data=await createDemoFantaApi({delay:0}).league('lega-quasi');data.isAdmin=false;data.league.role='member';
- const html=renderFantaPresident(data,{invite:{code:'TEST',name:'Bar test'},accountHtml:'<form id="profile-name"></form>',me:{user:{name:'Membro'},settings:{notify:{results:true}}}}),{document}=parseHTML(html);
- assert.equal(document.querySelector('h1').textContent,'Impostazioni');assert.equal(document.querySelector('.profile-logout').closest('details'),null);assert.equal(document.querySelectorAll('.profile-logout').length,1);assert.match(html,/Invita nella lega/);assert.ok(document.querySelector('#profile-name'));assert.ok(document.querySelector('[data-notify="results"][checked]'));assert.equal(document.querySelectorAll('details[open]').length,0);assert.doesNotMatch(html,/Pannello del presidente|data-league-size-form|data-competition-create-form|data-fanta-slips-form|data-team-link-form|Modifica identità nel Bar/);
+ const html=renderFantaPresident(data,{invite:{code:'TEST',name:'Bar test'}}),{document}=parseHTML(html);
+ assert.ok(document.querySelector('.lega-hub'));assert.match(html,/Invita nella tua lega/);
+ assert.doesNotMatch(html,/Pannello del presidente|data-league-size-form|data-competition-create-form|data-team-link-form|data-president-section/);
 });
 
 test('invitation code is readable by current members only; state rendering changes no game data',()=>{
  const state={users:[],sessions:[],leagues:[],rounds:[],ledger:[],football:{fixtures:{},rounds:{}}},admin={id:'a',name:'A',emailVerified:true},member={id:'m',name:'M',emailVerified:true},outsider={id:'o',emailVerified:true};state.users.push(admin,member,outsider);const league=newLeague(state,admin,'Bar test');league.members.push({uid:'m',credits:42,points:3});league.removedMembers=[{uid:'o'}];const before=JSON.stringify(state);const dto=stateFor(state,member);assert.equal(dto.leagues[0].code,league.code);assert.equal(dto.leagues[0].removedMembers,undefined);assert.equal(stateFor(state,outsider).leagues.length,0);assert.equal(JSON.stringify(state),before);
 });
 
-test('Quasi reward collection starts collapsed',()=>{const {document}=parseHTML(rewardsView({rewards:[]},String));assert.equal(document.getElementById('rewards-collection').hasAttribute('open'),false);});
+test('Quasi rewards open as a paginated collection without the catalogue or guide',()=>{const {document}=parseHTML(rewardsView({rewards:[{ids:['king-title','king-crown','king-title']}]}));const section=document.getElementById('rewards-collection');assert.equal(section.hasAttribute('open'),false);assert.ok(section.hasAttribute('data-os-paged-detail'));assert.equal(section.querySelector('.pill').textContent,'2');assert.equal(section.querySelectorAll('details').length,0);});
 
 test('Bar home invite is shared by president and members, excludes computers and hides when full',()=>{
  const league={code:'TEST',name:'Bar test',admin:'a',members:[{uid:'a'},{uid:'b'}],nativeFantaLink:{maxMembers:4,coachIds:['a']}};
- for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 iscritti/);assert.match(html,/wa.me/);assert.match(html,/data-president-group="persone"/);}
+ for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 iscritti/);assert.match(html,/wa.me/);assert.match(html,/data-share-league/);}
  assert.equal(barHomeInvite(league,{id:'outsider'},String),'');
  league.nativeFantaLink.coachIds=['a','c','d'];assert.equal(barHomeInvite(league,{id:'a'},String),'');
  league.nativeFantaLink.maxMembers=2;assert.equal(barHomeInvite(league,{id:'a'},String),'');

@@ -7,11 +7,12 @@ const esc = (s) =>
         c
       ],
   );
-let stop = () => {};
+let stop = () => {}, reload = () => {};
+export function refreshChat(){reload();}
 const roomCache=new Map();
 export function stopChat() {
   stop();
-  stop = () => {};
+  stop = reload = () => {};
 }
 const draftKey = (l, u) => "quasi-chat:" + u.id + ":" + l.id;
 export function chatView(l, u) {
@@ -21,7 +22,7 @@ export function chatView(l, u) {
   } catch {}
   return `<section class="chat-room"><div class="round-heading"><div><div class="eyebrow">IL TAVOLO È SEMPRE APERTO</div><h1>Chiacchiere da bar</h1><p>${esc(l.name)} · solo i membri di questa lega</p></div><span class="chat-sign" aria-hidden="true">“</span></div><details class="chat-notifications card"><summary>Il bar ti chiama. <span class="tiny muted">Gestisci notifiche</span></summary><div class="chat-push-content"><div><p class="tiny muted" id="chat-push-note">Le notifiche sono facoltative. I messaggi restano qui anche quando sei assente.</p></div><div><button class="secondary" id="chat-push" disabled>Caricamento…</button><button type="button" class="text-button" id="chat-push-test" hidden>Invia una notifica di prova a questo dispositivo</button></div></div></details><div id="chat-error" class="notice" role="status" hidden></div><div class="chat-panel card"><button type="button" class="text-button" id="chat-refresh">Aggiorna messaggi ↻</button><button class="text-button" id="chat-older" hidden>Carica messaggi precedenti</button><div id="chat-log" class="chat-log" role="log" aria-label="Messaggi della lega" aria-live="polite" aria-relevant="additions"><p class="muted">Apro il bar…</p></div><button class="secondary chat-new" id="chat-new" hidden>Nuovi messaggi ↓</button><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-text">Messaggio alla lega</label><textarea id="chat-text" maxlength="1200" rows="2" required placeholder="Qui anche le certezze durano una giornata…">${esc(draft)}</textarea><div><span class="tiny muted" id="chat-counter">${draft.length}/1200 · bozza sul dispositivo</span><button class="primary" id="chat-send">Invia al bar ↗</button></div></form></div><p class="tiny muted">Solo testo · fino a 1200 caratteri · ultimi 3000 messaggi conservati. Puoi eliminare i tuoi messaggi; il presidente può moderare la stanza. La consegna delle notifiche può richiedere qualche minuto.</p></section>`;
 }
-export function bindChat({ league, user, api, notify, onUnread = () => {},consent }) {
+export function bindChat({ league, user, api, notify, onUnread = () => {},onNotify=()=>{},consent }) {
   stopChat();
   const log = document.querySelector("#chat-log");
   if (!log) return;
@@ -38,6 +39,7 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},consen
     hasOlder = roomCache.get(draftKey(league,user))?.hasOlder||false,
     reading = false,
     loading = false,
+    refreshPending = false,
     sending = false,
     config = null,
     lastNonce = null,
@@ -81,7 +83,7 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},consen
       ? messages
           .map(
             (m) =>
-              `<article class="chat-message ${m.uid === user.id ? "mine" : ""} ${m.deleted ? "deleted" : ""}" data-message="${esc(m.id)}"><div class="chat-meta"><strong>${m.uid === user.id ? "Tu" : esc(m.name)}</strong><time datetime="${esc(m.created)}">${m.pending?'Invio in corso…':new Date(m.created).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div><p>${esc(m.text)}</p>${!m.pending && !m.deleted && (m.uid === user.id || league.admin === user.id) ? `<button class="text-button chat-delete" data-chat-delete="${esc(m.id)}" aria-label="Elimina messaggio di ${esc(m.name)}">Elimina</button>` : ""}</article>`,
+              `<article class="chat-message ${m.uid === user.id ? "mine" : ""} ${m.deleted ? "deleted" : ""}${m.system?" is-system":""}" data-message="${esc(m.id)}"><div class="chat-meta"><strong>${m.uid === user.id ? "Tu" : esc(m.name)}</strong><time datetime="${esc(m.created)}">${m.pending?'Invio in corso…':new Date(m.created).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div><p>${esc(m.text)}</p>${!m.pending && !m.deleted && !m.system && (m.uid === user.id || league.admin === user.id) ? `<button class="text-button chat-delete" data-chat-delete="${esc(m.id)}" aria-label="Elimina messaggio di ${esc(m.name)}">Elimina</button>` : ""}</article>`,
           )
           .join("")
       : '<div class="chat-empty"><span aria-hidden="true">“</span><h2>Il primo giro di parole è tuo.</h2><p class="muted">Scrivi alla lega. Chi arriva dopo ritroverà la conversazione.</p></div>';
@@ -142,6 +144,8 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},consen
     }
   }
   function pushLabel() {
+    push.closest(".chat-notifications").hidden=!!(config?.notify&&registered);
+    if(config)onNotify(!!config.notify);
     push.disabled = !config;
     const test=document.querySelector("#chat-push-test");if(test)test.hidden=!(config?.notify&&registered);
     push.textContent =

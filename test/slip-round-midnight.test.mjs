@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {currentSlipRound,defaultSlipRound,selectableSlipRounds,slipRoundLastDay,isClosed} from '../public/src/slip-state.mjs';
+import {currentSlipRound,defaultSlipRound,selectableSlipRounds,nextSlipPreview,slipSummary,slipRoundLastDay,isClosed} from '../public/src/slip-state.mjs';
 const rounds=[{id:'old',number:9,kickoff:'2026-10-23T18:45Z',settled:true,matches:[{kickoff:'2026-10-26T19:45Z',status:'FT'}]},{id:'current',number:10,kickoff:'2026-10-31T14:00Z',settled:true,closed:true,matches:[{kickoff:'2026-10-31T14:00Z',status:'FT'},{kickoff:'2026-11-02T19:45Z',status:'FT',finishedAt:'2026-11-02T21:50Z'}]},{id:'next',number:11,kickoff:'2026-11-06T19:45Z',matches:[{kickoff:'2026-11-06T19:45Z',status:'NS'}]}];
 test('current sporting day advances at midnight, but every completed slip stays in the dropdown',()=>{
  const before=Date.parse('2026-11-02T22:59:59Z'),after=Date.parse('2026-11-02T23:00:00Z');assert.equal(currentSlipRound(rounds,before).id,'current');assert.deepEqual(selectableSlipRounds(rounds,before).map(r=>r.id),['old','current']);assert.equal(currentSlipRound(rounds,after).id,'next');assert.deepEqual(selectableSlipRounds(rounds,after).map(r=>r.id),['old','current']);assert.equal(isClosed(rounds[1],before),true);
@@ -28,6 +28,18 @@ test('every slip subsection defaults to the same open round and hides future rou
 });
 test('verdict does not label the previous winners as the new matchday result',async()=>{
  const {communityView}=await import('../public/src/community.mjs');const league={members:[{uid:'u',name:'Mister'}],community:{seriea:{recap:{round:'current',title:'Giornata 10',winners:['u'],points:8,participants:1,almost:[]},history:[],honours:[]}}};
- const old=communityView(league,'seriea',{id:'u'},null,String,String,null,{...rounds[1],title:'Giornata 10'});assert.match(old,/Mister/);assert.match(old,/8 punti/);
- const next=communityView(league,'seriea',{id:'u'},null,String,String,null,{...rounds[2],title:'Giornata 11',closed:true});assert.match(next,/Giornata 11 · in corso/);assert.doesNotMatch(next,/8 punti/);
+ const old=communityView(league,'seriea',String,String,null,{...rounds[1],title:'Giornata 10'});assert.match(old,/Mister/);assert.match(old,/8 punti/);
+ const next=communityView(league,'seriea',String,String,null,{...rounds[2],title:'Giornata 11',closed:true});assert.match(next,/Giornata 11 · in corso/);assert.doesNotMatch(next,/8 punti/);
+});
+
+test('pilot preview uses just the first upcoming unpriced round and cannot save',()=>{
+ const now=Date.parse('2026-11-03T10:00Z'),[,,next]=rounds;
+ const later={...next,id:'later',number:12,kickoff:'2026-11-21T14:00Z'};
+ assert.deepEqual(nextSlipPreview([...rounds,later],now),{...next,preview:true});
+ assert.equal(next.preview,undefined);
+ const priced={...next,matches:[{id:'m',odds:{1:2,X:3,2:4}}]};
+ assert.equal(nextSlipPreview([priced,later],now),null);
+ assert.equal(slipSummary(priced,{m:'1'},10,500,now).canSave,true);
+ assert.equal(slipSummary({...priced,preview:true},{m:'1'},10,500,now).canSave,false);
+ assert.equal(nextSlipPreview(rounds,Date.parse(next.kickoff)),null);
 });

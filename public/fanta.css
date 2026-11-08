@@ -320,6 +320,20 @@ body.fanta-sheet-open{overflow:hidden}
 .fanta-add{width:100%;min-height:48px;margin-top:10px;border-radius:12px;border-style:dashed}
 .fanta-savebar .v2-save:disabled:not(.is-done){opacity:.45}
 .fanta-squadra.has-savebar{padding-bottom:120px}
+.fanta-team-formation{display:flex;flex-direction:column;height:var(--os-h,calc(100dvh - 265px));min-height:0}
+.fanta-team-formation .pitch-flip-card{flex:1;min-height:220px;width:100%;max-width:720px;align-self:center;overflow:clip}
+.fanta-team-formation .pitch-flip-front{container-type:size}
+.fanta-team-formation .fanta-pitch.is-editor{height:100%;box-sizing:border-box;grid-template-rows:repeat(4,minmax(0,1fr));padding:6px 4px 27px;align-content:stretch}
+.fanta-team-formation .fanta-pitch-row{align-items:center;min-height:0}
+.fanta-team-formation .fanta-pitch.is-editor :is(.fanta-token-shirt,.fanta-slot-ring){width:clamp(20px,calc(25cqh - 51px),68px);height:clamp(20px,calc(25cqh - 51px),68px)}
+.fanta-team-formation .fanta-token{min-width:0}
+.fanta-team-formation .fanta-saved-bench{height:100%;padding-bottom:35px}
+.fanta-saved-bench ol{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-content:start;gap:4px;list-style:none;padding:0;margin:0;overflow:auto;min-height:0;scrollbar-width:thin}
+.fanta-saved-bench li{position:relative;display:grid;justify-items:center;min-width:0}
+.fanta-saved-bench .fanta-token{min-width:0;max-width:100%;padding:2px}
+.fanta-saved-bench .fanta-token-shirt{width:36px;height:36px}
+.fanta-saved-bench-order{position:absolute;top:2px;left:3px;color:var(--fanta-cream);font-weight:700}
+body:has(#open-chat.chat-fab:not([hidden])) .fanta-team-formation .pitch-flip-button{right:65px}
 
 .fanta-roster-legend{display:flex;gap:14px;justify-content:flex-end;font-size:10px;color:var(--muted);margin:4px 2px 0}
 .fanta-group h4 span{color:var(--fanta-gold);margin-left:4px}

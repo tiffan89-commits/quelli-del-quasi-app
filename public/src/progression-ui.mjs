@@ -1,8 +1,7 @@
-import {rewardCondition,rewardGuide} from './reward-rules.mjs';
-import {roomSvg,roomThumbnail} from './locker-rooms.mjs';
-import {rewardById,rewardMark,rarityLabel,REWARD_TYPES,REWARD_CATALOG,REWARD_SLOTS} from './reward-catalog.mjs';
-import {fantasyGroup,fantasyProgression} from './fantasy-accounts.mjs';
-import {bindStyledSelects} from './styled-select.mjs';
+import {roomThumbnail} from './locker-rooms.mjs';
+import {rewardById,rewardMark,REWARD_SLOTS} from './reward-catalog.mjs';
+import {hatArt,charmArt,outfitArt,INK} from './avatar-art.mjs';
+import {fantasyProgression} from './fantasy-accounts.mjs';
 const sign=(n,fmt)=>(n>0?'+':'')+fmt(n);
 export function recapView(l,source,competition,esc,fmt){
  const history=(source==='fantacalcio'?fantasyProgression(l,competition):l.progression?.[source])?.history||[],last=history.filter(r=>source!=='fantacalcio'||!competition||r.competitionKey===competition).at(-1);
@@ -10,63 +9,45 @@ export function recapView(l,source,competition,esc,fmt){
  const gift=last.awards.map(rewardById).find(Boolean);
  return `<section class="round-recap"><div class="recap-heading"><div><span class="eyebrow">IL CONTO DEL BAR</span><h2>${esc(last.title)} <small>${esc(last.competitionName)}</small></h2></div><span class="pill">${last.played?last.correct+' / '+last.total+' prese':'PANCHINA'}</span></div><div class="recap-grid"><div><span>Punti giornata</span><b class="${last.points<0?'loss':'gain'}">${sign(last.points,fmt)}</b></div><div><span>Bilancio crediti</span><b class="${last.profit<0?'loss':'gain'}">${sign(last.profit,fmt)} <small>cr</small></b></div><div><span>Posizione punti</span><b>${last.position}° <small class="${last.positionChange<0?'loss':'gain'}">${last.positionChange>0?'↑ '+last.positionChange:last.positionChange<0?'↓ '+Math.abs(last.positionChange):'↔'}</small></b></div></div>${gift?`<button class="recap-gift" data-page="profilo">${rewardMark(gift)}<span>Il bottino della giornata<strong>${esc(gift.name)}</strong></span><b aria-hidden="true">↗</b></button>`:''}</section>`;
 }
-export function historyChart(data,metric,esc,fmt){
- const history=data?.history||[];
- if(!history.length)return '<div class="chart-empty"><span>↗</span><h3>Il mercato è ancora chiuso.</h3><p>La curva parte dalla prima giornata conclusa.</p></div>';
- const values=[metric==='credits'?data.initial:data.initialPoints,...history.map(r=>metric==='credits'?r.capital:r.pointsTotal)],min=Math.min(...values),max=Math.max(...values),pad=Math.max(1,(max-min)*.15),low=min-pad,high=max+pad,W=640,H=230;
- const point=(value,i)=>[42+i*(W-62)/Math.max(1,values.length-1),H-26-(value-low)/(high-low)*(H-48)],coords=values.map(point),path=coords.map(([x,y],i)=>(i?'L':'M')+x.toFixed(2)+' '+y.toFixed(2)).join(' '),area=path+` L${coords.at(-1)[0]} ${H-26} L42 ${H-26}Z`;
- const diff=values.at(-1)-values[0],trend=diff<0?'loss':'gain';
- return `<div class="chart-head"><div><span>${metric==='credits'?'CAPITALE DEL BAR':'PUNTI IN PORTAFOGLIO'}</span><strong>${fmt(values.at(-1))}<small>${metric==='credits'?' cr':' pt'}</small></strong></div><b class="${trend}">${sign(diff,fmt)} <small>dall’inizio</small></b></div><svg class="stock-chart ${trend}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Andamento ${metric==='credits'?'crediti':'punti'} giornata per giornata">${[0,.5,1].map(t=>{const y=22+t*(H-48);return `<path d="M42 ${y}H${W-20}" class="chart-grid"/><text x="3" y="${y+4}" class="chart-axis">${fmt(high-t*(high-low))}</text>`;}).join('')}<path d="${area}" class="chart-area" stroke="none"/><path d="${path}" class="chart-line"/>${coords.slice(1).map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="5" aria-hidden="true"/><circle class="chart-hit" cx="${x}" cy="${y}" r="18" tabindex="0" role="button" aria-label="${esc(history[i].title+' · '+history[i].competitionName+': '+fmt(values[i+1])+(metric==='credits'?' crediti':' punti'))}" data-chart-point="${i}"/>`).join('')}<text x="42" y="228" class="chart-axis">INIZIO</text><text x="620" y="228" text-anchor="end" class="chart-axis">${esc(history.at(-1).title)}</text></svg><p class="chart-readout" aria-live="polite">Tocca un punto per vedere il conto di quella giornata.</p><ol class="chart-data-list">${history.map(r=>`<li>${esc(r.title+' · '+r.competitionName)}: ${fmt(metric==='credits'?r.capital:r.pointsTotal)} ${metric==='credits'?'cr':'pt'} (${sign(metric==='credits'?r.profit:r.points,fmt)})</li>`).join('')}</ol>`;
-}
-export function portfolioBody(l,scope,esc,fmt,key=null){const html=progressionView(l,'seriea',esc,fmt,null,{serieAOnly:true}),a=html.indexOf('<div class="portfolio-body">');return html.slice(a,html.lastIndexOf('</details>'));}
-export function progressionView(l,scope,esc,fmt,key=null,{serieAOnly=false}={}){
- if(serieAOnly)scope='seriea';
- const fanta=!serieAOnly&&!!l.rounds?.some(r=>r.source==='fantacalcio');if(scope==='fantacalcio'&&!fanta)scope='seriea';const data=scope==='fantacalcio'?fantasyProgression(l,key):l.progression?.[scope];
- const groups=l.fantasyRanking?.groups||[],selected=fantasyGroup(l,key)?.key,selector=scope==='fantacalcio'&&groups.length?'<label class="field">Portafoglio<select id="portfolio-league" aria-label="Fantalega del grafico">'+groups.map(g=>'<option value="'+esc(g.key)+'" '+(g.key===selected?'selected':'')+'>'+esc(g.leagueName)+'</option>').join('')+'</select></label>':'';
- return `<details class="card portfolio" id="league-portfolio"><summary><span>La Borsa del Quasi <small>Capitale incerto. Convinzioni solidissime.</small></span><span aria-hidden="true">↗</span></summary><div class="portfolio-body">${serieAOnly?'':`<div class="portfolio-sources source-tabs"><button data-portfolio-source="seriea" class="${scope==='seriea'?'on':''}">Serie A</button>${fanta?`<button data-portfolio-source="fantacalcio" class="${scope==='fantacalcio'?'on':''}">Fantacalcio</button>`:''}</div>`}${selector}<p class="tiny muted">${scope==='fantacalcio'?'Portafoglio della fantalega selezionata.':'Il tuo portafoglio Serie A.'} Bilancio delle giornate chiuse, puntate in corso escluse.</p><div class="market-tabs portfolio-tabs" role="tablist" aria-label="Andamento"><button role="tab" aria-selected="true" data-chart-tab="0">Crediti</button><button role="tab" aria-selected="false" data-chart-tab="1">Punti</button></div><div class="portfolio-slides">${['credits','points'].map((metric,i)=>`<section class="portfolio-slide" role="tabpanel" aria-label="${i?'Punti':'Crediti'}" data-chart-metric="${metric}">${historyChart(data,metric,esc,fmt)}</section>`).join('')}</div><span class="portfolio-swipe">Scorri per cambiare grafico <span aria-hidden="true">↔</span></span></div></details>`;
-}
-export function bindProgression(l,scope,esc,fmt,onScope){
- const details=document.querySelector('#league-portfolio');if(!details)return;
- const key=details.dataset.portfolioKey||null;
- const redraw=next=>{onScope(next);const tmp=document.createElement('div');tmp.innerHTML=progressionView(l,next,esc,fmt,details.dataset.portfolioKey);details.querySelector('.portfolio-body').replaceWith(tmp.querySelector('.portfolio-body'));bindProgression(l,next,esc,fmt,onScope);bindStyledSelects(details);};
- details.querySelectorAll('[data-portfolio-source]').forEach(b=>b.onclick=()=>redraw(b.dataset.portfolioSource));
- const selector=details.querySelector('#portfolio-league');if(selector)selector.onchange=()=>{details.dataset.portfolioKey=selector.value;redraw(scope);};
- const slides=details.querySelector('.portfolio-slides'),tabs=[...details.querySelectorAll('[data-chart-tab]')];tabs.forEach((b,i)=>b.onclick=()=>slides.scrollTo({left:i*slides.clientWidth,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
- slides.onscroll=()=>{const current=Math.round(slides.scrollLeft/slides.clientWidth);tabs.forEach((b,i)=>b.setAttribute('aria-selected',String(i===current)));};
- const history=(scope==='fantacalcio'?fantasyProgression(l,key):l.progression?.[scope])?.history||[];
- details.querySelectorAll('svg.stock-chart').forEach(svg=>svg.addEventListener('click',event=>{if(!history.length)return;const box=svg.getBoundingClientRect(),x=(event.clientX-box.left)/box.width*640,index=Math.max(0,Math.min(history.length-1,Math.round((x-42)/578*history.length)-1));svg.querySelector('[data-chart-point="'+index+'"]')?.focus({preventScroll:true});}));
- details.querySelectorAll('[data-chart-point]').forEach(p=>{const show=()=>{const r=history[Number(p.dataset.chartPoint)],panel=p.closest('.portfolio-slide'),credit=panel.dataset.chartMetric==='credits';panel.querySelector('.chart-readout').textContent=r.title+' · '+r.competitionName+' — '+sign(credit?r.profit:r.points,fmt)+(credit?' cr':' pt')+' · totale '+fmt(credit?r.capital:r.pointsTotal);};p.onclick=show;p.onfocus=show;p.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}};});
+function ownedRewards(user){
+ const rewards=new Map();
+ for(const award of [...(user.rewards||[])].reverse()){
+  for(const id of award.ids){
+   const reward=rewardById(id);
+   if(reward&&!rewards.has(reward.id))rewards.set(reward.id,reward);
+  }
+ }
+ return [...rewards.values()];
 }
 
-export function rewardsView(user,esc){
- const owned=new Set((user.rewards||[]).flatMap(a=>a.ids));
- const filters=kind=>'<div class="reward-filters" aria-label="'+(kind==='owned'?'I tuoi premi per categoria':'Catalogo per categoria')+'">'+Object.entries(REWARD_TYPES).map(([key,label],i)=>'<button type="button" data-'+kind+'-filter="'+key+'" aria-pressed="'+(i===0)+'">'+label+'</button>').join('')+'</div>';
- return '<details class="card rewards-collection" id="rewards-collection"><summary><span><small>IL BOTTINO DEL BAR</small><strong>I tuoi premi</strong></span><span class="pill">'+owned.size+' / '+REWARD_CATALOG.length+'</span></summary><div class="compact-section-body"><div class="reward-progress" role="progressbar" aria-label="Premi conquistati" aria-valuemin="0" aria-valuemax="'+REWARD_CATALOG.length+'" aria-valuenow="'+owned.size+'"><i style="width:'+Math.max(owned.size?1:0,owned.size/REWARD_CATALOG.length*100).toFixed(1)+'%"></i></div><p class="tiny muted">'+owned.size+' conquistati su '+REWARD_CATALOG.length+'. Si vincono giocando: ogni giornata ne regala almeno uno.</p>'+rewardGuide()+'<details class="reward-owned" open><summary>Il tuo guardaroba · '+owned.size+' premi</summary>'+filters('owned')+'<div id="reward-owned-list"></div><button class="secondary" id="reward-more" type="button">Altri premi</button></details><details class="reward-catalog"><summary>Sbircia tutto il catalogo · '+REWARD_CATALOG.length+' premi</summary>'+filters('catalog')+'<div id="reward-catalog-list"></div><div class="catalog-pagination"><button class="secondary" id="catalog-prev" type="button" aria-label="Pagina precedente">←</button><span id="catalog-page"></span><button class="secondary" id="catalog-next" type="button" aria-label="Pagina successiva">→</button></div></details></div></details>';
+function rewardImage(reward){
+ const drawing=(viewBox,art)=>`<svg viewBox="${viewBox}" aria-hidden="true"><g fill="${reward.color}" stroke="${INK}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">${art}</g></svg>`;
+ if(reward.type==='room')return roomThumbnail(reward.id);
+ if(reward.type==='headwear')return drawing('74 3 132 90',hatArt(reward));
+ if(reward.type==='charm')return drawing('177 212 73 78',charmArt(reward));
+ if(reward.type==='outfit')return drawing('74 163 132 120',`<path d="m112 174-28 13-9 31 24 8v46h82v-46l24-8-9-31-28-13q-28 24-56 0z"/>${outfitArt(reward)}`);
+ if(reward.type==='color')return drawing('0 0 60 60','<circle cx="30" cy="30" r="23"/>');
+ return rewardMark(reward);
 }
+
+export function rewardsView(user){
+ const count=ownedRewards(user).length;
+ return `<details class="card rewards-collection" id="rewards-collection" data-os-paged-detail><summary><strong>I tuoi premi</strong><span class="pill">${count}</span></summary><div class="reward-tile-grid">${count?'':'<p class="muted">Nessun premio conquistato.</p>'}</div></details>`;
+}
+
 export function bindRewards(user,esc,onEquip){
- const root=document.querySelector('#rewards-collection');if(!root)return;
- let ownedFilter='title',catalogFilter='title',limit=4,page=0;
- const awards=[...(user.rewards||[])].reverse(),owned=new Set(awards.flatMap(a=>a.ids));
- const rows=[];const seen=new Set();for(const award of awards)for(const id of award.ids){const r=rewardById(id);if(r&&!seen.has(r.id)){seen.add(r.id);rows.push({r,award});}}
- ownedFilter=rows[0]?.r.type||'title';
- const card=(r,award)=>'<article class="reward-item rarity-'+r.rarity+'">'+(r.type==='room'?'<button type="button" class="reward-room-thumb" data-room-preview="'+r.id+'" aria-label="Anteprima spogliatoio '+esc(r.name)+'">'+roomThumbnail(r.id)+'</button>':rewardMark(r))+'<div><small>'+rarityLabel[r.rarity]+' · '+REWARD_TYPES[r.type]+'</small><h3>'+esc(r.name)+'</h3>'+(award?'<p>'+esc(award.title+' · '+award.competitionName)+'</p><p class="tiny muted">'+esc(award.leagueName)+' · '+new Date(award.earnedAt).toLocaleDateString('it-IT')+'<br>'+esc(award.reason)+'</p>':'')+'<details class="reward-condition"><summary>Come si ottiene</summary><p>'+esc(rewardCondition(r))+'</p></details>'+(owned.has(r.id)?'<button class="text-button" data-equip-reward="'+r.id+'">Indossa nel tuo Quasi</button>':'<span class="reward-locked">Da conquistare</span>')+'</div></article>';
- function bindCards(){
-  root.querySelectorAll('[data-equip-reward]').forEach(b=>b.onclick=()=>{const r=rewardById(b.dataset.equipReward);onEquip(REWARD_SLOTS[r.type],r.id);});
-  root.querySelectorAll('[data-room-preview]').forEach(b=>b.onclick=()=>{const r=rewardById(b.dataset.roomPreview),d=document.createElement('dialog');d.className='room-preview-dialog';d.innerHTML='<button type="button" class="secondary room-preview-close">Chiudi ×</button><h2>'+esc(r.name)+'</h2><div class="room-preview-stage">'+roomSvg(r.id)+'</div><p class="tiny muted">'+esc(rewardCondition(r))+'</p>';document.body.append(d);const close=()=>{d.close();d.remove();};d.querySelector('button').onclick=close;d.addEventListener('cancel',close);d.showModal();});
- }
- function render(){
-  root.querySelectorAll('[data-owned-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ownedFilter===ownedFilter)));
-  const selected=rows.filter(x=>x.r.type===ownedFilter);root.querySelector('#reward-owned-list').innerHTML=selected.length?selected.slice(0,limit).map(x=>card(x.r,x.award)).join(''):'<p class="rewards-empty">'+(owned.size?'Nessun premio in questa categoria. Il guardaroba ha pazienza.':'Il primo premio arriva alla chiusura della prossima giornata: compila la schedina e partecipa.')+'</p>';root.querySelector('#reward-more').hidden=selected.length<=limit;
-  const catalog=REWARD_CATALOG.filter(r=>r.type===catalogFilter),pages=Math.max(1,Math.ceil(catalog.length/6));page=Math.max(0,Math.min(page,pages-1));root.querySelector('#reward-catalog-list').innerHTML=catalog.slice(page*6,page*6+6).map(r=>card(r)).join('');root.querySelector('#catalog-page').textContent=(page+1)+' / '+pages;root.querySelector('#catalog-prev').disabled=page===0;root.querySelector('#catalog-next').disabled=page===pages-1;bindCards();
- }
- root.querySelectorAll('[data-owned-filter]').forEach(b=>b.onclick=()=>{ownedFilter=b.dataset.ownedFilter;limit=4;root.querySelectorAll('[data-owned-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render();});
- root.querySelectorAll('[data-catalog-filter]').forEach(b=>b.onclick=()=>{catalogFilter=b.dataset.catalogFilter;page=0;root.querySelectorAll('[data-catalog-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render();});
- root.querySelector('#reward-more').onclick=()=>{limit+=4;render();};root.querySelector('#catalog-prev').onclick=()=>{page--;render();root.querySelector('.reward-catalog>summary').scrollIntoView({block:'start'});};root.querySelector('#catalog-next').onclick=()=>{page++;render();root.querySelector('.reward-catalog>summary').scrollIntoView({block:'start'});};render();
-}
-
-export function portfolioPreview(league,esc){
- const d=league.progression?.seriea,h=d?.history||[];
- if(!h.length)return '<p class="portfolio-mini-empty">La Borsa del Quasi apre con la prima giornata conclusa.</p>';
- const values=[d.initial||0,...h.map(r=>r.capital)],min=Math.min(...values),max=Math.max(...values),coords=values.map((v,i)=>(i*300/Math.max(1,values.length-1)).toFixed(1)+','+(45-(v-min)/Math.max(1,max-min)*40).toFixed(1)).join(' ');
- return '<button type="button" class="portfolio-mini" data-page="classifiche" aria-label="Apri La Borsa del Quasi in Classifica"><span>La Borsa del Quasi <b aria-hidden="true">↗</b></span><svg viewBox="0 0 300 50" role="img" aria-label="Andamento dei crediti nelle ultime giornate"><polyline fill="none" stroke="currentColor" stroke-width="2" points="'+esc(coords)+'"/></svg></button>';
+ const root=document.querySelector('#rewards-collection'),grid=root?.querySelector('.reward-tile-grid');
+ if(!grid)return;
+ root.addEventListener('toggle',()=>{
+  if(!root.open||grid.firstElementChild)return;
+  const rewards=ownedRewards(user),rows=[];
+  for(let i=0;i<rewards.length;i+=3){
+   rows.push(`<div class="reward-tile-row">${rewards.slice(i,i+3).map(reward=>`<button type="button" class="reward-tile" data-equip-reward="${esc(reward.id)}" aria-label="Indossa ${esc(reward.name)}"><span class="reward-tile-art" aria-hidden="true">${rewardImage(reward)}</span><span>${esc(reward.name)}</span></button>`).join('')}</div>`);
+  }
+  grid.innerHTML=rows.join('');
+ });
+ grid.addEventListener('click',event=>{
+  const id=event.target.closest('[data-equip-reward]')?.dataset.equipReward,reward=rewardById(id);
+  if(reward)onEquip(REWARD_SLOTS[reward.type],reward.id);
+ });
 }

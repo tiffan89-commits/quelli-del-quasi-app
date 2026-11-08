@@ -1,4 +1,5 @@
 import {loadAppStyles} from './app-styles.mjs';
+import {startOneScreen} from './one-screen.mjs';
 import {writeAppRoute,readAppRoute} from './routes.mjs';
 const parked=new Map();
 import {linkedBarTarget} from './display-cache.mjs';
@@ -12,7 +13,7 @@ export function preferredFanta(){return selectedMode==='fanta';}
 export function leaveFanta({keepSplash=false}={}){selectedMode='bar';if(!keepSplash)document.querySelector('.mode-splash')?.remove();operation++;if(instance){instance.suspend?.();parked.set(activeUser||'demo',instance);}instance=null;document.body.classList.remove('fanta-active');try{const url=new URL(location.href);url.searchParams.delete('mode');url.searchParams.delete('fantaLeague');history.replaceState(null,'',url.pathname+url.search+url.hash);}catch{}}
 export async function enterFanta(root,{user,onBar,barLeagues=[],leagueId=null,force=false,slipServices=null,initialTab='oggi'}={}){
  if(!force&&instance&&activeUser===user?.id&&(root.querySelector('.fanta-top')||document.querySelector('#app-header .fanta-top')))return;
- loadAppStyles();selectedMode='fanta';const cached=parked.get(user?.id||'demo');if(cached&&cached.hasTeam!==false&&!force&&(!leagueId||cached.leagueId===leagueId)){instance=cached;activeUser=user?.id;document.body.classList.add('fanta-active');const route=readAppRoute();if(route?.mode!=='fanta')writeAppRoute({mode:'fanta',page:initialTab||'oggi',league:cached.leagueId});cached.setBarLeagues?.(barLeagues);cached.resume(initialTab,{route:route?.mode==='fanta'?route:null});return;}
+ loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();selectedMode='fanta';const cached=parked.get(user?.id||'demo');if(cached&&cached.hasTeam!==false&&!force&&(!leagueId||cached.leagueId===leagueId)){instance=cached;activeUser=user?.id;document.body.classList.add('fanta-active');const route=readAppRoute();if(route?.mode!=='fanta')writeAppRoute({mode:'fanta',page:initialTab||'oggi',league:cached.leagueId});cached.setBarLeagues?.(barLeagues);cached.resume(initialTab,{route:route?.mode==='fanta'?route:null});return;}
  const hideSplash=showModeSplash('fanta');activeUser=user?.id;
  const mine=++operation;const old=parked.get(user?.id||'demo');if(old&&old!==instance)old.destroy();parked.delete(user?.id||'demo');instance?.destroy();instance=null;root.innerHTML='';document.body.classList.add('fanta-active');
  try{

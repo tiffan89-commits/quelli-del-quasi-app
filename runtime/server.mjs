@@ -13,7 +13,7 @@ const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application
 export function requestIp(req,trust=false){const direct=req.socket.remoteAddress||'unknown';if(!trust)return direct;const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim();return isIP(forwarded)?forwarded:direct;}
 const friendlyPages=new Set(['/privacy','/fantacalcio-tra-amici','/asta-fantacalcio','/schedine-virtuali','/admin','/account']);
 export function staticEncoding(header=''){const entries=String(header).split(',').map(item=>{const [name,...args]=item.trim().split(';'),quality=args.find(x=>x.trim().startsWith('q='));return {name:name.trim(),q:quality?Number(quality.trim().slice(2)):1};});return ['br','gzip'].map(name=>({name,q:entries.find(e=>e.name===name)?.q??entries.find(e=>e.name==='*')?.q??0})).filter(e=>e.q>0&&e.q<=1).sort((a,b)=>b.q-a.q)[0]?.name||null;}
-export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,root=path.resolve('dist'),trustProxy=process.env.TRUST_PROXY==='true',bodyLimit=1024*1024}={}){
+export function createServer({api,fanta,scores,chatUpdate,origin=process.env.PUBLIC_ORIGIN,root=path.resolve('dist'),trustProxy=process.env.TRUST_PROXY==='true',bodyLimit=1024*1024}={}){
  const base=new URL(origin),staticRoot=path.resolve(root);
  const server=http.createServer(async(req,res)=>{
   const controller=new AbortController();req.once('aborted',()=>controller.abort());res.once('close',()=>{if(!res.writableEnded)controller.abort();});
@@ -29,7 +29,7 @@ export function createServer({api,fanta,scores,origin=process.env.PUBLIC_ORIGIN,
     let length=0;const chunks=[];for await(const chunk of req){length+=chunk.length;if(length>bodyLimit){req.resume();return json(res,413,{error:'Request too large'});}chunks.push(chunk);}
     const headers=new Headers();for(let i=0;i<req.rawHeaders.length;i+=2)headers.append(req.rawHeaders[i],req.rawHeaders[i+1]);headers.delete('x-nf-client-connection-ip');
     const body=Buffer.concat(chunks),request=new Request(url,{method:req.method,headers,signal:controller.signal,...(!['GET','HEAD'].includes(req.method)&&body.length?{body}:{})});
-    const response=await handler(request,{ip:requestIp(req,trustProxy)});if(!(response instanceof Response))throw Error('Invalid handler response');
+    const response=await handler(request,{ip:requestIp(req,trustProxy),chatUpdate});if(!(response instanceof Response))throw Error('Invalid handler response');
     const outgoing=Object.fromEntries([...response.headers].filter(([k])=>k!=='set-cookie'));const cookies=response.headers.getSetCookie();if(cookies.length)outgoing['set-cookie']=cookies;
     res.writeHead(response.status,outgoing);if(response.body&&req.method!=='HEAD')Readable.fromWeb(response.body).on('error',()=>res.destroy()).pipe(res);else res.end();return;
    }
@@ -49,11 +49,12 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  configure();installRuntimeLogging('web');if(!process.env.DATABASE_URL)throw Error('DATABASE_URL obbligatorio');
  const {installInternalDispatch}=await import('./dispatch.mjs');installInternalDispatch();
  const [{default:api},{default:fanta},{default:scores},{closeDatabase}]=await Promise.all([import('../netlify/functions/api.mjs'),import('../netlify/functions/fanta-api.mjs'),import('../netlify/functions/public-football.mjs'),import('../lib/db.mjs')]);
- const server=createServer({api,fanta,scores});
+ let auctionHub;
+ const server=createServer({api,fanta,scores,chatUpdate:update=>auctionHub?.chatUpdate?.(update)});
  const {attachAuctionSocket}=await import('./auction-socket.mjs');
  const origin=process.env.PUBLIC_ORIGIN,aliases=new URL(origin).hostname==='quellidelquasi.com'?['https://casa.quellidelquasi.com','https://server.quellidelquasi.com']:[];
  const maintenance=process.env.SELFHOST_MAINTENANCE==='true';
- const auctionHub=maintenance?{close:async()=>{}}:await attachAuctionSocket(server,{origin,allowedOrigins:[origin,...aliases]});
+ auctionHub=maintenance?{close:async()=>{}}:await attachAuctionSocket(server,{origin,allowedOrigins:[origin,...aliases]});
  const {attachSportsSocket}=await import('./sports-socket.mjs');const sportsHub=maintenance?{close:async()=>{}}:attachSportsSocket(auctionHub.io);
  const {listenSportsSaved}=await import('./sports-notifications.mjs');const sportsListener=maintenance?{close:async()=>{}}:listenSportsSaved(()=>sportsHub.refresh());
  server.listen(Number(process.env.PORT)||3000,process.env.HOST||'127.0.0.1',()=>console.info('QUASI_HTTP_READY'));

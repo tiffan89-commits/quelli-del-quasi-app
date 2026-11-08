@@ -32,7 +32,7 @@ test('future closed or incorrectly settled placeholders never leak after the act
  assert.deepEqual(selectableSlipRounds([past,{...open,closed:true},unavailable,round(13,{kickoff:'2026-11-20T19:45Z'})],Date.parse(open.kickoff)).map(r=>r.number),[10,11]);
 });
 test('entering Bar slip starts on open round; pressing its active menu is a true no-op, preserving draft and scroll',()=>{
- let rendered=0,persisted=0,hydrated=0,scrolled=0;const ctx={page:'lega',selectedRoundId:'r10',slipScope:'bar',sourceScope:'seriea',dashboardSource:'seriea',L:()=>({id:'l'}),writeAppRoute:()=>{},persistDraft:()=>persisted++,hydrateDraft:()=>hydrated++,render:()=>rendered++,window:{scrollTo:()=>scrolled++}};
+ let rendered=0,persisted=0,hydrated=0,scrolled=0;const ctx={chatOpen:false,page:'lega',selectedRoundId:'r10',slipScope:'bar',sourceScope:'seriea',dashboardSource:'seriea',L:()=>({id:'l'}),writeAppRoute:()=>{},persistDraft:()=>persisted++,hydrateDraft:()=>hydrated++,render:()=>rendered++,window:{scrollTo:()=>scrolled++}};
  vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function navigatePage('),source.indexOf('\nfunction nativeSlipServices')),ctx);
  vm.runInContext("navigatePage('schedina')",ctx);assert.equal(ctx.selectedRoundId,null);assert.equal(ctx.slipScope,'mine');assert.equal(rendered,1);assert.equal(hydrated,1);
  const counts=[rendered,persisted,hydrated,scrolled];ctx.selectedRoundId='r10';vm.runInContext("navigatePage('schedina')",ctx);assert.equal(ctx.selectedRoundId,'r10');assert.deepEqual([rendered,persisted,hydrated,scrolled],counts);
@@ -40,7 +40,7 @@ test('entering Bar slip starts on open round; pressing its active menu is a true
 test('Bar subsection switch pins displayed round across mine, bar and verdict',()=>{
  const {document}=parseHTML('<button data-slip-scope="mine"></button><button data-slip-scope="bar"></button><button data-slip-scope="community"></button>');
  const ctx={document,r:past,selectedRoundId:null,slipScope:'mine',persistDraft:()=>{},hydrateDraft:()=>{},render:()=>{}};vm.createContext(ctx);
- const start=source.indexOf('  document.querySelectorAll("[data-slip-scope]")'),end=source.indexOf('  if ($('+'"#open-chat"))',start);vm.runInContext(source.slice(start,end),ctx);
+ const start=source.indexOf('  document.querySelectorAll("[data-slip-scope]")'),end=source.indexOf('  if ($("#open-studio"))',start);vm.runInContext(source.slice(start,end),ctx);
  for(const sub of ['bar','community','mine']){document.querySelector(`[data-slip-scope="${sub}"]`).onclick();assert.equal(ctx.selectedRoundId,'r10');assert.equal(ctx.slipScope,sub);}
 });
 test('Fanta subsections preserve old selection, re-entry resets to open and unknown future routes are ignored',()=>{
@@ -58,6 +58,6 @@ test('Fanta subsections preserve old selection, re-entry resets to open and unkn
 });
 test('verdict and postcard read the chosen historical round instead of the latest winner',()=>{
  const league={name:'Bar',members:[{uid:'u',name:'Vecchio campione'},{uid:'v',name:'Nuovo campione'}],rounds:[{...past,publicSlips:[{uid:'u',picks:{m10:'1'},stake:10,prize:20}]}],community:{seriea:{recap:{round:'r11',winners:['v'],points:9},history:[{id:'r10',players:[{uid:'u',points:1,wrong:0,correct:1,total:1,picks:{m10:'1'},stake:10}]}],honours:[]}}};
- const html=communityView(league,'seriea',{id:'u'},null,String,String,null,past);assert.match(html,/Giornata 10/);assert.match(html,/1 punti/);assert.doesNotMatch(html,/9 punti/);
+ const html=communityView(league,'seriea',String,String,null,past);assert.match(html,/Giornata 10/);assert.match(html,/1 punti/);assert.doesNotMatch(html,/9 punti/);
  const card=createVerdictCard(league,'seriea',null,null,'r10');assert.match(card,/Vecchio campione/);assert.match(card,/2 – 0/);assert.doesNotMatch(card,/Nuovo campione/);
 });
