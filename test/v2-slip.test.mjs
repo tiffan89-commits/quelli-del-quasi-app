@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
 import {totalOdds,renderSlipV2,bindSlipV2} from '../public/src/v2/slip-v2.mjs';
 import {patchSlipResults} from '../public/src/slip-results.mjs';
+import {QUOTA_SCORING} from '../public/scoring.mjs';
 const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
 const round=()=>({id:'r',kickoff:'2099-01-01T12:00:00Z',rules:{maxStake:20},matches:[1,2,3].map(id=>({id:String(id),home:'Casa '+id,away:'Ospite '+id,odds:{'1':2,'X':3,'2':4,'X2':1.5},status:'NS'}))});
 const view=r=>renderSlipV2({round:r,picks:{'1':'1'},esc,fmt:String,date:String});
@@ -56,4 +57,13 @@ test('an unpriced preview allows local picks but blocks confirmation and removes
  const standard=parseHTML(renderSlipV2({...options,round:r})).document;
  assert.equal(standard.querySelectorAll('[data-pick]:not([disabled])').length,0);
  assert.equal(standard.querySelector('#save-slip'),null);
+});
+
+test('quota scoring shows only points for a hit and uses the accepted quote on a closed slip',()=>{
+ const r=round();r.closed=true;r.rules.scoring=QUOTA_SCORING;
+ r.slip={picks:{1:'1'},acceptedOdds:{1:1.35}};
+ const {document}=parseHTML(view(r)),selected=document.querySelector('[data-pick="1"][data-value="1"]');
+ assert.equal(selected.querySelector('.points-gain').textContent,'+1,35');
+ assert.equal(selected.querySelector('.points-loss'),null);
+ assert.match(selected.getAttribute('aria-label'),/0 punti se sbagliato/);
 });

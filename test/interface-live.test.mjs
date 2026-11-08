@@ -1,7 +1,7 @@
 import {clubShirt} from '../public/src/club-crest.mjs';
 import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
-import {pointTerms} from '../public/scoring.mjs';
+import {pointTerms,QUOTA_SCORING} from '../public/scoring.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
 import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
@@ -130,7 +130,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     rewardsView,roomSvg,REWARD_SLOTS,
     bindProgression(){},bindRewards(){},bindStyledSelects(){},syncStyledSelects(){},closeStyledSelect(){},pushSupported(){return false;},enableLeagueNotifications(){},
     ...slipState,
-    communityView,pointTerms,
+    communityView,pointTerms,QUOTA_SCORING,
     createVerdictCard,
     integrationBindings() {},
     playerRanking,

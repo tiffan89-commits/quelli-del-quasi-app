@@ -1,6 +1,6 @@
 import {slipTeamLabel} from '../club-crest.mjs';
 import {patchRegion} from '../live-channel.mjs';
-import {pointTerms} from '../../scoring.mjs';
+import {pointTerms,QUOTA_SCORING,slipPointTerms} from '../../scoring.mjs';
 // 0.26: righe compatibili con patchSlipResults (data-match-card, data-inline-result, data-match-status, data-pick-feedback).
 // Schedina v2: 1/X/2 al primo livello, altri mercati espandibili, barra fissa con puntata e quota totale.
 // Usa lo stesso modello dati di app.mjs: picks[match.id] = valore (es. "1", "X2", "Over 2.5").
@@ -26,13 +26,16 @@ export function totalOdds(round, picks) {
 }
 
 function option(m, p, picks, closed, esc, fmt, pointsOnly,round) {
-  const on = picks[m.id] === p, odd = m.odds?.[p];
-  const accepted=closed&&round.slip?.picks?.[m.id]===p?round.slip?.pointTerms?.[m.id]:null;
+  const on = picks[m.id] === p;
+  const quotaScoring=round.rules?.scoring===QUOTA_SCORING;
+  const accepted=closed&&round.slip?.picks?.[m.id]===p?(quotaScoring?slipPointTerms(round,m,round.slip):round.slip.pointTerms?.[m.id]):null;
+  const odd=quotaScoring&&accepted?.correct!=null?accepted.correct:m.odds?.[p];
   const terms=accepted||m.pointOffers?.[p]||pointTerms(m,p,{mode:'weighted',scoring:'difficulty-v2',correct:1,wrong:-1,...round.rules});
   const amount=n=>Number.isFinite(n)?(n>0?'+':n<0?'−':'')+Number(Math.abs(n).toFixed(2)).toLocaleString('it-IT'):'—';
-  const gain=amount(terms.correct),loss=amount(terms.wrong),points='<small class="v2-odd-points"><em class="points-gain">'+gain+'</em><span aria-hidden="true"> / </span><em class="points-loss">'+loss+'</em> pt</small>';
+  const gain=terms.correct===null?'?':amount(terms.correct),loss=amount(terms.wrong);
+  const points='<small class="v2-odd-points"><em class="points-gain">'+gain+'</em>'+(quotaScoring?'':'<span aria-hidden="true"> / </span><em class="points-loss">'+loss+'</em>')+' pt</small>';
   return '<button type="button" class="v2-odd' + (on ? ' is-on' : '') + '" data-pick="' + esc(m.id) + '" data-value="' + esc(p) + '"' +
-    (closed ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(m.home + ' – ' + m.away + ': ' + show(p)+'; '+gain+' punti se corretto, '+loss+' punti se sbagliato') + '">' +
+    (closed ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(m.home + ' – ' + m.away + ': ' + show(p)+'; '+(terms.correct===null?'punti in attesa della quota':gain+' punti se corretto')+', '+loss+' punti se sbagliato') + '">' +
     '<b>' + esc(show(p)) + '</b><span' + (!pointsOnly && Number.isFinite(odd) ? ' data-odd="' + esc(fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '')) + '"' : '') + '>' + (pointsOnly ? 'Solo punti' : Number.isFinite(odd) ? 'Quota '+fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '') : '?') + '</span>'+points+'</button>';
 }
 
