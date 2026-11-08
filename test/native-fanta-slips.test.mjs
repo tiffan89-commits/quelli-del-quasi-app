@@ -3,6 +3,7 @@ import {createFantaSlips,fantaSlipContext} from '../public/src/fanta/schedine.mj
 import {FANTA_TABS} from '../public/src/fanta/shell.mjs';
 import {competitionSwitcher} from '../public/src/fanta/competitions-ui.mjs';
 import {renderGiornata} from '../public/src/fanta/giornata.mjs';
+import {scoreLineup} from '../fanta/rules.mjs';
 const now=Date.parse('2026-11-03T12:00:00Z');
 before(t=>t.mock.timers.enable({apis:['Date'],now}));after(t=>t.mock.timers.reset());
 function fixture({loadMatchup}={}){
@@ -34,6 +35,31 @@ test('closed native slip uses saved choices and colours, keeps public slips priv
 });
 test('only rounds belonging to the selected native league and competition are returned',()=>{
  const f=fixture();assert.deepEqual(fantaSlipContext(f.snapshot,'a','coppa').rounds.map(r=>r.id),['a-coppa']);assert.equal(fantaSlipContext(f.snapshot,'absent','camp').league,undefined);
+});
+test('Studio Live keeps the saved starters on the pitch and marks only the actual fantasy replacement',()=>{
+ const players=[
+  {id:'bisseck',name:'Bisseck',role:'D',status:'sv'},
+  {id:'birindelli',name:'Birindelli',role:'D',status:'sv'},
+  {id:'olivera',name:'Olivera',role:'D',status:'voted',vote:6,fantavote:6},
+  {id:'reserve',name:'Riserva',role:'D',status:'sv'},
+ ];
+ const lineup=scoreLineup({formation:'4-4-2',starters:['bisseck','birindelli'],bench:['olivera','reserve']},players);
+ assert.equal(lineup.total,6);
+ const home={...lineup,team:{name:'Fly Emigrates'}},away={team:{name:'Herta Vernello'},hidden:true};
+ const {document}=parseHTML(renderGiornata({matchup:{home,away}}));
+ const pitch=document.querySelector('.fanta-pitch');
+ const bisseck=pitch.querySelector('[data-player=bisseck]');
+ const birindelli=pitch.querySelector('[data-player=birindelli]');
+ assert.ok(bisseck.classList.contains('is-sv'));
+ assert.equal(bisseck.querySelector('[data-fantasy-grade]'),null);
+ assert.ok(bisseck.querySelector('.pitch-event.is-sub'));
+ assert.equal(bisseck.querySelector('.live-studio-replacement').textContent,'Entra Olivera');
+ assert.equal(birindelli.querySelector('[data-fantasy-grade]').textContent,'s.v.');
+ assert.equal(birindelli.querySelector('.pitch-event.is-sub'),null);
+ assert.equal(pitch.querySelector('[data-player=olivera]'),null);
+ const olivera=document.querySelector('.live-studio-reserves [data-player=olivera]');
+ assert.ok(olivera.classList.contains('is-entered'));
+ assert.equal(olivera.querySelector('[data-fantasy-grade]').textContent,'6');
 });
 test('native app opens dedicated slips, keeps slip picks away from lineup handlers, and moves results under Oggi',async()=>{
  const {mountFanta}=await import('../public/src/fanta/app.mjs'),{createDemoFantaApi}=await import('../public/src/fanta/demo-api.mjs');
