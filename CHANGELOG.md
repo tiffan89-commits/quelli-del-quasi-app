@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Nei pronostici con quota, Bar e Fanta mostrano la quota senza ripetere i punti sotto l’esito.
+
 - I promemoria formazione aprono lo Studio della lega e della competizione indicate. Le notifiche di giornata e asta aprono la schermata relativa.
 
 - Le notifiche chat mostrano lega, autore e messaggio. Toccandole si apre la conversazione della lega indicata.
