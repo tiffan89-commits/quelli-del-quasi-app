@@ -35,7 +35,7 @@ test('invitation code is readable by current members only; state rendering chang
  const state={users:[],sessions:[],leagues:[],rounds:[],ledger:[],football:{fixtures:{},rounds:{}}},admin={id:'a',name:'A',emailVerified:true},member={id:'m',name:'M',emailVerified:true},outsider={id:'o',emailVerified:true};state.users.push(admin,member,outsider);const league=newLeague(state,admin,'Bar test');league.members.push({uid:'m',credits:42,points:3});league.removedMembers=[{uid:'o'}];const before=JSON.stringify(state);const dto=stateFor(state,member);assert.equal(dto.leagues[0].code,league.code);assert.equal(dto.leagues[0].removedMembers,undefined);assert.equal(stateFor(state,outsider).leagues.length,0);assert.equal(JSON.stringify(state),before);
 });
 
-test('Quasi reward collection starts collapsed',()=>{const {document}=parseHTML(rewardsView({rewards:[]},String));assert.equal(document.getElementById('rewards-collection').hasAttribute('open'),false);});
+test('Quasi rewards open as a paginated collection without the catalogue or guide',()=>{const {document}=parseHTML(rewardsView({rewards:[{ids:['king-title','king-crown','king-title']}]}));const section=document.getElementById('rewards-collection');assert.equal(section.hasAttribute('open'),false);assert.ok(section.hasAttribute('data-os-paged-detail'));assert.equal(section.querySelector('.pill').textContent,'2');assert.equal(section.querySelectorAll('details').length,0);});
 
 test('Bar home invite is shared by president and members, excludes computers and hides when full',()=>{
  const league={code:'TEST',name:'Bar test',admin:'a',members:[{uid:'a'},{uid:'b'}],nativeFantaLink:{maxMembers:4,coachIds:['a']}};

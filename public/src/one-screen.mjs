@@ -16,7 +16,6 @@ const DOTS_SPACE = 10; // riga dei puntini: il minimo indispensabile (18 px su d
 export const PINS = ['.rankrow.is-me'];
 export const SEGMENTS = [
  { when: main => !!main.querySelector('#league-dashboard'), label: 'Oggi', items: [['Adesso', null], ['Obiettivi', '#league-objectives']] },
- { when: main => !!main.querySelector('.quasi-roster-grid') && !!main.querySelector('#rewards-collection'), label: 'I Quasi', items: [['La squadra', null], ['I tuoi premi', '#rewards-collection']] },
  { when: main => !!main.querySelector('.fanta-home'), label: 'Oggi', items: [['Adesso', null], ['Sfida', '.fanta-home section.fanta-block:has(.fanta-match-link)'], ['Classifica', '.fanta-home section.fanta-block:has(.fanta-table)']] }
 ];
 let started = false;
@@ -76,11 +75,12 @@ export function startOneScreen(doc = globalThis.document) {
   const round=el.querySelector('#round-switch,[data-fanta-slip-round]')?.value||'';
   return (win.location?.hash || '') + '|' + picked.join('|')+'|'+round;
  }
- const flow = () => drill.length>0 || main?.hasAttribute('data-os-flow');
+ const pagedDetail=()=>drill.at(-1)?.el.hasAttribute('data-os-paged-detail');
+ const flow = () => drill.length>0&&!pagedDetail() || main?.hasAttribute('data-os-flow');
  const detailTitle = summary => (summary?.querySelector('b,strong')||summary)?.textContent?.trim()||'Dettaglio';
  function clearDrillView(removeNav=true){
   if(removeNav)drillNav?.remove();
-  main?.classList.remove('os-drill','os-drill-parent');
+  main?.classList.remove('os-drill','os-drill-parent','os-drill-paged');
   for(const el of main?.querySelectorAll('.os-drill-parent,.os-drill-path,.os-drill-target')||[])el.classList.remove('os-drill-parent','os-drill-path','os-drill-target');
  }
  function paintDrill(){
@@ -88,6 +88,7 @@ export function startOneScreen(doc = globalThis.document) {
   const detail=drill.at(-1)?.el;
   if(!detail)return;
   main.classList.add('os-drill');
+  main.classList.toggle('os-drill-paged',!!pagedDetail());
   detail.classList.add('os-drill-target');
   for(let el=detail;el&&el!==main;el=el.parentElement){
    el.classList.add('os-drill-path');
@@ -191,14 +192,15 @@ export function startOneScreen(doc = globalThis.document) {
     const inset = bottomInset();
     const top = main.getBoundingClientRect().top;
     const space = win.innerWidth >= 760 ? 18 : DOTS_SPACE;
-    const footer = host !== main ? [...host.querySelectorAll(':scope>.footer,:scope>#live-channel-status')].reduce((sum,el)=>{
+    const footer = host !== main ? [...host.querySelectorAll(':scope>#live-channel-status')].reduce((sum,el)=>{
      if(!shown(el))return sum;
      const style=win.getComputedStyle(el);
      return sum+el.getBoundingClientRect().height+(parseFloat(style.marginTop)||0)+(parseFloat(style.marginBottom)||0);
     },0) : 0;
     root.style.setProperty('--os-dots-h', space + 'px');
     pinned = segAnchors.length||drill.length ? null : PINS.map(sel => main.querySelector(sel)).find(Boolean) || null;
-    height = Math.max(80, Math.floor(win.innerHeight - Math.max(0, top) - inset - space - footer - (pinned ? 48 : 0)));
+    const copyright=host.querySelector(':scope>[data-app-footer]')?14:0;
+    height = Math.max(80, Math.floor(win.innerHeight - Math.max(0, top) - inset - space - footer - copyright - (pinned ? 48 : 0)));
     root.style.setProperty('--os-h', height + 'px');
     root.style.setProperty('--os-dots-bottom', Math.round(inset) + 'px');
    }
@@ -207,9 +209,8 @@ export function startOneScreen(doc = globalThis.document) {
    if(!main.classList.contains('serie-standings')){
     markTall();
     markBreaks();
-    markFooter();
    }
-   if (restore) { restore = false; main.scrollLeft = (saved.get(key) || 0) * main.clientWidth; }
+   if (restore) { restore = false; main.scrollLeft = (drill.length ? metrics.page : saved.get(key) || 0) * main.clientWidth; }
    refresh(false);
   });
  }
@@ -263,20 +264,6 @@ export function startOneScreen(doc = globalThis.document) {
    fresh.slice(0, 1).forEach(el => el.classList.add('os-break'));
   }
  }
- // Il footer legale non occupa da solo una pagina intera: se non ci sta in fondo
- // all'ultima pagina con contenuto si nasconde (resta nella sezione Lega e nel menu).
- function markFooter() {
-  const footer = main.querySelector(':scope>.footer');
-  if (!footer) return;
-  footer.classList.remove('os-solo');
-  let prev = footer.previousElementSibling;
-  while (prev && (!shown(prev) || !prev.getBoundingClientRect().height)) prev = prev.previousElementSibling;
-  if (prev && pageOf(footer) > pageOf(prev) && !prev.matches('.os-seg-start')) {
-   const r = prev.getBoundingClientRect(), mr = main.getBoundingClientRect();
-   const lastPage = Math.floor((r.right - mr.left + main.scrollLeft - 2) / main.clientWidth);
-   if (pageOf(footer) > lastPage) footer.classList.add('os-solo');
-  }
- }
  function shown(el) { return typeof el.checkVisibility === 'function' ? el.checkVisibility() : !!el.getClientRects().length; }
  function clips(el) { const cs = win.getComputedStyle(el); return cs.overflowX !== 'visible' || cs.overflowY !== 'visible'; }
  function skip(walker) { let n = walker.currentNode; while (n && n !== main) { const s = n.nextElementSibling; if (s) { walker.currentNode = s; return s; } n = n.parentElement; } return null; }
@@ -284,7 +271,11 @@ export function startOneScreen(doc = globalThis.document) {
  function refresh(store = true) {
   if (!main) return;
   metrics = flow() ? {pages:1,page:0} : pageMetrics(main.scrollWidth, main.clientWidth, main.scrollLeft);
-  if (store) saved.set(key, metrics.page);
+  if (store&&!drill.length) saved.set(key, metrics.page);
+  const footer=host.querySelector(':scope>[data-app-footer]');
+  const end=metrics.page===metrics.pages-1&&main.scrollTop+main.clientHeight>=main.scrollHeight-2;
+  const hide=!end;
+  if(footer&&footer.classList.contains('os-copyright-hidden')!==hide)footer.classList.toggle('os-copyright-hidden',hide);
   paintDots();
   markSegment();
   paintPin();
@@ -352,7 +343,7 @@ export function startOneScreen(doc = globalThis.document) {
   const { pages } = pageMetrics(main.scrollWidth, main.clientWidth, main.scrollLeft);
   const target = Math.min(pages - 1, Math.max(0, page));
   main.scrollTo({ left: target * main.clientWidth, behavior: smooth && !reduced() ? 'smooth' : 'auto' });
-  metrics = { pages, page: target }; saved.set(key, target); paintDots();
+  metrics = { pages, page: target }; if(!drill.length)saved.set(key, target); paintDots();
  }
  function scroller(el, axis) {
   for (let n = el; n && n !== main; n = n.parentElement) {
@@ -372,14 +363,15 @@ export function startOneScreen(doc = globalThis.document) {
    if(drill.at(-1)?.el===detail)backDetail();else openDetail(detail);
   });
   el.addEventListener('scroll', () => {
-   if (el !== main || flow()) return;
+   if (el !== main) return;
+   if(flow()){refresh(false);return;}
    refresh();
    if (dragging) return;
    win.clearTimeout(snapTimer);
    snapTimer = win.setTimeout(() => { const w = el.clientWidth; if (w && Math.abs(el.scrollLeft - Math.round(el.scrollLeft / w) * w) > 1) go(Math.round(el.scrollLeft / w)); if (win.scrollY) nativeScrollTo.call(win, 0, 0); }, 140);
   }, { passive: true });
   el.addEventListener('touchstart', e => {
-   if(el===main&&drill.length&&e.touches.length===1&&!scroller(e.target,'x')&&!e.target.closest('input,select,textarea,button,a')){
+   if(el===main&&drill.length&&(!pagedDetail()||metrics.page===0)&&e.touches.length===1&&!scroller(e.target,'x')&&!e.target.closest('input,select,textarea,button,a')){
     const t=e.touches[0];drillGesture={x:t.clientX,y:t.clientY};
    }else drillGesture=null;
    if (el !== main || flow() || e.touches.length !== 1 || scroller(e.target, 'x')) { dragging = null; return; }
@@ -395,7 +387,7 @@ export function startOneScreen(doc = globalThis.document) {
   const end = e => {
    if(drillGesture){
     const g=drillGesture,t=e.changedTouches?.[0];drillGesture=null;
-    if(e.type==='touchend'&&t&&t.clientX-g.x>55&&t.clientX-g.x>Math.abs(t.clientY-g.y)*1.4)backDetail();
+    if(e.type==='touchend'&&t&&t.clientX-g.x>55&&t.clientX-g.x>Math.abs(t.clientY-g.y)*1.4){dragging=null;backDetail();return;}
    }
    if (!dragging || el !== main) return;
    const d = dragging; dragging = null;
@@ -418,7 +410,7 @@ export function startOneScreen(doc = globalThis.document) {
  }
  doc.addEventListener('keydown', e => {
   if(!main||!root.classList.contains('os-on')||e.altKey||e.ctrlKey||e.metaKey||typing())return;
-  if(drill.length&&['ArrowLeft','Escape'].includes(e.key)){e.preventDefault();backDetail();return;}
+  if(drill.length&&(e.key==='Escape'||e.key==='ArrowLeft'&&(!pagedDetail()||metrics.page===0))){e.preventDefault();backDetail();return;}
   if(flow())return;
   const a = doc.activeElement;
   if (a && a !== doc.body && !main.contains(a)) return;

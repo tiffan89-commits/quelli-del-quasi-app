@@ -99,8 +99,6 @@ html.os-on main.os-root .dash-cta{min-height:38px!important}
 /* Footer legale: due righe piccole, sempre in fondo all'ultima pagina. */
 html.os-on main.os-root>.footer{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 10px;margin-top:8px!important;padding:6px 0 2px!important;font-size:9.5px!important;line-height:1.3!important}
 html.os-on main.os-root>.footer .footer-line{margin:0!important;font-size:9.5px!important;text-align:center}
-html.os-on main.os-root>.footer .analytics-footer{display:flex;gap:10px;margin:0!important;padding:0!important;font-size:9.5px!important;border:0!important}
-html.os-on main.os-root>.footer .analytics-footer :is(a,button){font-size:9.5px!important;min-height:0!important;padding:0!important}
 html.os-on main.os-root .portfolio-mini svg{display:none!important}
 html.os-on main.os-root .portfolio-mini{padding:9px 14px!important}
 html.os-on main.os-root .dash-recap-details{margin:0!important;padding:0!important}
@@ -116,7 +114,6 @@ html.os-on main.os-root .rankrow>summary{min-height:40px!important;padding:0 4px
 html.os-on main.os-root .rankrow.is-me>summary,html.os-on .os-pin{background:#1b2f23}
 html.os-on main.os-root .rankrow.is-me>summary{border-radius:10px}
 html.os-on main.os-root .ranking-rows>p.tiny{margin:6px 0 0!important;font-size:11px}
-html.os-on main.os-root #portfolio-shell{margin-top:12px}
 html.os-on .os-pin .pill{font-size:9px;padding:1px 5px}
 
 /* ---------- Schede di sezione dell'app (.v2-chips) come barra a segmenti ---------- */
@@ -161,19 +158,19 @@ html.os-on main.os-root .quasi-roster-meta{min-height:0!important;gap:2px!import
 html.os-on main.os-root .quasi-roster-meta .quasi-edit-button{min-height:26px!important;padding:2px 8px!important;font-size:11px!important}
 html.os-on main.os-root .quasi-roster-hint{margin:6px 0 0!important;font-size:11px}
 html.os-on main.os-root #rewards-collection{margin-top:0!important}
+html.os-on main.os-root #rewards-collection[open]{padding:0;border:0;background:none}
+.reward-tile-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:450px;margin:0 auto 6px;break-inside:avoid}
+.reward-tile-grid .reward-tile{box-sizing:border-box;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:4px;aspect-ratio:1;min-width:0;padding:7px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--white);font:600 11px/1.2 'DM Sans',sans-serif;overflow-wrap:anywhere}
+.reward-tile-art{display:grid;place-items:center;min-height:0}
+.reward-tile-art :is(svg,img){width:100%;height:100%;min-height:0;max-height:80px;object-fit:contain}
+.reward-tile-art .reward-mark{width:42px;height:42px;font-size:22px}
 
 /* ---------- Schedina › Il verdetto: card compatte, rivale e albo leggibili a colpo d'occhio ---------- */
 html.os-on main.os-root .bar-intro{display:none}
 html.os-on main.os-root .community-grid{gap:10px!important;margin:6px 0 10px!important}
 html.os-on main.os-root .community-grid>.card{min-height:0!important;padding:12px 14px!important}
-html.os-on main.os-root .community-grid h2,html.os-on main.os-root .rivalry h2,html.os-on main.os-root :is(.card:has(>.honours-grid)) h2{font-size:20px!important;line-height:1.15!important;margin:4px 0!important}
+html.os-on main.os-root .community-grid h2,html.os-on main.os-root :is(.card:has(>.honours-grid)) h2{font-size:20px!important;line-height:1.15!important;margin:4px 0!important}
 html.os-on main.os-root .community-grid p{font-size:12px!important;margin:0!important}
-html.os-on main.os-root .rivalry{padding:12px 14px!important;margin:0 0 10px!important}
-html.os-on main.os-root .rivalry .section-title{min-height:0!important;margin:0 0 6px!important}
-html.os-on main.os-root .rivalry .field{margin:0 0 6px!important}
-html.os-on main.os-root .rivalry .quasi-select-button{min-height:36px!important;padding:6px 12px!important;font-size:13px!important}
-html.os-on main.os-root .rivalry .duel{min-height:0!important;padding:4px 0!important}
-html.os-on main.os-root .rivalry .duel strong,html.os-on main.os-root .rivalry .duel b{line-height:1}
 html.os-on main.os-root .card:has(>.honours-grid){padding:12px 14px!important}
 html.os-on main.os-root .honours-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
 html.os-on main.os-root .honour{min-height:0!important;padding:8px 10px!important;border-top:0!important;border:1px solid var(--line)!important;border-radius:12px}
@@ -183,8 +180,6 @@ html.os-on main.os-root .honours-grid{align-items:start}
 html.os-on main.os-root .honour>*:not(:first-child){font-size:11px!important;margin:2px 0 0!important}
 html.os-on main.os-root .honour :is(.pill,.badge,span[class*="badge"],small:last-child){padding:2px 6px!important;font-size:10.5px!important;min-height:0!important}
 html.os-on main.os-root .honour h3,html.os-on main.os-root .honour strong{font-size:14px!important;margin:0!important}
-html.os-on main.os-root .rivalry .rival-history{margin-top:4px!important}
-html.os-on main.os-root .rivalry .rival-history .row{min-height:0!important;padding:4px 0!important}
 
 /* ---------- Fanta · Oggi: squadra in una card, mossa, sfida e classifica nelle sottosezioni ---------- */
 html.os-on main.os-root .president-todos ul{display:flex;flex-direction:column}
@@ -325,8 +320,6 @@ html.os-on main.os-root .bar-tile .bar-teams{font-size:8px}
 html.os-on main.os-root .bar-tile .bar-stub{padding:5px}
 
 .fanta-slip-balance{margin:2px 0 5px;color:var(--muted);font-size:11px}
-.serie-standings-note{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;padding:3px 0 7px;color:var(--muted);font-size:10px}
-.serie-standings-note time{white-space:nowrap}
 .serie-standings-page{break-inside:avoid}
 .serie-standings-page+.serie-standings-page{break-before:column}
 html.os-on .serie-standings-page{max-height:calc(var(--os-h) - 4px);overflow:auto}
@@ -364,8 +357,6 @@ html.os-on main.os-root .president-panel .president-body{padding:2px 10px 10px}
 .president-panel #branding-form>.field{margin:5px 0}
 html.os-on main.os-root [data-os-flow] .community-grid{grid-template-columns:1fr 1fr}
 html.os-on main.os-root [data-os-flow] .community-grid>.card{padding:8px 10px!important}
-html.os-on main.os-root [data-os-flow] .rivalry{padding:8px 10px!important}
-html.os-on main.os-root [data-os-flow] .rivalry h2{margin:0 0 4px!important}
 html.os-on main.os-root [data-os-flow] :is(.almost-card,.verdict-honours)>summary{font-size:13px;font-weight:700}
 html.os-on main.os-root [data-os-flow] .verdict-honours{padding:7px 10px;margin-block:5px}
 .os-drill-target .community-grid{display:block!important}
@@ -391,16 +382,19 @@ html.os-on body #open-chat.chat-fab{
  bottom:clamp(12px,calc(var(--os-dots-bottom,0px) + var(--os-dots-h,10px) + 12px),calc(100dvh - 120px));
 }
 body.match-page-active main.match-page.verdict-page{
- width:min(100%,550px);height:calc(100dvh - var(--ux-header-height,64px) - var(--app-tabbar-height,84px));
+ width:min(100%,550px);height:var(--postcard-height,calc(100dvh - var(--ux-header-height,64px) - var(--app-tabbar-height,84px)));
  overflow:auto;overscroll-behavior:contain;padding:4px 12px!important
 }
+.match-page.bar-rules-page .rule-close{position:sticky;top:var(--ux-header-height,64px);z-index:2}
 .verdict-page-toolbar{display:flex;justify-content:flex-start;margin-bottom:4px}
 .verdict-page-toolbar .secondary{min-height:34px;padding:4px 9px}
 .verdict-page .verdict-postcard{padding:8px 12px;text-align:center}
 .verdict-page .verdict-postcard h2{font-size:23px;margin:2px 0}
 .verdict-page .verdict-postcard>p{margin:2px 0;font-size:12px}
 .verdict-page .postcard-winner{margin:5px auto}
-.verdict-page .postcard-quasi{width:70px}
+.verdict-page .postcard-quasi{width:min(65vw,var(--postcard-quasi-width,140px))}
+.verdict-page .postcard-quasi .quasi-scene-caption{display:none}
+.verdict-page .postcard-quasi .quasi-scene-person{inset:9% 8% 7%}
 .verdict-page .postcard-winner h3{font-size:23px;margin:2px 0}
 .verdict-page .postcard-quip{font-size:11px;line-height:1.2}
 .verdict-page .postcard-bets{grid-template-columns:repeat(5,minmax(0,1fr))!important}
@@ -408,3 +402,18 @@ body.match-page-active main.match-page.verdict-page{
 .verdict-page .postcard-bets .bar-teams{font-size:8px}
 .verdict-page .postcard-totals{padding:5px 0;font-size:12px}
 .verdict-page .verdict-postcard>small{display:none}
+.verdict-page .verdict-postcard>.v2-chips{flex-wrap:nowrap;overflow:auto;scrollbar-width:none}
+@media(max-height:730px){
+ .verdict-page .verdict-page-toolbar .secondary{min-height:28px;padding-block:3px}
+ .verdict-page .verdict-postcard{padding:4px 9px}
+ .verdict-page .verdict-postcard h2,.verdict-page .postcard-winner h3{font-size:19px;line-height:1.1}
+ .verdict-page .postcard-winner{margin:3px auto}
+ .verdict-page .verdict-postcard>.v2-chips{margin:2px 0;gap:3px}
+ .verdict-page .verdict-postcard>.v2-chips>.v2-chip{min-height:25px;padding:3px 7px;font-size:10px}
+ .verdict-page .bar-stub{padding:5px}
+ .verdict-page .bar-stub-head{padding-bottom:3px;margin-bottom:4px}
+ .verdict-page .postcard-bets .bar-bet{gap:1px;padding:2px}
+ .verdict-page .postcard-bets .bar-bet strong{font-size:16px}
+ .verdict-page .postcard-totals{padding-block:3px}
+ .verdict-page .postcard-totals b{display:inline}
+}

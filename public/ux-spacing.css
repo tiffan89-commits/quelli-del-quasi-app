@@ -1,9 +1,9 @@
 /* UX 0.29.46, block 1: one footer and one allowance for fixed controls. */
 body[data-game-mode] main,body.v2-on main,body.v2-on:has(.v2-slipbar) main{padding-bottom:var(--app-bottom-space,calc(84px + var(--safe-bp)))!important}
-body[data-game-mode] .footer[data-app-footer]{margin:20px 0 0;padding:12px 0 0;text-align:center;display:block}
-body[data-game-mode] .footer .analytics-footer{display:flex;align-items:center;justify-content:center;gap:14px;margin:0;padding:4px 0 0;min-height:32px;font:11px/1.4 'DM Sans',sans-serif}
-body[data-game-mode] .footer .analytics-footer a,body[data-game-mode] .footer .analytics-footer button{color:var(--muted);font:inherit}
-body[data-game-mode] .footer .analytics-footer button{padding:6px 0;min-height:30px}
+body[data-game-mode] .footer[data-app-footer]{margin:8px 0 0;padding:0;text-align:center;display:block}
+body[data-game-mode] .footer[data-app-footer] .footer-line{font-size:9.5px;line-height:14px}
+body[data-game-mode] .analytics-footer[hidden]{display:none}
+[data-account-privacy] .analytics-footer{margin:0;padding:4px 0;gap:12px;font-size:11px}
 body[data-game-mode] .data-attribution{display:none}
 
 /* Block 2: the stake chooser expands only on demand, above a one-row bar. */

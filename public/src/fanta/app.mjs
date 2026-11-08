@@ -5,6 +5,7 @@ import {createSportsPush} from '../sports-push.mjs';
 import {paintAuctionBadges} from '../auction-index.mjs';
 import {applyLeagueTheme,linkedLeagueIdentity} from '../league-theme.mjs';
 import {linkedInvite} from './league-invite.mjs';
+import {shareLeagueInvite} from '../league-invite.mjs';
 import {watchAuction,auctionClockOffset} from './auction-watch.mjs';
 import {createAuctionSocket} from './auction-socket.mjs';
 import {withHomeVotes} from './home-votes.mjs';
@@ -686,7 +687,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (d.legaInvite) {
       const invite=linkedInvite(ui.home?.league,barLeagues)||linkedInvite(l.data?.league,barLeagues);
       if(!invite)return true;
-      if (d.legaInvite === 'share' && navigator.share) navigator.share({ title: invite.name, text: `Entra nella lega ${invite.name} su Quelli del Quasi · codice ${invite.code}`, url:invite.url }).catch(() => {});
+      if (d.legaInvite === 'share') void shareLeagueInvite(invite);
       else navigator.clipboard?.writeText(invite.url).then(() => { l.copied = true; render(); setTimeout(() => { l.copied = false; if (['lega','oggi'].includes(ui.tab)) render(); }, 2000); }).catch(() => {});
       return true;
     }

@@ -32,7 +32,7 @@ import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, bindSlipV2, stakeInputValue } from "./v2/slip-v2.mjs";
 import { quasiScene, showQuasi } from "./quasi-scene.mjs";
 import {barSlipsView,barVerdictPatch,barProfileView} from "./bar-slips.mjs";
-import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource, renderLegaSections } from "./v2/tabs.mjs";
+import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource } from "./v2/tabs.mjs";
 import { renderLeagueChip, bindLeagueSwitcher, isLeagueAdmin } from "./v2/league-switcher.mjs";
 import { showLanding, hideLanding, markSession, pendingInvite, clearPendingInvite } from "./v2/landing.mjs";
 const PUBLIC_AUTH_HASHES={login:'accesso',register:'registrati',forgot:'recupera',resend:'reinvia',demo:'demo'};
@@ -51,9 +51,9 @@ import {fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi} from './fanta-quasi.mjs'
 import {achievementBoard} from './achievement-board.mjs';
 
 import { LEAGUE_COLORS, LEAGUE_EMBLEMS, applyLeagueTheme } from "./league-theme.mjs";
-import { whatsappInvite } from './league-invite.mjs';
+import {shareLeagueInvite,whatsappInvite} from './league-invite.mjs';
 import {renderAppInvite,bindAppInvites} from './app-invite.mjs';
-import {progressionView,portfolioBody,bindProgression,rewardsView,bindRewards} from './progression-ui.mjs';
+import {rewardsView,bindRewards} from './progression-ui.mjs';
 import {bindStyledSelects,syncStyledSelects,closeStyledSelect} from './styled-select.mjs';
 
 
@@ -95,7 +95,6 @@ import { groupMatches } from "/match-layout.mjs";
 import { predictionStatus } from "/prediction.mjs";
 let sourceScope = "seriea",
   competitionScope = null,
-  opponentId = null,
   offline = false,
   lastRefresh = null,
   draftWarning = false,
@@ -352,7 +351,7 @@ async function refresh(reset = false) {
       slipSummary(previousRound, picks, stake, me()?.credits ?? Infinity).dirty;
     if (wasDirty && !reset) persistDraft();
     state = next;for(const league of state.leagues)for(const round of league.rounds||[])round.publicChoicesAvailable=!!round.closed&&Array.isArray(round.publicSlips);sportsFeedBlockedUntil=0;
-    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega':'lega';if(route?.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
+    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega':'lega';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
     if(requestedSlip&&state.leagues.some(l=>l.id===requestedSlip)){
       leagueId=requestedSlip;const round=L().rounds.find(r=>r.id===requestedSlipRound);page='schedina';slipScope='mine';if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}
       requestedSlip=null;requestedSlipRound=null;const params=new URLSearchParams(location.search);params.delete('slip');params.delete('round');window.history.replaceState(null,'',location.pathname+(params.size?'?'+params:''));
@@ -527,7 +526,7 @@ function navIcon(id) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[id] || paths.schedina}</svg>`;
 }
 function shell(content) {
-  return `${!state.user ? '<header><div class="brand"><img class="brand-logo" src="/league-logo.svg" alt="Logo Quelli del Quasi" width="38" height="44">QUELLI DEL <b>QUASI.</b></div></header>' : ""}${state.user && (state.user.emailVerified || state.user.demo) && L() ? renderLeagueChip(L(), state.user.id, esc, fmt, barModeSwitch(), me(), 'crediti Bar',['admin','profilo'].includes(page)) + (['classifiche','storico'].includes(page) ? '<div class="v2-lega-nav">' + renderLegaSections(page, isLeagueAdmin(L(), state.user.id), esc) + "</div>" : "") : ""}${state.user && (state.user.emailVerified || state.user.demo) && !L() ? `<header class="v2-top">${barModeSwitch()}${presidentEntry('data-bar-page="profilo"')}</header>` : ""}${content}${state.user && (state.user.emailVerified || state.user.demo) ? renderTabBar(tabForPage(page, sourceScope)) : ""}${chatLauncherView(L(),state.user)}`;
+  return `${!state.user ? '<header><div class="brand"><img class="brand-logo" src="/league-logo.svg" alt="Logo Quelli del Quasi" width="38" height="44">QUELLI DEL <b>QUASI.</b></div></header>' : ""}${state.user && (state.user.emailVerified || state.user.demo) && L() ? renderLeagueChip(L(), state.user.id, esc, fmt, barModeSwitch(), me(), 'crediti Bar',['admin','profilo'].includes(page)) : ""}${state.user && (state.user.emailVerified || state.user.demo) && !L() ? `<header class="v2-top">${barModeSwitch()}${presidentEntry('data-bar-page="profilo"')}</header>` : ""}${content}${state.user && (state.user.emailVerified || state.user.demo) ? renderTabBar(tabForPage(page, sourceScope)) : ""}${chatLauncherView(L(),state.user)}`;
 }
 function slipsPage(l, r, m) {
   if(sourceScope==='fantacalcio')return '<section class="card"><h1>Le schedine Fanta hanno il loro posto.</h1><p>Le trovi nella sezione Schedine del Fanta, insieme alla tua lega.</p><button type="button" class="primary" id="open-native-slips">Apri le schedine Fanta</button></section>';
@@ -584,8 +583,6 @@ function slipsPage(l, r, m) {
       ? (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : '') + '<div data-os-content data-os-flow>'+communityView(
           l,
           sourceScope,
-          state.user,
-          opponentId,
           esc,
           fmt,
           competitionScope,
@@ -637,12 +634,12 @@ function render() {
         : page === "altri"
           ? otherSlips(l, r)
           : page === "regolamento"
-            ? regulation(l, r)
+            ? '<button type="button" class="secondary" data-page="barleague">← Chiudi regolamento</button>'+regulation(l, r)
             : !l
               ? onboarding()
               : page === "fantaquasi" ? fantaQuasiPage(l, state.user, esc)
               : page === "barleague" ? barLeagueInfo(l)
-              : page === "quasi" ? '<section class="hero"><div class="eyebrow">LA TUA LEGA</div><h1>I Quasi</h1><p>'+esc(l.name)+' · '+l.members.length+' al bancone.</p></section><details class="card my-league" open><summary>La squadra dei Quasi</summary>'+rosterView(l,state.user.id)+'</details>'+rewardsView(state.user,esc)
+              : page === "quasi" ? '<section class="hero"><div class="eyebrow">LA TUA LEGA</div><h1>I Quasi</h1><p>'+esc(l.name)+' · '+l.members.length+' al bancone.</p></section>'+rewardsView(state.user)+'<details class="card my-league" open><summary>La squadra dei Quasi</summary>'+rosterView(l,state.user.id)+'</details>'
               : page === "schedina" ? slipsPage(l, r, m)
                 : page === "classifiche"
                   ? ranking(l)
@@ -652,14 +649,14 @@ function render() {
                       ? settings(l, r)
                       : page === "calendario"
                         ? calendarPage()
-                        : leagueHistory(l);
+                        : settings(l, r);
   document.body.dataset.gameMode='bar';
   const palette = LEAGUE_COLORS.map(([color]) => color);
   applyLeagueTheme(L());
   $("#app").innerHTML = shell(
     '<main><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
       ((page==='lega'||page==='quasi')?nicknameNotice(state.user):'')+content +
-      '<footer class="footer"><p class="footer-line"><span>© ' + new Date().getFullYear() + ' QUELLI DEL QUASI. Infinite scuse.</span> <span aria-hidden="true">·</span> <span>Crediti virtuali · Nessun denaro reale</span> <span aria-hidden="true">·</span> <span>Niente pubblicità, per sempre.</span> <span aria-hidden="true">·</span> <span><a href="https://www.api-football.com/" rel="dofollow" title="Sports data by API-FOOTBALL">Powered by API-FOOTBALL</a></span></p></footer><p id="live-channel-status" class="live-channel-status tiny muted" role="status" aria-live="polite"></p></main>',
+      '<p id="live-channel-status" class="live-channel-status tiny muted" role="status" aria-live="polite"></p></main>',
   );
 
   displayedSlipRoundId=page==='schedina'?r?.id:null;
@@ -1146,12 +1143,12 @@ function matchStatus(m) {
     return "Risultato in aggiornamento";
   return m.kickoff ? date(m.kickoff) : "Orario da definire";
 }
-function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt,null,portfolioShell());}
+function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt);}
 function adminBudget() { return ""; }
 function profile({embedded=false}={}) {
   const u = state.user,
     required = !u.emailVerified && !u.demo;
-  return `${nicknameNotice(u,{profile:true})}${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${required ? '<div class="notice" role="status">Per continuare devi inserire e confermare un indirizzo email. Punti, crediti e schedine restano salvati.</div>' : ""}${renderAppInvite()}${embedded?'<section class="profile-account profile-embedded">':'<details class="card profile-account" '+(required?'open':'')+'><summary>I tuoi dati e sicurezza</summary>'}<div class="split"><div class="card"><h3>I tuoi dati</h3>${u.username?`<p class="muted">Username del vecchio account: <b>${esc(u.username)}</b></p>`:""}<p class="muted">Email: ${esc(u.email || "Non inserita")}</p><p class="${u.emailVerified ? "green" : "orange"}">${u.emailVerified ? "✓ Email verificata" : "Email da verificare"}</p>${u.pendingEmail ? `<p class="muted">Conferma in attesa: ${esc(u.pendingEmail)}</p>` : ""}<form id="profile-name"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary">Salva soprannome</button></form></div><form id="account-email" class="card"><h3>${required ? "Attiva il tuo account" : "Email e sicurezza"}</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail || u.email || "")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button><p class="tiny muted">Apri il link ricevuto, poi torna qui. Premi Aggiorna dopo aver confermato.</p>${u.pendingEmail || (u.email && !u.emailVerified) ? '<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>' : ""}</form></div>${embedded?'</section>':'</details>'}${!required?(embedded?'<section class="profile-reminder-settings profile-embedded"><h3>Avvisi e promemoria</h3>':'<details class="card profile-reminder-settings"><summary>Avvisi e promemoria</summary>')+'<section class="card profile-alerts"><h2>Il bar ti chiama</h2><label class="reminder-toggle"><input id="reminder-preference" type="checkbox" '+(u.remindersEnabled!==false?'checked':'')+'><span>Promemoria schedina · due ore prima</span></label><p class="tiny muted">Un avviso sul dispositivo per ogni lega prima della chiusura, anche se hai già salvato.'+(L()?' Notifiche sul telefono dopo il tuo consenso.</p><button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button>':'</p>')+'</section>':''}${!required&&!u.demo?'<section class="card profile-email-reminders"><label class="reminder-toggle"><input id="email-reminder-preference" type="checkbox" '+(u.emailRemindersEnabled?'checked':'')+'><span>Ricevi avvisi via mail se ho dimenticato di inserire la schedina</span></label><p class="tiny muted">Una sola email a un’ora dalla chiusura, solo se manca la schedina. Niente pubblicità, niente newsletter. Puoi disattivarla anche dal link nell’email.</p></section>':''}${!required?(embedded?'</section>':'</details>'):''}${!required && state.user?.emailVerified && !state.user.demo ? supportSection() : ""}${embedded?'':settingsLogout()}`;
+  return `${nicknameNotice(u,{profile:true})}${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${required ? '<div class="notice" role="status">Per continuare devi inserire e confermare un indirizzo email. Punti, crediti e schedine restano salvati.</div>' : ""}${renderAppInvite()}${embedded?'<section class="profile-account profile-embedded">':'<details class="card profile-account" '+(required?'open':'')+'><summary>I tuoi dati e sicurezza</summary>'}<div class="split"><div class="card"><h3>I tuoi dati</h3>${u.username?`<p class="muted">Username del vecchio account: <b>${esc(u.username)}</b></p>`:""}<p class="muted">Email: ${esc(u.email || "Non inserita")}</p><p class="${u.emailVerified ? "green" : "orange"}">${u.emailVerified ? "✓ Email verificata" : "Email da verificare"}</p>${u.pendingEmail ? `<p class="muted">Conferma in attesa: ${esc(u.pendingEmail)}</p>` : ""}<form id="profile-name"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary">Salva soprannome</button></form></div><form id="account-email" class="card"><h3>${required ? "Attiva il tuo account" : "Email e sicurezza"}</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail || u.email || "")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button><p class="tiny muted">Apri il link ricevuto, poi torna qui. Premi Aggiorna dopo aver confermato.</p>${u.pendingEmail || (u.email && !u.emailVerified) ? '<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>' : ""}</form></div>${embedded?'</section>':'</details>'}${!required?(embedded?'<section class="profile-reminder-settings profile-embedded"><h3>Avvisi e promemoria</h3>':'<details class="card profile-reminder-settings"><summary>Avvisi e promemoria</summary>')+'<section class="card profile-alerts"><h2>Il bar ti chiama</h2><label class="reminder-toggle"><input id="reminder-preference" type="checkbox" '+(u.remindersEnabled!==false?'checked':'')+'><span>Promemoria schedina · due ore prima</span></label><p class="tiny muted">Un avviso sul dispositivo per ogni lega prima della chiusura, anche se hai già salvato.'+(L()?' Notifiche sul telefono dopo il tuo consenso.</p><button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button>':'</p>')+'</section>':''}${!required&&!u.demo?'<section class="card profile-email-reminders"><label class="reminder-toggle"><input id="email-reminder-preference" type="checkbox" '+(u.emailRemindersEnabled?'checked':'')+'><span>Ricevi avvisi via mail se ho dimenticato di inserire la schedina</span></label><p class="tiny muted">Una sola email a un’ora dalla chiusura, solo se manca la schedina. Niente pubblicità, niente newsletter. Puoi disattivarla anche dal link nell’email.</p></section>':''}${!required?(embedded?'</section>':'</details>'):''}${!required && state.user?.emailVerified && !state.user.demo ? supportSection() : ""}<div data-account-privacy></div>${embedded?'':settingsLogout()}`;
 }
 function updateDashboard() {
   const region = $('#league-dashboard');
@@ -1227,16 +1224,6 @@ function maybeRevealRewards(){
   d.showModal();
  }catch{rewardRevealOpen=false;}
 }
-function portfolioShell(){return '<section class="dash-portfolio" id="portfolio-shell" aria-label="La Borsa del Quasi"><div id="portfolio-lazy"></div></section>';}
-function bindLazySections(l){
- if(!l)return;
- const target=document.querySelector('#portfolio-lazy');
- if(target&&!target.dataset.loaded){
-  target.dataset.loaded='true';
-  target.outerHTML=progressionView(l,'seriea',esc,fmt,null,{serieAOnly:true});
-  bindProgression(l,'seriea',esc,fmt,()=>{});
- }
-}
 function fantasyNudge(){return '';}
 
 function settings(l,r){
@@ -1265,7 +1252,7 @@ function barLeagueInfo(l){
   (admin?'<button type="button" class="lega-tile is-admin" data-bar-page="admin">'+hubIcon('gear')+'<b>Pannello del presidente</b><small>'+(tasks?tasks+(tasks===1?' cosa da fare':' cose da fare'):'Tutto in ordine')+'</small></button>':'')+
   '<details class="lega-tile lega-tile-members"><summary>'+hubIcon('people')+'<b>Partecipanti · '+l.members.length+'</b><small>Chi è al bancone</small></summary>'+barMembers(l)+'</details>'+
   '<button type="button" class="lega-tile" data-bar-page="regolamento">'+hubIcon('rules')+'<b>Regolamento del Bar</b><small>'+esc(rules)+'</small></button>'+
-  '<button type="button" class="lega-tile" data-bar-page="admin" data-president-group="persone">'+hubIcon('invite')+'<b>Invita nella tua lega</b><small>WhatsApp, link o codice</small></button>'+
+  (l.code?'<button type="button" class="lega-tile" id="league-share-invite">'+hubIcon('invite')+'<b>Invita nella tua lega</b><small>Condividi l’invito</small></button>':'')+
   '<button type="button" class="lega-tile" id="league-open-chat">'+hubIcon('chat')+'<b>Chiacchiere da bar</b><small>Apri la chat della lega</small></button>'+
   '</div>'+leagueActions()+'</div>';
 }
@@ -1291,6 +1278,12 @@ function calendarStatus(m) {
     : m.kickoff
       ? date(m.kickoff)
       : "Da disputare";
+}
+function openBarRules(){
+  const view=openMatchPage({label:'Regolamento del Bar'});
+  view.classList.add('bar-rules-page');
+  view.innerHTML='<button type="button" class="secondary rule-close" id="close-modal">← Chiudi regolamento</button>'+regulation(L(),R());
+  view.querySelector('.rule-close').onclick=()=>view.close();
 }
 function regulation(l, r) {
   const rules = r?.rules ||
@@ -1365,15 +1358,6 @@ function serieACalendarPage() {
         )
         .join("")}</details>`,
   )}`;
-}
-function leagueHistory(l) {
-  return `<h2 style="margin-bottom:25px">Il conto delle tue certezze</h2><div class="card">${l.ledger.length ? l.ledger.map((x) => `<div class="rankrow"><span>↗</span><div>${esc(x.reason)}<small>${date(x.created)}</small></div><b class="${x.amount >= 0 ? "green" : "orange"}">${x.amount >= 0 ? "+" : ""}${fmt(x.amount)} cr</b></div>`).join("") : "Nessun movimento. La tua reputazione è ancora intatta."}</div><h2>Giornate archiviate</h2>${l.rounds
-    .filter((x) => x.settled)
-    .map(
-      (x) =>
-        `<div class="card" style="margin-top:15px"><h3>${esc(x.title)}</h3>${x.matches.map((m) => `<div class="row"><span>${fixtureTeams(m.home, m.away)}</span><b>${m.score?.join(" – ")}</b></div>`).join("")}</div>`,
-    )
-    .join("") || '<div class="card" style="margin-top:15px"><p class="tiny muted">Nessuna giornata chiusa per ora: i risultati finali compariranno qui.</p></div>'}`;
 }
 let supportPosition = null;
 try {
@@ -1489,7 +1473,7 @@ function navigatePage(next) {
   if(next===page)return;
   if(next==='schedina'){persistDraft();selectedRoundId=null;slipScope='mine';hydrateDraft();}
   sourceScope='seriea';dashboardSource='seriea';
-  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',quasi:'quasi',profilo:'profilo',storico:'classifica/storico',regolamento:'regolamento',admin:'admin',barleague:'lega'})[next]||next,league:L()?.id});
+  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',barleague:'lega'})[next]||next,league:L()?.id});
   if (next === "chat") { openLeagueChat(); return; }
   persistDraft();
   page = next;
@@ -1577,6 +1561,7 @@ function bindAccount(onChanged=()=>{}) {
 }
 function bind(l, r) {
   bindRandomLeagues(document);
+  if($('#league-share-invite'))$('#league-share-invite').onclick=()=>void shareLeagueInvite(l);
   if($('#league-open-chat'))$('#league-open-chat').onclick=()=>openLeagueChat();
   if($('#open-native-slips'))$('#open-native-slips').onclick=()=>openNativeSlips();
   const fantaSelect=document.querySelector('[data-fanta-bar-select]');if(fantaSelect)fantaSelect.onchange=e=>{persistDraft();leagueId=e.target.value;sourceScope='fantacalcio';competitionScope=null;selectedRoundId=null;hydrateDraft();render();};
@@ -1596,13 +1581,11 @@ function bind(l, r) {
     void navigatePage(x.page);
   };
   bindTabBar((t) => v2go(routeForTab(t,L(),state.leagues)));
-  document.querySelectorAll("[data-v2-lega]").forEach((b) => (b.onclick = () => v2go({ page: b.dataset.v2Lega })));
   if (state.user) bindLeagueSwitcher({ leagues: state.leagues, activeId: L()?.id, uid: state.user.id, esc,
     onSelect: (id) => { try { persistDraft(); } catch {} leagueId = id; sourceScope = defaultSource(L()); selectedRoundId = null; competitionScope = null; hydrateDraft(); try { localStorage.setItem("quasi-active-league:" + state.user.id, id); } catch {} render(); window.scrollTo(0, 0); liveChannel.wake(); },
     onSubmit: submitLeague });
   bindDashboard();
   updateObjectives();
-  bindLazySections(l);
   if (page === "quasi" && l) bindRoster(l, openStudio);
   if (page === "fantaquasi") bindFantaQuasi({ api, user: state.user, notify, onDone: () => { render(); if(page==='fantaquasi')document.querySelector('.fq-signup')?.scrollIntoView({block:'center',behavior:'smooth'}); } });
   if(state.user?.demo){
@@ -1610,7 +1593,6 @@ function bind(l, r) {
     top.innerHTML='<span>Stai esplorando la demo</span><button type="button" class="public-home-button">← Pagina iniziale</button>';
     top.querySelector('button').onclick=e=>void returnToLanding(e.currentTarget);document.getElementById('app').prepend(top);
   }
-  if(document.querySelector('#league-portfolio .portfolio-body'))bindProgression(l,'seriea',esc,fmt,()=>{});
   bindRewards(state.user,esc,(slot,id)=>{void openStudio(id);});
   bindStyledSelects();
   document.querySelectorAll('[data-close-section]').forEach(b=>b.onclick=()=>{const d=b.closest('details');if(d){d.open=false;d.querySelector('summary')?.scrollIntoView({block:'nearest'});}});
@@ -1796,7 +1778,7 @@ function serieATable() {
   const columns=["#","Squadra","Pt","PG","V","N","P","GF","GS","DR"];
   const table=(rows,start)=>`<div class="serie-standings-page"><div class="serie-table-card"><table class="serie-table"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map((x,i)=>`<tr data-ranking-team="${esc(x.name)}"><td>${start+i+1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played","won","drawn","lost","gf","gs","dr"].map(k=>`<td>${x[k]}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
   const middle=Math.ceil(t.rows.length/2);
-  return `<div class="serie-standings-note" data-os-header><h1 class="sr-only">Classifica Serie A</h1><small>PG: giocate · V/N/P: vinte, pari, perse · GF/GS: gol fatti/subiti · DR: differenza reti.</small>${t.updatedAt?`<time datetime="${esc(t.updatedAt)}">Ultimo aggiornamento ${esc(date(t.updatedAt))}</time>`:''}</div><div data-os-content class="serie-standings">${table(t.rows.slice(0,middle),0)}${middle<t.rows.length?table(t.rows.slice(middle),middle):''}</div>`;
+  return `<h1 class="sr-only">Classifica Serie A</h1><div data-os-content class="serie-standings">${table(t.rows.slice(0,middle),0)}${middle<t.rows.length?table(t.rows.slice(middle),middle):''}</div>`;
 }
 function otherSlips(l, r) {
   if (!l || !r)
@@ -2171,15 +2153,27 @@ function bindNew(l, r) {
       hydrateDraft();
       render();
     };
-  if ($("#rival-switch"))
-    $("#rival-switch").onchange = (e) => {
-      opponentId = e.target.value;
-      render();
-    };
   if ($("#share-verdict"))
     $("#share-verdict").onclick = () => {
       const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar'});
-      const show=uid=>{d.innerHTML='<div class="verdict-page-toolbar"><button type="button" class="secondary" id="close-modal">← Verdetto</button></div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);d.querySelector('#close-modal').onclick=()=>d.close();d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));};show();
+      const fit=()=>{
+        const card=d.querySelector('.verdict-postcard'),portrait=d.querySelector('.postcard-quasi');
+        if(!card||!portrait)return;
+        const nav=document.querySelector('.v2-tabbar')?.getBoundingClientRect();
+        const bottom=nav?.top>window.innerHeight/2?nav.top:window.innerHeight;
+        d.style.setProperty('--postcard-height',Math.floor(bottom-d.getBoundingClientRect().top)+'px');
+        const width=Math.floor(portrait.clientWidth+(bottom-card.getBoundingClientRect().bottom-10)*.8);
+        d.style.setProperty('--postcard-quasi-width',Math.max(76,Math.min(220,width))+'px');
+      };
+      const show=uid=>{
+        d.innerHTML='<div class="verdict-page-toolbar"><button type="button" class="secondary" id="close-modal">← Verdetto</button></div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);
+        d.querySelector('#close-modal').onclick=()=>d.close();
+        d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));
+        fit();
+      };
+      window.addEventListener('resize',fit);
+      d.addEventListener('close',()=>window.removeEventListener('resize',fit),{once:true});
+      show();
     };
   bindChoices(r);
   if ($("#stake"))
@@ -2539,7 +2533,7 @@ function applyLive(data){
 document.addEventListener('quasi:chat-context',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league||l.id===e.detail?.league);syncChatLauncher(linked||null);if(linked)updateChatWidget();});
 document.addEventListener('quasi:fanta-team-claimed',()=>{void refresh();});
 document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked)syncChatLauncher(linked);openLeagueChat();});
-document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['join-league','create-league'].includes(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','regolamento','admin','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}void navigatePage(target.dataset.barPage==='invita'?'profilo':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
+document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['join-league','create-league'].includes(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','regolamento','admin','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'profilo':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
 const liveChannel=createSportsPush({
   context:()=>!preferredFanta()&&state.user&&!state.user.demo&&state.user.emailVerified&&L()?{mode:'bar',league:L().id}:null,
@@ -2574,7 +2568,7 @@ setInterval(() => {
 
 
 window.addEventListener("pagehide", persistDraft);
-window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega';if(route.section==='storico')page='storico';if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
+window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega';if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
 // Formations remain a stable DB snapshot. The live channel patches only scores,
 // events and small numeric regions, never formations, accordions or portraits.
 

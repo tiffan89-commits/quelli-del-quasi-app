@@ -95,7 +95,7 @@ function members(l, ui) {
     </li>`).join('')}</ul>
     ${l.isAdmin&&ui.adminTools&&!pilot&&l.league.kind!=='random'?`<details class="fanta-block"><summary>Associa squadre e giocatori</summary><form class="fanta-lg-form" data-team-link-form><label>Squadra<select name="team">${l.members.map(m=>`<option value="${esc(m.team.id)}">${esc(m.team.name)}</option>`).join('')}</select></label><label>Email o vecchio username del giocatore<input name="username" required maxlength="254" autocapitalize="none" autocorrect="off" autocomplete="off"></label><button type="submit" class="primary">Associa account</button>${ui.linkError?`<p class="fanta-note is-alert" role="alert">${esc(ui.linkError)}</p>`:''}</form></details>`:''}
     ${full ? `<p class="fanta-note">La lega è al completo: ${max} partecipanti.</p>` : `<p class="fanta-note">${max-n} squadre sono guidate dal computer finché non entrano amici.</p>`}
-  </section>${ui.inSettings?renderLeagueInvite(l.league,ui.invite,{copied:ui.copied,always:true}):'<button type="button" class="secondary" data-go="presidente" data-president-group="persone">Invita nella tua lega</button>'+renderAppInvite()}`;
+  </section>${ui.inSettings?renderLeagueInvite(l.league,ui.invite,{copied:ui.copied,always:true}):ui.invite?.code?'<button type="button" class="secondary" data-lega-invite="share">Invita nella tua lega</button>':''+renderAppInvite()}`;
 }
 
 export function renderLega(l, ui = {}, now = Date.now()) {

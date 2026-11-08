@@ -46,7 +46,7 @@ import {achievementBoard} from '../public/src/achievement-board.mjs';
 import {renderLineup} from '../public/src/lineup-pitch.mjs';
 import { whatsappInvite } from '../public/src/league-invite.mjs';
 import {renderAppInvite,bindAppInvites} from '../public/src/app-invite.mjs';
-import {progressionView,portfolioBody,rewardsView} from '../public/src/progression-ui.mjs';
+import {rewardsView} from '../public/src/progression-ui.mjs';
 import {roomSvg} from '../public/src/locker-rooms.mjs';
 import {fantaQuasiTeaser,fantaQuasiPage} from '../public/src/fanta-quasi.mjs';
 import {REWARD_SLOTS} from '../public/src/reward-catalog.mjs';
@@ -127,7 +127,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     leagueDashboard, countdownLabel, quasiScene, rosterView, achievementBoard, avatarSvg, AVATAR_OPTIONS, whatsappInvite,renderAppInvite,bindAppInvites,
     fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},showQuasi,barSlipsView,barVerdictPatch,barProfileView,
     bindRoster(){},openQuasiStudio(){},renderLineup,bindLineupPitch(){},
-    progressionView,portfolioBody,rewardsView,roomSvg,REWARD_SLOTS,
+    rewardsView,roomSvg,REWARD_SLOTS,
     bindProgression(){},bindRewards(){},bindStyledSelects(){},syncStyledSelects(){},closeStyledSelect(){},pushSupported(){return false;},enableLeagueNotifications(){},
     ...slipState,
     communityView,pointTerms,
@@ -200,7 +200,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1], /data-v2-tab="oggi"/);
   const beforeNavigation=requestCount;blockRequests=true;
   try{
-    for(const target of ['profilo','classifiche','calendario','quasi','storico','regolamento','admin','lega','schedina']){
+    for(const target of ['profilo','classifiche','calendario','quasi','regolamento','admin','lega','schedina']){
       vm.runInContext('navigatePage('+JSON.stringify(target)+')',ctx);
       assert.equal(vm.runInContext('page',ctx),target==='profilo'?'admin':target);
       assert.match(html,/aria-current="page"/);
@@ -246,11 +246,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html, /id="day-objectives"/);
   assert.match(html, /class="dash-summary"/);
   assert.doesNotMatch(html, /Il Fantacalcio del Quasi|Scegli la tua squadra/);
-  assert.doesNotMatch(html,/id="portfolio-lazy"/);
+  assert.doesNotMatch(html,/Borsa del Quasi|portfolio-mini/);
   vm.runInContext("page='regolamento';render()", ctx);
   assert.match(html, /IL REGOLAMENTO/);
-  vm.runInContext("page='storico';render()", ctx);
-  assert.match(html, /Il conto delle tue certezze/);
   vm.runInContext("page='quasi';render()", ctx);
   assert.match(html, /league-quasi-card/);
   assert.match(html, /data-v2-tab="quasi"/);
@@ -260,7 +258,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='lega';render()", ctx);
   assert.match(html, /data-home-league-invite/);
   vm.runInContext("page='classifiche';render()",ctx);
-  assert.doesNotMatch(html,/data-v2-lega="admin"/);
+  assert.doesNotMatch(html,/data-v2-lega=|Borsa del Quasi|Giornate archiviate/);
   vm.runInContext("page='lega';render()",ctx);
   assert.doesNotMatch(html,/id="league-switch"|brand-logo|reload-data/);
   assert.match(html,/id="v2-open-leagues"/);
@@ -277,7 +275,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='classifiche';rankingScope='seriea';render()", ctx);
   assert.match(html,/data-ranking-metric="points"/);assert.doesNotMatch(html,/Vittorie casa/);
   vm.runInContext("page='schedina';sourceScope='seriea';slipScope='standings';render()",ctx);
-  assert.match(html,/Classifica Serie A/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori/);assert.match(html,/serie-table-card/);
+  assert.match(html,/Classifica Serie A/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori|differenza reti|Ultimo aggiornamento/);assert.match(html,/serie-table-card/);
   vm.runInContext("slipScope='mine'",ctx);
   vm.runInContext("page='schedina';rankingScope='league';render()", ctx);
   assert.doesNotMatch(html, /data-source="fantacalcio"/);

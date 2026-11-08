@@ -28,6 +28,6 @@ test('every slip subsection defaults to the same open round and hides future rou
 });
 test('verdict does not label the previous winners as the new matchday result',async()=>{
  const {communityView}=await import('../public/src/community.mjs');const league={members:[{uid:'u',name:'Mister'}],community:{seriea:{recap:{round:'current',title:'Giornata 10',winners:['u'],points:8,participants:1,almost:[]},history:[],honours:[]}}};
- const old=communityView(league,'seriea',{id:'u'},null,String,String,null,{...rounds[1],title:'Giornata 10'});assert.match(old,/Mister/);assert.match(old,/8 punti/);
- const next=communityView(league,'seriea',{id:'u'},null,String,String,null,{...rounds[2],title:'Giornata 11',closed:true});assert.match(next,/Giornata 11 · in corso/);assert.doesNotMatch(next,/8 punti/);
+ const old=communityView(league,'seriea',String,String,null,{...rounds[1],title:'Giornata 10'});assert.match(old,/Mister/);assert.match(old,/8 punti/);
+ const next=communityView(league,'seriea',String,String,null,{...rounds[2],title:'Giornata 11',closed:true});assert.match(next,/Giornata 11 · in corso/);assert.doesNotMatch(next,/8 punti/);
 });

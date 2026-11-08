@@ -58,6 +58,6 @@ test('Fanta subsections preserve old selection, re-entry resets to open and unkn
 });
 test('verdict and postcard read the chosen historical round instead of the latest winner',()=>{
  const league={name:'Bar',members:[{uid:'u',name:'Vecchio campione'},{uid:'v',name:'Nuovo campione'}],rounds:[{...past,publicSlips:[{uid:'u',picks:{m10:'1'},stake:10,prize:20}]}],community:{seriea:{recap:{round:'r11',winners:['v'],points:9},history:[{id:'r10',players:[{uid:'u',points:1,wrong:0,correct:1,total:1,picks:{m10:'1'},stake:10}]}],honours:[]}}};
- const html=communityView(league,'seriea',{id:'u'},null,String,String,null,past);assert.match(html,/Giornata 10/);assert.match(html,/1 punti/);assert.doesNotMatch(html,/9 punti/);
+ const html=communityView(league,'seriea',String,String,null,past);assert.match(html,/Giornata 10/);assert.match(html,/1 punti/);assert.doesNotMatch(html,/9 punti/);
  const card=createVerdictCard(league,'seriea',null,null,'r10');assert.match(card,/Vecchio campione/);assert.match(card,/2 – 0/);assert.doesNotMatch(card,/Nuovo campione/);
 });

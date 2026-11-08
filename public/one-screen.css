@@ -22,9 +22,9 @@ html.os-on main.os-root :is(article,li,figure,tr,summary,button,a,label,fieldset
  details:not([open]),h1,h2,h3,h4,h5,p,[class*="-card"],[class*="-row"],[class*="-item"],[class*="-tile"],[class*="-chip"],[class*="-head"],[class*="-hero"]){break-inside:avoid}
 html.os-on main.os-root :is(h1,h2,h3,h4,h5,summary,[class*="-head"],[class*="eyebrow"]){break-after:avoid}
 html.os-on main.os-root>*:first-child{margin-top:0}
-/* Il footer con le note legali sta in fondo all'ultima pagina, senza margini extra. */
-html.os-on main.os-root>.footer{margin-top:10px;padding:8px 0 4px;font-size:10px;line-height:1.35}
-html.os-on main.os-root>.footer .footer-line{margin:0 0 4px}
+/* Il copyright resta fuori dalle colonne, così non può creare una pagina. */
+html.os-on body #app>main.os-root>[data-app-footer]{position:fixed;inset-inline:0;bottom:calc(var(--os-dots-bottom,0px) + var(--os-dots-h,10px));height:14px;margin:0;padding:0;pointer-events:none}
+html.os-on main.os-root>[data-app-footer].os-copyright-hidden{visibility:hidden}
 
 /* Un blocco spezzato ripete bordi e margini interni su ogni pagina. */
 html.os-on main.os-root *{-webkit-box-decoration-break:clone;box-decoration-break:clone}
@@ -73,14 +73,12 @@ html.os-on .os-pin>*{margin:0}
 html.os-on .os-pin>div,html.os-on .os-pin>.nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html.os-on .os-pin td{padding:0 4px}
 @media (min-width:760px){html.os-on .os-pin:not([hidden]){left:50%;right:auto;width:min(560px,calc(100% - 28px));transform:translateX(-50%)}}
-html.os-on main.os-root>.footer.os-solo{display:none}
 html.os-on #app>.os-segs{order:0!important}
-html.os-on main.os-split>.footer{margin:0!important;padding:3px 10px!important}
 html.os-on main.os-split>#live-channel-status{margin:0!important;padding:0 14px 3px!important}
 html.os-on main.os-split>#live-channel-status:empty{display:none}
-html.os-on body #app>main.os-root.os-drill:not(.os-split),
-html.os-on body #app>main.os-split [data-os-content].os-drill{columns:auto;overflow-x:hidden;overflow-y:auto}
-.os-track.os-drill.os-drill-parent>:not(.os-drill-path),
+html.os-on body #app>main.os-root.os-drill:not(.os-split,.os-drill-paged),
+html.os-on body #app>main.os-split [data-os-content].os-drill:not(.os-drill-paged){columns:auto;overflow-x:hidden;overflow-y:auto}
+.os-track.os-drill.os-drill-parent>:not(.os-drill-path,[data-app-footer]),
 .os-track.os-drill .os-drill-parent>:not(.os-drill-path){display:none!important}
 .os-track.os-drill .os-drill-path{display:block!important;max-height:none!important;overflow:visible!important}
 .os-track.os-drill .os-drill-target>summary{display:none!important}

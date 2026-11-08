@@ -23,7 +23,7 @@ Nel Bar e nel Fanta nessuna sezione scorre in verticale. Ogni sezione mostra l'e
   - un contenitore a scorrimento orizzontale che in realtà ci sta in larghezza si spezza (`.os-unclip`);
   - un blocco più alto di una pagina **e** più largo dello schermo scorre al suo interno (`.os-tall`).
 - **Scorrimento verticale di riserva**: il documento non scorre mai (`html.os-on body{position:fixed;inset:0}`, serve anche per iOS). Se qualcosa dovesse comunque scorrere in verticale, scorre dentro `main`, che finisce **sopra** la barra in basso e non ci passa sotto. Se un browser non supporta le colonne (`html.os-nocols`), la pagina scorre in verticale, sempre dentro `main`.
-- **Footer legale**: in fondo all'ultima pagina, compatto. Se finirebbe da solo su una pagina vuota viene nascosto (`.os-solo`).
+- **Copyright**: visibile solo sull’ultima pagina, fuori dalle colonne per evitare una pagina vuota. I controlli privacy e statistiche sono nelle impostazioni account.
 
 ### Configurazione (in `one-screen.mjs`)
 - `EXCLUDED` — mai attivo su: sala d'asta e wizard (`.auction-room`, `.fanta-asta`, `.auction-lobby`, `.auction-wizard-fields`, `.auction-page-head`, `[data-bid-form]`, `.auction-countdown-overlay`), voce "Asta" della Lega Fanta, `#/fanta/asta`, pagina partita (`body.match-page-active`) e landing (`.pb-landing`).
