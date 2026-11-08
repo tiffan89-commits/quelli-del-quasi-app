@@ -1,7 +1,6 @@
 // Pagina "Io" del Fanta e spiegazione della demo.
 // Account, avatar (il Quasi) e privacy sono gli stessi del Bar: qui solo ciò che riguarda il Fanta.
 import { esc } from './formato.mjs';
-import {renderAppInvite} from '../app-invite.mjs';
 
 const NOTIFY = [
   ['lineupReminder', 'Promemoria formazione', '2 ore prima della scadenza, se non hai ancora schierato'],
@@ -33,7 +32,6 @@ export function renderIo(me, leagues, activeLeagueId, ui = {}, demo = false) {
         ${l.role === 'admin' ? '<span class="v2-role is-admin">ADMIN</span>' : ''}</button></li>`).join('')}</ul>
     </section>
     <button type="button" class="secondary" data-mode="bar" data-bar-page="logout">Logout</button>
-    ${renderAppInvite()}
     <section class="fanta-block"><div class="dash-section-head"><div><h2>Il tuo Quasi e l'account</h2><small>Sono gli stessi del Bar: un solo account per tutto</small></div></div>
       <button type="button" class="secondary fanta-io-bar" data-mode="bar" data-bar-page="profilo">Gestiscili nella parte Bar <span aria-hidden="true">→</span></button>
     </section>

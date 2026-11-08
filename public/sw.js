@@ -59,7 +59,7 @@ self.addEventListener("push", (event) => {
       {
         body: String(
           data.body || "Un nuovo messaggio ti aspetta nella lega.",
-        ).slice(0, 200),
+        ).slice(0, data.kind === "chat" ? 1300 : 200),
         icon: "/assets/icons/icon-192.png",
         badge: "/assets/icons/icon-192.png",
         tag: typeof data.tag === "string" ? data.tag : "quasi-chat",
@@ -85,6 +85,12 @@ self.addEventListener("notificationclick", (event) => {
       });
       for (const client of windows) {
         if (new URL(client.url).origin === self.location.origin) {
+          if(!fanta&&!reminder&&league){
+            const path=new URL(client.url).pathname;
+            if(path!=="/"&&path!=="/index.html")continue;
+            const opened=await client.navigate?.(url).catch(()=>null);
+            if(opened){await opened.focus();return;}
+          }
           await client.focus();
           client.postMessage({ type: fanta?'open-fanta':reminder?'open-slip':"open-chat", league,url:fanta?url:null,round:reminder?new URL(url).searchParams.get('round'):null });
           return;

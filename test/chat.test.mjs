@@ -135,7 +135,7 @@ test("chat validation, throttling, pagination and author/president moderation ar
   assert.equal(old.messages.length, 14);
   assert.equal(old.hasOlder, false);
 });
-test("push requires opt in, targets only current league members, omits chat text and removes expired subscriptions", async () => {
+test("push requires opt in, targets only current league members, includes the message and exact league link and removes expired subscriptions", async () => {
   const { s, l, transact, call } = fixture();
   await call("b", "chat-subscribe", { subscription: sub(1) });
   const sent = [];
@@ -149,8 +149,12 @@ test("push requires opt in, targets only current league members, omits chat text
     sendPush: async (subscription, body) => sent.push({ subscription, body }),
   });
   assert.equal(sent.length, 1);
-  assert.equal(sent[0].body.includes("Segreto"), false);
-  assert.equal(JSON.parse(sent[0].body).league, l.id);
+  const payload=JSON.parse(sent[0].body);
+  assert.equal(payload.title,l.name);
+  assert.equal(payload.body,s.users.find(u=>u.id==="a").name+": Segreto della chat");
+  assert.equal(payload.kind,"chat");
+  assert.equal(payload.league,l.id);
+  assert.equal(payload.url,"/?chat="+encodeURIComponent(l.id));
   assert.equal(s.chatPushOutbox.length, 0);
   await call("b", "chat-preferences", { notify: false });
   await call("a", "chat-send", { text: "Silenzio", nonce: "unique_nonce_456" });

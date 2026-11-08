@@ -5,6 +5,14 @@
 
 # Unreleased
 
+- Le notifiche chat mostrano lega, autore e messaggio. Toccandole si apre la conversazione della lega indicata.
+
+- La chat svuota il campo e mostra il messaggio appena lo invii. I non letti hanno un pallino su Lega e un contatore sulla chat.
+
+- La condivisione del link di registrazione è una barra in Impostazioni sotto Assistenza, con un pulsante WhatsApp dedicato.
+
+- La navigazione resta fuori vista mentre è aperta la tastiera del telefono. Le schede dell’editor dello stemma scorrono soltanto in orizzontale.
+
 - L’editor della squadra mostra la modifica del nome solo fino al primo calcio d’inizio della lega, lasciando sempre disponibile la modifica dello stemma.
 
 - Nello Studio Live il retro della maglia mostra cognome e numero salvato nel catalogo del giocatore, anche aprendo Ultima partita o girando il campo sulla panchina.

@@ -1,3 +1,4 @@
+import {settingsFooter} from '../public/src/president-panel.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {renderAppInvite,performAppInvite,appShareData,APP_INVITE_URL,bindAppInvites} from '../public/src/app-invite.mjs';
 import {renderIo} from '../public/src/fanta/io.mjs';import {whatsappInvite} from '../public/src/league-invite.mjs';import {parseHTML} from 'linkedom';
@@ -10,7 +11,8 @@ test('public app invitations contain only the public URL; presidents also retain
 });
 test('Fanta profile gives everyone app sharing through registration and WhatsApp',()=>{
  const me={user:{name:'Mister',username:'mister'},settings:{notify:{}}},leagues=[{id:'own',name:'Lega',teamName:'Team',season:'2026/27',role:'admin'},{id:'other',name:'Altra lega',teamName:'Team',season:'2026/27',role:'member'}];
- assert.match(renderIo(me,leagues,'other'),/Invita a usare l’app/);assert.doesNotMatch(renderIo(me,leagues,'other'),/data-invite-league/);assert.match(renderIo(me,leagues,'own'),/wa.me/);assert.doesNotMatch(renderIo(me,leagues,'own',{},true),/data-invite-league/);
+ assert.doesNotMatch(renderIo(me,leagues,'other'),/Invita a usare l’app|data-invite-league/);
+ const settings=settingsFooter({bridge:true});assert.match(settings,/Invita a usare l’app.*wa.me/);assert.doesNotMatch(settings,/data-invite-league/);
 });
 test('native share uses the public invitation, cancellation does not copy or open anything, and denied clipboard has manual fallback',async()=>{
  let shared,copied=0;const navigator={share:async data=>{shared=data;},clipboard:{writeText:async value=>{copied++;assert.equal(value,APP_INVITE_URL);}}};

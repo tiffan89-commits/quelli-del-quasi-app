@@ -1,4 +1,4 @@
-import {presidentPanel,settingsLogout} from '../president-panel.mjs';
+import {presidentPanel,settingsFooter} from '../president-panel.mjs';
 import {bindSwipeBack} from '../match-page.mjs';
 import {patchRegion} from '../live-channel.mjs';
 import {placeAppFooter} from '../app-footer.mjs';
@@ -91,7 +91,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (ui.mode === 'bar') return `<div class="fanta-empty"><span class="eyebrow">Modalità Bar</span><h2>Qui c'è il Bar che conosci</h2>
       <p>Schedine, Quasi e premi. Nell'app vera questo interruttore apre la parte Bar, con la stessa lega e gli stessi amici.</p>
       <button type="button" class="primary" data-mode="fanta">Torna al Fanta</button></div>`;
-    if(ui.tab==='impostazioni')return presidentPanel({mode:'fanta',open:ui.presidentGroup,footer:settingsLogout({bridge:true}),groups:slipServices?.account?.groups?.(ui.me?.settings)});
+    if(ui.tab==='impostazioni')return presidentPanel({mode:'fanta',open:ui.presidentGroup,footer:settingsFooter({bridge:true}),groups:slipServices?.account?.groups?.(ui.me?.settings)});
     if(ui.pilot)return renderPilotPicker(ui.pilot);
     if(ui.choiceLeagueId||!ui.leagues.length&&ui.teamChoices.length)return renderTeamChoices(ui.choiceLeagueId?ui.teamChoices.filter(l=>l.id===ui.choiceLeagueId):ui.teamChoices,{busy:ui.claimingTeam,error:ui.choiceError});
     if(ui.me?.access==='full'&&!ui.leagues.length)return '<div class="fanta-empty"><h2>Il Fanta non è ancora attivo</h2>'+ (barLeagues.some(b=>b.admin===ui.me?.id)?'<p>Prepara le squadre dal pannello del presidente.</p><button class="primary" data-mode="bar" data-bar-page="admin">Attiva il Fanta di questa lega</button>':'<p>Il presidente non ha ancora attivato il Fanta.</p>')+'<button class="secondary" data-mode="bar">Torna al Bar</button></div>';

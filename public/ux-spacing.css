@@ -1,6 +1,7 @@
 /* UX 0.29.46, block 1: one footer and one allowance for fixed controls. */
 body[data-game-mode] main,body.v2-on main,body.v2-on:has(.v2-slipbar) main{padding-bottom:var(--app-bottom-space,calc(84px + var(--safe-bp)))!important}
 .v2-tabbar:has(>[data-app-footer]){display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto minmax(12px,auto);row-gap:0}
+html.qdq-keyboard-open .v2-tabbar{visibility:hidden;pointer-events:none}
 .v2-tabbar>[data-app-footer]{grid-column:1/-1;align-self:center;margin:0;text-align:center;color:var(--muted);font-size:9.5px;line-height:12px}
 @media(min-width:1024px){body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){height:auto;min-height:60px}}
 body[data-game-mode] .analytics-footer[hidden]{display:none}
@@ -83,6 +84,8 @@ body details.rankrow{display:block;padding:0;border-bottom:1px solid var(--line)
 .home-league-invite-main b{font-size:clamp(12px,3.2vw,15px);overflow:hidden;text-overflow:ellipsis}
 .home-league-invite-main small{color:var(--muted);font-size:11px}
 .home-league-invite-main>span{margin-left:auto;color:var(--lime)}
+.settings-app-invite{break-inside:avoid}
+.settings-app-invite .app-invite-status:empty{display:none}
 .home-league-invite .whatsapp-invite{flex:none;min-width:42px;min-height:42px;padding:7px;justify-content:center}
 .president-panel>.profile-logout{margin-top:20px}
 
