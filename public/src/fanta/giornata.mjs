@@ -15,7 +15,6 @@ const STATE_LABEL = { 'calcolata': ['Ufficiale', 'is-official'], 'in-corso': ['L
 const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + formatStatNumber(Math.abs(n));
 export const formatPlayerStat=(value,unit='')=>formatStatNumber(value);
 const vote = n => n == null ? '–' : pts(n, n % 1 ? 1 : 0);
-const goalsLabel = g => g === 1 ? '1 gol' : `${g} gol`;
 
 function matchupRail(r, matchup, activeId, side) {
   return `<div class="fanta-mu-rail" aria-label="Sfide della giornata">${r.matchups.map(m => {
@@ -47,12 +46,12 @@ export function events(e = {}) {
 
 // Vista "Campo": attacco in alto, porta in basso. Chi è entrato dalla panchina prende il posto del titolare senza voto.
 function token(p, replaced) {
-  const clickable = p.status === 'voted' || p.status === 'playing' || p.status === 'sv';
+  const clickable = p.id!=null;
   const tag = clickable ? 'button' : 'div';
   const surname = playerSurname(p);
   const performance = replaced ? {...p,enteredFor:replaced} : p;
   const playing = hasPitchPerformance(performance);
-  return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}
+  return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}" aria-haspopup="dialog"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
     <span class="fanta-token-shirt">${playerVisual(p,{back:true})}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
     <b>${esc(surname)}</b>${playing?'':pitchFixture(p)}${pitchPerformance(performance,playing)}
@@ -70,37 +69,6 @@ function pitch(s) {
   </div>`;
 }
 
-function modifierCard(mod) {
-  if (!mod.applies) {
-    return `<section class="fanta-mod is-off"><h3>Modificatore difesa</h3><p>${esc(mod.reason)}</p><p class="fanta-note">${esc(mod.rule)}</p></section>`;
-  }
-  // Fasce larghe uguali; la tacca si posiziona dentro la fascia attiva (le fasce estreme vanno da 5 e fino a 8).
-  const width = 100 / mod.bands.length;
-  const at = mod.bands.findIndex(b => b.bonus === mod.bonus), band = mod.bands[at];
-  const lo = band.from ?? 5, hi = band.to ?? 8;
-  const mark = (at + Math.min(1, Math.max(0, (mod.average - lo) / (hi - lo)))) * width;
-  const bands = mod.bands.map((b, i) => {
-    const label = b.from == null ? `sotto ${pts(b.to)}` : b.to == null ? `da ${pts(b.from)}` : `${pts(b.from)}–${pts(b.to)}`;
-    return `<span class="fanta-band${i === at ? ' is-active' : ''}" style="left:${i * width}%;width:${width}%"><b>+${b.bonus}</b><small>${label}</small></span>`;
-  }).join('');
-  return `<section class="fanta-mod">
-    <div class="fanta-mod-head"><h3>Modificatore difesa</h3><strong>+${mod.bonus}</strong></div>
-    <ul class="fanta-mod-players">${mod.players.map(p => `<li><span class="fanta-role is-${p.role}">${p.role}</span>${esc(p.name)}<b>${vote(p.vote)}</b></li>`).join('')}</ul>
-    <div class="fanta-bands" aria-label="Fasce del modificatore">${bands}<i class="fanta-band-mark" style="left:${mark}%"></i></div>
-    <p class="fanta-mod-avg">Media <b>${pts(mod.average, 2)}</b> → <b>+${mod.bonus}</b></p>
-    <p class="fanta-note">${esc(mod.rule)}</p>
-  </section>`;
-}
-
-function totals(s, official) {
-  return `<section class="fanta-total" aria-label="Totale ${esc(s.team.name)}">
-    <div><span>Somma fantavoti <small>(${s.withVote} a voto)</small></span><b>${pts(s.fantapoints)}</b></div>
-    <div><span>Modificatore difesa</span><b>${s.modifier.applies ? '+' + s.modifier.bonus : '–'}</b></div>
-    <div class="is-sum"><span>Totale${official ? '' : ' provvisorio'}</span><b>${pts(s.total)}</b><em>${goalsLabel(s.goals)}</em></div>
-    <p class="fanta-note">66 punti fanno 1 gol, poi un gol ogni 6 punti in più.</p>
-  </section>`;
-}
-
 function liveTeam(s,flipped){
   if(s.hidden)return `<div class="fanta-empty is-inline"><p>${esc(s.hiddenReason)}</p>${s.needsLineup?'<button type="button" class="primary" data-go="formazione">Schiera la formazione</button>':''}</div>`;
   const field=s.starters.length?pitch(s):'<p class="fanta-empty is-inline">Formazione non ancora salvata.</p>';
@@ -109,22 +77,12 @@ function liveTeam(s,flipped){
   return renderPitchFlip(field,bench,'Panchina',flipped);
 }
 
-export function hasLivePoints(matchup){
-  return !!matchup&&(!!matchup.comparison||['home','away'].some(key=>!matchup[key].hidden&&matchup[key].modifier&&Number.isFinite(matchup[key].total)));
-}
-
-export function renderLivePoints(matchup,side){
-  const team=matchup[side];
-  return `<div class="fanta-ps-head"><h2 id="fanta-sheet-title">Punti e dettagli</h2><button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div><div class="fanta-ps-body">${!team.hidden&&team.modifier?totals(team,matchup.official)+modifierCard(team.modifier):''}${comparison(matchup)}</div>`;
-}
-
 export function renderGiornata({round,matchup,matchupId,side='home',flips=new Set(),error}){
   const n=round?.round.number,[label,cls]=STATE_LABEL[round?.round.state]||STATE_LABEL['da-schierare'];
   const progress=round?.round.state==='in-corso'?` · ${round.round.matchesDone}/${round.round.matchesTotal} finite`:'';
   return `<section class="fs fanta-live-studio" aria-label="Studio Live">
     <header class="fs-head"><button type="button" class="fs-close" data-action="close-live-studio" aria-label="Chiudi Studio Live">×</button>
       <div class="fs-title"><h1>Studio Live${n?' · Giornata '+n:''}</h1>${n?`<small class="${cls}">${label}${progress}</small>`:''}</div>
-      ${hasLivePoints(matchup)?'<button type="button" class="live-studio-points" data-action="live-points">Punti e dettagli ›</button>':''}
       ${n?`<button type="button" class="fanta-step" data-round="${n-1}" ${n<=1?'disabled':''} aria-label="Giornata precedente">‹</button><button type="button" class="fanta-step" data-round="${n+1}" ${n>=round.rounds.length?'disabled':''} aria-label="Giornata successiva">›</button>`:''}
     </header>
     <div class="fs-stage">
@@ -136,17 +94,10 @@ export function renderGiornata({round,matchup,matchupId,side='home',flips=new Se
   </section>`;
 }
 
-function comparison(m){
- const c=m.comparison;if(!c)return '';
- return `<details class="fanta-block"><summary>Il confronto del bar</summary>
- ${c.historical?'<p class="fanta-note">Risultato dell’archivio storico. Il confronto parte dalle giornate calcolate dal Quasi.</p>':''}
- <table class="fanta-table"><thead><tr><th>Squadra</th><th>Quasi</th><th>Leghe</th><th>Scarto</th></tr></thead><tbody>${['home','away'].map(k=>`<tr><td>${esc(m[k].team.name)}</td><td>${c[k].ours==null?'–':pts(c[k].ours)}</td><td>${c[k].points==null?'–':pts(c[k].points)}</td><td>${c[k].delta==null?'–':signed(c[k].delta)}</td></tr>`).join('')}</tbody></table></details>`;
-}
-
-export function findPlayer(matchup, id) {
-  for (const key of ['home', 'away']) {
+export function findPlayer(matchup,id,side) {
+  for (const key of side?[side]:['home','away']) {
     const s = matchup?.[key];
-    const p = s && !s.hidden && [...s.starters, ...s.bench].find(x => x.id === id);
+    const p = s && !s.hidden && [...s.starters, ...s.bench].find(x => String(x.id) === String(id));
     if (p) return p;
   }
   return null;
@@ -163,7 +114,7 @@ export function renderPlayerSheet(p, { official } = {}) {
     return `${head}<div class="fanta-ps-body"><p class="fanta-why">${esc(p.why||'Il voto per questa prestazione non è disponibile.')}</p>
       ${p.replacedBy ? `<p class="fanta-note">Al suo posto conta ${esc(p.replacedBy)}, dalla panchina.</p>` : ''}</div>`;
   }
-  if(!p.breakdown||!Array.isArray(p.breakdown.lines)||!Array.isArray(p.breakdown.bonus))return `${head}<div class="fanta-ps-body"><div class="fanta-ps-scores"><div><span>Voto</span><strong>${vote(p.vote)}</strong></div><div class="is-fv"><span>Fantavoto</span><strong>${vote(p.fantavote)}</strong></div></div>${events(p.events)}<p class="fanta-why">I dettagli di questa prestazione non sono disponibili.</p></div>`;
+  if(!p.breakdown||!Array.isArray(p.breakdown.lines)||!Array.isArray(p.breakdown.bonus))return `${head}<div class="fanta-ps-body"><div class="fanta-ps-scores"><div><span>Voto</span><strong>${vote(p.vote)}</strong></div><div class="is-fv"><span>Fantavoto</span><strong>${vote(p.fantavote)}</strong></div></div>${events(p.events)}<p class="fanta-why">${esc(p.why||(hasPitchPerformance(p)?'I dettagli di questa prestazione non sono disponibili.':'Voto non ancora disponibile.'))}</p></div>`;
   const row = (label, value, cls = '') => `<li class="${cls}"><span>${label}</span><b>${value}</b></li>`;
   const lines = p.breakdown.lines.map(l => row(
     l.kind === 'ai' ? `<em class="fanta-ai">AI</em>${esc(l.label)}` : esc(l.label), signed(l.delta), l.kind === 'ai' ? 'is-ai' : l.kind === 'context' ? 'is-context' : '')).join('');

@@ -33,3 +33,7 @@ export function extremeClass(rows,key,value){const values=rows.map(r=>r[key]).fi
 
 // Current round first, then upcoming rounds, followed by the archive (newest first).
 export function orderRounds(rows,current,key='number'){const rank=x=>x[key]===current?0:x[key]>current?1:2;return [...rows].sort((a,b)=>rank(a)-rank(b)||(rank(a)===2?b[key]-a[key]:a[key]-b[key]));}
+export function resultsFirst(rows,current,key='number'){
+ const completed=r=>r.official===true||r.state==='calcolata';
+ return [...rows.filter(completed).sort((a,b)=>b[key]-a[key]),...orderRounds(rows.filter(r=>!completed(r)),current,key)];
+}

@@ -5,6 +5,9 @@
 
 # Unreleased
 
+- In Fanta Oggi la sfida live ha precedenza sulla prossima formazione. Banner più compatti, collegamento diretto all’ultimo risultato e accesso alla schedina quando è salvata.
+- Nello Studio Live i voti e il giudizio del calciatore si aprono dal basso. Barra inferiore più compatta, nomi completi nelle schedine Serie A e impaginazione laterale nel riepilogo asta di Lega.
+
 - Dalla giornata 12 della Serie A 2026/27 ogni pronostico corretto assegna la quota accettata in punti e gli errori valgono zero.
 
 - Classifica Serie A in una sola vista. Le schedine del Bar scorrono a coppie con esiti più grandi e mostrano il rischio accanto al nome sul retro, senza il testo introduttivo e l’evoluzione.

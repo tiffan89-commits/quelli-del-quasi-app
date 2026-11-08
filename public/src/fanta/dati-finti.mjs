@@ -29,6 +29,7 @@ function result(n, state) {
   const best = [...mine.starters, ...mine.bench].filter(p => p.fantavote != null && (mine.starters.includes(p) || p.enteredFor)).sort((a, b) => b.fantavote - a.fantavote)[0];
   return {
     round: n,
+    matchupId: m.id,
     home: team(m.home.team.id, { points: m.home.total, goals: m.home.goals }),
     away: team(m.away.team.id, { points: m.away.total, goals: m.away.goals }),
     outcome: outcome(mine.goals, other.goals),
@@ -57,6 +58,7 @@ export function homeFor(leagueId,state='da-schierare',now=Date.now(),auction=auc
       : state === 'da-schierare' ? { status: 'missing', formation: null, savedAt: null }
       : { status: 'saved', formation: '4-4-2', savedAt: new Date(now - 3 * HOUR).toISOString() },
     match: {
+      id: (current?.sheets||matchupFor(CURRENT_ROUND,null,state)).id,
       home: team('sambuca'),
       away: team('realgin'),
       live: state === 'in-corso' ? {

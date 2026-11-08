@@ -5,10 +5,10 @@ import {bindSwipeBack} from './match-page.mjs';
 // libero tra intestazione e barra in basso: quello che non ci sta passa alla
 // pagina successiva, che si raggiunge scorrendo di lato. Non si spostano né si
 // clonano nodi: id, gestori, patch live e scrollIntoView restano quelli di
-// prima. L'asta, la pagina partita e la landing pubblica sono escluse.
+// prima. La sala d'asta, la pagina partita e la landing pubblica sono escluse.
 const EXCLUDED = [
  '.auction-room', '.fanta-asta', '.auction-lobby', '.auction-wizard-fields', '.auction-page-head',
- '[data-bid-form]', '.auction-countdown-overlay', '[data-lega-sub="asta"][aria-selected="true"]', '.pb-landing'
+ '[data-bid-form]', '.auction-countdown-overlay', '.pb-landing'
 ].join(',');
 const FIXED_BOTTOM = '.v2-tabbar,.v2-slipbar,#pwa-install-card';
 const DOTS_SPACE = 10; // riga dei puntini: il minimo indispensabile (18 px su desktop, con le frecce)
@@ -18,7 +18,7 @@ const DOTS_SPACE = 10; // riga dei puntini: il minimo indispensabile (18 px su d
 export const PINS = ['.rankrow.is-me'];
 export const SEGMENTS = [
  { when: main => !!main.querySelector('#league-dashboard'), label: 'Oggi', items: [['Adesso', null], ['Obiettivi', '#league-objectives']] },
- { when: main => !!main.querySelector('.fanta-home'), label: 'Oggi', items: [['Adesso', null], ['Sfida', '.fanta-home section.fanta-block:has(.fanta-match-link)'], ['Classifica', '.fanta-home section.fanta-block:has(.fanta-table)']] }
+ { when: main => !!main.querySelector('.fanta-home'), label: 'Oggi', items: [['Adesso', null], ['Classifica', '.fanta-home section.fanta-block:has(.fanta-table)']] }
 ];
 let started = false;
 
@@ -78,12 +78,11 @@ export function startOneScreen(doc = globalThis.document) {
   const round=el.querySelector('#round-switch,[data-fanta-slip-round]')?.value||'';
   return (win.location?.hash || '') + '|' + picked.join('|')+'|'+round;
  }
- const pagedDetail=()=>drill.at(-1)?.el.hasAttribute('data-os-paged-detail');
- const flow = () => drill.length>0&&!pagedDetail() || main?.hasAttribute('data-os-flow');
+ const flow=()=>!drill.length&&main?.hasAttribute('data-os-flow');
  const detailTitle = summary => (summary?.querySelector('b,strong')||summary)?.textContent?.trim()||'Dettaglio';
  function clearDrillView(removeNav=true){
   if(removeNav)drillNav?.remove();
-  main?.classList.remove('os-drill','os-drill-parent','os-drill-paged');
+  main?.classList.remove('os-drill','os-drill-parent');
   for(const el of main?.querySelectorAll('.os-drill-parent,.os-drill-path,.os-drill-target')||[])el.classList.remove('os-drill-parent','os-drill-path','os-drill-target');
  }
  function paintDrill(){
@@ -91,7 +90,6 @@ export function startOneScreen(doc = globalThis.document) {
   const detail=drill.at(-1)?.el;
   if(!detail)return;
   main.classList.add('os-drill');
-  main.classList.toggle('os-drill-paged',!!pagedDetail());
   detail.classList.add('os-drill-target');
   for(let el=detail;el&&el!==main;el=el.parentElement){
    el.classList.add('os-drill-path');
@@ -370,7 +368,7 @@ export function startOneScreen(doc = globalThis.document) {
    snapTimer = win.setTimeout(() => { const w = el.clientWidth; if (w && Math.abs(el.scrollLeft - Math.round(el.scrollLeft / w) * w) > 1) go(Math.round(el.scrollLeft / w)); if (win.scrollY) nativeScrollTo.call(win, 0, 0); }, 140);
   }, { passive: true });
   el.addEventListener('touchstart', e => {
-   if(el===main&&drill.length&&(!pagedDetail()||metrics.page===0)&&e.touches.length===1&&!scroller(e.target,'x')&&!e.target.closest('input,select,textarea,button,a')){
+   if(el===main&&drill.length&&metrics.page===0&&e.touches.length===1&&!scroller(e.target,'x')&&!e.target.closest('input,select,textarea,button,a')){
     const t=e.touches[0];drillGesture={x:t.clientX,y:t.clientY};
    }else drillGesture=null;
    if (el !== main || flow() || e.touches.length !== 1 || scroller(e.target, 'x')) { dragging = null; return; }
@@ -409,7 +407,7 @@ export function startOneScreen(doc = globalThis.document) {
  }
  doc.addEventListener('keydown', e => {
   if(!main||!root.classList.contains('os-on')||e.altKey||e.ctrlKey||e.metaKey||typing())return;
-  if(drill.length&&(e.key==='Escape'||e.key==='ArrowLeft'&&(!pagedDetail()||metrics.page===0))){e.preventDefault();backDetail();return;}
+  if(drill.length&&(e.key==='Escape'||e.key==='ArrowLeft'&&metrics.page===0)){e.preventDefault();backDetail();return;}
   if(flow())return;
   const a = doc.activeElement;
   if (a && a !== doc.body && !main.contains(a)) return;

@@ -33,7 +33,7 @@ test('le sezioni normali usano le pagine laterali', () => {
 });
 
 test('asta, pagina partita, landing e schermate senza barra restano come prima', () => {
- for (const inside of [['.auction-room'], ['.fanta-asta'], ['.auction-lobby'], ['.auction-wizard-fields'], ['[data-bid-form]'], ['[data-lega-sub="asta"][aria-selected="true"]'], ['.pb-landing']]) {
+ for (const inside of [['.auction-room'], ['.fanta-asta'], ['.auction-lobby'], ['.auction-wizard-fields'], ['[data-bid-form]'], ['.pb-landing']]) {
   const { doc, main } = fakeDoc({ inside });
   assert.equal(oneScreenExcluded(main, doc), true, inside[0]);
  }
@@ -60,5 +60,5 @@ test('il foglio one-screen.css è caricato in sviluppo e nel bundle', async () =
  assert.doesNotMatch(css, /auction/, 'nessuna regola tocca l\'asta');
  const ui = await readFile(new URL('../public/one-screen-ui.css', import.meta.url), 'utf8');
  assert.match(ui, /html\.os-on/);
- assert.doesNotMatch(ui, /auction|fanta-asta/, 'nessuna regola tocca l\'asta');
+ assert.doesNotMatch(ui, /auction-room|auction-lobby|fanta-asta/, 'nessuna regola tocca l\'asta');
 });
