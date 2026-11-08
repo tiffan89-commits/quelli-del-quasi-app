@@ -2377,8 +2377,16 @@ if ("serviceWorker" in navigator)
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.addEventListener("message", (e) => {
     if(e.data?.type==='open-fanta'){
-      try{localStorage.setItem('qdq:mode','fanta');if(typeof e.data.league==='string')localStorage.setItem('qdq:fantaLeague',e.data.league);}catch{}
-      if(state.user){const target=typeof e.data.url==='string'?new URL(e.data.url,location.origin):null;const route=target?.origin===location.origin?readAppRoute(target.hash):null;const targetLeague=typeof e.data.league==='string'?e.data.league:L()?.nativeFantaLink?.leagueId;const targetPage=route?.page==='asta'?'asta':'oggi';writeAppRoute({mode:'fanta',page:targetPage,league:targetLeague});closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:targetLeague,initialTab:targetPage,onBar:openBarTarget,force:true});}
+      const target=typeof e.data.url==="string"?new URL(e.data.url,location.origin):null;
+      const route=target?.origin===location.origin?readAppRoute(target.hash):null;
+      const league=typeof e.data.league==="string"?e.data.league:route?.league;
+      if(!league)return;
+      const page=route?.mode==='fanta'&&['asta','squadra','giornata'].includes(route.page)?route.page:'oggi';
+      const navigation={...route,mode:'fanta',page,league};
+      try{localStorage.setItem('qdq:mode','fanta');localStorage.setItem('qdq:fantaLeague',league);}catch{}
+      if(!state.user){pendingAppRoute=navigation;return;}
+      writeAppRoute(navigation);closeLeagueChat();
+      void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:league,initialTab:page,onBar:openBarTarget,force:true});
       return;
     }
     if(e.data?.type==='open-slip'&&!state.user&&typeof e.data.league==='string'){
