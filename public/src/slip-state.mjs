@@ -34,6 +34,10 @@ export function selectableSlipRounds(rounds=[],now=Date.now(),calendar){
  const frontier=[next,upcoming].filter(Boolean).sort(byRound)[0];
  return ordered.filter(r=>(!frontier||byRound(r,frontier)<=0)&&(r.settled||Date.parse(deadlineOf(r))<=now||r.id===next?.id));
 }
+export function nextSlipPreview(rounds=[],now=Date.now()){
+ const next=rounds.filter(r=>!r.archived&&!isClosed(r,now)&&r.matches?.length&&Date.parse(deadlineOf(r))>now).sort(byRound)[0];
+ return next&&roundAvailability(next,now)==='non ancora aperta'?{...next,preview:true}:null;
+}
 export function defaultSlipRound(rounds=[],now=Date.now(),calendar){
  const eligible=selectableSlipRounds(rounds,now,calendar);
  return eligible.find(r=>roundAvailability(r,now)==='aperta')||currentSlipRound(eligible,now,calendar)||eligible.at(-1);
@@ -65,7 +69,7 @@ export function slipSummary(round, picks, stake, credits = Infinity, now = Date.
   const odds = missing || count !== total ? null : matches.reduce((a,m) => m.void ? a : a * (price(m) || 1), 1);
   const closed = isClosed(round, now);
   const status = round?.settled ? 'Liquidata' : roundAvailability(round,now)==='non ancora aperta'?'Non ancora aperta':closed?'Chiusa' : round?.slip && !dirty ? 'Salvata' : round?.slip ? 'Modifiche da salvare' : 'Bozza';
-  return {count,total,missing,odds,pointsOnly,validStake,dirty,closed,status,potential:odds === null ? null : Math.round(odds*value*100)/100,canSave:total>0 && count===total && validStake && !closed && roundAvailability(round,now)==='aperta'};
+  return {count,total,missing,odds,pointsOnly,validStake,dirty,closed,status,potential:odds === null ? null : Math.round(odds*value*100)/100,canSave:round?.preview!==true && total>0 && count===total && validStake && !closed && roundAvailability(round,now)==='aperta'};
 }
 export function draftKey(user, league, round) {
   return ['quasi-draft-v1',user,league,sourceOf(round),round?.id].join(':');

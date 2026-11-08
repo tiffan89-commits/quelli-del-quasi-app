@@ -31,7 +31,6 @@ body.v2-on main{padding-bottom:calc(150px + var(--safe-bp))}
 .v2-sheet-actions{display:flex;gap:8px}.v2-sheet-actions>*{flex:1}
 .v2-eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--lime)}
 .v2-title{margin:4px 0;font:800 40px/0.9 "Barlow Condensed",sans-serif;text-transform:uppercase;text-wrap:balance}
-.v2-sub{margin:0 0 12px;color:var(--muted);font-size:13px}
 .v2-h2{margin:18px 0 8px;font:700 20px "Barlow Condensed",sans-serif;text-transform:uppercase}
 .v2-match{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}
 .v2-match-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.v2-match-head small{color:var(--muted);font-size:11px;white-space:nowrap}

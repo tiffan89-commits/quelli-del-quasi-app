@@ -38,9 +38,9 @@ function option(m, p, picks, closed, esc, fmt, pointsOnly,round) {
 
 export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity, openMatch = null, esc, fmt, date, fantasyMeta, teamLabel=slipTeamLabel }) {
   if (!round) return '<section class="card empty"><h1>La prossima è quella buona.</h1><p>La prossima schedina sarà disponibile a breve.</p></section>';
-  const availability=roundAvailability(round),closed = isClosed(round),ready=availability==='aperta', fanta = sourceOf(round) === 'fantacalcio', pointsOnly = round.pointsOnly === true;
+  const closed=isClosed(round),preview=round.preview===true&&!closed,ready=roundAvailability(round)==='aperta'||preview, fanta = sourceOf(round) === 'fantacalcio', pointsOnly = round.pointsOnly === true;
   const sum = slipSummary(round, picks, stake, credits), max = Number(round.rules?.maxStake || 20);
-  const chosen = Object.keys(picks).filter(k => typeof picks[k] === 'string').length, tot = totalOdds(round, picks);
+  const chosen = Object.keys(picks).filter(k => typeof picks[k] === 'string').length, tot = preview ? sum.odds : totalOdds(round, picks);
   const rows = orderSlipMatches(round.matches || []).map(m => {
     const extraOn = EXTRA.includes(picks[m.id]), open = openMatch === m.id;
     const meta = fanta && fantasyMeta ? fantasyMeta(m) : (m.kickoff ? date(m.kickoff) : '');
@@ -53,17 +53,15 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
   }).join('');
   const quick = quickStakes(max), left = (round.matches?.length || 0) - chosen;
   const saved = !!round.slip && !sum.dirty;
-  const state = saved ? ['is-ok', 'Confermata · modificabile fino a ' + date(round.deadline || round.kickoff)]
+  const state = preview ? ['is-todo','Anteprima · in attesa delle quote'] : saved ? ['is-ok', 'Confermata · modificabile fino a ' + date(round.deadline || round.kickoff)]
     : round.slip ? ['is-warn', 'Modifiche da salvare'] : ['is-todo', 'Non ancora confermata'];
-  const hint = sum.canSave ? null : left > 0
+  const hint = preview || sum.canSave ? null : left > 0
     ? ['v2-error is-hint', 'status', 'Mancano ' + left + (left === 1 ? ' partita' : ' partite') + ': scegli un esito per ognuna per confermare.']
     : ['v2-error', 'alert', 'Controlla la puntata (1–' + max + ') e i crediti disponibili.'];
   const label = saved ? 'Confermata ✓' : round.slip ? 'Salva' : 'Conferma';
   return '<section class="v2-slip" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
-    '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><p class="v2-sub">' + chosen + ' / ' + (round.matches?.length || 0) + ' esiti · ' +
-    (availability==='non ancora aperta'?'non ancora aperta':closed ? 'chiusa' : 'chiude ' + esc(date(round.deadline || round.kickoff))) + ' · una scelta per partita</p><div data-os-content data-slip-match-list>' + rows +
-    '<p class="tiny muted slip-explainer">Punti per gli esiti, crediti per la quota totale. <a href="#" data-v2-go="regolamento">Regolamento</a></p></div></section>' +
-    (!ready ? '' : '<div class="v2-slipbar"><div class="v2-slip-summary"><p class="v2-state ' + state[0] + '" role="status" title="'+esc(state[1])+'">' + esc(left>0?'Mancano '+left+(left===1?' partita':' partite'):hint?'Controlla puntata e saldo':saved?'Confermata ✓':state[1]) + '</p>' +
+    '<h1 class="v2-title">La schedina</h1><p class="v2-points-legend">Su ogni esito: <span>punti se indovini</span> / <span>punti se sbagli</span></p><div data-os-content data-slip-match-list>' + rows + '</div></section>' +
+    (!ready ? '' : '<div class="v2-slipbar"><div class="v2-slip-summary"><p class="v2-state ' + state[0] + '" role="status" title="'+esc(state[1])+'">' + esc(preview?state[1]:left>0?'Mancano '+left+(left===1?' partita':' partite'):hint?'Controlla puntata e saldo':saved?'Confermata ✓':state[1]) + '</p>' +
       (pointsOnly ? '' : '<div class="v2-slip-meta"><details class="v2-stake-picker"><summary data-v2-stake-menu aria-label="Modifica la puntata in crediti"><b data-v2-stake-current>'+fmt(stake)+' cr</b><span aria-hidden="true">⌃</span></summary><div class="v2-stake-panel"><p>Quanto metti sul bancone?</p><div class="v2-stakes">' + quick.map(v =>
         '<button type="button" class="v2-stake' + (Number(stake) === v ? ' is-on' : '') + '" data-v2-stake="' + v + '">' + v + (v === max ? ' max' : '') + '</button>').join('') +
         '<input id="stake" class="v2-stake-input" type="number" inputmode="decimal" min="1" max="' + max + '" value="' + esc(stakeInputValue(stake, max)) + '" placeholder="Altro" aria-label="Puntata personalizzata in crediti"></div><small>Da 1 a '+fmt(max)+' crediti</small></div></details><span data-v2-slip-total title="Quota '+(tot?fmt(tot):'–')+' · ritorno '+(tot?fmt(Math.round(stake*tot)):0)+' crediti">Quota '+(tot?fmt(tot):'–')+' · '+(tot?fmt(Math.round(stake*tot)):0)+' cr</span></div>') + '</div>' +
@@ -80,7 +78,6 @@ export function patchSlipV2(root,options){
  const fresh=template.content.querySelector('.v2-slip'),bar=root.querySelector('.v2-slipbar'),nextBar=template.content.querySelector('.v2-slipbar');
  const rows=[...current.querySelectorAll('[data-match-card]')],nextRows=[...fresh.querySelectorAll('[data-match-card]')],byId=new Map(rows.map(row=>[row.dataset.matchCard,row]));
  if(rows.length!==nextRows.length||nextRows.some(row=>!byId.has(row.dataset.matchCard))||!!bar!==!!nextBar)return false;
- current.querySelector('.v2-sub').textContent=fresh.querySelector('.v2-sub').textContent;
  for(const next of nextRows){
   const row=byId.get(next.dataset.matchCard),odds=row.querySelector('.v2-odds-main');
   patchRegion(odds,next.querySelector('.v2-odds-main').outerHTML);
@@ -92,13 +89,12 @@ export function patchSlipV2(root,options){
  return true;
 }
 
-// handlers: onPick(matchId, value), onToggle(matchId), onStake(n), onSave(), onGo(page)
-export function bindSlipV2(root, { onPick, onToggle, onStake, onSave, onGo }) {
+// handlers: onPick(matchId, value), onToggle(matchId), onStake(n), onSave()
+export function bindSlipV2(root, { onPick, onToggle, onStake, onSave }) {
   root.querySelectorAll('.v2-odd[data-pick]').forEach(b => b.onclick = () => onPick(b.dataset.pick, b.dataset.value));
   root.querySelectorAll('[data-v2-more]').forEach(b => b.onclick = () => onToggle(b.dataset.v2More));
   root.querySelectorAll('[data-v2-stake]').forEach(b => b.onclick = () => {onStake(Number(b.dataset.v2Stake));root.querySelector('.v2-stake-picker')?.removeAttribute('open');});
   const input = root.querySelector('#stake'); if (input) input.oninput = () => onStake(Number(input.value));
   const save = root.querySelector('#save-slip'); if (save) save.onclick = () => {root.querySelector('.v2-stake-picker')?.removeAttribute('open');return onSave();};
   const picker=root.querySelector('.v2-stake-picker');if(picker)picker.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();e.currentTarget.removeAttribute('open');e.currentTarget.querySelector('summary')?.focus();}};
-  root.querySelectorAll('[data-v2-go]').forEach(a => a.onclick = (e) => { e.preventDefault(); onGo(a.dataset.v2Go); });
 }

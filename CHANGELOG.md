@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Schedine più compatte senza riepilogo degli esiti, testo a piè pagina e orario dell’ultimo aggiornamento. Friends & Family può provare in anteprima la prossima schedina Serie A mentre le quote sono in arrivo.
+
 - Il piè di pagina di Bar e Fanta mostra solo il copyright, sull’ultima pagina dei contenuti. Privacy e preferenze statistiche sono nelle impostazioni account. La classifica Serie A mostra direttamente le squadre e dal Verdetto scompare il confronto Faccia a faccia. La cartolina mostra il Quasi più grande con il nome una sola volta. Rimosse le sezioni Borsa del Quasi e Storico dal Bar. I tuoi premi si apre di lato in una griglia di immagini e nomi. Dalla Lega l’invito apre direttamente la condivisione e il regolamento del Bar si chiude tornando alla schermata di partenza.
 
 - Dettaglio partita con quattro schermate laterali. Ogni squadra mostra i titolari sul campo e tutti i giocatori a disposizione su una panchina dedicata. Gli eventi Serie A si aprono da una voce in alto e mostrano minuto, icona e cognomi su una riga.

@@ -109,7 +109,6 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
    onPick:(id,value)=>{if(saving||isClosed(data.round,now()))return;d.picks[id]=value;persist(data,d);message='';redrawChoices();},
    onToggle:id=>{expanded=expanded===id?null:id;redrawChoices();},
    onStake:value=>{if(saving||isClosed(data.round,now()))return;d.stake=value;persist(data,d);redrawChoices();},
-   onGo:()=>{message='Scegli un esito per ogni partita. I punti sono assegnati sui singoli esiti; i crediti solo se li indovini tutti. La schedina si blocca alla prima partita.';redraw();},
    onSave:async()=>{
     if(saving||d.conflict||globalThis.navigator?.onLine===false||!services?.save||!slipSummary(data.round,d.picks,d.stake,fantasyAccount(data.league.members?.find(m=>m.uid===data.uid),data.round,data.league).credits,now()).canSave)return;
     saving=true;message='Salvataggio…';redraw();

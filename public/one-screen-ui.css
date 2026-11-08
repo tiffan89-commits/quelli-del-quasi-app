@@ -21,7 +21,6 @@ html.os-on main.os-root .round-selector .quasi-select-button{min-height:38px!imp
 html.os-on main.os-root .v2-slip .v2-eyebrow,
 html.os-on main.os-root .v2-slip .v2-title,
 html.os-on main.os-root .v2-slip .v2-points-legend{display:none}
-html.os-on main.os-root .v2-slip .v2-sub{margin:0 0 4px;font-size:12px;color:var(--muted)}
 html.os-on main.os-root .v2-match{
  display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px!important;
  margin:0!important;padding:7px 0!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;background:none!important;box-shadow:none!important
@@ -264,7 +263,6 @@ html.os-on main.os-root .fanta-board-pitch>.fanta-pitch.is-editor{height:auto!im
 /* The page frame stays still. Only the contents below it change columns. */
 html.os-on main.os-split .v2-slip,
 html.os-on main.os-split :is(.fanta-native-slips,.fanta-lega,.fanta-squadra,.fanta-round){margin:0!important;padding:0!important;display:block}
-html.os-on main.os-split .v2-slip>.v2-sub{padding:0 14px}
 html.os-on main.os-split .fanta-board-pitch,
 html.os-on main.os-split .fanta-board-pitch>.fanta-pitch.is-editor{max-height:clamp(160px,calc(var(--os-h) - 110px),540px)}
 html.os-on main.os-split .fanta-lg-tabs[data-os-header],
@@ -293,7 +291,6 @@ html.os-on main.os-root .v2-match .v2-more::after{content:attr(data-short-pick);
 html.os-on main.os-root .v2-match :is(.v2-odd,.v2-more).pick-winning{background:#3c713f!important;color:#fff!important;border-color:#83c777!important;box-shadow:none!important}
 html.os-on main.os-root .v2-match :is(.v2-odd,.v2-more).pick-losing{background:#843a39!important;color:#fff!important;border-color:#ec7771!important;box-shadow:none!important}
 html.os-on main.os-root .v2-match .v2-odd:is(.pick-winning,.pick-losing) .v2-odd-points>em{color:inherit}
-html.os-on main.os-root .slip-explainer{margin:5px 0 0;font-size:10px}
 @media(max-width:620px){
  html.os-on main.os-root .v2-match .slip-team-name{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
  html.os-on main.os-root .v2-match .slip-team-code{display:inline;font-size:10px;font-weight:750}

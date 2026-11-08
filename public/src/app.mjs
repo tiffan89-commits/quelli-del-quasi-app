@@ -65,7 +65,7 @@ import { calendarSections } from "./calendar-order.mjs";
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
-  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
+  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,nextSlipPreview,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
   deadlineOf,
   isClosed,
   slipSummary,
@@ -304,7 +304,10 @@ let displayedSlipRoundId=null;
 const publicSlipView=()=>slipScope==='bar'||slipScope==='community';
 function availableRounds() {
  const all=(L()?.rounds||[]).filter(r=>!r.archived&&sourceOf(r)===sourceScope&&(sourceScope!=='fantacalcio'||!competitionScope||r.competitionKey===competitionScope));
- const rounds=selectableSlipRounds(all,Date.now(),state.calendar);
+ const now=Date.now(),rounds=selectableSlipRounds(all,now,state.calendar);
+ const pilot=sourceScope==='seriea'&&globalThis.document?.querySelector('meta[name="qdq-release-channel"]')?.content==='friends';
+ const preview=pilot&&nextSlipPreview(all,now);
+ if(preview)rounds.push(preview);
  return rounds.sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
 }
 
@@ -312,7 +315,7 @@ function R() {
   const rounds = availableRounds();
   return (
     rounds.find((r) => r.id === selectedRoundId) ||
-    defaultSlipRound(rounds,Date.now(),state.calendar)
+    rounds.find(r=>r.preview) || defaultSlipRound(rounds,Date.now(),state.calendar)
   );
 }
 function me() {
@@ -457,7 +460,7 @@ function hydrateDraft() {
     r?.slip?.picks,
     r?.pointsOnly ? 0 : r?.slip?.stake || 10,
   );
-  viewKey = state.user && L() && r ? draftKey(state.user.id, L().id, r) : null;
+  viewKey = state.user && L() && r && !r.preview ? draftKey(state.user.id, L().id, r) : null;
   draftConflict = null;
   picks = { ...(r?.slip?.picks || {}) };
   stake = r?.pointsOnly ? 0 : r?.slip?.stake || 10;
@@ -752,7 +755,7 @@ function roundSelector(l, r) {
           (x.id === r?.id ? "selected" : "") +
           ">" +
           esc(x.title) +
-          (x.archived?" · archivio":" · "+roundAvailability(x)) +
+          (x.archived?" · archivio":x.preview?" · anteprima":" · "+roundAvailability(x)) +
           "</option>",
       )
       .join("") +
@@ -2217,7 +2220,6 @@ function bindNew(l, r) {
       onToggle: (id) => { activeMatchId = activeMatchId === id ? null : id; redrawChoices(); },
       onStake: (value) => { if (busy || isClosed(r)) return; stake = value; persistDraft(); controls(); },
       onSave: async () => { const pending = saveCurrentSlip(); controls(); await pending; controls(); },
-      onGo: (target) => { void navigatePage(target); },
     };
     bindSlipV2(document,choiceHandlers);
     controls();
@@ -2487,9 +2489,9 @@ let liveDisplayFailures=0;
 function showLiveStatus(value){
  if(value!==liveStatus)liveDisplayFailures=value.state==='ready'?0:liveDisplayFailures+1;
  liveStatus=value;const el=$('#live-channel-status');if(!el)return;
- const show=page==='schedina'&&slipScope!=='standings'&&(value.state==='ready'||liveDisplayFailures>=3);el.hidden=!show;
+ const show=page==='schedina'&&slipScope!=='standings'&&value.state!=='ready'&&liveDisplayFailures>=3;el.hidden=!show;
  if(!show){el.textContent='';return;}
- const text=value.state==='ready'?'Ultimo aggiornamento '+new Date(value.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'}):'Aggiornamento in pausa';
+ const text='Aggiornamento in pausa';
  if(el.textContent!==text)el.textContent=text;
 }
 function applyLive(data){
