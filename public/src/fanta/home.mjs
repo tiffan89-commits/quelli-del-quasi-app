@@ -34,7 +34,7 @@ function hero(h) {
 function nextMove(h, now) {
   const round=h.nextLineup?{number:h.nextLineup.round,state:h.nextLineup.savedAt?'schierata':'da-schierare',deadline:h.nextLineup.deadline}:h.round;
   const lineup=h.nextLineup||h.lineup;
-  if (!h.nextLineup && ((h.match && round.state==='in-corso') || (h.lastResult && round.state==='calcolata'))) return '';
+  if (!h.nextLineup && (round.state==='in-corso' || (h.lastResult && round.state==='calcolata'))) return '';
   const left = countdown(round.deadline, now);
   const clock = label => left ? `<div class="dash-clock"><span>${label}</span><strong data-countdown="${esc(round.deadline)}">${left}</strong></div>` : '';
   const variants = {
@@ -46,15 +46,9 @@ function nextMove(h, now) {
     },
     'schierata': {
       title: h.nextLineup ? `Formazione pronta · Giornata ${round.number}` : 'Formazione pronta',
-      text: `${esc(lineup.formation)} salvata ${timeAgo(lineup.savedAt, now)}. Puoi cambiarla fino alla scadenza.`,
+      text: `Salvata ${timeAgo(lineup.savedAt, now)}.`,
       side: clock('Chiude tra'),
       cta: `<button type="button" class="secondary dash-cta" data-go="formazione">Modifica la formazione <span aria-hidden="true">→</span></button>`,
-    },
-    'in-corso': {
-      title: `Giornata ${round.number}`,
-      text: round.matchesTotal>0&&round.matchesDone>=round.matchesTotal?'Tutte le partite sono finite. Voti provvisori, in attesa dei definitivi.':`${round.matchesDone} partite di Serie A su ${round.matchesTotal} finite. Voti e punteggi sono provvisori.`,
-      side: '<div class="dash-clock"><span>Stato</span><strong>'+((round.matchesTotal>0&&round.matchesDone>=round.matchesTotal)?'Finita':'LIVE')+'</strong></div>',
-      cta: `<button type="button" class="primary dash-cta" data-go="giornata" data-round="${round.number}">${round.matchesTotal>0&&round.matchesDone>=round.matchesTotal?'Risultati e voti':'Segui in diretta'} <span aria-hidden="true">→</span></button>`,
     },
     'calcolata': {
       title: `Giornata ${round.number} chiusa`,
@@ -75,11 +69,13 @@ function barLink(h) {
   return bar?.saved?`<button type="button" class="fanta-bar-link" data-mode="bar" data-bar-page="schedina" data-bar-league="${esc(bar.league)}" data-bar-round="${esc(bar.round)}" data-bar-match="${esc(bar.match)}"><b>Segui la schedina</b><span aria-hidden="true">→</span></button>`:'';
 }
 
-function matchCard(h, now) {
+function matchCard(h) {
   const { match, round } = h;
-  if (!match) return '';
-  const finished=round.matchesTotal>0&&round.matchesDone>=round.matchesTotal;
-  const status=match.final?'Finale':round.state==='in-corso'?(finished?'Voti provvisori':'Live · provvisoria'):dayTime(round.firstKickoff);
+  if (!match) return round.state==='in-corso'
+    ? `<button type="button" class="fanta-result fanta-last-result" data-go="giornata" data-round="${round.number}"><span><b>Live</b><small>Giornata ${round.number}</small></span><span aria-hidden="true">→</span></button>`
+    : '';
+  const live=round.state==='in-corso',title=match.final?'Ultima partita':live?'Live':'Prossima partita';
+  const status=match.final||live?'':dayTime(round.firstKickoff);
   const scores=match.final||match.live;
   const total=Number.isFinite(scores?.home?.goals)&&Number.isFinite(scores?.away?.goals)
     ? `${scores.home.goals}–${scores.away.goals}` : h.bar?.score?.length===2&&h.bar.score.every(Number.isFinite) ? h.bar.score.join('–') : '–';
@@ -87,11 +83,11 @@ function matchCard(h, now) {
   const side=key=>`<span class="fanta-vs-team">${teamLogo(match[key])}<b>${esc(match[key].name)}</b>${
     Number.isFinite(scores?.[key]?.points)?`<small>${pts(scores[key].points)} FP${!match.final&&Number.isInteger(count(key))?' · '+count(key)+'/'+(match.live.of||11)+' a voto':''}</small>`:''}</span>`;
   return `<section class="fanta-block fanta-home-match" aria-labelledby="fanta-match-title">
-    <button type="button" class="fanta-match-link" data-go="giornata" data-round="${round.number}" data-mu="${esc(match.id||match.matchupId||h.bar?.matchup||'')}" aria-label="La tua sfida, giornata ${round.number}. Apri lo Studio Live">
-      <span class="fanta-home-match-head"><b id="fanta-match-title">La tua sfida</b><small>Giornata ${round.number} · ${esc(status)}</small><span aria-hidden="true">→</span></span>
+    <button type="button" class="fanta-match-link" data-go="giornata" data-round="${round.number}" data-mu="${esc(match.id||match.matchupId||h.bar?.matchup||'')}" aria-label="${title}, giornata ${round.number}. Apri lo Studio Live">
+      <span class="fanta-home-match-head"><b id="fanta-match-title">${title}</b><small>Giornata ${round.number}${status?' · '+esc(status):''}</small><span aria-hidden="true">→</span></span>
       <span class="fanta-vs">${side('home')}<strong class="fanta-home-score">${total}</strong>${side('away')}</span>
     </button>
-    ${finalVerificationNote(h,now)}${barLink(h)}
+    ${barLink(h)}
   </section>`;
 }
 
@@ -99,7 +95,7 @@ function lastResult(h) {
   const r = h.lastResult;
   if (!r) return '';
   return `<button type="button" class="fanta-result fanta-last-result" data-go="giornata" data-round="${r.round}" data-mu="${esc(r.matchupId||'')}">
-    <span><b>Ultimo risultato</b><small>Giornata ${r.round} · ${esc(r.home.name)} – ${esc(r.away.name)}</small></span>
+    <span><b>Ultima partita</b><small>Giornata ${r.round} · ${esc(r.home.name)} – ${esc(r.away.name)}</small></span>
     <strong>${r.home.goals}–${r.away.goals}</strong><span aria-hidden="true">→</span>
   </button>`;
 }
@@ -147,16 +143,16 @@ const auctionHomeSlot=(h,now)=>`<div data-fanta-auction-banner>${auctionCard(h,n
 export function renderHome(h, now = Date.now()) {
   const invite=renderLeagueInvite(h.league,h.invite);
   if(h.competition?.status==='draft')return `${auctionHomeSlot(h,now)}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>${invite}`;
-  const sameResult=h.match?.final&&h.lastResult?.round===h.round.number;
+  const showMatch=h.round.state==='in-corso'||!h.lastResult;
   const live=h.round.state==='in-corso';
   return `<div class="fanta-home fanta-home-compact">
     ${auctionHomeSlot(h,now)}
     ${hero(h)}
-    ${live?matchCard(h,now):''}
+    ${live?matchCard(h):''}
     ${lastResult(h)}
     ${nextMove(h,now)}
-    ${!live&&!sameResult?matchCard(h,now):''}
-    ${!live&&sameResult?barLink(h):''}
+    ${!live&&showMatch?matchCard(h):''}
+    ${!live&&!showMatch?barLink(h):''}
     ${invite}
     ${standings(h)}
   </div>`;
@@ -167,11 +163,3 @@ export function tickCountdowns(root, now = Date.now()) {
   for (const el of root.querySelectorAll('[data-countdown]')) el.textContent = countdown(el.dataset.countdown, now) || 'chiusa';
 }
 import {teamLogo} from './team-logo.mjs';
-
-export function finalVerificationNote(h,now=Date.now()){
- const pending=['in-corso','calcolata'].includes(h.round?.state),r=pending?h.round:h.lastResult;
- if(!r)return '';const number=r.number||r.round,provisional=pending&&h.round.state!=='calcolata',v=h.finalVerification;
- const time=v?.at?new Date(v.at).toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):null;
- const note=!provisional?'':v?.status==='running'?'Verifica dei dati definitivi in corso. I risultati restano provvisori.':time&&Date.parse(v.at)>now?'Risultati provvisori · prossima verifica dei definitivi: '+time+'.':v?.status==='queued'?'Risultati provvisori · verifica dei definitivi in coda.':'Risultati provvisori · la prossima verifica dei definitivi sarà indicata qui appena programmata.';
- return note?'<p class="tiny muted final-verification-note">'+esc(note)+'</p>':'';
-}

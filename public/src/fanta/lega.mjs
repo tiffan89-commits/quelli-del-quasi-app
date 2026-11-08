@@ -1,4 +1,5 @@
 import {renderIo} from './io.mjs';
+import {hubHead,hubTile} from '../league-hub.mjs';
 import {leagueActions} from '../league-actions.mjs';
 import {settingsLogout,presidentPanel} from '../president-panel.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
@@ -6,7 +7,7 @@ import {settingsLogout,presidentPanel} from '../president-panel.mjs';
 import { esc, pts, dayTime, OUTCOME, extremeClass, resultsFirst } from './formato.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderCompetitions} from './competitions-ui.mjs';
-import {renderAppInvite} from '../app-invite.mjs';
+import {whatsappInvite} from '../league-invite.mjs';
 import {renderLeagueInvite} from './league-invite.mjs';
 import {auctionWhen} from './auction-wizard.mjs';
 
@@ -95,12 +96,26 @@ function members(l, ui) {
     </li>`).join('')}</ul>
     ${l.isAdmin&&ui.adminTools&&!pilot&&l.league.kind!=='random'?`<details class="fanta-block"><summary>Associa squadre e giocatori</summary><form class="fanta-lg-form" data-team-link-form><label>Squadra<select name="team">${l.members.map(m=>`<option value="${esc(m.team.id)}">${esc(m.team.name)}</option>`).join('')}</select></label><label>Email o vecchio username del giocatore<input name="username" required maxlength="254" autocapitalize="none" autocorrect="off" autocomplete="off"></label><button type="submit" class="primary">Associa account</button>${ui.linkError?`<p class="fanta-note is-alert" role="alert">${esc(ui.linkError)}</p>`:''}</form></details>`:''}
     ${full ? `<p class="fanta-note">La lega è al completo: ${max} partecipanti.</p>` : `<p class="fanta-note">${max-n} squadre sono guidate dal computer finché non entrano amici.</p>`}
-  </section>${ui.inSettings?renderLeagueInvite(l.league,ui.invite,{copied:ui.copied,always:true}):ui.invite?.code?'<button type="button" class="secondary" data-lega-invite="share">Invita nella tua lega</button>':''+renderAppInvite()}`;
+  </section>${ui.inSettings?renderLeagueInvite(l.league,ui.invite,{copied:ui.copied,always:true}):''}`;
 }
 
 export function renderLega(l, ui = {}, now = Date.now()) {
   if (!l) return '<div class="fanta-loading" role="status">Carichiamo la lega…</div>';
-  const pilot=l.league.kind==='pilot',group=ui.group||'classifica',tabs=SUBS.filter(([k])=>LEGA_GROUPS[group].includes(k)&&(!pilot||k!=='competizioni')),sub=tabs.some(([k])=>k===ui.sub)?ui.sub:tabs[0][0];
+  const pilot=l.league.kind==='pilot',group=ui.group||'classifica';
+  if(group==='lega'){
+    const name=l.league.name.replace(/^Random League/i,'Lega pilota'),count=l.members.filter(m=>m.human).length;
+    const tiles=[
+      l.isAdmin?hubTile('gear','Pannello del presidente','Impostazioni della lega',{action:'data-go="presidente"',admin:true}):'',
+      hubTile('people','Partecipanti · '+count,'Chi allena le squadre',{html:members(l,{...ui,invite:null})}),
+      hubTile('rules','Regolamento del Fanta','Bonus, malus e formazioni',{html:rules(l)}),
+      !pilot?hubTile('competition','Competizioni','Campionati e coppe',{html:renderCompetitions(l,ui)}):'',
+      !pilot&&(l.isAdmin||['running','scheduled'].includes(l.auction.status))?hubTile('auction','Asta',l.auction.status==='running'?'In corso':l.auction.status==='scheduled'?'Programmata':l.isAdmin?'Gestisci le aste':'Apri la sala',{action:l.isAdmin?'data-auction-manage="1"':'data-go="asta"'}):'',
+      ui.invite?.code?hubTile('invite','Invita nella tua lega','Condividi l’invito',{action:'data-lega-invite="share"',whatsapp:whatsappInvite(ui.invite,esc,{iconOnly:true})}):'',
+      ui.hasChat?hubTile('chat','Chiacchiere da bar','Apri la chat della lega',{action:'data-fanta-chat aria-controls="league-chat-widget"'}):'',
+    ];
+    return hubHead(name,count+' / '+l.league.maxMembers+' allenatori')+'<div data-os-content><div class="lega-hub">'+tiles.join('')+'</div>'+leagueActions({bridge:true})+'</div>';
+  }
+  const tabs=SUBS.filter(([k])=>LEGA_GROUPS[group].includes(k)&&(!pilot||k!=='competizioni')),sub=tabs.some(([k])=>k===ui.sub)?ui.sub:tabs[0][0];
   const body = { classifica: standings, calendario: calendar, asta: auctionSection, regole: rules, partecipanti: members,competizioni:renderCompetitions,schedine:()=>ui.slipsHtml||'<p>Classifica schedine in arrivo.</p>' }[sub](l, ui, now);
   return `<div class="fanta-lega">
     <header class="fanta-sq-head" data-os-header><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1>${esc(l.league.name.replace(/^Random League/i,'Lega pilota'))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
@@ -113,11 +128,11 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   </div>`;
 }
 
-export function fantaPresidentTasks(l){
+export function fantaPresidentTasks(l,invite){
  if(!l?.isAdmin)return [];
  const tasks=[],free=l.league.maxMembers-(l.members?l.members.filter(m=>m.human).length:l.league.humanMembers??l.league.maxMembers);
  if(l.league.kind!=='pilot')tasks.push({action:'Gestisci asta',auction:true,button:true});
- if(free>0)tasks.push({group:'persone',action:'Invita',button:true});
+ if(free>0&&invite?.code)tasks.push({action:'Invita',button:true,share:true,whatsapp:whatsappInvite(invite,esc,{iconOnly:true})});
  tasks.push({group:'persone',action:'Partecipanti ›'});
  if(l.competition?.status==='draft')tasks.push({text:'Competizione da avviare',group:'competizioni',action:'Verifica'});
  return tasks;
@@ -125,7 +140,7 @@ export function fantaPresidentTasks(l){
 export function renderFantaPresident(l,ui={},now=Date.now()){
  if(!l)return '<div class="fanta-loading" role="status">Carichiamo il pannello…</div>';
  const a={...ui,adminTools:!!l.isAdmin,inSettings:true},count=l.members.filter(m=>m.human).length,bar=ui.bar;
- return presidentPanel({mode:'fanta',footer:settingsLogout({bridge:true}),open:ui.presidentGroup,tasks:fantaPresidentTasks(l),groups:{
+ return presidentPanel({mode:'fanta',footer:settingsLogout({bridge:true}),open:ui.presidentGroup,tasks:fantaPresidentTasks(l,ui.invite),groups:{
  persone:{summary:count+'/'+l.league.maxMembers+' allenatori · '+(l.league.maxMembers-count)+' computer',html:members(l,a)},
  regole:{summary:l.rules.budget+' crediti · bonus, malus e formazione',html:rules(l)},
  ...(l.isAdmin?{

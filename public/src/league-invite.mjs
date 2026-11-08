@@ -4,14 +4,18 @@ function leagueShareData(league){
   const message = `Ti aspetto su Quelli del Quasi! ⚽\n\nEntra nella lega «${league.name}»: ${link}\n\nCrei l'account in un minuto e sei già dentro.\n(Codice lega, se serve: ${league.code})\nLe scuse le porti tu.`;
   return {title:'Invito a '+league.name,text:message};
 }
-export async function shareLeagueInvite(league,{navigator=globalThis.navigator,open=(...args)=>globalThis.open?.(...args)}={}){
+export async function shareLeagueInvite(league,{navigator=globalThis.navigator,notify=()=>{}}={}){
   if(!league?.code)return;
   const data=leagueShareData(league);
   if(typeof navigator?.share==='function'){
     try{await navigator.share(data);return;}
     catch(error){if(error?.name==='AbortError')return;}
   }
-  open?.('https://wa.me/?text='+encodeURIComponent(data.text),'_blank','noopener,noreferrer');
+  try{
+    if(typeof navigator?.clipboard?.writeText!=='function')throw Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(data.text);
+    notify('Invito alla lega copiato.');
+  }catch{globalThis.prompt?.('Copia l’invito alla lega',data.text);}
 }
 export function whatsappInvite(league, esc, {iconOnly=false}={}) {
   const {text}=leagueShareData(league);
@@ -27,5 +31,5 @@ export function leagueInviteCapacity(bar, fanta){
 }
 
 export function compactLeagueInvite(bar, esc, {size,count,mode}){
-  return `<section class="home-league-invite" data-home-league-invite aria-label="Invita nella lega"><button type="button" class="home-league-invite-main" ${mode==='fanta'?'data-go="presidente"':'data-bar-page="admin"'} data-president-group="persone"><b>Invita nella lega</b>${size?`<small>${esc(`${count}/${size} iscritti`)}</small>`:''}<span aria-hidden="true">→</span></button>${whatsappInvite(bar,esc,{iconOnly:true})}</section>`;
+  return `<section class="home-league-invite" data-home-league-invite aria-label="Invita nella lega"><button type="button" class="home-league-invite-main" ${mode==='fanta'?'data-lega-invite="share"':'data-share-league'}><b>Invita nella lega</b>${size?`<small>${esc(`${count}/${size} iscritti`)}</small>`:''}<span aria-hidden="true">→</span></button>${whatsappInvite(bar,esc,{iconOnly:true})}</section>`;
 }

@@ -12,8 +12,9 @@ Nel Bar e nel Fanta nessuna sezione scorre in verticale. Ogni sezione mostra l'e
 - Gli accordion delle sezioni paginate aprono un dettaglio a destra, con ritorno tramite pulsante o swipe verso destra. Se il contenuto eccede lo spazio, prosegue nelle pagine laterali.
 - La cartolina usa il telaio della pagina partita. Nel dettaglio delle partite un carosello dedicato mostra titolari e panchina di casa, poi titolari e panchina ospiti. Gli eventi della Serie A si aprono dall’intestazione. Il calendario della squadra carica quattro giornate alla volta, a partire dalle più recenti concluse. Ogni risultato apre la sua sfida nello Studio Live.
 - In Impostazioni resta solo «Il tuo banco di comando» nell’intestazione. Gli inviti e la gestione membri restano raggiungibili dai collegamenti della lega. Gestisci asta resta nel pannello del presidente del Fanta dove l’asta è disponibile.
-- Fanta Oggi mostra la sfida provvisoria in Adesso prima della prossima formazione. L’ultimo risultato apre la partita e la giornata esatte. «Segui la schedina» compare dopo il salvataggio di una giocata.
+- Fanta Oggi mostra Live e Ultima partita nella scheda Home. Il risultato apre la partita e la giornata esatte. «Segui la schedina» compare dopo il salvataggio di una giocata.
 - Nello Studio Live il tap su una maglia apre dal basso voti e valutazione. Lega → Asta usa la paginazione laterale e mantiene fermi i tab.
+- Chiacchiere da bar si apre da Lega. Il numero dei non letti arriva sul canale Socket.IO già aperto. Nelle altre schedine del Fanta gli esiti stanno su una riga e il selettore di giornata rimane utilizzabile durante il live.
 ### Motore: `public/src/one-screen.mjs` + `public/one-screen.css`
 - `startOneScreen()` è chiamato da `app.mjs` (dopo `loadAppStyles()`) e da `fanta-mode.mjs` (`enterFanta`), sempre con guardia `typeof startOneScreen==='function'`. Il test `interface-live` toglie gli import: la guardia serve.
 - Quando c'è `#app > .v2-tabbar` e la pagina non è esclusa, aggiunge `html.os-on` e `main.os-root`. `#app > main` diventa un contenitore a **colonne CSS** (`column-fill:auto`), alto quanto lo spazio tra intestazione e barra in basso (`--os-h`). Ogni colonna è una pagina.
@@ -30,9 +31,9 @@ Nel Bar e nel Fanta nessuna sezione scorre in verticale. Ogni sezione mostra l'e
 ### Configurazione (in `one-screen.mjs`)
 - `EXCLUDED` — mai attivo su: sala d'asta e wizard (`.auction-room`, `.fanta-asta`, `.auction-lobby`, `.auction-wizard-fields`, `.auction-page-head`, `[data-bid-form]`, `.auction-countdown-overlay`), `#/fanta/asta`, pagina partita (`body.match-page-active`) e landing (`.pb-landing`).
 - `SEGMENTS` — sottosezioni generate sopra la pagina, ognuna inizia su una pagina nuova (`.os-seg-start`):
-  - Bar Oggi: *Adesso · Obiettivi*;
+  - Bar Oggi: *Home · Obiettivi*;
   - Bar Quasi: *La squadra · I tuoi premi*;
-  - Fanta Oggi: *Adesso · Classifica*.
+  - Fanta Oggi: *Home · Classifica*.
 
   Per aggiungerne una: `{ when: main => …, label, items: [[etichetta, selettore | null]] }`, con i selettori nell'ordine del DOM.
 - `PINS` — riga sempre a vista quando sta in un'altra pagina (oggi `.rankrow.is-me`, la tua riga nella classifica del Bar). Toccandola si va alla sua pagina.
@@ -99,7 +100,7 @@ Tutto sotto `html.os-on main.os-root`. Cambia solo l'aspetto, non i dati né le 
 - `npm test`: 738/740. I 2 che falliscono controllano gli artefatti di build (`dist/index.html`, `docs/BUILD-METAFILE.json`) e falliscono uguali sulla 0.31.3 originale nell'ambiente di lavoro, perché lì esbuild non girava. Vanno rilanciati dopo `npm run build`.
 
 ## Limiti noti / da decidere
-- Lega apre il riepilogo Asta, impaginato con gli stessi tab della sezione. La sala e il wizard conservano la propria interfaccia.
+- Lega usa gli stessi riquadri in Bar e Fanta. I dettagli si aprono a destra e Asta apre la gestione. La sala e il wizard conservano la propria interfaccia.
 - Pill "Mister di Bordo" in Lega › Partecipanti (Fanta): contrasto basso, già presente in 0.31.3.
 
 ## Per caricare il branch

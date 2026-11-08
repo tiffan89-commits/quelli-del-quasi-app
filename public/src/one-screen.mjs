@@ -17,8 +17,8 @@ const DOTS_SPACE = 10; // riga dei puntini: il minimo indispensabile (18 px su d
 // Riga da tenere sempre a vista (la tua posizione) quando sta in un'altra pagina.
 export const PINS = ['.rankrow.is-me'];
 export const SEGMENTS = [
- { when: main => !!main.querySelector('#league-dashboard'), label: 'Oggi', items: [['Adesso', null], ['Obiettivi', '#league-objectives']] },
- { when: main => !!main.querySelector('.fanta-home'), label: 'Oggi', items: [['Adesso', null], ['Classifica', '.fanta-home section.fanta-block:has(.fanta-table)']] }
+ { when: main => !!main.querySelector('#league-dashboard'), label: 'Oggi', items: [['Home', null], ['Obiettivi', '#league-objectives']] },
+ { when: main => !!main.querySelector('.fanta-home'), label: 'Oggi', items: [['Home', null], ['Classifica', '.fanta-home section.fanta-block:has(.fanta-table)']] }
 ];
 let started = false;
 
@@ -194,7 +194,7 @@ export function startOneScreen(doc = globalThis.document) {
     const inset = bottomInset();
     const top = main.getBoundingClientRect().top;
     const space = main.classList.contains('fanta-team-formation') ? 0 : win.innerWidth >= 760 ? 18 : DOTS_SPACE;
-    const footer = host !== main ? [...host.querySelectorAll(':scope>#live-channel-status')].reduce((sum,el)=>{
+    const footer = host !== main ? [...host.querySelectorAll(':scope>#live-channel-status,[data-os-footer]')].reduce((sum,el)=>{
      if(!shown(el))return sum;
      const style=win.getComputedStyle(el);
      return sum+el.getBoundingClientRect().height+(parseFloat(style.marginTop)||0)+(parseFloat(style.marginBottom)||0);

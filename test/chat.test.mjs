@@ -5,6 +5,7 @@ import { session, newLeague, stateFor } from "../lib/game.mjs";
 import {
   chatAction,
   chatSummary,
+  welcomeLeagueChat,
   deliverChatPush,
   validPushSubscription,
 } from "../lib/league-chat.mjs";
@@ -220,3 +221,18 @@ test("failed push is queued with bounded retry while the message remains committ
 });
 
 test('a device test notification is private to the requested own device and creates no league message',async()=>{const {s,l,call,transact}=fixture();await call('a','chat-subscribe',{subscription:sub('a')});await call('b','chat-subscribe',{subscription:sub('b')});await assert.rejects(call('a','chat-test-push',{endpoint:sub('b').endpoint}),/Attiva/);await call('a','chat-test-push',{endpoint:sub('a').endpoint});assert.equal(s.leagueChats[l.id].messages.length,0);const sent=[];await deliverChatPush({transact,sendPush:async(subscription,payload)=>sent.push({subscription,payload:JSON.parse(payload)})});assert.equal(sent.length,1);assert.equal(sent[0].subscription.endpoint,sub('a').endpoint);assert.match(sent[0].payload.title,/Notifica di prova/);});
+
+test('new league chat welcomes both members, and committed updates carry only private counts',async()=>{
+ const {s,l,call}=fixture(),updates=[],onUpdate=update=>updates.push(update);
+ welcomeLeagueChat(s,l);welcomeLeagueChat(s,l);
+ const first=await call('b','chat-messages');
+ assert.equal(first.messages.length,1);assert.equal(first.messages[0].name,'Il Bar');assert.equal(first.messages[0].system,true);
+ await assert.rejects(call('a','chat-delete',{message:first.messages[0].id}),/non trovato/);
+ await call('b','chat-read',{through:1},{onUpdate});
+ assert.deepEqual(updates.at(-1).recipients.map(x=>[x.uid,x.unread]),[['b',0]]);
+ const data={text:'Un messaggio privato',nonce:'committed_chat_message'};
+ await call('a','chat-send',data,{onUpdate});await call('a','chat-send',data,{onUpdate});
+ assert.equal(updates.length,2);
+ assert.deepEqual(updates.at(-1).recipients.map(x=>[x.uid,x.unread]),[['a',0],['b',1]]);
+ assert.doesNotMatch(JSON.stringify(updates.at(-1)),/Un messaggio privato/);
+});

@@ -39,7 +39,7 @@ test('Quasi rewards open as a paginated collection without the catalogue or guid
 
 test('Bar home invite is shared by president and members, excludes computers and hides when full',()=>{
  const league={code:'TEST',name:'Bar test',admin:'a',members:[{uid:'a'},{uid:'b'}],nativeFantaLink:{maxMembers:4,coachIds:['a']}};
- for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 iscritti/);assert.match(html,/wa.me/);assert.match(html,/data-president-group="persone"/);}
+ for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 iscritti/);assert.match(html,/wa.me/);assert.match(html,/data-share-league/);}
  assert.equal(barHomeInvite(league,{id:'outsider'},String),'');
  league.nativeFantaLink.coachIds=['a','c','d'];assert.equal(barHomeInvite(league,{id:'a'},String),'');
  league.nativeFantaLink.maxMembers=2;assert.equal(barHomeInvite(league,{id:'a'},String),'');

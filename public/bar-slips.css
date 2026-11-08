@@ -78,3 +78,12 @@
 .bar-dossier-stats dt{font-size:9px;font-weight:700;color:var(--muted)}
 .bar-dossier-stats dd{margin:1px 0 0;font-size:11px;font-weight:700}
 @media(prefers-reduced-motion:reduce){.bar-skeleton,.bar-quip.is-ready,.bar-bet.goal-flash{animation:none}}
+
+.bar-card-back .bar-dossier{padding:2px;border-radius:13px;background:radial-gradient(ellipse at 0 0,#43654d55,transparent 65%)}
+.bar-card-back .bar-dossier-top{gap:8px;padding:3px 4px;border-bottom:1px solid var(--line)}
+.bar-card-back .bar-dossier-name{color:var(--cream,#f6f3e7);font-weight:700}
+.bar-card-back .bar-dossier h2{color:#e1cb95;letter-spacing:.02em}
+.bar-card-back .bar-dossier-stats{gap:5px}
+.bar-card-back .bar-dossier-stats div{border-color:#52685b;background:#26392d;text-align:center}
+.bar-card-back .bar-dossier-quip{background:#2d3928;border-color:#d8bb7d;color:#f6edda}
+.bar-card-back .bar-dossier-text{color:#d4e3d6}

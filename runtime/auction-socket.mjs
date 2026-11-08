@@ -75,7 +75,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   socket.data.running=running;
   if(!previous||previous.size!==running.size||[...running].some(id=>!previous.has(id)))socket.emit('auction:index',[...running]);
  }
- index.on('connection',socket=>{syncIndex(socket,socket.data.membership);delete socket.data.membership;});
+ index.on('connection',socket=>{socket.join('user:'+socket.data.user.id);syncIndex(socket,socket.data.membership);delete socket.data.membership;});
  function indexChange(league,running){
   for(const id of index.adapter.rooms.get('league:'+league)||[]){
    const socket=index.sockets.get(id),status=socket?.data.running;
@@ -193,5 +193,8 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
    for(const socket of clients){const user=users.get(socket.data.token);if(!user)socket.disconnect(true);else if(socket.connected)syncIndex(socket,byUser.get(user.id)||[]);}
   }catch{index.disconnectSockets(true);}
  }finally{checking=false;}},60000);
- return {io,changed,stats:()=>[...rooms.values()].map(r=>({league:r.league,version:r.state?.auction.version,devices:r.sockets.size,acknowledged:[...r.sockets].filter(s=>(!s.data.passive||s.data.inAuction)&&s.data.acked>=r.state?.auction.version).length})),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);await stopListening?.();await new Promise(resolve=>io.close(resolve));}};
+ function chatUpdate({league,changed,recipients}){
+  for(const {uid,...summary} of recipients)index.to('user:'+uid).emit('chat:update',{league,changed,...summary});
+ }
+ return {io,changed,chatUpdate,stats:()=>[...rooms.values()].map(r=>({league:r.league,version:r.state?.auction.version,devices:r.sockets.size,acknowledged:[...r.sockets].filter(s=>(!s.data.passive||s.data.inAuction)&&s.data.acked>=r.state?.auction.version).length})),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);await stopListening?.();await new Promise(resolve=>io.close(resolve));}};
 }

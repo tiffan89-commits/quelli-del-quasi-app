@@ -217,7 +217,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html,/1 – 0/);
   assert.match(html,/43&#39;/);
   assert.doesNotMatch(html,/Il Marcatore|Il Difensore/);
-  assert.match(html, /id="open-chat"/);
+  assert.doesNotMatch(html, /id="open-chat"/);assert.match(html,/data-chat-badge/);
   const nav = html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1];
   assert.equal(nav.includes("Movimenti"), false);
   assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.match(html,/aria-label="Apri impostazioni"/);assert.doesNotMatch(html,/class="ux-profile"/);

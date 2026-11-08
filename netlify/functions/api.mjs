@@ -330,6 +330,7 @@ export function createApi({
             input: readOnly ? Object.fromEntries(url.searchParams) : p,
             token,
             transact,
+            onUpdate:context.chatUpdate,
             read:fn=>read(fn,{kind:'chat',league:url.searchParams.get('league')}),
             env,
           }),

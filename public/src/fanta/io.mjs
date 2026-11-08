@@ -35,7 +35,7 @@ export function renderIo(me, leagues, activeLeagueId, ui = {}, demo = false) {
         ${l.role === 'admin' ? '<span class="v2-role is-admin">ADMIN</span>' : ''}</button></li>`).join('')}</ul>
     </section>
     <button type="button" class="secondary" data-mode="bar" data-bar-page="logout">Logout</button>
-    ${renderAppInvite({leagueMode:!demo&&leagues.find(l=>l.id===activeLeagueId)?.role==='admin'?'fanta':null})}
+    ${renderAppInvite()}
     <section class="fanta-block"><div class="dash-section-head"><div><h2>Il tuo Quasi e l'account</h2><small>Sono gli stessi del Bar: un solo account per tutto</small></div></div>
       <button type="button" class="secondary fanta-io-bar" data-mode="bar" data-bar-page="profilo">Gestiscili nella parte Bar <span aria-hidden="true">→</span></button>
     </section>

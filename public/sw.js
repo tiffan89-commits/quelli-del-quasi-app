@@ -1,4 +1,7 @@
 const CACHE = "quellidelquasi-shell-v0.31.3"; // x-release-please-version
+const MEDIA_CACHE=CACHE+"-media-v1";
+const MEDIA_LIMIT=120;
+const mediaPath=/^\/assets\/(?:rooms-v2|optimized|icons|teams)\/.+\.(?:webp|avif|png|jpe?g|svg)$/i;
 self.addEventListener("install", (e) =>
   e.waitUntil(
     caches
@@ -13,21 +16,37 @@ self.addEventListener("activate", (e) =>
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+          keys.filter(k=>k.startsWith("quellidelquasi-")&&k!==CACHE&&k!==MEDIA_CACHE).map((k) => caches.delete(k)),
         ),
       )
       .then(() => self.clients.claim()),
   ),
 );
-// Game state, authentication, and slips always require the server. Never cache API responses.
-self.addEventListener("fetch", (e) => {
-  if (new URL(e.request.url).pathname.startsWith("/api/")) return;
-  if (
-    ["/icon.svg", "/manifest.webmanifest"].includes(
-      new URL(e.request.url).pathname,
-    )
-  )
-    e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
+// Only bundled, same-origin images enter the reusable media cache.
+self.addEventListener("fetch",event=>{
+ const request=event.request,url=new URL(request.url);
+ if(request.method!=='GET'||url.origin!==self.location.origin)return;
+ if(['/icon.svg','/manifest.webmanifest'].includes(url.pathname)){
+  event.respondWith(caches.match(request).then(hit=>hit||fetch(request)));
+  return;
+ }
+ if(request.destination!=='image'||!mediaPath.test(url.pathname))return;
+ let saved;
+ const result=(async()=>{
+  const cache=await caches.open(MEDIA_CACHE).catch(()=>null);
+  const hit=await cache?.match(request).catch(()=>null);
+  if(hit)return hit;
+  const response=await fetch(request);
+  if(cache&&response.ok&&!response.redirected&&response.headers.get('content-type')?.startsWith('image/')){
+   saved=cache.put(request,response.clone()).then(async()=>{
+    const keys=await cache.keys();
+    await Promise.all(keys.slice(0,Math.max(0,keys.length-MEDIA_LIMIT)).map(key=>cache.delete(key)));
+   }).catch(()=>{});
+  }
+  return response;
+ })();
+ event.respondWith(result);
+ event.waitUntil(result.then(()=>saved).catch(()=>{}));
 });
 self.addEventListener("push", (event) => {
   let data = {};

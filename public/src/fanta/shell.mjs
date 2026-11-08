@@ -32,7 +32,7 @@ export function topBar({ mode, league, credits,slipCredits,user,hideCredits=fals
 export function tabBar(active) {
   return `<nav class="v2-tabbar" aria-label="Navigazione Fanta">${FANTA_TABS.map(([id, label]) =>
     `<button type="button" class="v2-tab${id === active ? ' is-active' : ''}" data-tab="${id}"${id === active ? ' aria-current="page"' : ''}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[id]}</svg><span>${label}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[id]}</svg><span>${label}</span>${id==='lega'?'<b class="league-unread" data-chat-badge hidden></b>':''}
     </button>`).join('')}</nav>`;
 }
 

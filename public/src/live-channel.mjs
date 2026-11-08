@@ -164,7 +164,7 @@ export function mergeLiveSnapshot(state,data) {
   const update=incoming=>{
     for(const m of byId.get(incoming.id)||[]){
       if(incoming.scoreUpdatedAt&&m.scoreUpdatedAt&&Date.parse(incoming.scoreUpdatedAt)<Date.parse(m.scoreUpdatedAt))continue;
-      const {events,eventsAt,statistics,penalties,playerStats,...fields}=incoming;Object.assign(m,fields);
+      const {events,eventsAt,statistics,penalties,playerStats,kickoff,...fields}=incoming;Object.assign(m,fields);if(kickoff)m.kickoff=kickoff;
       if(events){m.details={...m.details,events,updatedAt:eventsAt};if(eventsAt)m.detailRevision=eventsAt;}
       for(const [key,value]of Object.entries({statistics,penalties,playerStats}))if(value!==undefined)m.details={...m.details,[key]:value};
     }

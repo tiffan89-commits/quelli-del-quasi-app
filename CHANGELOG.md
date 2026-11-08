@@ -5,6 +5,14 @@
 
 # Unreleased
 
+- Menu di selezione leggibili, con freccia centrata e più spazio per le opzioni. Le immagini pubbliche ricorrenti vengono riutilizzate dalla cache locale.
+
+- Le schedine accettano una selezione di partite, ciascuna giocabile fino al suo calcio d’inizio. La puntata usa il saldo disponibile e il ritorno considera solo le partite pronosticate. Le partite saltate entrano nello sfottò del Bar.
+
+- Lega Bar e Fanta condividono la griglia di azioni. Gli inviti usano la condivisione del dispositivo e il link all’app apre la registrazione.
+- Chiacchiere da bar si apre da Lega, con il contatore dei non letti aggiornato in diretta e un benvenuto del sistema nelle nuove leghe. Gli avvisi si gestiscono nelle impostazioni account.
+- La Home del Fanta mostra Live e Ultima partita, con più spazio per lo stemma e un riquadro per la prossima formazione. Le altre schedine Fanta mostrano gli esiti su una sola riga e i selettori di giornata usano menu personalizzati. La Home del Bar mostra subito il conto e il retro della scheda pronosticatore ha una grafica aggiornata.
+
 - In Fanta Oggi la sfida live ha precedenza sulla prossima formazione. Banner più compatti, collegamento diretto all’ultimo risultato e accesso alla schedina quando è salvata.
 - Nello Studio Live i voti e il giudizio del calciatore si aprono dal basso. Barra inferiore più compatta, nomi completi nelle schedine Serie A e impaginazione laterale nel riepilogo asta di Lega.
 

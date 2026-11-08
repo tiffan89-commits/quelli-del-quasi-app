@@ -73,7 +73,6 @@ html.os-on main.os-root .dash-last-round strong{font-size:18px!important}
 html.os-on main.os-root .dash-numbers small,html.os-on main.os-root .dash-numbers span{font-size:10.5px}
 html.os-on main.os-root .portfolio-mini{padding:8px 14px!important}
 html.os-on main.os-root .portfolio-mini svg{height:30px!important;margin-top:4px!important}
-html.os-on main.os-root .dash-recap-details>summary{min-height:0!important;padding:8px 14px!important}
 /* Obiettivi: griglia 2 colonne al posto del carosello */
 html.os-on main.os-root .dash-goals{border:0!important;padding-top:0!important}
 html.os-on main.os-root .goal-rail{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important;overflow:visible!important;padding:0!important;margin:8px 0 0!important}
@@ -87,7 +86,6 @@ html.os-on main.os-root .dash-last-round strong{font-size:16px!important;line-he
 html.os-on main.os-root .dash-last-round>span:last-child{font-size:12px}
 html.os-on main.os-root .dash-numbers>button{padding:6px 10px!important}
 html.os-on main.os-root .dash-numbers strong,html.os-on main.os-root .dash-numbers b{font-size:22px!important;line-height:1.1!important}
-html.os-on main.os-root .dash-recap-details>summary{padding:6px 14px!important;min-height:30px!important}
 html.os-on main.os-root .home-league-invite>*{min-height:40px!important}
 html.os-on main.os-root>.footer{break-inside:avoid}
 html.os-on main.os-root .league-dashboard>.dash-hero{height:92px!important}
@@ -101,7 +99,6 @@ html.os-on main.os-root>.footer .footer-line{margin:0!important;font-size:9.5px!
 html.os-on main.os-root .portfolio-mini svg{display:none!important}
 html.os-on main.os-root .portfolio-mini{padding:9px 14px!important}
 html.os-on main.os-root .dash-recap-details{margin:0!important;padding:0!important}
-html.os-on main.os-root .dash-recap-details:not([open])>summary{margin:0!important}
 
 /* ---------- Bar · Classifica: Punti/Crediti a segmenti, righe da 40 px, la tua riga fissa ---------- */
 html.os-on main.os-root:has(.ranking-metric)>.round-heading{display:none}
@@ -141,8 +138,8 @@ details.lega-tile[open]>summary{min-height:0}
 details.lega-tile .bar-members{margin:0;padding:0 12px 8px}
 .lega-hub+.league-actions{margin-top:0}
 @media (min-width:760px){.lega-hub{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.lega-tile-members[open] .bar-members{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
-.lega-tile-members[open] .bar-members li{min-height:38px}
+.lega-tile-detail[open] .bar-members{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+.lega-tile-detail[open] .bar-members li{min-height:38px}
 
 /* ---------- Bar · Quasi: squadra a griglia 3 colonne, premi nella seconda sottosezione ---------- */
 html.os-on main.os-root:has(.quasi-roster-grid)>.hero{display:none}
@@ -397,10 +394,6 @@ html.os-on main.os-root .fanta-team-fixture .team-logo{width:20px;height:20px}
 .fanta-team-fixture .team-calendar-score{display:block;font:700 22px/1 'Barlow Condensed',sans-serif;color:var(--lime)}
 .fanta-team-fixture .team-calendar-sides i{font-style:normal;color:var(--muted)}
 
-html.os-on body #open-chat.chat-fab{
- right:max(12px,calc(env(safe-area-inset-right,0px) + 8px));
- bottom:clamp(12px,calc(var(--os-dots-bottom,0px) + var(--os-dots-h,10px) + 12px),calc(100dvh - 120px));
-}
 body.match-page-active main.match-page.verdict-page{
  width:min(100%,550px);height:var(--postcard-height,calc(100dvh - var(--ux-header-height,64px) - var(--app-tabbar-height,84px)));
  overflow:auto;overscroll-behavior:contain;padding:4px 12px!important
@@ -480,3 +473,67 @@ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-code{disp
  html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-label{font-size:11px}
  html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-versus{display:none}
 }
+
+.lega-tile-detail>summary{position:relative}
+.lega-tile-next{position:absolute;right:11px;top:11px;color:var(--lime);font-size:20px;line-height:1}
+.lega-tile-detail.os-drill-target{border:0;background:none;padding:0}
+.lega-tile-detail.os-drill-target>.fanta-block{margin:0;padding-top:0;border-top:0}
+.lega-tile-detail.os-drill-target .fanta-lg-members{margin-top:4px}
+.v2-tab:has(>.league-unread){position:relative}
+.league-unread{position:absolute;top:1px;left:calc(50% + 6px);display:grid;place-items:center;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#c54447;color:white;font:800 10px/1 'DM Sans',sans-serif}
+.league-unread[hidden]{display:none}
+html.os-on main.os-root .fanta-home-compact .fanta-hero{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);column-gap:10px;align-items:center;background:linear-gradient(135deg,#2a5541,var(--fanta-pitch) 72%,#19382b)}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-identity{display:contents}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest{grid-column:2;grid-row:1/span 4;width:100%!important;max-width:130px;justify-self:center}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest>.team-logo{width:100%!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{grid-template-columns:repeat(3,max-content);gap:0 13px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-copy h1{overflow-wrap:anywhere}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-form{grid-column:1}
+.dash-recap-details .round-recap{margin:0}
+.dash-recap-details .recap-empty{padding:8px 12px}
+.dash-recap-details .recap-empty h2{margin:3px 0;font-size:18px}
+.dash-recap-details .recap-empty p{margin:0;font-size:11px}
+
+@media(max-height:700px) and (max-width:759px){
+ .lega-hub{gap:7px}
+ .lega-hub .lega-tile,.lega-hub .lega-tile>summary{min-height:70px;gap:3px}
+ .lega-hub button.lega-tile,.lega-hub .lega-tile>summary{padding:7px 9px}
+ .lega-hub .lega-tile-icon{width:22px;height:22px;border-radius:7px}
+ .lega-hub .lega-tile-icon svg{width:15px;height:15px}
+ .lega-hub .lega-tile b{font-size:13px}
+ .lega-hub .lega-tile small{font-size:10px}
+}
+
+html.os-on main.os-root .fanta-home-compact .fanta-next{border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.invite-hub-tile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:0;gap:0}
+.invite-hub-tile>button{display:flex;flex-direction:column;align-items:flex-start;align-self:stretch;justify-content:center;gap:4px;background:none;border:0;padding:8px 4px 8px 10px;color:inherit;font:inherit;text-align:left}
+.invite-hub-tile>button>b{font-size:14px;line-height:1.15}
+.invite-hub-tile>.whatsapp-invite{width:34px;height:34px;min-width:34px;min-height:34px;padding:5px;margin-right:6px;border-color:#52795a;color:#80d294}
+.invite-hub-tile>.whatsapp-invite svg{width:17px;height:17px}
+.president-todos-fanta .whatsapp-invite{width:30px;min-width:30px;height:30px;min-height:30px;padding:5px;color:#80d294}
+.president-todos-fanta .whatsapp-invite svg{width:15px;height:15px}
+@media(max-width:360px){
+ html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{gap:0 7px!important}
+ .invite-hub-tile>button>b{font-size:12px}
+}
+
+html.os-on main.os-root .fanta-other-slips .bar-tile{display:block;break-inside:avoid;margin:0 auto 8px;padding:5px}
+html.os-on main.os-root .fanta-other-slips .bar-who{margin:0 0 4px}
+html.os-on main.os-root .fanta-other-slips .bar-stub{display:block}
+html.os-on main.os-root .fanta-other-slips .bar-bets{grid-template-columns:repeat(var(--fanta-slip-matches),minmax(0,1fr));grid-auto-rows:auto}
+html.os-on main.os-root .fanta-other-slips .bar-bet{height:46px;justify-content:center}
+html.os-on main.os-root .fanta-other-slips :is(.bar-teams,.bar-score){white-space:nowrap}
+html.os-on main.os-root .fanta-other-slips .inline-live{font-size:7px}
+html.os-on main.os-root :is(.round-selector,.bar-table .bar-round,.fanta-slip-round) .quasi-select-button{min-height:44px!important;padding:7px 13px!important;font-size:14px!important}
+@media(max-width:360px){
+ html.os-on main.os-root .fanta-other-slips .bar-teams{font-size:7px}
+ html.os-on main.os-root .fanta-other-slips .bar-bets{gap:2px}
+}
+
+.slip-play-note{margin:0;padding:3px 10px 0;text-align:center;font-size:10px;line-height:1.2}
+.slip-play-note i{font-style:normal;margin:0 3px}
+.slip-play-note [hidden]{display:none!important}
+.slip-event-clock{display:block;color:var(--lime);font-size:9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+body[data-game-mode] .quasi-select-button{padding-inline-end:36px!important;text-align:left;line-height:1.25}
+body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11px 12px;overflow-wrap:anywhere}

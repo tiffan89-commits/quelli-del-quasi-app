@@ -23,7 +23,7 @@ export function renderTabBar(active, { hasFanta = true } = {}) {
     TABS.filter(t => t.id!=='profilo'&&(hasFanta || t.id !== 'fanta')).map(t =>
       '<button type="button" class="v2-tab' + (t.id === active ? ' is-active' : '') + '" data-v2-tab="' + t.id + '"' +
       (t.id === active ? ' aria-current="page"' : '') + '>' +
-      '<svg viewBox="0 0 24 24" aria-hidden="true">' + t.icon + '</svg><span>' + t.label + '</span></button>'
+      '<svg viewBox="0 0 24 24" aria-hidden="true">' + t.icon + '</svg><span>' + t.label + '</span>'+(t.id==='legainfo'?'<b class="league-unread" data-chat-badge hidden></b>':'')+'</button>'
     ).join('') + '</nav>';
 }
 

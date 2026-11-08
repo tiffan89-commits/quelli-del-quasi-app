@@ -32,8 +32,8 @@ test('home banner resolves own league, competition, round and matchup without fe
  const html=renderHome(home);assert.match(html,/Segui la schedina/);assert.match(html,/data-bar-league="bar".*data-bar-round="r"/);assert.doesNotMatch(renderHome({...home,bar:{...bar,saved:false}}),/Segui la schedina/);
  assert.match(renderHome({...home,bar:{...bar,closed:false}}),/Segui la schedina/);
  const ordered=renderHome({...home,nextLineup:{round:9,formation:'4-3-3',savedAt:'2026-11-02T12:00Z'},lastResult:{round:7,matchupId:'last',home:{name:'Casa',goals:2},away:{name:'Ospiti',goals:1}}});
- assert.match(ordered,/fanta-match-link[\s\S]+data-round="7" data-mu="last"[\s\S]+4-3-3 salvata/);
- const {document}=parseHTML(html),tile=document.querySelector('.fanta-match-link');assert.equal(tile.dataset.round,'8');assert.ok(tile.textContent.includes('La tua sfida'));assert.equal(tile.querySelector('[data-mode="bar"]'),null);assert.ok(document.querySelector('.fanta-bar-link'));
+ assert.match(ordered,/fanta-match-link[\s\S]+data-round="7" data-mu="last"[\s\S]+Salvata/);
+ const {document}=parseHTML(html),tile=document.querySelector('.fanta-match-link');assert.equal(tile.dataset.round,'8');assert.ok(tile.textContent.includes('Live'));assert.equal(tile.querySelector('[data-mode="bar"]'),null);assert.ok(document.querySelector('.fanta-bar-link'));
  const own={id:'a',name:'La mia squadra',branding:{type:'design',design:{text:'MIA',shape:'shield'}}},away={...home,match:{...home.match,home:{id:'other',name:'Altri'},away:own}};
  assert.equal(homeTeam(away),own);assert.equal(homeTeam({...away,match:null,standings:[{team:own}]}),own);
  const crest=parseHTML(renderHome(away)).document.querySelector('.fanta-hero-crest');assert.match(crest.textContent,/MIA/);assert.equal(crest.dataset.action,'edit-logo');assert.match(crest.getAttribute('aria-label'),/La mia squadra/);

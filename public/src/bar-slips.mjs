@@ -1,6 +1,6 @@
 import {predictionStatus} from '../prediction.mjs';
 import {quasiScene} from './quasi-scene.mjs';
-import {inlineResultView} from './slip-results.mjs';
+import {inlineResultView,slipNotice} from './slip-results.mjs';
 import {orderSlipMatches} from '../match-layout.mjs';
 import {PITCH_FLIP_ICON} from './lineup-pitch.mjs';
 // "Le schedine del Bar": one table tile, one small tile per player (Quasi, name, mini-schedina, joke, profile button).
@@ -21,19 +21,21 @@ export function barBetTiles(r,slip,fmt,{interactive=true}={}){
  }).join('');
 }
 export function correctCount(r,slip){return r.matches.filter(m=>!m.void&&predictionStatus(m,slip.picks?.[m.id],true)?.winning).length;}
-function tile({l,r,slip,me,fmt,analyzable,crown}){
+function tile({l,r,slip,me,fmt,analyzable,crown,compact}){
  const player=l.members.find(x=>x.uid===slip.uid)||{},name=player.name||'Giocatore',total=r.matches.filter(m=>!m.void).length,right=correctCount(r,slip);
+ const played=r.eventBetting?r.matches.filter(m=>!m.void&&slip.picks?.[m.id]).length:total;
  const settled=r.matches.filter(m=>!m.void&&m.status==='FT').length;
- const front=`<div class="bar-who"><button type="button" class="bar-quasi" data-quasi-member="${esc(slip.uid)}" aria-label="Guarda il Quasi di ${esc(name)}">${quasiScene(player.avatar,name,{compact:true})}</button><div class="bar-id"><h3>${esc(name)}${me?' <em>Tu</em>':''}</h3><span class="bar-archetype" data-bar-archetype>${analyzable?'Il bar sta scrivendo il verbale…':''}</span><span class="bar-risk" data-bar-risk hidden><i></i><b></b></span></div>${crown?'<span class="bar-crown" title="Più pronostici giusti della giornata">🏆</span>':''}</div>${analyzable?'<p class="bar-quip" data-bar-quip><span class="bar-skeleton"></span><span class="bar-skeleton short"></span></p>':''}<div class="bar-stub" aria-label="Schedina di ${esc(name)}"><div class="bar-stub-head"><span>${slip.stake} cr${slip.odds?' · quota '+fmt(slip.odds):''}</span><span class="bar-stub-status">${settled?`<b>${right}</b>/${total} azzeccate`:'In attesa dei risultati'}</span><span>${slip.pointsSettled?'<b>'+fmt(slip.points)+'</b> pt':''}${slip.creditsSettled?' · ritorno <b>'+fmt(slip.prize)+'</b>':''}</span></div><div class="bar-bets" data-slip-match-list>${barBetTiles(r,slip,fmt)}</div></div>`;
+ const front=`<div class="bar-who"><button type="button" class="bar-quasi" data-quasi-member="${esc(slip.uid)}" aria-label="Guarda il Quasi di ${esc(name)}">${quasiScene(player.avatar,name,{compact:true})}</button><div class="bar-id"><h3>${esc(name)}${me?' <em>Tu</em>':''}</h3><span class="bar-archetype" data-bar-archetype>${analyzable?'Il bar sta scrivendo il verbale…':''}</span><span class="bar-risk" data-bar-risk hidden><i></i><b></b></span></div>${crown?'<span class="bar-crown" title="Più pronostici giusti della giornata">🏆</span>':''}</div>${analyzable?'<p class="bar-quip" data-bar-quip><span class="bar-skeleton"></span><span class="bar-skeleton short"></span></p>':''}<div class="bar-stub" aria-label="Schedina di ${esc(name)}"><div class="bar-stub-head"><span>${slip.stake} cr${slip.odds?' · quota '+fmt(slip.odds):''}</span><span class="bar-stub-status">${settled?`<b>${right}</b>/${played} azzeccate`:'In attesa dei risultati'}</span><span>${slip.pointsSettled?'<b>'+fmt(slip.points)+'</b> pt':''}${slip.creditsSettled?' · ritorno <b>'+fmt(slip.prize)+'</b>':''}</span></div><div class="bar-bets"${compact?` style="--fanta-slip-matches:${Math.max(1,total)}"`:''} data-slip-match-list>${barBetTiles(r,slip,fmt)}</div></div>`;
  const profile=analyzable?`<div class="bar-card-front pitch-flip-face pitch-flip-front" aria-hidden="false">${front}</div><div class="bar-card-back pitch-flip-face pitch-flip-back" inert aria-hidden="true" data-bar-profile><p role="status">Caricamento…</p></div><button type="button" class="bar-profile pitch-flip-button" data-pitch-flip="Profilo" data-pitch-back-label="Schedina" aria-pressed="false" data-analyze="${esc(slip.uid)}" data-round="${esc(r.id)}">${PITCH_FLIP_ICON}<span>Profilo</span></button>`:front;
  return `<article class="bar-tile${me?' is-me':''}${analyzable?' pitch-flip-card':''}" data-bar-uid="${esc(slip.uid)}">${profile}</article>`;
 }
-export function barSlipsView({l,r,uid,fmt,rounds,sourceOf}){
+export function barSlipsView({l,r,uid,fmt,rounds,sourceOf,compact=false}){
  const slips=[...(r.publicSlips||[])].sort((a,b)=>(b.uid===uid)-(a.uid===uid)||(b.points||0)-(a.points||0));
- const analyzable=!(r.pointsOnly||sourceOf(r)==='fantacalcio'),best=Math.max(0,...slips.map(s=>correctCount(r,s))),finished=r.matches.every(m=>m.void||m.status==='FT'),crowned=slips.filter(s=>finished&&best>0&&correctCount(r,s)===best&&slips.length>2);
- const pages=[];
- for(let i=0;i<slips.length;i+=2)pages.push(`<div class="bar-slip-page">${slips.slice(i,i+2).map(slip=>tile({l,r,slip,me:slip.uid===uid,fmt,analyzable,crown:crowned.includes(slip)})).join('')}</div>`);
- return `<section class="bar-table" aria-label="Le schedine del Bar"><header class="bar-head" data-os-header><label class="bar-round"><span class="sr-only">Giornata</span><select id="round-switch">${rounds.map(x=>`<option value="${esc(x.id)}" ${x.id===r.id?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label></header><div data-os-content ${r.closed&&pages.length?'data-os-strip':''}>${!r.closed?'<div class="notice">Le altre schedine si aprono al calcio d’inizio della prima partita.</div>':pages.length?pages.join(''):'<div class="notice">Nessuna schedina salvata per questa giornata.</div>'}</div></section>`;
+ const analyzable=!(compact||r.pointsOnly||sourceOf(r)==='fantacalcio'),best=Math.max(0,...slips.map(s=>correctCount(r,s))),finished=r.matches.every(m=>m.void||m.status==='FT'),crowned=slips.filter(s=>finished&&best>0&&correctCount(r,s)===best&&slips.length>2);
+ const render=slip=>tile({l,r,slip,me:slip.uid===uid,fmt,analyzable,crown:crowned.includes(slip),compact});
+ const pages=compact?slips.map(render):[];
+ if(!compact)for(let i=0;i<slips.length;i+=2)pages.push(`<div class="bar-slip-page">${slips.slice(i,i+2).map(render).join('')}</div>`);
+ return `<section class="bar-table${compact?' fanta-other-slips':''}" aria-label="${compact?'Le altre schedine':'Le schedine del Bar'}"><header class="bar-head" data-os-header><label class="bar-round"><span class="sr-only">Giornata</span><select id="round-switch">${rounds.map(x=>`<option value="${esc(x.id)}" ${x.id===r.id?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label></header><div data-os-content ${!compact&&r.closed&&pages.length?'data-os-strip':''}>${!r.closed?'<div class="notice">Le altre schedine si aprono al calcio d’inizio della prima partita.</div>':pages.length?pages.join(''):'<div class="notice">Nessuna schedina salvata per questa giornata.</div>'}</div>${slipNotice()}</section>`;
 }
 // Fills the tiles as soon as the round verdicts arrive.
 export function barVerdictPatch(root,players){
@@ -50,6 +52,6 @@ export function barVerdictPatch(root,players){
 }
 export function barProfileView(p,{name,avatar,slip,fmt}){
  const delta=p.delta?`<span class="bar-delta ${p.delta>0?'up':'down'}">${p.delta>0?'▲':'▼'} ${Math.abs(p.delta)}</span>`:'';
- const stats=[['Puntata',(slip?.stake??'—')+' cr'],['Azzeccate',p.pending?`${p.correct} su ${p.correct+p.wrong} giocate`:`${p.correct}/${p.correct+p.wrong}`],p.longshot?['Colpo più ardito',`${pickCode(p.longshot.pick)} · quota ${fmt(p.longshot.odd)}`]:null].filter(Boolean);
+ const stats=[['Puntata',(slip?.stake??'—')+' cr'],['Azzeccate',p.pending?`${p.correct} su ${p.correct+p.wrong} giocate`:`${p.correct}/${p.correct+p.wrong}`],p.omitted?['Saltate',p.omitted]:p.longshot?['Colpo più ardito',`${pickCode(p.longshot.pick)} · quota ${fmt(p.longshot.odd)}`]:null].filter(Boolean);
  return `<div class="bar-dossier"><div class="bar-dossier-top"><div class="bar-dossier-quasi">${quasiScene(avatar,name,{compact:true,eager:true})}</div><div><div class="bar-dossier-identity"><p class="bar-dossier-name">${esc(name)}</p><span class="bar-dossier-risk" data-tone="${riskTone(p.risk)}">Rischio <b>${p.risk}/100</b> ${delta}</span></div><h2>${esc(p.archetype)}</h2></div></div><dl class="bar-dossier-stats">${stats.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><blockquote class="bar-dossier-quip">«${esc(p.headline)}»</blockquote><p class="bar-dossier-text">${esc(p.short)}</p></div>`;
 }
