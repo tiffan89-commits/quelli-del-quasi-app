@@ -39,6 +39,7 @@ test('passo 9: le gare restano apribili e i mercati si richiudono anche dopo la 
  assert.match(open,/class="v2-odds-extra"/);
  const points=renderSlipV2({round:{...r,pointsOnly:true},openMatch:'m',esc:f,fmt:f,date:f});
  assert.doesNotMatch(points,/data-v2-more|data-value="X2"/);
+ assert.match(points,/v2-odd-points/);
 });
 
 test('an unpriced preview allows local picks but blocks confirmation and removes repeated slip text',()=>{
@@ -59,11 +60,12 @@ test('an unpriced preview allows local picks but blocks confirmation and removes
  assert.equal(standard.querySelector('#save-slip'),null);
 });
 
-test('quota scoring shows only points for a hit and uses the accepted quote on a closed slip',()=>{
+test('priced slips show only odds and keep the accepted quote on a closed slip',()=>{
  const r=round();r.closed=true;r.rules.scoring=QUOTA_SCORING;
  r.slip={picks:{1:'1'},acceptedOdds:{1:1.35}};
  const {document}=parseHTML(view(r)),selected=document.querySelector('[data-pick="1"][data-value="1"]');
- assert.equal(selected.querySelector('.points-gain').textContent,'+1,35');
- assert.equal(selected.querySelector('.points-loss'),null);
- assert.match(selected.getAttribute('aria-label'),/0 punti se sbagliato/);
+ assert.equal(selected.querySelector('[data-odd]').textContent,'Quota 1.35');
+ assert.equal(document.querySelector('.v2-odd-points'),null);
+ assert.match(selected.getAttribute('aria-label'),/Quota 1\.35$/);
+ assert.doesNotMatch(view(round()),/v2-odd-points|punti se/);
 });

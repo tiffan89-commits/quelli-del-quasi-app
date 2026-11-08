@@ -963,9 +963,9 @@ function choicesView(x, r) {
                     ? fmt(x.odds[p]) + (x.oddsEstimated?.[p] ? " · stima" : "")
                     : "in arrivo") +
                 "</span>" +
-                ((r.slip?.picks?.[x.id] === p
+                (r.pointsOnly && ((r.slip?.picks?.[x.id] === p
                   ? r.slip.pointTerms?.[x.id]
-                  : null) || x.pointOffers?.[p]
+                  : null) || x.pointOffers?.[p])
                   ? '<small class="point-caption">+' +
                     fmt(
                       (
