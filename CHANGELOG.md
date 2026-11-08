@@ -5,6 +5,11 @@
 
 # Unreleased
 
+- Classifica Serie A in una sola vista. Le schedine del Bar scorrono a coppie con esiti più grandi e mostrano il rischio accanto al nome sul retro, senza il testo introduttivo e l’evoluzione.
+- I dettagli della partita scorrono nello stesso carosello delle formazioni e si richiudono con lo swipe inverso. La X e la freccia sono accanto al risultato.
+- Le sfide del Fanta si seguono nello Studio Live a schermo intero, con selezione integrata, voti sul campo e panchina sul retro. Calendario e risultati dà precedenza alle giornate concluse e apre la sfida toccata direttamente nello Studio Live.
+- Il copyright è sotto le icone della barra di navigazione di Bar e Fanta.
+
 - Le panchine sono sul retro del campo, raggiungibili dal pulsante di ribaltamento. Un breve swipe a sinistra dalla seconda squadra apre i dettagli con gli eventi o, prima del calcio d’inizio, con gli indisponibili e i giocatori in dubbio.
 - In Squadra → Formazione il campo usa lo spazio fino alla barra in basso, senza la riga del modulo. Il retro mostra la panchina nell’ordine salvato. Le quote mancanti sono indicate con un punto interrogativo e una legenda in fondo alla schedina.
 - Nel Verdetto le schedine sbagliate per un solo esito sono visibili direttamente nel riquadro della giornata.

@@ -1,14 +1,14 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';import {uxViewport} from '../scripts/ux-viewport.mjs';
 test('Bar and Fanta use a copyright-only footer and move consent controls to account settings',()=>{
- const {document}=parseHTML('<html><body><div id="app"><main><footer class="footer"><p>Copyright</p></footer></main></div><footer class="analytics-footer"><a href="/privacy.html">Privacy</a><button data-analytics-preferences>Preferenze statistiche</button></footer></body></html>'),root=document.querySelector('#app'),control=document.querySelector('button');let opened=0;control.addEventListener('click',()=>opened++);
+ const {document}=parseHTML('<html><body><div id="app"><main><footer class="footer"><p>Copyright</p></footer></main><nav class="v2-tabbar"></nav></div><footer class="analytics-footer"><a href="/privacy.html">Privacy</a><button data-analytics-preferences>Preferenze statistiche</button></footer></body></html>'),root=document.querySelector('#app'),control=document.querySelector('button');let opened=0;control.addEventListener('click',()=>opened++);
  placeAppFooter(root);
- assert.match(root.querySelector('.footer').textContent,/^© \d{4} QUELLI DEL QUASI\.$/);
- assert.equal(root.querySelector('.footer button'),null);
+ assert.match(root.querySelector('.v2-tabbar > [data-app-footer]').textContent,/^© \d{4} QUELLI DEL QUASI\.$/);
+ assert.equal(root.querySelector('main .footer'),null);
  assert.equal(control.parentElement.hidden,true);
- root.innerHTML='<main class="fanta-main"><h1>Fanta</h1><div data-account-privacy></div></main>';
+ root.innerHTML='<main class="fanta-main"><h1>Fanta</h1><div data-account-privacy></div></main><nav class="v2-tabbar"></nav>';
  placeAppFooter(root);placeAppFooter(root);
- assert.equal(document.querySelectorAll('.footer').length,1);
+ assert.equal(document.querySelectorAll('.v2-tabbar > [data-app-footer]').length,1);
  assert.equal(document.querySelectorAll('.analytics-footer').length,1);
  assert.equal(root.querySelector('[data-account-privacy] button'),control);
  assert.equal(control.parentElement.hidden,false);

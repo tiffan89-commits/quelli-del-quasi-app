@@ -304,12 +304,12 @@ html.os-on main.os-root .v2-match .v2-odd:is(.pick-winning,.pick-losing) .v2-odd
  html.os-on main.os-root .v2-match .inline-score{font-size:13px}
 }
 
-/* Each pair is one indivisible page. The profile flips inside its original tile. */
+/* Each pair gets a full-width flex page so Safari cannot fragment its cards. */
 html.os-on main.os-root .bar-table{padding-block:2px 0!important}
 html.os-on main.os-root .bar-table .bar-head{padding-block:0!important;min-height:0!important;margin-block:0 4px!important}
 .bar-slip-page{display:grid;gap:4px}
-html.os-on main.os-root .bar-slip-page{break-inside:avoid;overflow:hidden}
-html.os-on main.os-root .bar-slip-page+.bar-slip-page{break-before:column}
+html.os-on body #app>main.os-split [data-os-strip]{display:flex;columns:auto;gap:0;padding-inline:0!important}
+html.os-on main.os-root .bar-slip-page{flex:0 0 100%;min-width:0;height:100%;box-sizing:border-box;padding:0 14px;overflow:auto;grid-auto-rows:minmax(172px,1fr)}
 html.os-on main.os-root .bar-tile{min-width:0;min-height:0;max-width:570px;width:100%;margin:0 auto;padding:4px;gap:2px}
 html.os-on main.os-root .bar-tile.pitch-flip-card{padding-bottom:27px}
 html.os-on main.os-root .bar-tile .bar-who{grid-template-columns:34px minmax(0,1fr);gap:6px;line-height:1}
@@ -322,26 +322,25 @@ html.os-on main.os-root .bar-tile .bar-id h3{font-size:18px;white-space:nowrap;o
 html.os-on main.os-root .bar-tile .bar-archetype{font-size:10px;min-height:0;margin:0}
 html.os-on main.os-root .bar-tile .bar-risk{font-size:9px;margin:1px 0 0}
 html.os-on main.os-root .bar-tile .bar-quip{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;padding:2px 5px;margin:0;min-height:0;font-size:10px;line-height:1.1}
-html.os-on main.os-root .bar-tile .bar-bets{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
-html.os-on main.os-root .bar-tile .bar-bet{height:26px;min-height:0!important;min-width:0;gap:0;padding:1px 0;line-height:1}
-html.os-on main.os-root .bar-tile .bar-bet strong{font-size:12px}
-html.os-on main.os-root .bar-tile .bar-teams{font-size:8px}
-html.os-on main.os-root .bar-tile .bar-stub{padding:3px 4px}
+html.os-on main.os-root .bar-tile .bar-bets{flex:1;min-height:0;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(28px,1fr);gap:3px}
+html.os-on main.os-root .bar-tile .bar-bet{min-height:0!important;min-width:0;gap:2px;padding:1px 0;line-height:1}
+html.os-on main.os-root .bar-tile .bar-bet strong{font-size:clamp(13px,3.8vw,22px)}
+html.os-on main.os-root .bar-tile .bar-teams{font-size:clamp(8px,2.2vw,11px)}
+html.os-on main.os-root .bar-tile .bar-stub{display:flex;flex:1;flex-direction:column;min-height:0;padding:4px}
 html.os-on main.os-root .bar-tile .bar-stub-head{padding-bottom:2px;margin-bottom:2px;gap:4px;font-size:10px;letter-spacing:.02em}
 html.os-on main.os-root .bar-tile .bar-stub-head span+span{font-size:10px}
-@media(min-width:760px){.bar-slip-page{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(min-height:760px) and (max-width:759px){html.os-on main.os-root .bar-tile{min-height:clamp(0px,calc((var(--os-h) - 18px)/2),240px)}}
-@media(min-width:760px){html.os-on main.os-root .bar-tile{min-height:clamp(0px,calc(var(--os-h) - 12px),375px)}}
+@media(max-height:735px){html.os-on main.os-root .bar-tile .bar-quip{-webkit-line-clamp:1}}
+@media(min-width:760px){html.os-on main.os-root .bar-slip-page{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(172px,min(100%,380px))}}
 
 .fanta-slip-balance{margin:2px 0 5px;color:var(--muted);font-size:11px}
-.serie-standings-page{break-inside:avoid}
-.serie-standings-page+.serie-standings-page{break-before:column}
-html.os-on .serie-standings-page{max-height:calc(var(--os-h) - 4px);overflow:auto}
 .serie-standings .serie-table{min-width:0;width:100%;table-layout:fixed;font-size:clamp(9px,2.8vw,14px)}
-.serie-standings .serie-table :is(th,td){padding:4px 1px;height:23px}
+.serie-standings .serie-table :is(th,td){padding:0 1px;height:clamp(17px,calc((var(--os-h,530px) - 12px)/21),26px)}
 .serie-standings .serie-table :is(th,td):first-child{width:7%}
 .serie-standings .serie-table :is(th,td):nth-child(2){width:33%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .serie-standings .serie-table .team-logo{width:16px;height:16px;flex:none}
+.serie-standings .serie-table .team-label svg{width:15px;height:16px}
+.serie-standings .serie-table .team-label>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.serie-standings .serie-table-card{padding-block:2px!important}
 
 .president-group[data-president-section="persone"]:not([open]){display:none}
 html.os-on main.os-root .president-panel .president-heading{margin-inline:14px}
@@ -395,6 +394,8 @@ html.os-on main.os-root .fanta-rating-rules .rule-table :is(th,td){padding:3px 2
 .fanta-calendar-more{display:block;margin:8px auto}
 html.os-on main.os-root .fanta-team-fixture{margin-block:4px;padding:5px 8px;gap:2px}
 html.os-on main.os-root .fanta-team-fixture .team-logo{width:20px;height:20px}
+.fanta-team-fixture .team-calendar-score{display:block;font:700 22px/1 'Barlow Condensed',sans-serif;color:var(--lime)}
+.fanta-team-fixture .team-calendar-sides i{font-style:normal;color:var(--muted)}
 
 html.os-on body #open-chat.chat-fab{
  right:max(12px,calc(env(safe-area-inset-right,0px) + 8px));

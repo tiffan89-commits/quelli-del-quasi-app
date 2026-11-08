@@ -258,8 +258,17 @@ function rosterView(data, d) {
 
 export const TEAM_CALENDAR_PAGE=4;
 export function renderTeamCalendar(data,limit=TEAM_CALENDAR_PAGE){
- const fixtures=orderRounds(data.calendar||[],data.round.number,'round');
- const rows=fixtures.slice(0,limit).map(m=>`<button type="button" class="fanta-team-fixture ${m.round===data.round.number?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}"><small>Giornata ${m.round}${m.round===data.round.number?' · attuale':''} · ${esc(m.kickoff?new Date(m.kickoff).toLocaleDateString('it-IT',{day:'numeric',month:'short'}):'Da definire')}</small><span>${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><strong>${m.home.goals??'–'} : ${m.away.goals??'–'}</strong><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span><small>${m.home.points==null?'Da giocare':pts(m.home.points)+' · '+pts(m.away.points)+' FP'+(m.official?' · Finale':' · Provvisorio')}</small></button>`).join('');
+ const calendar=data.calendar||[];
+ const completed=calendar.filter(m=>m.official).sort((a,b)=>b.round-a.round);
+ const fixtures=[...completed,...orderRounds(calendar.filter(m=>!m.official),data.round.number,'round')];
+ const rows=fixtures.slice(0,limit).map(m=>{
+  const score=Number.isFinite(m.home.goals)&&Number.isFinite(m.away.goals)?`${m.home.goals}–${m.away.goals}`:'';
+  return `<button type="button" class="fanta-team-fixture ${m.round===data.round.number?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}">
+    ${score?`<strong class="team-calendar-score">${score}</strong>`:''}
+    <span class="team-calendar-sides">${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><i aria-hidden="true">–</i><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span>
+    <small>Giornata ${m.round} · ${m.official?'Finale':score?'Provvisorio':'Da giocare'}${m.home.points!=null?' · '+pts(m.home.points)+'–'+pts(m.away.points)+' FP':''}</small>
+  </button>`;
+ }).join('');
  return `<section class="fanta-team-calendar" aria-label="Calendario e risultati">${rows||'<p class="fanta-note">Il calendario arriva con l’avvio della competizione.</p>'}${fixtures.length>limit?'<button type="button" class="secondary fanta-calendar-more" data-sq-calendar-more aria-label="Mostra altre giornate">+ Altre giornate</button>':''}</section>`;
 }
 export function renderTeamRoster(data,tools=''){return `<div class="fanta-ps-head"><div><h2 id="fanta-sheet-title">${esc(data.team.name)}</h2><small>Rosa · ${data.roster.length} giocatori</small></div><button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div>${tools}${rosterView(data,{slots:{},bench:[]})}`;}

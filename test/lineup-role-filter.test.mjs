@@ -24,11 +24,11 @@ test('dedicated match pages put each bench behind its team and gate the details 
  const panes=[...document.querySelectorAll('.pitch-team')];
  assert.deepEqual(panes.map(p=>p.getAttribute('aria-label')),['Formazione Juventus','Formazione Inter']);
  assert.deepEqual([...document.querySelectorAll('[data-pitch-tab]')].map(p=>p.dataset.pitchTab),['0','1']);
- const withDetails=parseHTML(renderLineup({lineups:{...extended,kind:'official'}},{paged:true,swipeDetails:true})).document;
- assert.equal(withDetails.querySelector('.lineup-paged h3'),null);
- assert.ok(withDetails.querySelector('.pitch-team:last-of-type + .pitch-details-edge:not([hidden])'));
- const noDetails=parseHTML(renderLineup({lineups:extended},{paged:true,swipeDetails:true,detailsAvailable:false})).document;
- assert.ok(noDetails.querySelector('.pitch-details-edge[hidden]'));
+ const withDetails=parseHTML(renderLineup({lineups:{...extended,kind:'official'}},{paged:true,details:'<p>Eventi della partita</p>'})).document;
+ assert.equal(withDetails.querySelector('.lineup-paged > h3'),null);
+ assert.equal(withDetails.querySelector('.pitch-team + .pitch-details-panel:not([hidden])').textContent,'Eventi della partita');
+ const noDetails=parseHTML(renderLineup({lineups:extended},{paged:true,details:'',detailsAvailable:false})).document;
+ assert.ok(noDetails.querySelector('.pitch-details-panel[hidden]'));
  for(const pane of panes){
   const bench=pane.querySelector('.pitch-flip-back');
   assert.ok(bench.hasAttribute('inert'));
@@ -53,5 +53,7 @@ test('match availability belongs to the details page and is limited to matches y
  assert.equal(matchAvailability({...data,status:'1H'}),'');
  assert.equal(matchAvailability({...data,status:'FT'}),'');
  assert.equal(matchAvailability({...data,lineups:lineup}),'');
- assert.doesNotMatch(renderLineup(data,{paged:true,swipeDetails:true}),/Indisponibili e in dubbio/);
+ const detail=parseHTML(renderLineup(data,{paged:true,details:matchAvailability(data)})).document;
+ assert.ok(detail.querySelector('.pitch-details-panel .match-availability'));
+ assert.equal(detail.querySelector('.pitch-team .match-availability'),null);
 });

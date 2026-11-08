@@ -1,16 +1,15 @@
 import {pitchPerformance,hasPitchPerformance,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
-import {pitchFixture} from '../player-label.mjs';
+import {pitchFixture,playerSurname} from '../player-label.mjs';
+import {renderPitchFlip} from '../lineup-pitch.mjs';
 import {statNumber,formatStatNumber} from './stat-number.mjs';
 import {playerVisual} from './player-visual.mjs';
 // Pagina "Giornata": scelta della giornata e della sfida, formazioni con voti e fantavoti,
 // modificatore difesa, totale; scheda del singolo giocatore con la scomposizione del voto.
 // Funzioni pure: ricevono le risposte di api.round() / api.matchup() e restituiscono HTML.
-import { esc, pts, timeAgo } from './formato.mjs';
-import { shirt } from './maglie.mjs';
+import { esc, pts } from './formato.mjs';
 import {compareStat} from './stat-comparison.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
-const ROLE_GROUPS = { P: 'Porta', D: 'Difesa', C: 'Centrocampo', A: 'Attacco' };
 const STATE_LABEL = { 'calcolata': ['Ufficiale', 'is-official'], 'in-corso': ['Live · provvisoria', 'is-live'], 'schierata': ['Da giocare', 'is-todo'], 'da-schierare': ['Da giocare', 'is-todo'] };
 
 const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + formatStatNumber(Math.abs(n));
@@ -18,40 +17,18 @@ export const formatPlayerStat=(value,unit='')=>formatStatNumber(value);
 const vote = n => n == null ? '–' : pts(n, n % 1 ? 1 : 0);
 const goalsLabel = g => g === 1 ? '1 gol' : `${g} gol`;
 
-function roundHead(r) {
-  const [label, cls] = STATE_LABEL[r.round.state] || STATE_LABEL['da-schierare'];
-  const n = r.round.number, last = r.rounds.length;
-  const detail = r.round.state === 'in-corso' ? ` · ${r.round.matchesDone} partite su ${r.round.matchesTotal} finite` : '';
-  return `<header class="fanta-round-head">
-    <button type="button" class="fanta-step" data-round="${n - 1}" ${n <= 1 ? 'disabled' : ''} aria-label="Giornata precedente">‹</button>
-    <div class="fanta-round-title"><span class="eyebrow">Giornata</span><h1>${n}</h1>
-      <span class="fanta-status ${cls}">${label}${detail}</span></div>
-    <button type="button" class="fanta-step" data-round="${n + 1}" ${n >= last ? 'disabled' : ''} aria-label="Giornata successiva">›</button>
-  </header>`;
-}
-
-function matchupRail(r, activeId) {
-  const lineupMark = s => s.lineupSaved ? '<small class="fanta-mu-saved" title="Formazione schierata">✓</small>' : '<small class="fanta-mu-missing" title="Formazione non ancora schierata">…</small>';
-  const side = s => `<span class="fanta-mu-team">${teamLogo(s.team)}<b>${esc(s.team.name)}</b>${s.goals != null ? `<strong>${s.goals}</strong>` : lineupMark(s)}</span>`;
-  return `<div class="fanta-mu-rail" role="list" aria-label="Sfide della giornata">${r.matchups.map(m => `
-    <button type="button" role="listitem" class="fanta-mu${m.id === activeId ? ' is-active' : ''}${m.isMine ? ' is-mine' : ''}" data-matchup="${esc(m.id)}" aria-pressed="${m.id === activeId}">
-      ${m.isMine ? '<small class="fanta-mu-tag">La tua</small>' : ''}${side(m.home)}${side(m.away)}
-    </button>`).join('')}</div>`;
-}
-
-function scoreboard(m, side) {
-  const col = (s, key) => `<button type="button" class="fanta-sb-team${side === key ? ' is-active' : ''}" data-side="${key}" aria-pressed="${side === key}">
-      ${teamLogo(s.team,{className:'is-medium'})}
-      <b>${esc(s.team.name)}</b>
-      <span class="fanta-sb-points">${s.total == null ? '–' : pts(s.total)}</span>
-    </button>`;
-  const known = m.home.goals != null && m.away.goals != null;
-  return `<div class="fanta-sb">
-    ${col(m.home, 'home')}
-    <div class="fanta-sb-mid"><strong>${known ? `${m.home.goals}–${m.away.goals}` : 'vs'}</strong><small>${m.official ? 'Finale' : known ? 'provvisorio' : 'da giocare'}</small></div>
-    ${col(m.away, 'away')}
-  </div>
-  <p class="fanta-sb-hint">Tocca una squadra per vedere la sua formazione.</p>`;
+function matchupRail(r, matchup, activeId, side) {
+  return `<div class="fanta-mu-rail" aria-label="Sfide della giornata">${r.matchups.map(m => {
+    const selected=m.id===activeId, score=selected&&matchup?matchup:m;
+    const team=(key,i)=>{
+      const data=score[key],entry=m[key];
+      const value=data.total??data.points, label=key===side&&selected;
+      return `<button type="button" class="fanta-mu-team${label?' is-side':''}" data-matchup="${esc(m.id)}" data-live-side="${key}" ${selected&&matchup?`data-pitch-tab="${i}" aria-selected="${label}" role="tab"`:`aria-pressed="${label}"`}>
+        ${teamLogo(entry.team)}<b>${esc(entry.team.name)}</b>${Number.isFinite(value)?`<small class="live-mu-points">${pts(value)} FP</small>`:''}<strong>${data.goals??(entry.lineupSaved?'✓':'–')}</strong>
+      </button>`;
+    };
+    return `<div class="fanta-mu${selected?' is-active':''}${m.isMine?' is-mine':''}" ${selected&&matchup?'role="tablist" aria-label="Formazioni della sfida"':''}>${team('home',0)}${team('away',1)}</div>`;
+  }).join('')}</div>`;
 }
 
 export function events(e = {}) {
@@ -68,29 +45,11 @@ export function events(e = {}) {
   return `<span class="fanta-events">${out.join('')}</span>`;
 }
 
-function playerRow(p) {
-  const playing = hasPitchPerformance(p);
-  let right;
-  if (!playing) right = '';
-  else if (p.status === 'sv') right = '<span class="fanta-p-fv">s.v.</span>';
-  else right = `<span class="fanta-p-fv">${vote(p.fantavote)}</span>`;
-  const note = p.replacedBy ? `<small class="fanta-p-sub is-out">Senza voto · entra ${esc(p.replacedBy)}</small>`
-    : p.enteredFor ? `<small class="fanta-p-sub is-in">Entra al posto di ${esc(p.enteredFor)}</small>`
-    : p.status === 'playing' ? `<small class="fanta-p-sub is-live">In campo · ${p.minutes}'</small>` : '';
-  const clickable = p.status === 'voted' || p.status === 'playing' || p.status === 'sv';
-  const tag = clickable ? 'button type="button"' : 'div';
-  return `<${tag} class="fanta-p is-${p.status}${p.enteredFor ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}>
-    <span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span>
-    <span class="fanta-p-name"><b><span>${esc(p.name)}</span>${events(p.events)}</b>${playing?'':pitchFixture(p)}${note}</span>
-    ${right}
-  </${tag.split(' ')[0]}>`;
-}
-
 // Vista "Campo": attacco in alto, porta in basso. Chi è entrato dalla panchina prende il posto del titolare senza voto.
 function token(p, replaced) {
   const clickable = p.status === 'voted' || p.status === 'playing' || p.status === 'sv';
   const tag = clickable ? 'button' : 'div';
-  const surname = p.name.includes('. ') ? p.name.split('. ').slice(1).join('. ') : p.name;
+  const surname = playerSurname(p);
   const performance = replaced ? {...p,enteredFor:replaced} : p;
   const playing = hasPitchPerformance(performance);
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}"` : ''}
@@ -108,26 +67,6 @@ function pitch(s) {
   return `<div class="fanta-pitch" aria-label="Formazione in campo ${esc(s.formation)}">
     <div class="fanta-pitch-lines" aria-hidden="true"></div>
     ${'ACDP'.split('').map(role => `<div class="fanta-pitch-row">${onField.filter(x => x.player.role === role).map(x => token(x.player, x.replaced)).join('')}</div>`).join('')}
-  </div>`;
-}
-
-function lineup(s, notStarted, view) {
-  const toggle = `<div class="fanta-view" role="group" aria-label="Vista formazione">
-    <button type="button" data-view="lista" aria-pressed="${view !== 'campo'}" class="${view !== 'campo' ? 'is-active' : ''}">Lista</button>
-    <button type="button" data-view="campo" aria-pressed="${view === 'campo'}" class="${view === 'campo' ? 'is-active' : ''}">Campo</button>
-  </div>`;
-  const groups = view === 'campo' ? pitch(s) : 'PDCA'.split('').map(role => {
-    const list = s.starters.filter(p => p.role === role);
-    return list.length ? `<div class="fanta-group"><h4>${ROLE_GROUPS[role]}</h4>${list.map(playerRow).join('')}</div>` : '';
-  }).join('');
-  const benchUsed = s.bench.filter(p => p.enteredFor).length;
-  return `<div class="fanta-lineup">
-    ${notStarted && s.savedAt ? `<p class="fanta-saved">Formazione salvata ${esc(timeAgo(s.savedAt))} · visibile a tutta la lega, si può cambiare fino alla scadenza</p>` : ''}
-    <div class="fanta-lineup-head"><h3>Titolari <span>${esc(s.formation)}</span></h3>${toggle}</div>
-    ${view === 'campo' ? '' : '<div class="fanta-cols-row"><span class="fanta-cols"><span>Fantavoto</span></span></div>'}
-    ${groups}
-    ${s.bench.some(p=>p.enteredFor)?'<details class="fanta-bench" open><summary>Subentrati</summary>'+s.bench.filter(p=>p.enteredFor).map(playerRow).join('')+'</details>':''}
-    ${s.bench.some(p=>!p.enteredFor)?'<details class="fanta-bench"><summary>A disposizione</summary>'+s.bench.filter(p=>!p.enteredFor).map(playerRow).join('')+'</details>':''}
   </div>`;
 }
 
@@ -162,23 +101,39 @@ function totals(s, official) {
   </section>`;
 }
 
-function teamPanel(m, side, view) {
-  const s = m[side];
-  if (s.hidden) {
-    return `<div class="fanta-empty is-inline"><h2>${esc(s.team.name)}</h2><p>${esc(s.hiddenReason)}</p>
-      ${s.needsLineup ? '<button type="button" class="primary" data-go="formazione">Schiera la formazione</button>' : ''}</div>`;
-  }
-  const started = [...s.starters, ...s.bench].some(p => p.status !== 'to-play');
-  const notStarted = m.state === 'da-schierare' || m.state === 'schierata';
-  return `${s.historical&&s.imported?'<p class="fanta-note">Voti storici archiviati</p>':''}${lineup(s, notStarted, view)}${started ? '<details class="fanta-block"><summary>Punti e dettagli</summary>'+totals(s, m.official) + modifierCard(s.modifier)+'</details>' : '<p class="fanta-note is-wait">Voti e punti compaiono quando iniziano le partite.</p>'}`;
+function liveTeam(s,flipped){
+  if(s.hidden)return `<div class="fanta-empty is-inline"><p>${esc(s.hiddenReason)}</p>${s.needsLineup?'<button type="button" class="primary" data-go="formazione">Schiera la formazione</button>':''}</div>`;
+  const field=s.starters.length?pitch(s):'<p class="fanta-empty is-inline">Formazione non ancora salvata.</p>';
+  const bench=`<div class="pitch-bench-room live-studio-bench"><div class="bench-room-label"><b>Panchina</b><span>${s.bench.length} giocatori</span></div>
+    ${s.bench.length?`<div class="live-studio-reserves">${s.bench.map(p=>token(p,p.enteredFor)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
+  return renderPitchFlip(field,bench,'Panchina',flipped);
 }
 
-export function renderGiornata({ round, matchup, side, view = 'campo' }) {
-  if (!round) return '<div class="fanta-loading" role="status">Carichiamo la giornata…</div>';
-  return `<div class="fanta-round">
-    <div data-os-header>${roundHead(round)}${matchupRail(round, matchup?.id)}</div>
-    <div data-os-content>${matchup ? scoreboard(matchup, side) + teamPanel(matchup, side, view) + comparison(matchup) : '<div class="fanta-loading" role="status">Carichiamo la sfida…</div>'}</div>
-  </div>`;
+export function hasLivePoints(matchup){
+  return !!matchup&&(!!matchup.comparison||['home','away'].some(key=>!matchup[key].hidden&&matchup[key].modifier&&Number.isFinite(matchup[key].total)));
+}
+
+export function renderLivePoints(matchup,side){
+  const team=matchup[side];
+  return `<div class="fanta-ps-head"><h2 id="fanta-sheet-title">Punti e dettagli</h2><button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div><div class="fanta-ps-body">${!team.hidden&&team.modifier?totals(team,matchup.official)+modifierCard(team.modifier):''}${comparison(matchup)}</div>`;
+}
+
+export function renderGiornata({round,matchup,matchupId,side='home',flips=new Set(),error}){
+  const n=round?.round.number,[label,cls]=STATE_LABEL[round?.round.state]||STATE_LABEL['da-schierare'];
+  const progress=round?.round.state==='in-corso'?` · ${round.round.matchesDone}/${round.round.matchesTotal} finite`:'';
+  return `<section class="fs fanta-live-studio" aria-label="Studio Live">
+    <header class="fs-head"><button type="button" class="fs-close" data-action="close-live-studio" aria-label="Chiudi Studio Live">×</button>
+      <div class="fs-title"><h1>Studio Live${n?' · Giornata '+n:''}</h1>${n?`<small class="${cls}">${label}${progress}</small>`:''}</div>
+      ${hasLivePoints(matchup)?'<button type="button" class="live-studio-points" data-action="live-points">Punti e dettagli ›</button>':''}
+      ${n?`<button type="button" class="fanta-step" data-round="${n-1}" ${n<=1?'disabled':''} aria-label="Giornata precedente">‹</button><button type="button" class="fanta-step" data-round="${n+1}" ${n>=round.rounds.length?'disabled':''} aria-label="Giornata successiva">›</button>`:''}
+    </header>
+    <div class="fs-stage">
+      ${round?matchupRail(round,matchup,matchupId||matchup?.id,side):''}
+      ${matchup?`<div class="studio-live-lineup lineup-paged"><div class="pitch-slides" aria-label="Formazioni e voti live">
+        ${['home','away'].map((key,i)=>`<section class="pitch-team" data-pitch-team="${i}" aria-label="Formazione ${esc(matchup[key].team.name)}">${liveTeam(matchup[key],flips.has(i))}</section>`).join('')}
+      </div></div>`:`<p class="fanta-loading" role="status">${esc(error||(round?(round.matchups.length?'Carichiamo la sfida…':'Nessuna sfida per questa giornata.'):'Carichiamo la giornata…'))}</p>`}
+    </div>
+  </section>`;
 }
 
 function comparison(m){

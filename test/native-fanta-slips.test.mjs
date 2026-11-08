@@ -49,7 +49,13 @@ test('native app opens dedicated slips, keeps slip picks away from lineup handle
   assert.equal(f.root.querySelectorAll('nav [data-tab]').length,5);
   click(f.root.querySelector('[data-tab="oggi"]'));assert.equal(f.root.querySelector('.fanta-today-tabs'),null);assert.ok(f.root.querySelector('[data-tab="schedine"]'));
   const tile=f.root.querySelector('.fanta-match-link');assert.ok(tile);assert.equal(Number(tile.dataset.round),h.round.number);assert.equal(tile.querySelector('button'),null);
-  click(tile);await new Promise(resolve=>setTimeout(resolve,10));assert.ok(f.root.querySelector('.fanta-round-head'));assert.equal(f.root.querySelector('.fanta-today-tabs'),null);assert.equal(f.root.querySelector('h1')?.textContent,String(h.round.number));
+  click(tile);await new Promise(resolve=>setTimeout(resolve,10));
+  const studio=f.root.querySelector('.fanta-live-studio');
+  assert.ok(studio);assert.match(studio.querySelector('h1').textContent,new RegExp('Giornata '+h.round.number));
+  assert.equal(studio.querySelector('.fanta-view,.fanta-sb'),null);
+  assert.ok(studio.querySelector('.pitch-slides'));
+  click(studio.querySelector('[data-action="close-live-studio"]'));
+  assert.equal(f.root.querySelector('.fanta-live-studio'),null);assert.ok(f.root.querySelector('.fanta-match-link'));
  }finally{app?.destroy();for(const [k,v]of saved){if(v)Object.defineProperty(globalThis,k,v);else delete globalThis[k];}}
 });
 test('the existing local clock locks a native slip at kickoff without a request',()=>{

@@ -1,4 +1,5 @@
 import {parseHTML} from 'linkedom';import {renderStudio} from '../public/src/fanta/formazione-studio.mjs';
+import {renderTeamCalendar} from '../public/src/fanta/squadra.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import {createDemoFantaApi} from '../public/src/fanta/demo-api.mjs';import {renderPickSheet,renderBenchSheet,renderSquadra,draftFrom} from '../public/src/fanta/squadra.mjs';import {orderRounds} from '../public/src/fanta/formato.mjs';
 test('assigned players disappear from the studio pool, while the saved overview exposes no editing selectors',async()=>{
  const api=createDemoFantaApi({delay:0}),data=await api.team('lega-quasi'),draft=draftFrom(null,data.roster),rolePlayers=data.roster.filter(p=>p.role==='D');draft.slots.D0=rolePlayers[0].id;draft.bench=[rolePlayers[1].id];const sq={data,draft,sub:'formazione',filter:'tutti'};
@@ -15,3 +16,13 @@ test('assigned players disappear from the studio pool, while the saved overview 
  assert.deepEqual(orderRounds([1,2,3,4,5].map(number=>({number})),3).map(r=>r.number),[3,4,5,2,1]);
 });
 test('demo also opens a physical auction immediately without an automatic-start race',async()=>{const api=createDemoFantaApi({delay:0});await api.auctionMode('lega-quasi','manual');await api.auctionClose('lega-quasi');const opened=await api.auctionStartNow('lega-quasi','manual');assert.equal(opened.mode,'manual');assert.equal(opened.status,'running');});
+
+test('team calendar places official scores first and points to the exact Studio Live matchup',()=>{
+ const match=(round,official)=>({id:'sfida-'+round,round,official,home:{team:{name:'Casa'},goals:official?0:null,points:official?50:null},away:{team:{name:'Ospite'},goals:official?2:null,points:official?72:null}});
+ const {document}=parseHTML(renderTeamCalendar({round:{number:3},calendar:[match(3,false),match(1,true),match(4,false),match(2,true)]}));
+ const tiles=[...document.querySelectorAll('.fanta-team-fixture')];
+ assert.deepEqual(tiles.map(t=>t.dataset.mu),['sfida-2','sfida-1','sfida-3','sfida-4']);
+ assert.equal(tiles[0].firstElementChild.textContent,'0–2');
+ assert.equal(tiles[0].dataset.go,'giornata');
+ assert.equal(tiles[0].dataset.round,'2');
+});

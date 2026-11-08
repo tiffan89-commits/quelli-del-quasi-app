@@ -1,3 +1,5 @@
+import {bindSwipeBack} from './match-page.mjs';
+
 // Una sezione = una schermata.
 // Il contenuto di `#app > main` scorre in colonne CSS alte quanto lo spazio
 // libero tra intestazione e barra in basso: quello che non ci sta passa alla
@@ -24,6 +26,7 @@ export function oneScreenExcluded(main, doc = main?.ownerDocument) {
  if (!main || !doc) return true;
  if (!doc.querySelector('#app > .v2-tabbar')) return true;
  if (doc.body?.classList.contains('match-page-active') || doc.body?.classList.contains('v2-landing-on')) return true;
+ if (main.querySelector('.fanta-live-studio')) return true;
  if (/^#\/fanta\/asta\b/.test(doc.defaultView?.location?.hash || '')) return true;
  return main.matches(EXCLUDED) || !!main.querySelector(EXCLUDED);
 }
@@ -99,6 +102,7 @@ export function startOneScreen(doc = globalThis.document) {
    const back=doc.createElement('button');back.type='button';back.textContent='← Indietro';
    back.addEventListener('click',backDetail);
    drillNav.append(back,doc.createElement('strong'));
+   bindSwipeBack(drillNav,backDetail);
   }
   drillNav.lastElementChild.textContent=drill.at(-1).title;
   if(drillNav.nextElementSibling!==main)main.before(drillNav);
@@ -199,14 +203,13 @@ export function startOneScreen(doc = globalThis.document) {
     },0) : 0;
     root.style.setProperty('--os-dots-h', space + 'px');
     pinned = segAnchors.length||drill.length ? null : PINS.map(sel => main.querySelector(sel)).find(Boolean) || null;
-    const copyright=host.querySelector(':scope>[data-app-footer]')?14:0;
-    height = Math.max(80, Math.floor(win.innerHeight - Math.max(0, top) - inset - space - footer - copyright - (pinned ? 48 : 0)));
+    height = Math.max(80, Math.floor(win.innerHeight - Math.max(0, top) - inset - space - footer - (pinned ? 48 : 0)));
     root.style.setProperty('--os-h', height + 'px');
     root.style.setProperty('--os-dots-bottom', Math.round(inset) + 'px');
    }
    if (!columns || flow()) { refresh(false); return; }
    if (win.getComputedStyle(main).columnFill !== 'auto') { win.setTimeout(schedule, 200); return; } // foglio non ancora caricato
-   if(!main.classList.contains('serie-standings')){
+   if(!main.hasAttribute('data-os-strip')){
     markTall();
     markBreaks();
    }
@@ -272,10 +275,6 @@ export function startOneScreen(doc = globalThis.document) {
   if (!main) return;
   metrics = flow() ? {pages:1,page:0} : pageMetrics(main.scrollWidth, main.clientWidth, main.scrollLeft);
   if (store&&!drill.length) saved.set(key, metrics.page);
-  const footer=host.querySelector(':scope>[data-app-footer]');
-  const end=metrics.page===metrics.pages-1&&main.scrollTop+main.clientHeight>=main.scrollHeight-2;
-  const hide=!end;
-  if(footer&&footer.classList.contains('os-copyright-hidden')!==hide)footer.classList.toggle('os-copyright-hidden',hide);
   paintDots();
   markSegment();
   paintPin();

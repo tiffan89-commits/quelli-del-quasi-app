@@ -22,9 +22,6 @@ html.os-on main.os-root :is(article,li,figure,tr,summary,button,a,label,fieldset
  details:not([open]),h1,h2,h3,h4,h5,p,[class*="-card"],[class*="-row"],[class*="-item"],[class*="-tile"],[class*="-chip"],[class*="-head"],[class*="-hero"]){break-inside:avoid}
 html.os-on main.os-root :is(h1,h2,h3,h4,h5,summary,[class*="-head"],[class*="eyebrow"]){break-after:avoid}
 html.os-on main.os-root>*:first-child{margin-top:0}
-/* Il copyright resta fuori dalle colonne, così non può creare una pagina. */
-html.os-on body #app>main.os-root>[data-app-footer]{position:fixed;inset-inline:0;bottom:calc(var(--os-dots-bottom,0px) + var(--os-dots-h,10px));height:14px;margin:0;padding:0;pointer-events:none}
-html.os-on main.os-root>[data-app-footer].os-copyright-hidden{visibility:hidden}
 
 /* Un blocco spezzato ripete bordi e margini interni su ogni pagina. */
 html.os-on main.os-root *{-webkit-box-decoration-break:clone;box-decoration-break:clone}
@@ -78,11 +75,11 @@ html.os-on main.os-split>#live-channel-status{margin:0!important;padding:0 14px 
 html.os-on main.os-split>#live-channel-status:empty{display:none}
 html.os-on body #app>main.os-root.os-drill:not(.os-split,.os-drill-paged),
 html.os-on body #app>main.os-split [data-os-content].os-drill:not(.os-drill-paged){columns:auto;overflow-x:hidden;overflow-y:auto}
-.os-track.os-drill.os-drill-parent>:not(.os-drill-path,[data-app-footer]),
+.os-track.os-drill.os-drill-parent>:not(.os-drill-path),
 .os-track.os-drill .os-drill-parent>:not(.os-drill-path){display:none!important}
 .os-track.os-drill .os-drill-path{display:block!important;max-height:none!important;overflow:visible!important}
 .os-track.os-drill .os-drill-target>summary{display:none!important}
-.os-drill-nav{display:flex;align-items:center;gap:10px;margin:4px 14px 8px;min-height:38px}
+.os-drill-nav{display:flex;align-items:center;gap:10px;margin:4px 14px 8px;min-height:38px;touch-action:pan-y pinch-zoom}
 .os-drill-nav button{flex:none;min-height:36px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--lime);font:600 13px 'DM Sans',sans-serif}
 .os-drill-nav strong{font-size:15px;overflow-wrap:anywhere}
 html.os-on .os-track details:not(.member-menu,.v2-stake-picker)>summary{position:relative;padding-inline-end:25px;list-style:none}

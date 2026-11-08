@@ -20,7 +20,7 @@ test('bar view renders one compact tile per player with mini-slip and profile bu
  assert.equal((html.match(/data-analyze=/g)||[]).length,2);
  assert.equal((html.match(/data-result-row=/g)||[]).length,4);
  assert.match(html,/data-detail="m0"/);assert.match(html,/data-pitch-flip="Profilo" data-pitch-back-label="Schedina"/);
- assert.match(html,/class="bar-slip-page"/);
+ assert.match(html,/data-os-strip><div class="bar-slip-page"/);
  assert.equal((html.match(/pitch-flip-back" inert aria-hidden="true" data-bar-profile/g)||[]).length,2);
  assert.doesNotMatch(html,/data-analyze[^>]*>[^<]*<\/button>.*<h2/);
 });
@@ -45,11 +45,12 @@ test('records without the short texts are regenerated once',()=>{
  const s=fixture();updatePlayerProfiles(s);const rec=s.playerProfiles['l:a'].history[0];delete rec.v;delete rec.headline;delete rec.short;
  updatePlayerProfiles(s);const again=s.playerProfiles['l:a'].history[0];assert.ok(again.headline&&again.short&&again.v===2);
 });
-test('profile back shows verdict, stats and evolution without a dialog',()=>{
+test('profile back keeps risk beside the name and omits evolution and disclaimer',()=>{
  const s=fixture();updatePlayerProfiles(s);const p=analysisRoundSummary(s,'l','r',['a'])[0];
- const html=barProfileView(p,{name:'Anna',avatar:{},slip:{stake:10},fmt});
+ const html=barProfileView({...p,evolution:'Test evolution',disclaimer:'Test disclaimer'},{name:'Anna',avatar:{},slip:{stake:10},fmt});
  assert.match(html,/Anna/);assert.match(html,/Puntata/);assert.match(html,/bar-dossier-quip/);assert.ok(html.replace(/<svg[\s\S]*?<\/svg>/g,'').length<6000);assert.ok(html.length<16000);
- assert.doesNotMatch(html,/<dialog|id="close-modal"/);
+ assert.match(html,/bar-dossier-identity"><p class="bar-dossier-name">Anna<\/p><span class="bar-dossier-risk"/);
+ assert.doesNotMatch(html,/<dialog|id="close-modal"|Test evolution|Test disclaimer|bar-hists/);
 });
 
 test('an active round gets distinct cached read-only profiles before settlement, without mutating game data',()=>{const s=fixture();s.rounds[0].settled=false;s.rounds[0].matches.forEach(m=>{m.status='NS';m.score=null;});delete s.playerProfiles;const before=JSON.stringify(s),first=previewRoundProfiles(s,'l','r',['a','b']),again=previewRoundProfiles(s,'l','r',['a','b']);assert.equal(first.length,2);assert.notEqual(first[0].headline,first[1].headline);assert.deepEqual(again,first);assert.equal(JSON.stringify(s),before);assert.ok(first.every(p=>p.pending===2));});

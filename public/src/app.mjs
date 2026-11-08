@@ -1281,7 +1281,7 @@ function calendarStatus(m) {
       : "Da disputare";
 }
 function openBarRules(){
-  const view=openMatchPage({label:'Regolamento del Bar'});
+  const view=openMatchPage({label:'Regolamento del Bar',swipeBack:true});
   view.classList.add('bar-rules-page');
   view.innerHTML='<button type="button" class="secondary rule-close" id="close-modal">← Chiudi regolamento</button>'+regulation(L(),R());
   view.querySelector('.rule-close').onclick=()=>view.close();
@@ -1777,9 +1777,8 @@ function serieATable() {
   const t = state.standings;
   if (!t) return '<div class="card">Classifica in aggiornamento.</div>';
   const columns=["#","Squadra","Pt","PG","V","N","P","GF","GS","DR"];
-  const table=(rows,start)=>`<div class="serie-standings-page"><div class="serie-table-card"><table class="serie-table"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map((x,i)=>`<tr data-ranking-team="${esc(x.name)}"><td>${start+i+1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played","won","drawn","lost","gf","gs","dr"].map(k=>`<td>${x[k]}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
-  const middle=Math.ceil(t.rows.length/2);
-  return `<h1 class="sr-only">Classifica Serie A</h1><div data-os-content class="serie-standings">${table(t.rows.slice(0,middle),0)}${middle<t.rows.length?table(t.rows.slice(middle),middle):''}</div>`;
+  const rows=t.rows.map((x,i)=>`<tr data-ranking-team="${esc(x.name)}"><td>${i+1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played","won","drawn","lost","gf","gs","dr"].map(k=>`<td>${x[k]}</td>`).join('')}</tr>`).join('');
+  return `<h1 class="sr-only">Classifica Serie A</h1><div data-os-content data-os-flow class="serie-standings"><div class="serie-table-card"><table class="serie-table"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function otherSlips(l, r) {
   if (!l || !r)
@@ -1959,56 +1958,42 @@ async function openMatch(id, quiet = false) {
 
     const events = (data.details?.events || []).filter(isMatchEvent);
     const availability=matchAvailability(data),hasDetails=!!(events.length||availability);
-    const detailsOpen=quiet&&dialog.querySelector('.match-detail-drill')?.open;
-    dialog.innerHTML = `<div class="match-toolbar">
-      <button class="secondary" id="close-modal">Chiudi ×</button>
-      <details class="match-detail-drill" ${hasDetails?(detailsOpen?'open':''):'hidden'}>
-        <summary><span class="match-details-forward">Dettagli della partita ›</span><span class="match-details-back">← Formazioni</span></summary>
-        <div class="match-details-body">
-          <h3>Dettagli della partita</h3>
-          <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
-          <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
-          <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
-        </div>
-      </details>
-    </div>
-    <div class="match-headline">
+    const details=`<div class="match-details-body">
+      <h3>Dettagli della partita</h3>
+      <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
+      <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
+      <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
+    </div>`;
+    dialog.innerHTML = `<div class="match-headline">
+      <button type="button" class="secondary match-nav-button" id="close-modal" aria-label="Chiudi partita">×</button>
       <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,fantasy:false})}</h2>
       <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
-    </div>${lineupView(data,hasDetails)}`;
-    $("#close-modal").onclick = () => {
-      activeMatchId = null;
-      dialog.dataset.match = "";
-      dialog.close();
+      <button type="button" class="secondary match-nav-button" data-match-details-button aria-label="Dettagli della partita" ${hasDetails?'':'hidden'}>›</button>
+    </div>${renderLineup(data,{paged:true,details,detailsAvailable:hasDetails})}`;
+    dialog.querySelector('#close-modal').onclick=()=>dialog.close();
+    const arrow=dialog.querySelector('[data-match-details-button]');
+    let returnPage=null;
+    const carousel=bindLineupPitch(dialog,{onPage:showing=>{
+      if(!showing&&arrow.textContent==='‹')returnPage=null;
+      if(arrow.textContent===(showing?'‹':'›'))return;
+      arrow.textContent=showing?'‹':'›';
+      arrow.setAttribute('aria-label',showing?'Torna alle formazioni':'Dettagli della partita');
+    }});
+    arrow.onclick=()=>{
+      if(dialog._pitchPage===carousel.teamCount){carousel.go(returnPage??carousel.teamCount-1);return;}
+      returnPage=dialog._pitchPage;
+      carousel.go(carousel.teamCount);
     };
-    const drill=dialog.querySelector('.match-detail-drill'),body=drill.querySelector('.match-details-body');
-    const fitDetails=()=>{if(!drill.open)return;const nav=document.querySelector('nav.v2-tabbar')?.getBoundingClientRect();const bottom=nav?.top>innerHeight/2?nav.top:innerHeight;body.style.setProperty('--match-detail-height',Math.max(120,bottom-body.getBoundingClientRect().top-10)+'px');};
-    const openDetails=()=>{if(!drill.hidden)drill.open=true;};
-    drill.ontoggle=()=>{
-      if(drill.open){fitDetails();return;}
-      const slides=dialog.querySelector('.pitch-slides');
-      if(slides)slides.scrollLeft=(dialog._pitchPage||0)*slides.clientWidth;
-      window.dispatchEvent(new Event('resize'));
-    };
-    const watchSwipe=(surface,action)=>{
-      let start=null;
-      surface.addEventListener('touchstart',e=>{start=e.touches.length===1?e.touches[0]:null;},{passive:true});
-      surface.addEventListener('touchcancel',()=>{start=null;},{passive:true});
-      surface.addEventListener('touchend',()=>{start=null;},{passive:true});
-      surface.addEventListener('touchmove',e=>{
-        const point=e.touches[0];
-        if(!start||e.touches.length!==1)return;
-        const dx=point.clientX-start.clientX,dy=point.clientY-start.clientY;
-        if(Math.abs(dx)>=22&&Math.abs(dx)>Math.abs(dy)*1.4){start=null;action(dx);}
-      },{passive:true});
-    };
-    watchSwipe(dialog.querySelector('.match-headline'),openDetails);
-    watchSwipe(dialog.querySelector('.match-toolbar'),dx=>{
-      if(!drill.open)openDetails();
-      else if(dx>0)drill.open=false;
-    });
-    fitDetails();
-    bindLineupPitch(dialog,{onDetails:openDetails});
+    const headline=dialog.querySelector('.match-headline');
+    let start=null;
+    headline.addEventListener('touchstart',event=>{start=event.touches.length===1?event.touches[0]:null;},{passive:true});
+    headline.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+    headline.addEventListener('touchend',event=>{
+      const first=start,point=event.changedTouches[0];start=null;
+      if(!first||!point)return;
+      const dx=point.clientX-first.clientX,dy=point.clientY-first.clientY;
+      if(Math.abs(dx)>=22&&Math.abs(dx)>Math.abs(dy)*1.4)carousel.go(dialog._pitchPage+(dx<0?1:-1));
+    },{passive:true});
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
     if (!quiet) {
@@ -2022,7 +2007,6 @@ async function openMatch(id, quiet = false) {
   }
 }
 
-function lineupView(data,detailsAvailable){return renderLineup(data,{paged:true,swipeDetails:true,detailsAvailable});}
 function supportSection() {
   return '<details class="card inline-support"><summary>Invia un suggerimento o segnala un bug</summary><p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field">Messaggio<textarea name="message" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form></details>';
 }
@@ -2183,7 +2167,7 @@ function bindNew(l, r) {
     };
   if ($("#share-verdict"))
     $("#share-verdict").onclick = () => {
-      const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar'});
+      const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar',swipeBack:true});
       const fit=()=>{
         const card=d.querySelector('.verdict-postcard'),portrait=d.querySelector('.postcard-quasi');
         if(!card||!portrait)return;
@@ -2563,10 +2547,9 @@ function applyLive(data){
         if(availability.dataset.revision!==html){patchRegion(availability,'<div data-match-availability'+(html?'':' hidden')+'>'+html+'</div>');availability.dataset.revision=html;}
       }
       if(events&&availability){
-        const drill=dialog.querySelector('.match-detail-drill'),edge=dialog.querySelector('.pitch-details-edge');
-        drill.hidden=events.hidden&&availability.hidden;
-        if(edge)edge.hidden=drill.hidden;
-        if(drill.hidden)drill.open=false;
+        const hidden=events.hidden&&availability.hidden;
+        dialog.querySelector('.pitch-details-panel').hidden=hidden;
+        dialog.querySelector('[data-match-details-button]').hidden=hidden;
       }
       const penalties=dialog.querySelector('[data-live-detail-penalties]');
       if(penalties&&events){

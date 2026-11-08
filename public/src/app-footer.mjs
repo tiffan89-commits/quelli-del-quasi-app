@@ -11,11 +11,13 @@ export function placeAppFooter(root){
  const doc=root?.ownerDocument,main=root?.querySelector('main');if(!doc||!main)return;
  let context=contexts.get(doc);if(!context){context={links:doc.querySelector('.analytics-footer')};contexts.set(doc,context);}
  context.observer?.disconnect();
- let footer=main.querySelector('.footer');
- if(!footer){footer=doc.createElement('footer');footer.className='footer';main.append(footer);}
- if(!footer.dataset.appFooter){
-  footer.innerHTML=`<p class="footer-line">© ${new Date().getFullYear()} QUELLI DEL QUASI.</p>`;
+ main.querySelector(':scope>.footer,:scope>[data-app-footer]')?.remove();
+ const nav=root.querySelector('.v2-tabbar');
+ if(nav&&!nav.querySelector('[data-app-footer]')){
+  const footer=doc.createElement('small');
   footer.dataset.appFooter='true';
+  footer.textContent=`© ${new Date().getFullYear()} QUELLI DEL QUASI.`;
+  nav.append(footer);
  }
  if(context.links){
   const settings=main.querySelector('[data-account-privacy]');

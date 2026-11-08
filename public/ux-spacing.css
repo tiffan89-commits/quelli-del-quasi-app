@@ -1,7 +1,8 @@
 /* UX 0.29.46, block 1: one footer and one allowance for fixed controls. */
 body[data-game-mode] main,body.v2-on main,body.v2-on:has(.v2-slipbar) main{padding-bottom:var(--app-bottom-space,calc(84px + var(--safe-bp)))!important}
-body[data-game-mode] .footer[data-app-footer]{margin:8px 0 0;padding:0;text-align:center;display:block}
-body[data-game-mode] .footer[data-app-footer] .footer-line{font-size:9.5px;line-height:14px}
+.v2-tabbar:has(>[data-app-footer]){display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto 12px;row-gap:0}
+.v2-tabbar>[data-app-footer]{grid-column:1/-1;align-self:center;margin:0;text-align:center;color:var(--muted);font-size:9.5px;line-height:12px}
+@media(min-width:1024px){body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){height:auto;min-height:60px}}
 body[data-game-mode] .analytics-footer[hidden]{display:none}
 [data-account-privacy] .analytics-footer{margin:0;padding:4px 0;gap:12px;font-size:11px}
 body[data-game-mode] .data-attribution{display:none}
