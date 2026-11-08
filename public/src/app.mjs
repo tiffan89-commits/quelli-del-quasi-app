@@ -29,7 +29,7 @@ import {playerSurname} from './player-label.mjs';
 import {ballIcon,substitutionMark} from './pitch-events.mjs';
 import {footballPenalties} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
-import { renderSlipV2, patchSlipV2, patchSlipBar, bindSlipV2,tickSlipEventClocks } from "./v2/slip-v2.mjs";
+import { renderSlipV2, patchSlipV2, patchSlipBar, bindSlipV2 } from "./v2/slip-v2.mjs";
 import { quasiScene, bindQuasiZoom } from "./quasi-scene.mjs";
 import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from "./bar-slips.mjs";
 import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource } from "./v2/tabs.mjs";
@@ -1189,6 +1189,11 @@ function bindObjectives(){
  target.onclick=e=>{const token=e.target.closest('[data-goal]');if(!token)return;const i=Number(token.dataset.goal);showGoal(target,target.dataset.openGoal===String(i)?-1:i);};
 }
 function bindDashboard() {
+  const dashboard=$('#league-dashboard');
+  if(dashboard)dashboard.onclick=e=>{
+    const reward=e.target.closest('[data-recap-reward]')?.dataset.recapReward;
+    if(reward)void openStudio(reward);
+  };
   document.querySelectorAll('[data-dashboard-source]').forEach(b=>b.onclick=()=>{
     dashboardSource=b.dataset.dashboardSource;
     const region=$('#league-dashboard');
@@ -2498,7 +2503,6 @@ setInterval(() => {
   const countdown = document.querySelector('[data-dashboard-countdown][data-deadline]');
   if(countdown)countdown.textContent=countdownLabel(countdown.dataset.deadline);
   if(page==='schedina'&&R()?.eventBetting){
-    tickSlipEventClocks();
     if(!busy&&eventLockKey(R())!==displayedEventLocks){reconcileSlipDraft(R());persistDraft();render();}
     return;
   }

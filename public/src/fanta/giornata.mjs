@@ -1,4 +1,4 @@
-import {pitchPerformance,hasPitchPerformance,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
+import {pitchPerformance,hasPitchPerformance,eventCounts,ballIcon,assistBootIcon,substitutionMark} from '../pitch-events.mjs';
 import {pitchFixture,playerSurname} from '../player-label.mjs';
 import {renderPitchFlip} from '../lineup-pitch.mjs';
 import {statNumber,formatStatNumber} from './stat-number.mjs';
@@ -44,28 +44,23 @@ export function events(e = {}) {
   return `<span class="fanta-events">${out.join('')}</span>`;
 }
 
-// Vista "Campo": attacco in alto, porta in basso. Chi è entrato dalla panchina prende il posto del titolare senza voto.
-function token(p, replaced, showSurname = false) {
+function token(p, showSurname = false) {
   const clickable = p.id!=null;
   const tag = clickable ? 'button' : 'div';
-  const performance = replaced ? {...p,enteredFor:replaced} : p;
-  const playing = hasPitchPerformance(performance);
-  return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}" aria-haspopup="dialog"` : ''}
-    title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
+  const playing = hasPitchPerformance(p);
+  const change = p.replacedBy ? ' · entra '+p.replacedBy : p.enteredFor ? ' · entrato al posto di '+p.enteredFor : '';
+  return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.replacedBy?'sv':p.status}${p.enteredFor ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}" aria-haspopup="dialog"` : ''}
+    title="${esc(p.name+change)}">
     <span class="fanta-token-shirt">${playerVisual(p,{back:true,nameOnShirt:true})}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
     ${showSurname?`<span class="live-studio-reserve-name" aria-hidden="true">${esc(playerSurname(p))}</span>`:''}
-    ${playing?'':pitchFixture(p)}${pitchPerformance(performance,playing)}
+    ${p.replacedBy?`<span class="pitch-event-ring">${substitutionMark('Cambio Fanta')}<span class="live-studio-replacement">Entra ${esc(playerSurname({name:p.replacedBy}))}</span></span>`:`${playing?'':pitchFixture(p)}${pitchPerformance(p,playing)}`}
   </${tag}>`;
 }
 
 function pitch(s) {
-  const onField = s.starters.map(p => {
-    const sub = p.replacedBy && s.bench.find(b => b.enteredFor === p.name);
-    return sub ? { player: sub, replaced: p.name } : { player: p };
-  });
   return `<div class="fanta-pitch" aria-label="Formazione in campo ${esc(s.formation)}">
     <div class="fanta-pitch-lines" aria-hidden="true"></div>
-    ${'ACDP'.split('').map(role => `<div class="fanta-pitch-row">${onField.filter(x => x.player.role === role).map(x => token(x.player, x.replaced)).join('')}</div>`).join('')}
+    ${'ACDP'.split('').map(role => `<div class="fanta-pitch-row">${s.starters.filter(p => p.role === role).map(p=>token(p)).join('')}</div>`).join('')}
   </div>`;
 }
 
@@ -73,7 +68,7 @@ function liveTeam(s,flipped){
   if(s.hidden)return `<div class="fanta-empty is-inline"><p>${esc(s.hiddenReason)}</p>${s.needsLineup?'<button type="button" class="primary" data-go="formazione">Schiera la formazione</button>':''}</div>`;
   const field=s.starters.length?pitch(s):'<p class="fanta-empty is-inline">Formazione non ancora salvata.</p>';
   const bench=`<div class="pitch-bench-room live-studio-bench"><div class="bench-room-label"><b>Panchina</b><span>${s.bench.length} giocatori</span></div>
-    ${s.bench.length?`<div class="live-studio-reserves">${s.bench.map(p=>token(p,p.enteredFor,true)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
+    ${s.bench.length?`<div class="live-studio-reserves">${s.bench.map(p=>token(p,true)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
   return renderPitchFlip(field,bench,'Panchina',flipped);
 }
 
@@ -110,7 +105,7 @@ export function renderPlayerSheet(p, { official } = {}) {
       <div><h2 id="fanta-sheet-title">${esc(p.name)}</h2><small>${ROLE_NAMES[p.role]} · ${esc(p.club)} ${p.home ? 'vs' : '@'} ${esc(p.opponent)}${p.score ? ` ${p.score[0]}–${p.score[1]}` : ''}${p.minutes ? ` · ${p.minutes}'` : ''}</small></div>
       <button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button>
     </div>`;
-  if (p.status === 'sv') {
+  if (p.status === 'sv' || p.replacedBy) {
     return `${head}<div class="fanta-ps-body"><p class="fanta-why">${esc(p.why||'Il voto per questa prestazione non è disponibile.')}</p>
       ${p.replacedBy ? `<p class="fanta-note">Al suo posto conta ${esc(p.replacedBy)}, dalla panchina.</p>` : ''}</div>`;
   }

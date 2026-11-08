@@ -2,6 +2,16 @@ import {predictionStatus} from '../prediction.mjs';
 import {editingEventLocked} from './slip-state.mjs';
 import {orderSlipMatches} from '../match-layout.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const kickoffFormatter=new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',weekday:'short',day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+export function barKickoff(m){
+ const kickoff=m.kickoff||m.officialKickoff;
+ const matchLabel=m.home+' – '+m.away;
+ if(!Number.isFinite(Date.parse(kickoff)))return {kickoff:'',label:'',matchLabel};
+ const parts=Object.fromEntries(kickoffFormatter.formatToParts(new Date(kickoff)).map(({type,value})=>[type,value]));
+ const weekday=parts.weekday[0].toUpperCase()+parts.weekday.slice(1).replace(/\.$/,'');
+ const label=[weekday,parts.day,parts.month.replace(/\.$/,''),parts.year,parts.hour+':'+parts.minute].join(' ');
+ return {kickoff,label,matchLabel:matchLabel+' · '+label};
+}
 export function inlineResultView(m){
  const live=m.status==='LIVE',score=live?m.liveScore:m.score;
  if(!live&&!Array.isArray(score))return '';
@@ -29,6 +39,14 @@ function reorderSlipRows(root,round){
 export function patchSlipResults(root,round,picks,closed){
  for(const row of root.querySelectorAll('[data-match-card],[data-result-row]')){
   const m=round.matches.find(m=>m.id===(row.dataset.matchCard||row.dataset.resultRow));if(!m)continue;
+  const time=row.querySelector('.slip-match-kickoff');
+  if(time){
+   const {kickoff,label,matchLabel}=barKickoff(m);
+   if(time.getAttribute('datetime')!==kickoff){
+    time.setAttribute('datetime',kickoff);time.textContent=label;time.hidden=!label;
+    time.closest('button')?.setAttribute('aria-label',matchLabel);
+   }
+  }
   const score=m.status==='LIVE'?m.liveScore:m.score,previous=row.dataset.resultScore?JSON.parse(row.dataset.resultScore):null;
   const result=row.querySelector('[data-inline-result]');if(result){const html=inlineResultView(m);if(result.innerHTML!==html)result.innerHTML=html;}
   const status=row.querySelector('[data-match-status]');if(status&&row.closest('[data-slip-source]')?.dataset.slipSource!=='seriea'&&(m.status==='LIVE'||m.score))status.textContent=m.status==='LIVE'?'In corso':'Risultato finale';
