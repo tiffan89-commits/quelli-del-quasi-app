@@ -268,6 +268,15 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.33.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.2...v0.33.3) (2026-11-08)
+
+
+### Bug Fixes
+
+* **schedina:** conserva la precedenza delle partite live ([6a85ffe](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/6a85ffec62dba86f1c70ae1ebc041afcb0e277b3))
+* **schedina:** ricompatta le partite dopo gli esiti extra ([923f3ab](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/923f3ab966c89dc56c39376d4e17ed0685a94b7b))
+* **schedina:** ricompatta le partite dopo gli esiti extra ([47c6600](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/47c660044f3c3ab9ce6fc787377cfafc31fa5ee9))
+
 ## [0.33.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.1...v0.33.2) (2026-11-08)
 
 
