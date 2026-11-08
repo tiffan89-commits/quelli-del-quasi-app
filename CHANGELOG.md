@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- I promemoria formazione aprono lo Studio della lega e della competizione indicate. Le notifiche di giornata e asta aprono la schermata relativa.
+
 - Le notifiche chat mostrano lega, autore e messaggio. Toccandole si apre la conversazione della lega indicata.
 
 - La chat svuota il campo e mostra il messaggio appena lo invii. I non letti hanno un pallino su Lega e un contatore sulla chat.

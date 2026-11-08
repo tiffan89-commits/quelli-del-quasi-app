@@ -85,9 +85,9 @@ self.addEventListener("notificationclick", (event) => {
       });
       for (const client of windows) {
         if (new URL(client.url).origin === self.location.origin) {
+          const path=new URL(client.url).pathname;
+          if(path!=="/"&&path!=="/index.html")continue;
           if(!fanta&&!reminder&&league){
-            const path=new URL(client.url).pathname;
-            if(path!=="/"&&path!=="/index.html")continue;
             const opened=await client.navigate?.(url).catch(()=>null);
             if(opened){await opened.focus();return;}
           }
