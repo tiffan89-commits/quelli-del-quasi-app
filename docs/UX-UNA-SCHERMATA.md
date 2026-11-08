@@ -57,6 +57,13 @@ Tutto sotto `html.os-on main.os-root`. Cambia solo l'aspetto, non i dati né le 
   - nella pagina partita.
 - In modalità Fanta il pulsante non c'è (la chat si apre da `[data-fanta-chat]`).
 
+### Studio formazione
+
+- Lo Studio resta un pannello a schermo intero fuori da `main` e dalla paginazione. La sezione Squadra di sola lettura mantiene le pagine previste da «Una sezione, una schermata».
+- Sotto i 620 px la panchina si apre da destra. La maniglia numerata permette di riordinare dentro il pannello. Superato il bordo sinistro, il pannello si ritira e si illuminano i posti compatibili. Il filtro per ruolo conserva le posizioni dell'intera panchina.
+- Da 620 px in su resta la panchina orizzontale sotto il campo. La maglia trascinata usa coordinate relative allo schermo su entrambe le viste.
+- La bozza invia al salvataggio l'ordine delle riserve. Il motore usa come prima riserva idonea il primo giocatore con voto dello stesso ruolo nell'ordine salvato.
+
 ### Piccole modifiche al markup
 - `bar-fanta-rankings.mjs`: classe `is-me` sulla tua riga.
 - `v2/slip-v2.mjs`: `data-odd` sulla quota. Il testo `Quota 2,1` resta, i test lo controllano.
