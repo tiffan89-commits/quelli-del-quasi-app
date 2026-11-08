@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- La navigazione resta fuori vista mentre è aperta la tastiera del telefono. Le schede dell’editor dello stemma scorrono soltanto in orizzontale.
+
 - L’editor della squadra mostra la modifica del nome solo fino al primo calcio d’inizio della lega, lasciando sempre disponibile la modifica dello stemma.
 
 - Nello Studio Live il retro della maglia mostra cognome e numero salvato nel catalogo del giocatore, anche aprendo Ultima partita o girando il campo sulla panchina.
