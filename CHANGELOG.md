@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Le schede delle home Bar e Fanta condividono bordi, margini e spazi interni, inclusa Ultima partita. Il disegno del Quasi in cache è un SVG valido anche quando viene caricato come immagine.
+
 - I Quasi riutilizzano il disegno personalizzato e caricano subito lo sfondo corretto. Impostazioni personali e Pannello del presidente sono separati. Privacy e preferenze statistiche sono nel footer.
 - Le Home di Bar e Fanta mostrano i riquadri di giornata, il calendario Squadra centra i punteggi e le viste di lega si chiudono con il gesto inverso.
 

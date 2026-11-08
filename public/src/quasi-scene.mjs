@@ -2,7 +2,7 @@ import {avatarSvg,normalizeAvatar} from './avatar.mjs';
 import {rewardById} from './reward-catalog.mjs';
 import {roomAsset,roomById,roomMedia} from './locker-rooms.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const artKey='qdq:quasi-art:v2';
+const artKey='qdq:quasi-art:v3';
 const drawings=new Map(),urls=new Map();
 let scheduled=false;
 try{const saved=JSON.parse(localStorage.getItem(artKey)||'[]');for(const [key,svg] of saved.slice(-32))if(typeof key==='string'&&typeof svg==='string'&&svg.startsWith('<svg '))drawings.set(key,svg);}catch{}

@@ -10,7 +10,7 @@ export const dark = (c, t = .3) => mix(c, '#2c1a1e', t);
 export const light = (c, t = .32) => mix(c, '#fff3d2', t);
 export const lum = c => hex(c) ? [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)).reduce((s, v, i) => s + v * [.3, .59, .11][i], 0) : 128;
 // Forma piena senza bordo (ombre e riflessi).
-export const flat = (d, fill, extra = '') => `<path d="${d}" fill="${fill}" stroke="none"${extra}/>`;
+export const flat = (d, fill, extra = '') => `<path d="${d}" fill="${fill}" ${extra.includes(' stroke=')?extra:' stroke="none"'+extra}/>`;
 
 export function hatArt(r) {
   if (!r) return '';

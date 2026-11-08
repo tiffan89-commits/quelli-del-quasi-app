@@ -98,7 +98,6 @@ html.os-on main.os-root>.footer{display:flex;flex-wrap:wrap;justify-content:cent
 html.os-on main.os-root>.footer .footer-line{margin:0!important;font-size:9.5px!important;text-align:center}
 html.os-on main.os-root .portfolio-mini svg{display:none!important}
 html.os-on main.os-root .portfolio-mini{padding:9px 14px!important}
-html.os-on main.os-root .dash-recap-details{margin:0!important;padding:0!important}
 
 /* ---------- Bar · Classifica: Punti/Crediti a segmenti, righe da 40 px, la tua riga fissa ---------- */
 html.os-on main.os-root:has(.ranking-metric)>.round-heading{display:none}
@@ -431,7 +430,6 @@ body.match-page-active main.match-page.verdict-page{
 }
 
 html.os-on main.os-root .fanta-home-compact{display:block!important}
-html.os-on main.os-root .fanta-home-compact>*+*{margin-top:8px!important}
 html.os-on main.os-root .fanta-home-compact>[data-fanta-auction-banner]:empty{display:none}
 html.os-on main.os-root .fanta-home-compact .fanta-hero{padding:8px 12px!important;gap:4px}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-identity{grid-template-columns:40px minmax(0,1fr)!important;gap:8px!important;margin-top:1px!important}
@@ -442,12 +440,6 @@ html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{margin:3px 0 0!imp
 html.os-on main.os-root .fanta-home-compact .fanta-hero-stats dd{font-size:17px!important}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-form{margin-top:1px;gap:6px}
 html.os-on main.os-root .fanta-home-compact .fanta-form i{width:16px;height:16px;font-size:9px}
-html.os-on main.os-root .fanta-home-compact .fanta-next{break-inside:avoid;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px;padding:8px 10px!important}
-html.os-on main.os-root .fanta-home-compact .fanta-next h2{font-size:19px!important;margin:2px 0!important}
-html.os-on main.os-root .fanta-home-compact .fanta-next .dash-cta{grid-column:1/-1;margin:0;min-height:34px;padding:5px 8px}
-html.os-on main.os-root .fanta-home-compact .fanta-next .dash-clock strong{font-size:19px}
-html.os-on main.os-root .fanta-home-match{padding:0!important}
-html.os-on main.os-root .fanta-home-match .fanta-match-link{padding:7px 10px!important}
 .fanta-home-match-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:6px;text-align:left;font-size:13px;margin-bottom:3px}
 .fanta-home-match-head small{text-align:right;color:var(--muted);font-size:10px}
 .fanta-home-match-head>span,.fanta-last-result>span:last-child{color:var(--lime)}
@@ -489,7 +481,6 @@ html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{grid-template-colu
 html.os-on main.os-root .fanta-home-compact .fanta-hero-copy h1{overflow-wrap:anywhere}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-form{grid-column:1}
 .dash-recap-details .round-recap{margin:0}
-.dash-recap-details .recap-empty{padding:8px 12px}
 .dash-recap-details .recap-empty h2{margin:3px 0;font-size:18px}
 .dash-recap-details .recap-empty p{margin:0;font-size:11px}
 
@@ -503,7 +494,6 @@ html.os-on main.os-root .fanta-home-compact .fanta-hero-form{grid-column:1}
  .lega-hub .lega-tile small{font-size:10px}
 }
 
-html.os-on main.os-root .fanta-home-compact .fanta-next{border:1px solid var(--line);border-radius:14px;background:var(--panel)}
 .invite-hub-tile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:0;gap:0}
 .invite-hub-tile>button{display:flex;flex-direction:column;align-items:flex-start;align-self:stretch;justify-content:center;gap:4px;background:none;border:0;padding:8px 4px 8px 10px;color:inherit;font:inherit;text-align:left}
 .invite-hub-tile>button>b{font-size:14px;line-height:1.15}
@@ -567,14 +557,31 @@ body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11
 #support-form button[type=submit],#support-form button:not([type]){min-height:38px;padding:6px 12px}
 .fanta-competitions details.competition-tool:not([open]){border:1px solid var(--line);border-radius:12px;padding:7px 9px;margin:6px 0;background:var(--panel)}
 .logo-editor-top [data-logo-close]{width:40px;height:40px;min-height:0;display:grid;place-items:center;padding:0;font-size:21px;line-height:1;border:1px solid var(--lime);color:var(--lime)}
-.fanta-home-card,.league-dashboard>.dash-next.fanta-home-card{border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
-html.os-on main.os-root .fanta-home-compact .fanta-home-card .fanta-bar-link{width:calc(100% - 20px);margin:2px 10px 8px;min-height:34px;padding:5px 8px}
-html.os-on main.os-root .league-dashboard>.dash-next.fanta-home-card{padding:8px 10px!important}
-.league-dashboard .dash-next.fanta-home-card .dash-cta{min-height:34px}
 html.os-on main.os-root .league-dashboard>.dash-hero:has(.dash-numbers){height:148px!important}
 .dash-hero-copy>.dash-numbers{grid-template-columns:repeat(3,minmax(0,1fr));border:0;gap:4px;margin:4px 0 0}
 .dash-hero-copy .dash-numbers button{display:grid;gap:1px;padding:2px 4px;text-align:left;min-width:0;background:#0c1815bb;border:1px solid #ffffff28;border-radius:5px}
 .dash-hero-copy .dash-numbers strong{font-size:18px;margin:0}
 .dash-hero-copy .dash-numbers :is(span,small){font-size:9px;white-space:nowrap}
-.dash-recap-details>.round-recap{border:0}
-.league-dashboard>.dash-last-round{grid-column:1/-1!important;grid-row:auto!important}
+
+/* Bar e Fanta condividono il ritmo e la cornice delle schede Home. */
+.home-sections{--home-card-gap:8px;--home-card-padding:12px;--home-card-radius:14px}
+.home-sections>.home-card{box-sizing:border-box;border:1px solid var(--line);border-radius:var(--home-card-radius);background:var(--panel);overflow:hidden;break-inside:avoid}
+html.os-on main.os-root .home-sections>:is(.fanta-hero,.dash-hero){border-radius:var(--home-card-radius)}
+html.os-on main.os-root :is(.league-dashboard.home-sections>*~*,.fanta-home-compact.home-sections>:not([data-fanta-auction-banner]:empty)~*){margin-top:var(--home-card-gap)!important}
+html.os-on main.os-root .home-sections>:is(.dash-next,.dash-summary,.dash-last-round,.fanta-last-result){padding:var(--home-card-padding)!important}
+html.os-on main.os-root .home-sections>.dash-next{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 10px!important}
+html.os-on main.os-root .home-sections .dash-next h2{font-size:20px!important;margin:2px 0!important}
+html.os-on main.os-root .home-sections .dash-next .dash-clock strong{font-size:20px}
+html.os-on main.os-root .home-sections .dash-next p{font-size:12px!important;margin:0!important}
+html.os-on main.os-root .home-sections .dash-cta{min-height:36px!important;margin-top:3px;padding:5px 10px}
+html.os-on main.os-root .home-sections .fanta-home-match{padding:0!important}
+html.os-on main.os-root .home-sections .fanta-match-link,html.os-on main.os-root .home-sections .home-card>.fanta-last-result{padding:var(--home-card-padding)!important}
+.home-sections .home-card>.fanta-bar-link{width:calc(100% - 2 * var(--home-card-padding));margin:0 var(--home-card-padding) var(--home-card-padding)}
+.home-sections .dash-recap-details{margin:0;padding:0;border:0}
+html.os-on main.os-root .home-sections .dash-recap-details .round-recap{border:0;margin:0;padding:0;background:none}
+.home-sections .recap-heading h2{font-size:21px}
+.home-sections .recap-grid{gap:8px;margin:10px 0 0}
+.home-sections .recap-grid b{font-size:22px;margin-top:2px}
+.home-sections .recap-gift{margin-top:8px}
+.home-sections .dash-last-round>span:last-child{text-align:right}
+@media(min-width:900px){html.os-on main.os-root .league-dashboard.home-sections>*~*{margin-top:0!important}}

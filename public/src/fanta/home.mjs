@@ -58,7 +58,7 @@ function nextMove(h, now) {
     },
   };
   const v = variants[round.state] || variants['da-schierare'];
-  return `<section class="dash-next fanta-next" aria-labelledby="fanta-next-title">
+  return `<section class="dash-next fanta-next home-card" aria-labelledby="fanta-next-title">
     <div><span class="eyebrow">La tua prossima mossa</span><h2 id="fanta-next-title">${v.title}</h2><p>${v.text}</p></div>
     ${v.side}${h.openingLineup?v.cta.replace('<button ','<button disabled aria-busy="true" ').replace(/(Schiera|Modifica) la formazione/,'Apriamo la formazione…'):v.cta}
   </section>`;
@@ -72,7 +72,7 @@ function barLink(h) {
 function matchCard(h) {
   const { match, round } = h;
   if (!match) return round.state==='in-corso'
-    ? `<section class="fanta-home-card"><button type="button" class="fanta-result fanta-last-result" data-go="giornata" data-round="${round.number}"><span><b>Live</b><small>Giornata ${round.number}</small></span><span aria-hidden="true">→</span></button>${barLink(h)}</section>`
+    ? `<section class="home-card"><button type="button" class="fanta-result fanta-last-result" data-go="giornata" data-round="${round.number}"><span><b>Live</b><small>Giornata ${round.number}</small></span><span aria-hidden="true">→</span></button>${barLink(h)}</section>`
     : '';
   const live=round.state==='in-corso',title=match.final?'Ultima partita':live?'Live':'Prossima partita';
   const status=match.final||live?'':dayTime(round.firstKickoff);
@@ -82,7 +82,7 @@ function matchCard(h) {
   const count=key=>scores?.[key]?.withVote??scores?.[key]?.played;
   const side=key=>`<span class="fanta-vs-team">${teamLogo(match[key])}<b>${esc(match[key].name)}</b>${
     Number.isFinite(scores?.[key]?.points)?`<small>${pts(scores[key].points)} FP${!match.final&&Number.isInteger(count(key))?' · '+count(key)+'/'+(match.live.of||11)+' a voto':''}</small>`:''}</span>`;
-  return `<section class="fanta-block fanta-home-match fanta-home-card" aria-labelledby="fanta-match-title">
+  return `<section class="fanta-block fanta-home-match home-card" aria-labelledby="fanta-match-title">
     <button type="button" class="fanta-match-link" data-go="giornata" data-round="${round.number}" data-mu="${esc(match.id||match.matchupId||h.bar?.matchup||'')}" aria-label="${title}, giornata ${round.number}. Apri lo Studio Live">
       <span class="fanta-home-match-head"><b id="fanta-match-title">${title}</b><small>Giornata ${round.number}${status?' · '+esc(status):''}</small><span aria-hidden="true">→</span></span>
       <span class="fanta-vs">${side('home')}<strong class="fanta-home-score">${total}</strong>${side('away')}</span>
@@ -94,7 +94,7 @@ function matchCard(h) {
 function lastResult(h) {
   const r = h.lastResult;
   if (!r) return '';
-  return `<button type="button" class="fanta-result fanta-last-result" data-go="giornata" data-round="${r.round}" data-mu="${esc(r.matchupId||'')}">
+  return `<button type="button" class="fanta-result fanta-last-result home-card" data-go="giornata" data-round="${r.round}" data-mu="${esc(r.matchupId||'')}">
     <span><b>Ultima partita</b><small>Giornata ${r.round} · ${esc(r.home.name)} – ${esc(r.away.name)}</small></span>
     <strong>${r.home.goals}–${r.away.goals}</strong><span aria-hidden="true">→</span>
   </button>`;
@@ -145,7 +145,7 @@ export function renderHome(h, now = Date.now()) {
   if(h.competition?.status==='draft')return `${auctionHomeSlot(h,now)}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-tab="lega" data-lega-open="competizioni">Vedi la competizione</button></section>${invite}`;
   const showMatch=h.round.state==='in-corso'||!h.lastResult;
   const live=h.round.state==='in-corso';
-  return `<div class="fanta-home fanta-home-compact">
+  return `<div class="fanta-home fanta-home-compact home-sections">
     ${auctionHomeSlot(h,now)}
     ${hero(h)}
     ${live?matchCard(h):''}

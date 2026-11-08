@@ -19,7 +19,9 @@ test('countdown selects the nearest open deadline for the selected source, never
 });
 test('avatar is a small validated configuration: arbitrary markup, URLs and fields cannot enter its SVG',()=>{
  const malicious={skin:'" onload="alert(1)',hair:'<script>',outfit:'https://other.test',adminOnly:true};
- assert.deepEqual(normalizeAvatar(malicious),DEFAULT_AVATAR);const svg=avatarSvg(malicious);assert.doesNotMatch(svg,/onload|<script|other.test|adminOnly/);assert.ok(Buffer.byteLength(svg)<7000);assert.deepEqual(normalizeAvatar(null),DEFAULT_AVATAR);
+ assert.deepEqual(normalizeAvatar(malicious),DEFAULT_AVATAR);const svg=avatarSvg(malicious);assert.doesNotMatch(svg,/onload|<script|other.test|adminOnly/);assert.ok(Buffer.byteLength(svg)<7000);
+ for(const path of svg.matchAll(/<path\b[^>]*>/g))assert.ok((path[0].match(/\bstroke=/g)||[]).length<=1,path[0]);
+ assert.deepEqual(normalizeAvatar(null),DEFAULT_AVATAR);
 });
 test('avatar saves only to the authenticated player, survives a new state read and leaves nickname intact',async()=>{
  const s=emptyState(),a={id:'a',username:'one',name:'One',emailVerified:true},b={id:'b',name:'Two'};s.users.push(a,b);const sid=session(s,a.id),api=createApi({transact:async fn=>fn(s,{query:async()=>({rows:[{attempts:1}]})}),env:{}});
