@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.34.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.4...v0.34.0) (2026-11-08)
+
+
+### Features
+
+* **bar:** redesign the personal match slip for mobile ([741cd34](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/741cd349da2b6a6d351be9102ef46e6fac02a613))
+* **bar:** redesign the personal match slip for mobile ([a02a413](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/a02a413a0d40fab5bf2a436f3d7bbf63ef68d13f))
+
 ## [0.33.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.3...v0.33.4) (2026-11-08)
 
 
