@@ -579,13 +579,13 @@ function slipsPage(l, r, m) {
     ]
       .map(
         ([id, t, short]) =>
-          '<button data-slip-scope="' +
+          '<button type="button" data-slip-scope="' +
           id +
           '" class="' +
           (slipScope === id ? "on" : "") +
           '" aria-pressed="' +
           (slipScope === id) +
-          '" data-short="' + short + '"><span class="seg-long">' +
+          '" aria-label="' + t + '" data-short="' + short + '"><span class="seg-long">' +
           t +
           "</span></button>",
       )
@@ -605,9 +605,9 @@ function slipsPage(l, r, m) {
         ? fantasyEmpty(l)
         : slipScope === "bar"
           ? otherSlips(l, r)
-          : (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : "") +
-            (draftConflict ? '<div class="notice"><b>La schedina è stata aggiornata da un altro dispositivo.</b><p>Puoi tenere la versione salvata oppure recuperare la bozza locale e rivederla.</p><button class="secondary" id="keep-server">Tieni quella salvata</button> <button class="secondary" id="recover-draft">Recupera la bozza</button></div>' : "") +
-            renderSlipV2({ round: r, picks, stake, credits: m.credits, openMatch: activeMatchId, esc, fmt, date });
+          : renderSlipV2({ round: r, picks, stake, credits: m.credits, openMatch: activeMatchId, esc, fmt, date,
+            barTicket: true, roundPicker: r ? roundSelector(l,r) : '',
+            conflictNotice: draftConflict ? '<div class="notice"><b>La schedina è stata aggiornata da un altro dispositivo.</b><p>Puoi tenere la versione salvata oppure recuperare la bozza locale e rivederla.</p><button class="secondary" id="keep-server">Tieni quella salvata</button> <button class="secondary" id="recover-draft">Recupera la bozza</button></div>' : '' });
   return (
     fantaLeagueSelector + selector +
     tabs +
@@ -2124,7 +2124,7 @@ function bindNew(l, r) {
       save.disabled=save.disabled||busy||offline||!!draftConflict;
       if(busy){save.textContent="Salvataggio in corso…";save.setAttribute("aria-busy","true");}
       else save.removeAttribute("aria-busy");
-      if(busy)bar.querySelectorAll("#stake,[data-stake-step]").forEach(control=>control.disabled=true);
+      if(busy)bar.querySelectorAll("#stake,[data-stake-step],[data-ticket-stake]").forEach(control=>control.disabled=true);
     };
     const redrawChoices=()=>{
       if(!patchSlipV2(document,{round:R(),picks,stake,credits:me().credits,openMatch:activeMatchId,esc,fmt,date})){render();return;}
@@ -2424,8 +2424,12 @@ function applyLive(data){
   if(L()?.id!==data.league)return;
   mergeLiveSnapshot(state,data);
   if(preferredFanta())return;
-  if(R()&&editingClosed(R()))document.querySelectorAll("#save-slip,#stake,[data-stake-step]").forEach(e=>e.disabled=true);
-  if(R())patchSlipResults($('#app'),R(),picks,isClosed(R()));
+  const round=R();
+  if(round&&editingClosed(round))document.querySelectorAll("#save-slip,#stake,[data-stake-step],[data-ticket-stake]").forEach(e=>e.disabled=true);
+  if(round){
+    if($('.bar-ticket')&&!busy&&!offline&&!draftConflict)patchSlipV2(document,{round,picks,stake,credits:me().credits,openMatch:activeMatchId,esc,fmt,date});
+    patchSlipResults($('#app'),round,picks,isClosed(round));
+  }
   const matches=[...(L().rounds||[]),...(state.calendar?.rounds||[])].flatMap(r=>r.matches);
   const credit=$('.v2-credits b');if(credit){const value=fmt(me()?.credits||0);if(credit.textContent!==value)credit.textContent=value;}
   const dashboard=$('#league-dashboard');if(dashboard){patchDashboard(dashboard,leagueDashboard(L(),state.user,'seriea',false,esc,fmt,null));}

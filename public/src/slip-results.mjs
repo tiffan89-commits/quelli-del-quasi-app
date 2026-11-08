@@ -6,11 +6,12 @@ const kickoffFormatter=new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',w
 export function barKickoff(m){
  const kickoff=m.kickoff||m.officialKickoff;
  const matchLabel=m.home+' – '+m.away;
- if(!Number.isFinite(Date.parse(kickoff)))return {kickoff:'',label:'',matchLabel};
+ if(!Number.isFinite(Date.parse(kickoff)))return {kickoff:'',label:'',timeLabel:'',dayLabel:'',matchLabel};
  const parts=Object.fromEntries(kickoffFormatter.formatToParts(new Date(kickoff)).map(({type,value})=>[type,value]));
  const weekday=parts.weekday[0].toUpperCase()+parts.weekday.slice(1).replace(/\.$/,'');
  const label=[weekday,parts.day,parts.month.replace(/\.$/,''),parts.year,parts.hour+':'+parts.minute].join(' ');
- return {kickoff,label,matchLabel:matchLabel+' · '+label};
+ return {kickoff,label,timeLabel:parts.hour+':'+parts.minute,
+  dayLabel:[weekday,parts.day,parts.month.replace(/\.$/,'')].join(' ').toUpperCase(),matchLabel:matchLabel+' · '+label};
 }
 export function inlineResultView(m){
  const live=m.status==='LIVE',score=live?m.liveScore:m.score;
@@ -22,16 +23,26 @@ function reorderSlipRows(root,round){
  const lists=[...(root.matches?.('[data-slip-match-list]')?[root]:[]),...root.querySelectorAll('[data-slip-match-list]')];
  const ordered=orderSlipMatches(round.matches),doc=root.ownerDocument||root,focused=doc.activeElement;
  const rowId=el=>el.dataset.matchCard||el.dataset.resultRow||
-  (el.classList.contains('v2-match-row')?el.firstElementChild?.dataset.matchCard:null);
+  (el.classList.contains('v2-match-row')?el.querySelector('[data-match-card]')?.dataset.matchCard:null);
  for(const list of lists){
+  const ticket=list.classList.contains('ticket-matches');
+  const groups=new Map();
+  if(ticket)for(const m of ordered){
+   const day=barKickoff(m).dayLabel;
+   if(!groups.has(day))groups.set(day,[]);
+   groups.get(day).push(m);
+  }
   const rows=[...list.children].filter(rowId);
-  if(rows.length<2)continue;
   const byId=new Map(rows.map(el=>[rowId(el),el]));
   let anchor=rows[0];
-  for(const row of ordered.map(m=>byId.get(String(m.id))).filter(Boolean)){
+  for(const row of (ticket?[...groups.values()].flat():ordered).map(m=>byId.get(String(m.id))).filter(Boolean)){
    if(row!==anchor)list.insertBefore(row,anchor);
    else anchor=row.nextSibling;
   }
+  for(const [day,matches] of groups)matches.forEach((m,i)=>{
+   const heading=byId.get(String(m.id))?.querySelector('.ticket-day');
+   if(heading){heading.hidden=i>0;heading.textContent=day||'DATA DA DEFINIRE';}
+  });
  }
  // Moving a row keeps its controls and handlers; restore focus if the browser blurs it on insertion.
  if(focused?.isConnected&&doc.activeElement!==focused)focused.focus?.({preventScroll:true});
@@ -41,9 +52,9 @@ export function patchSlipResults(root,round,picks,closed){
   const m=round.matches.find(m=>m.id===(row.dataset.matchCard||row.dataset.resultRow));if(!m)continue;
   const time=row.querySelector('.slip-match-kickoff');
   if(time){
-   const {kickoff,label,matchLabel}=barKickoff(m);
+   const {kickoff,label,timeLabel,matchLabel}=barKickoff(m);
    if(time.getAttribute('datetime')!==kickoff){
-    time.setAttribute('datetime',kickoff);time.textContent=label;time.hidden=!label;
+    time.setAttribute('datetime',kickoff);time.textContent=time.classList.contains('ticket-time')?timeLabel:label;time.hidden=!label;
     time.closest('button')?.setAttribute('aria-label',matchLabel);
    }
   }

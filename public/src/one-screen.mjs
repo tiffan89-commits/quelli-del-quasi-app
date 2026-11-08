@@ -8,7 +8,7 @@ import {bindSwipeBack} from './match-page.mjs';
 // prima. La sala d'asta, la pagina partita e la landing pubblica sono escluse.
 const EXCLUDED = [
  '.auction-room', '.fanta-asta', '.auction-lobby', '.auction-wizard-fields', '.auction-page-head',
- '[data-bid-form]', '.auction-countdown-overlay', '.pb-landing'
+ '[data-bid-form]', '.auction-countdown-overlay', '.pb-landing', '.bar-ticket'
 ].join(',');
 const FIXED_BOTTOM = '.v2-tabbar,.v2-slipbar,#pwa-install-card';
 const DOTS_SPACE = 10; // riga dei puntini: il minimo indispensabile (18 px su desktop, con le frecce)
