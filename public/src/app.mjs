@@ -12,6 +12,7 @@ import {loadAppStyles} from './app-styles.mjs';
 import {saveOnce,identifySlipSave} from './save-guard.mjs';
 import {readAppRoute,writeAppRoute} from './routes.mjs';
 import {placeAppFooter,restoreAppFooter} from './app-footer.mjs';
+import {startOneScreen} from './one-screen.mjs';
 import {leagueCreationFields,leagueCreationPayload} from './league-create-form.mjs';
 import {displayCache,clearDisplayCaches} from './display-cache.mjs';
 import {randomLeagueControls,bindRandomLeagues} from './random-leagues.mjs';
@@ -557,22 +558,22 @@ function slipsPage(l, r, m) {
   const tabs =
     '<div class="slip-section-buttons" aria-label="Le Schedine">' +
     [
-      ["mine", "La mia schedina"],
-      ["bar", "Le schedine del Bar"],
-      ["community", "Il verdetto"],
-      ...(sourceScope==='seriea'?[["standings","Classifica Serie A"]]:[]),
+      ["mine", "La mia schedina", "La mia"],
+      ["bar", "Le schedine del Bar", "Del Bar"],
+      ["community", "Il verdetto", "Verdetto"],
+      ...(sourceScope==='seriea'?[["standings","Classifica Serie A","Serie A"]]:[]),
     ]
       .map(
-        ([id, t]) =>
+        ([id, t, short]) =>
           '<button data-slip-scope="' +
           id +
           '" class="' +
           (slipScope === id ? "on" : "") +
           '" aria-pressed="' +
           (slipScope === id) +
-          '">' +
+          '" data-short="' + short + '"><span class="seg-long">' +
           t +
-          "</button>",
+          "</span></button>",
       )
       .join("") +
     "</div>";
@@ -620,7 +621,7 @@ function render() {
     return;
   }
   if(state.adminOnly){location.replace('/admin.html');return;}
-  loadAppStyles();
+  loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();
   sourceScope='seriea';
   const l = L(),
     r = R(),
@@ -1252,8 +1253,19 @@ function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p c
               "",
             )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field">Vincitori aggiuntivi (uno per riga)<textarea name="extra">${esc(l.rules.winners.filter((x) => !["points", "credits"].includes(x)).join("\n"))}</textarea></label><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
 function barMembers(l){return '<ul class="bar-members">'+l.members.map(m=>'<li><span>'+esc(m.name)+'</span>'+(m.uid===l.admin?'<small>Presidente</small>':'')+'</li>').join('')+'</ul>';}
+const HUB_ICON={gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 11a3 3 0 1 0 0-6M21 20c0-2.6-1.7-4.8-4-5.6"/>',rules:'<path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6"/>',invite:'<path d="M4 12l16-8-6 16-3-6z"/>',chat:'<path d="M4 5h16v11H9l-5 4z"/>'};
+const hubIcon=k=>'<span class="lega-tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24">'+HUB_ICON[k]+'</svg></span>';
+// Lega del Bar: una schermata a riquadri. Stessi pulsanti e destinazioni di prima.
 function barLeagueInfo(l){
- return '<section class="hero"><span class="eyebrow">LA TUA LEGA</span><h1>'+esc(l.name)+'</h1><p>'+l.members.length+' al bancone</p></section><details class="card"><summary>Regolamento del Bar</summary><button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button></details><details class="card"><summary>Partecipanti · '+l.members.length+'</summary>'+barMembers(l)+'</details><details class="card"><summary>Invita nella tua lega</summary><button type="button" class="secondary" data-bar-page="admin" data-president-group="persone">Apri inviti</button></details><section class="card"><h2>Chiacchiere da bar</h2><button type="button" class="secondary" id="league-open-chat">Apri la chat della lega</button></section>'+leagueActions();
+ const admin=isLeagueAdmin(l,state.user.id),tasks=admin?barPresidentTasks(l).length:0;
+ const rules=(l.rules?.mode==='classic'?'Classica':'Ponderata')+(Number.isFinite(Number(l.rules?.maxStake))?' · max '+fmt(Number(l.rules.maxStake))+' cr':'');
+ return '<section class="hero lega-hub-head"><span class="eyebrow">LA TUA LEGA</span><h1>'+esc(l.name)+'</h1><p>'+l.members.length+' al bancone</p></section><div class="lega-hub">'+
+  (admin?'<button type="button" class="lega-tile is-admin" data-bar-page="admin">'+hubIcon('gear')+'<b>Pannello del presidente</b><small>'+(tasks?tasks+(tasks===1?' cosa da fare':' cose da fare'):'Tutto in ordine')+'</small></button>':'')+
+  '<details class="lega-tile lega-tile-members"><summary>'+hubIcon('people')+'<b>Partecipanti · '+l.members.length+'</b><small>Chi è al bancone</small></summary>'+barMembers(l)+'</details>'+
+  '<button type="button" class="lega-tile" data-bar-page="regolamento">'+hubIcon('rules')+'<b>Regolamento del Bar</b><small>'+esc(rules)+'</small></button>'+
+  '<button type="button" class="lega-tile" data-bar-page="admin" data-president-group="persone">'+hubIcon('invite')+'<b>Invita nella tua lega</b><small>WhatsApp, link o codice</small></button>'+
+  '<button type="button" class="lega-tile" id="league-open-chat">'+hubIcon('chat')+'<b>Chiacchiere da bar</b><small>Apri la chat della lega</small></button>'+
+  '</div>'+leagueActions();
 }
 function leagueAdmin(l){
  const admin=isLeagueAdmin(l,state.user.id);

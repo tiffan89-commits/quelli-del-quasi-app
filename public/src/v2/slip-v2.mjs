@@ -32,7 +32,7 @@ function option(m, p, picks, closed, esc, fmt, pointsOnly,round) {
   const gain=amount(terms.correct),loss=amount(terms.wrong),points='<small class="v2-odd-points"><em class="points-gain">'+gain+'</em><span aria-hidden="true"> / </span><em class="points-loss">'+loss+'</em> pt</small>';
   return '<button type="button" class="v2-odd' + (on ? ' is-on' : '') + '" data-pick="' + esc(m.id) + '" data-value="' + esc(p) + '"' +
     (closed ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(m.home + ' – ' + m.away + ': ' + show(p)+'; '+gain+' punti se corretto, '+loss+' punti se sbagliato') + '">' +
-    '<b>' + esc(show(p)) + '</b><span>' + (pointsOnly ? 'Solo punti' : Number.isFinite(odd) ? 'Quota '+fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '') : 'Quota in arrivo') + '</span>'+points+'</button>';
+    '<b>' + esc(show(p)) + '</b><span' + (!pointsOnly && Number.isFinite(odd) ? ' data-odd="' + esc(fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '')) + '"' : '') + '>' + (pointsOnly ? 'Solo punti' : Number.isFinite(odd) ? 'Quota '+fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '') : 'Quota in arrivo') + '</span>'+points+'</button>';
 }
 
 export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity, openMatch = null, esc, fmt, date, fantasyMeta, teamLabel=slipTeamLabel }) {

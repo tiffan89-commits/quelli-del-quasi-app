@@ -5,6 +5,7 @@
 
 # Unreleased
 
+- Una sezione, una schermata: nel Bar e nel Fanta le sezioni non scorrono più in verticale. Contenuti ristrutturati: Oggi diviso in Adesso/Obiettivi (Fanta: Adesso/Sfida/Classifica), schedina a righe compatte, classifica con la tua riga sempre a vista, Quasi in griglia, Lega del Bar a riquadri, verdetto e albo compatti, squadra con il campo a tutta pagina e la panchina nella pagina dopo. Quello che non sta nello schermo passa a pagine da scorrere di lato, con i puntini sopra la barra in basso; il pulsante della chat sta nella stessa riga e non copre più il contenuto. Collegamenti, schede e aggiornamenti live portano alla pagina giusta. Asta, pagina partita, studio formazione e landing restano invariati.
 - L’asta si segnala con un banner stabile e un indicatore nelle leghe, aggiornati in push. La sala si apre quando il partecipante lo sceglie.
 - Countdown in sovraimpressione, Quasi in sala d’attesa, evidenza del sorpasso, avvisi acustici di fine tempo e rose apribili dai partecipanti.
 - Il presidente può eliminare la propria lega Bar e Fanta con conferma testuale.

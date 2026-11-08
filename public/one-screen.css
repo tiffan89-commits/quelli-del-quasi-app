@@ -1,0 +1,71 @@
+/* Una sezione = una schermata (public/src/one-screen.mjs).
+   Attivo solo con html.os-on: l'asta, la pagina partita e la landing non lo ricevono. */
+html.os-on,html.os-on body{height:100%;overflow:hidden;overscroll-behavior:none}
+html.os-on body #app>main.os-root{
+ height:var(--os-h,calc(100dvh - 200px));box-sizing:border-box;margin-bottom:0;
+ padding-top:10px!important;padding-bottom:0!important;padding-inline:14px!important;
+ overflow:hidden;column-count:1;column-gap:28px;column-fill:auto;
+ touch-action:pan-y pinch-zoom;scrollbar-width:none
+}
+html.os-on body #app>main.os-root::-webkit-scrollbar{display:none}
+
+/* Niente tagli a metà di una scheda, di una riga o di un titolo. */
+html.os-on main.os-root :is(article,li,figure,tr,summary,button,a,label,fieldset,thead,img,svg,canvas,
+ details:not([open]),h1,h2,h3,h4,h5,p,[class*="-card"],[class*="-row"],[class*="-item"],[class*="-tile"],[class*="-chip"],[class*="-head"],[class*="-hero"]){break-inside:avoid}
+html.os-on main.os-root :is(h1,h2,h3,h4,h5,summary,[class*="-head"],[class*="eyebrow"]){break-after:avoid}
+html.os-on main.os-root>*:first-child{margin-top:0}
+/* Il footer con le note legali sta in fondo all'ultima pagina, senza margini extra. */
+html.os-on main.os-root>.footer{margin-top:10px;padding:8px 0 4px;font-size:10px;line-height:1.35}
+html.os-on main.os-root>.footer .footer-line{margin:0 0 4px}
+
+/* Un blocco spezzato ripete bordi e margini interni su ogni pagina. */
+html.os-on main.os-root *{-webkit-box-decoration-break:clone;box-decoration-break:clone}
+/* Blocco indivisibile che non ci sta nel resto della pagina: va alla successiva. */
+html.os-on main.os-root .os-break{break-before:column;-webkit-column-break-before:always}
+html.os-on main.os-root .os-unclip{overflow:visible!important}
+/* Blocco indivisibile più alto della pagina: scorre al suo interno. */
+html.os-on main.os-root .os-tall{max-height:var(--os-h);overflow-y:auto;overscroll-behavior:contain}
+html.os-on main.os-root svg.os-tall,html.os-on main.os-root img.os-tall,html.os-on main.os-root canvas.os-tall{max-height:calc(var(--os-h) - 20px);width:auto;max-width:100%;overflow:visible}
+
+/* Indicatore di pagina, appena sopra la barra in basso. */
+.os-dots{display:none}
+html.os-on .os-dots:not([hidden]){position:fixed;left:0;right:0;bottom:var(--os-dots-bottom,0px);z-index:31;display:flex;justify-content:center;align-items:center;gap:2px;height:var(--os-dots-h,22px);pointer-events:none}
+html.os-on .os-dots button{pointer-events:auto;display:grid;place-items:center;min-width:18px;height:22px;padding:0;border:0;background:none;color:var(--muted,#b4c3ba);cursor:pointer}
+html.os-on .os-dots .os-dot::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.45;transition:width .18s,opacity .18s}
+html.os-on .os-dots .os-dot.is-on::before{width:18px;border-radius:4px;opacity:1;background:var(--lime,#7bc8f7)}
+html.os-on .os-dots .os-dot.is-on{min-width:26px}
+html.os-on .os-dots .os-arrow{font:700 18px/1 'DM Sans',sans-serif;min-width:30px}
+html.os-on .os-dots .os-arrow:disabled{opacity:.25;cursor:default}
+html.os-on .os-dots button:focus-visible{outline:2px solid var(--lime,#7bc8f7);outline-offset:-2px;border-radius:6px}
+@media (max-width:759px){html.os-on .os-dots .os-arrow{display:none}}
+
+/* "Installa l'app" in una riga sola: occupa meno spazio delle pagine. */
+html.os-on #pwa-install-card:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:8px 8px 8px 14px}
+html.os-on #pwa-install-card>div:first-child{display:contents}
+html.os-on #pwa-install-card strong{grid-column:1;grid-row:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.os-on #pwa-install-card>[data-install-app]{grid-column:2;grid-row:1}
+html.os-on #pwa-install-card [data-install-dismiss]{grid-column:3;grid-row:1}
+html.os-on #pwa-install-card>p{display:none}
+html.os-on #pwa-install-card>[data-install-help]{grid-column:1/-1}
+/* Lascia libero l'angolo del pulsante della chat. */
+@media (max-width:759px){html.os-on #pwa-install-card:not([hidden]){left:12px;right:80px;max-width:none;margin-left:0}}
+
+/* Sottosezioni generate (es. Oggi: Adesso · Borsa · Obiettivi): ciascuna inizia su una pagina nuova. */
+html.os-on main.os-root .os-seg-start{break-before:column;-webkit-column-break-before:always}
+html.os-on #app>.os-segs{display:flex;gap:3px;margin:8px 14px 0;padding:3px;border:1px solid var(--line,#2b3c32);border-radius:999px;background:#0f1c18}
+html.os-on #app>.os-segs button{flex:1;min-height:32px;padding:5px 8px;border:0;border-radius:999px;background:transparent;color:var(--muted,#9ba99e);font:600 12px/1.1 'DM Sans',sans-serif;cursor:pointer}
+html.os-on #app>.os-segs button.is-on{background:var(--white,#f6f3e7);color:#10200f}
+html.os-on #app>.os-segs button:focus-visible{outline:2px solid var(--lime,#d6f77b);outline-offset:1px}
+
+/* Pulsante della chat nella riga dei puntini, a destra: non copre più il contenuto. */
+html.os-on #open-chat.chat-fab{bottom:calc(var(--os-dots-bottom,0px) + 3px)!important;right:12px!important;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;padding:9px!important}
+
+/* La tua riga, sempre a vista quando sta in un'altra pagina della classifica. */
+.os-pin{display:none}
+html.os-on .os-pin:not([hidden]){position:fixed;left:14px;right:14px;bottom:calc(var(--os-dots-bottom,0px) + var(--os-dots-h,22px) + 4px);z-index:31;display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border:1px solid #3b5a3f;border-radius:10px;background:#1b2f23;color:var(--white,#f6f3e7);font:600 14px 'DM Sans',sans-serif;text-align:left;cursor:pointer;box-shadow:0 -6px 18px #0008}
+html.os-on .os-pin>*{margin:0}
+html.os-on .os-pin>div,html.os-on .os-pin>.nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.os-on .os-pin td{padding:0 4px}
+@media (min-width:760px){html.os-on .os-pin:not([hidden]){left:50%;right:auto;width:min(560px,calc(100% - 28px));transform:translateX(-50%)}}
+html.os-on main.os-root>.footer.os-solo{display:none}
+html.os-on #app>.os-segs{order:0!important}

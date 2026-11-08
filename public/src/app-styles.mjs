@@ -1,4 +1,4 @@
-const sheets=['experience.css','dashboard.css','progression.css','quasi-studio.css','mobile-sections.css','league-settings.css','lineup-pitch.css','password-toggle.css','action-feedback.css','v2.css','bar-slips.css','fanta.css','fanta-integrations.css','chat.css','studio-formazione.css','ux-review.css','ux-spacing.css','auction-room.css'];
+const sheets=['experience.css','dashboard.css','progression.css','quasi-studio.css','mobile-sections.css','league-settings.css','lineup-pitch.css','password-toggle.css','action-feedback.css','v2.css','bar-slips.css','fanta.css','fanta-integrations.css','chat.css','studio-formazione.css','ux-review.css','ux-spacing.css','auction-room.css','one-screen.css','one-screen-ui.css'];
 let ready;
 export function loadAppStyles(){
  if(ready)return ready;const bundled=document.querySelector('meta[name="qdq-app-css"]')?.content;
