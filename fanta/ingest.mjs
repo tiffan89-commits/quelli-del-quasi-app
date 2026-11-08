@@ -70,7 +70,7 @@ export async function dailyCatalog({connect=connection,provider=fantaProvider(),
 export async function computeRounds({connect=connection,now=Date.now,recalculate=false,modelKey=currentModelKey(),serieARounds=null,leagueId=null,correctionReason='owner-authorized-full-statistical-rebuild'}={}){
  const c=await connect();let leagues;try{leagues=(await c.query(`SELECT l.id,l.admin_uid,c.id AS competition_id,c.kind FROM fanta.leagues l JOIN fanta.competitions c ON c.league_id=l.id WHERE l.rules->>'disabledAt' IS NULL AND ($1::text IS NULL OR l.id=$1)`,[leagueId])).rows;}finally{c.release();}
  const store=sqlFantaStore({connect});let count=0;
- for(const l of leagues){const c=await connect();let rounds;try{rounds=(await c.query('SELECT number FROM fanta.rounds WHERE competition_id=$1 AND ($3 OR NOT official) AND deadline<=$2 AND ($4::int[] IS NULL OR seriea_round=ANY($4::int[])) ORDER BY number',[l.competition_id,new Date(now()).toISOString(),recalculate,serieARounds])).rows;}finally{c.release();}
+ for(const l of leagues){const c=await connect();let rounds;try{rounds=(await c.query(`SELECT number FROM fanta.rounds WHERE competition_id=$1 AND ($3 OR NOT official) AND NOT (data @> '{"archivedWithoutResults":true}') AND deadline<=$2 AND ($4::int[] IS NULL OR seriea_round=ANY($4::int[])) ORDER BY number`,[l.competition_id,new Date(now()).toISOString(),recalculate,serieARounds])).rows;}finally{c.release();}
   for(const r of rounds)await store.league(l.admin_uid,l.id,async(s,c)=>{
    const round=s.rounds.find(x=>x.number===r.number);if(recalculate)round.official=false;const fixtures=s.fixtures.filter(f=>f.round===round.seriea_round),official=fixtures.length===10&&fixtures.every(f=>f.frozen_at);
 

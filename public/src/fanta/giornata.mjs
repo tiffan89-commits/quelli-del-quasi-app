@@ -10,7 +10,7 @@ import { esc, pts } from './formato.mjs';
 import {compareStat} from './stat-comparison.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
-const STATE_LABEL = { 'calcolata': ['Ufficiale', 'is-official'], 'in-corso': ['Live · provvisoria', 'is-live'], 'schierata': ['Da giocare', 'is-todo'], 'da-schierare': ['Da giocare', 'is-todo'] };
+const STATE_LABEL = { 'calcolata': ['Ufficiale', 'is-official'], 'archiviata': ['Risultati non disponibili', 'is-todo'], 'in-corso': ['Live · provvisoria', 'is-live'], 'schierata': ['Da giocare', 'is-todo'], 'da-schierare': ['Da giocare', 'is-todo'] };
 
 const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + formatStatNumber(Math.abs(n));
 export const formatPlayerStat=(value,unit='')=>formatStatNumber(value);

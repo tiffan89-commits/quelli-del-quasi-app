@@ -5,6 +5,8 @@
 
 # Unreleased
 
+- Le leghe abilitate possono far schierare le sole squadre computer in base a forma, titolarità prevista e difficoltà della prossima partita di Serie A.
+
 - Il presidente cerca i calciatori liberi per cognome dalla quarta lettera quando aggiunge un giocatore alla rosa.
 
 - Le schede di «Del Bar» usano tutta l’altezza disponibile con dimensioni uniformi. Una pressione prolungata sul Quasi apre il ritratto ingrandito. Il footer legale è più staccato dalla navigazione.
