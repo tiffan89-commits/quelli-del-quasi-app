@@ -57,7 +57,7 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
  try{
   await db.exec('CREATE SCHEMA fanta; CREATE TABLE fanta_state(id int PRIMARY KEY,payload jsonb)');
   await db.query('INSERT INTO fanta_state VALUES(1,$1)',[JSON.stringify(original)]);
-  for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views','020_live_storage_round_cache']){
+  for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views','020_live_storage_round_cache','021_live_storage_league_order']){
    await db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
   }
   const snapshot=(kind,sportsStorage,other={})=>readSnapshot(state=>state,{
