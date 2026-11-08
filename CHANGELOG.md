@@ -7,6 +7,12 @@
 
 - Le schede di «Del Bar» usano tutta l’altezza disponibile con dimensioni uniformi. Una pressione prolungata sul Quasi apre il ritratto ingrandito. Il footer legale è più staccato dalla navigazione.
 
+- L’editor della squadra mostra la modifica del nome solo fino al primo calcio d’inizio della lega, lasciando sempre disponibile la modifica dello stemma.
+
+- Nello Studio Live il retro della maglia mostra cognome e numero salvato nel catalogo del giocatore, anche aprendo Ultima partita o girando il campo sulla panchina.
+
+- Dalla giornata 11 le schedine in tutte le leghe assegnano la quota accettata come punti per un esito corretto. Il cursore della puntata lascia un credito per ogni giornata successiva ancora da giocare.
+
 - Le schede delle home Bar e Fanta condividono bordi, margini e spazi interni, inclusa Ultima partita. Il disegno del Quasi in cache è un SVG valido anche quando viene caricato come immagine.
 
 - I Quasi riutilizzano il disegno personalizzato e caricano subito lo sfondo corretto. Impostazioni personali e Pannello del presidente sono separati. Privacy e preferenze statistiche sono nel footer.

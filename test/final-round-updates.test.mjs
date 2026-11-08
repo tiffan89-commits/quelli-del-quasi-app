@@ -1,3 +1,4 @@
+import {slipCreditReserve} from '../public/slip-events.mjs';
 import {applyVerifiedFixtureEvents} from '../fanta/ingest.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import {parseHTML} from 'linkedom';
 import {newPlan,claimWork,completeWork,dueWork} from '../lib/operations/calendar.mjs';
@@ -29,7 +30,7 @@ test('postcard is an escaped HTML recap of the winner with picks, results, stake
 test('Oggi retains a clickable completed round while the next round is open; explicitly selected old slip stays selectable',()=>{
  const old={id:'old',title:'Giornata 10',number:10,source:'seriea',kickoff:'2026-10-01T12:00Z',settled:true,matches:[{id:'m',home:'A',away:'B',kickoff:'2026-10-01T12:00Z',status:'FT',score:[1,0]}]},next={id:'next',number:11,title:'Giornata 11',source:'seriea',kickoff:'2099-01-01',matches:[{id:'n',odds:{1:2,X:3,2:4}}]},l={id:'l',name:'Lega',members:[{uid:'u',credits:500}],rounds:[next,old]},state={calendar:{rounds:[]}};
  assert.match(leagueDashboard(l,{id:'u',name:'Utente'},'seriea',false,String,String),/data-dashboard-slip="old"/);
- const source=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=source.slice(source.indexOf('function availableRounds()'),source.indexOf('\nfunction me()')),ctx={L:()=>l,publicSlipView:()=>false,sourceScope:'seriea',competitionScope:null,selectedRoundId:'old',selectableSlipRounds,selectablePublicSlipRounds,sourceOf,currentSlipRound,defaultSlipRound,currentPublicSlipRound,state,Date};vm.createContext(ctx);vm.runInContext(body+'\nselected=R().id;',ctx);assert.equal(ctx.selected,'old');
+ const source=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=source.slice(source.indexOf('function availableRounds()'),source.indexOf('\nfunction me()')),ctx={L:()=>l,slipCreditReserve,publicSlipView:()=>false,sourceScope:'seriea',competitionScope:null,selectedRoundId:'old',selectableSlipRounds,selectablePublicSlipRounds,sourceOf,currentSlipRound,defaultSlipRound,currentPublicSlipRound,state,Date};vm.createContext(ctx);vm.runInContext(body+'\nselected=R().id;',ctx);assert.equal(ctx.selected,'old');
 });
 
 test('header controls share one non-wrapping container; both products expose settings in the same header position',()=>{

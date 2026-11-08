@@ -6,7 +6,7 @@ import {settingsLogout,presidentEntry,presidentPanel,barPresidentTasks,bindPresi
 import {createSportsPush} from './sports-push.mjs';
 import {paintAuctionBadges,trackAuctionBadges} from './auction-index.mjs';
 import {nicknameNotice} from './nickname-notice.mjs';
-import {pointTerms,QUOTA_SCORING} from "../scoring.mjs";
+import {slipCreditReserve,slipStakeLimit} from "../slip-events.mjs";
 import {applySlipReceipt} from './slip-receipt.mjs';
 import {loadAppStyles} from './app-styles.mjs';
 import {saveOnce,identifySlipSave} from './save-guard.mjs';
@@ -29,7 +29,7 @@ import {playerSurname} from './player-label.mjs';
 import {ballIcon,substitutionMark} from './pitch-events.mjs';
 import {footballPenalties} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
-import { renderSlipV2, patchSlipV2, bindSlipV2,tickSlipEventClocks } from "./v2/slip-v2.mjs";
+import { renderSlipV2, patchSlipV2, patchSlipBar, bindSlipV2,tickSlipEventClocks } from "./v2/slip-v2.mjs";
 import { quasiScene, bindQuasiZoom } from "./quasi-scene.mjs";
 import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from "./bar-slips.mjs";
 import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource } from "./v2/tabs.mjs";
@@ -111,7 +111,7 @@ let state = { user: null, leagues: [] },
   register = true,
   picks = {},
   market = {},
-  stake = 10,
+  stake = 1,
   busy = false,
   selectedRoundId = null;
 let rankingScope = "league",
@@ -298,10 +298,9 @@ function availableRounds() {
 
 function R() {
   const rounds = availableRounds();
-  return (
-    rounds.find((r) => r.id === selectedRoundId) ||
-    rounds.find(r=>r.preview) || defaultSlipRound(rounds,Date.now(),state.calendar)
-  );
+  const round=rounds.find(r=>r.id===selectedRoundId)||rounds.find(r=>r.preview)||defaultSlipRound(rounds,Date.now(),state.calendar);
+  const league=L();
+  return round?{...round,stakeReserve:slipCreditReserve(round,league.rounds,league,state.user?.id)}:round;
 }
 function me() {
   if(!preferredFanta())return L()?.members.find(x=>x.uid===state.user.id);
@@ -443,12 +442,12 @@ function hydrateDraft() {
   editBaseSavedAt = r?.slip?.savedAt || null;
   editBaseFingerprint = fingerprint(
     r?.slip?.picks,
-    r?.pointsOnly ? 0 : r?.slip?.stake || 10,
+    r?.pointsOnly ? 0 : r?.slip?.stake || 1,
   );
   viewKey = state.user && L() && r && !r.preview ? draftKey(state.user.id, L().id, r) : null;
   draftConflict = null;
   picks = { ...(r?.slip?.picks || {}) };
-  stake = r?.pointsOnly ? 0 : r?.slip?.stake || 10;
+  stake = r?.pointsOnly ? 0 : r?.slip?.stake || 1;
   market = {};
   if (viewKey) {
     const d = loadDraft(localStorage, viewKey, r);
@@ -466,6 +465,7 @@ function reconcileSlipDraft(round){
   if(!round?.eventBetting)return;
   picks=editablePicks(round,picks);
   if(slipSummary(round,picks,stake).fixedStake)stake=round.slip.stake;
+  else if(!round.pointsOnly)stake=Math.max(1,Math.min(stake,slipStakeLimit(me()?.credits??0,round.slip?.stake,round.stakeReserve)));
 }
 function eventLockKey(round){
   return round?.eventBetting?round.id+':'+round.matches.map(m=>(editingEventLocked(round,m)?'1':'0')+(m.kickoff||m.officialKickoff||'')).join('|'):'';
@@ -485,7 +485,7 @@ function persistDraft() {
   }
   if (
     fingerprint(picks, r.pointsOnly ? 0 : stake) ===
-    fingerprint(r.slip?.picks, r.pointsOnly ? 0 : r.slip?.stake || 10)
+    fingerprint(r.slip?.picks, r.pointsOnly ? 0 : r.slip?.stake || 1)
   ) {
     try {
       localStorage.removeItem(viewKey);
@@ -1234,21 +1234,18 @@ function settings(l,r){
  return randomLeagueControls(l,state.user)+'<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>'+barHomeInvite(l,state.user,esc)+fantasyNudge(l)+'<div id="league-objectives">'+achievementBoard(l,esc,dashboardSource,dashboardCompetition,{calendar:state.calendar})+'</div>';
 }
 let presidentGroup=null;
-function barRulesForm(l){return `<form id="rules"><h3>Le regole del bar</h3><p class="muted">La modalità ponderata distingue gli esiti secchi dalle doppie chance. Le giornate già create conservano le proprie regole.</p><button type="button" class="secondary" id="balanced-rules">Ripristina ponderazione automatica</button>${adminBudget()}<div class="notice">Crediti iniziali per i nuovi iscritti. Le regole aggiornate si applicano alle giornate acquisite successivamente; le giornate già create mantengono le proprie regole.</div>${[
-            ["initial", "Crediti iniziali"],
-          ]
-            .map(
-              ([k, t]) =>
-                `<label class="field">${t}<input name="${k}" type="number" step="0.25" value="${l.rules[k]}" required></label>`,
-            )
-            .join(
-              "",
-            )}<fieldset data-classic-points ${l.rules.mode === "classic" ? "" : "hidden"}><label class="field">Punti esito corretto<input name="correct" type="number" step="0.25" value="${l.rules.correct}" required></label><label class="field">Punti esito sbagliato<input name="wrong" type="number" step="0.25" value="${l.rules.wrong}" required></label></fieldset><label class="field">Modalità punti<select name="mode"><option value="classic" ${l.rules.mode === "classic" ? "selected" : ""}>Classica</option><option value="weighted" ${l.rules.mode === "weighted" ? "selected" : ""}>Ponderata</option></select></label><p class="tiny muted" data-auto-points ${l.rules.mode === "classic" ? "hidden" : ""}>Ponderazione automatica: 1/X/2 valgono +1 se corretti e −0,5 se sbagliati, dalle prossime giornate. Gli altri esiti hanno premi e penalità secondo la probabilità, a passi di 0,25 e fino a −2: i valori vengono mostrati sulle partite e fissati alla conferma.</p><label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points") ? "checked" : ""}> Premia primo per punti</span></label><label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits") ? "checked" : ""}> Premia primo per crediti</span></label><button class="primary">Salva regole</button></form>`;}
+function barRulesForm(l){
+ return `<form id="rules"><h3>Le regole del Bar</h3><p>Ogni esito corretto vale la sua quota. Un errore vale zero punti.</p>
+ <label class="field">Crediti iniziali per i nuovi iscritti<input name="initial" type="number" step="0.25" value="${l.rules.initial}" required></label>
+ <label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points")?"checked":""}> Premia primo per punti</span></label>
+ <label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits")?"checked":""}> Premia primo per crediti</span></label>
+ <button class="primary">Salva regole</button></form>`;
+}
 function barMembers(l){return '<ul class="bar-members">'+l.members.map(m=>'<li><span>'+esc(m.name)+'</span>'+(m.uid===l.admin?'<small>Presidente</small>':'')+'</li>').join('')+'</ul>';}
 // Lega del Bar: una schermata a riquadri. Stessi pulsanti e destinazioni di prima.
 function barLeagueInfo(l){
  const admin=isLeagueAdmin(l,state.user.id),tasks=admin?barPresidentTasks(l).length:0;
- const rules=l.rules?.mode==='classic'?'Classica':'Ponderata';
+ const rules='Punti pari alla quota';
  return hubHead(l.name,l.members.length+' al bancone')+'<div data-os-content><div class="lega-hub">'+
   (admin?hubTile('gear','Pannello del presidente',tasks?tasks+(tasks===1?' cosa da fare':' cose da fare'):'Tutto in ordine',{action:'data-bar-page="admin"',admin:true}):'')+
   hubTile('people','Partecipanti · '+l.members.length,'Chi è al bancone',{html:admin?leagueMembers(l,true):barMembers(l)})+
@@ -1264,7 +1261,7 @@ function leagueAdmin(l){
  const color=LEAGUE_COLORS.find(([v])=>v===l.branding?.accent)?.[1]||LEAGUE_COLORS[0][1];
 
  return presidentPanel({mode:'bar',title:'Pannello del presidente',back:'data-bar-page="barleague"',open:presidentGroup,tasks:admin?barPresidentTasks(l):[],groups:{
- regole:{summary:(l.rules.mode==='weighted'?'Ponderata':'Classica')+' · '+l.rules.initial+' cr iniziali',html:admin?barRulesForm(l):'<button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button>'},
+ regole:{summary:'Punti a quota · '+l.rules.initial+' cr iniziali',html:admin?barRulesForm(l):'<button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button>'},
  ...(admin?{
  identita:{summary:'Simbolo '+(l.branding?.emblem||'Q')+' · '+color,html:brandingForm(l)}
  }:{}),
@@ -1286,42 +1283,15 @@ function openBarRules(){
   view.innerHTML='<button type="button" class="secondary rule-close" id="close-modal">← Chiudi regolamento</button>'+regulation(L(),R());
   view.querySelector('.rule-close').onclick=()=>view.close();
 }
-function regulation(l, r) {
-  const rules = r?.rules ||
-    l?.rules || {
-      initial: 500,
-      maxStake: 20,
-      correct: 1,
-      wrong: -1,
-      mode: "classic",
-      marketPoints: {
-        1: 1,
-        X: 1,
-        2: 1,
-        "1X": 0.25,
-        12: 0.25,
-        X2: 0.25,
-        Goal: 0.5,
-        "No Goal": 0.5,
-        "Under 2.5": 0.5,
-        "Over 2.5": 0.5,
-      },
-      winners: ["points", "credits"],
-    };
-  const quotaScoring=rules.scoring===QUOTA_SCORING;
-  const markets = [
-    ["1", "Vince la squadra di casa"],
-    ["X", "Pareggio"],
-    ["2", "Vince la squadra ospite"],
-    ["1X", "Casa o pareggio"],
-    ["12", "Vince una delle due squadre"],
-    ["X2", "Pareggio o ospite"],
-    ["Goal", "Entrambe segnano almeno un gol"],
-    ["No Goal", "Almeno una squadra non segna"],
-    ["Under 2.5", "Al massimo 2 gol totali"],
-    ["Over 2.5", "Almeno 3 gol totali"],
-  ];
-  return `<section class="hero"><div class="eyebrow">PRIMA LE REGOLE, POI LE SCUSE</div><h1>IL REGOLAMENTO.<br><em>IL VAR NON ACCETTA RECLAMI.</em></h1><p>Una schedina completa, due classifiche e la consueta fiducia mal riposta nel novantesimo.</p></section><div class="rule-grid"><article class="card"><h3>1. Entra nella lega</h3><p>Registrati con email e password, poi attiva l’account dal link ricevuto via email. Crea una lega oppure usa il codice di invito. Chi crea la lega ne è l’amministratore.</p><p>Si gioca solo con crediti virtuali, senza acquisti o premi in denaro. La dotazione iniziale prevista dalle regole ${r ? "della giornata selezionata" : "attuali"} è <b>${fmt(rules.initial)} crediti</b>.</p></article><article class="card"><h3>2. Compila tutta la schedina</h3><p>Scegli <b>un solo pronostico per ciascuna partita</b> della giornata. Devi completarli tutti prima di salvare. La puntata parte da 1 credito e usa il saldo disponibile.</p><p>Scegli solo le partite che vuoi giocare. Ogni esito si blocca al suo calcio d’inizio. La puntata si blocca quando inizia la prima partita che hai scelto.</p></article><article class="card rule-wide"><h3>3. Scegli il tuo grado di ottimismo</h3><p>Gli esiti si riferiscono ai tempi regolamentari, recupero incluso. Under/Over usa la soglia di 2,5 gol.</p><table class="rule-table"><thead><tr><th>Esito</th><th>Quando è corretto</th><th>Punti se corretto</th></tr></thead><tbody>${markets.map(([p, t]) => `<tr><td><b>${p.replace("2.5", "2,5")}</b></td><td>${t}</td><td>${quotaScoring?"Quota dell’esito":["difficulty-v1","difficulty-v2"].includes(rules.scoring) && !["1", "X", "2"].includes(p) ? "Variabile · vedi la partita" : fmt(rules.scoring==="difficulty-v2"&&["1","X","2"].includes(p)?1:rules.mode==="classic"?rules.correct:(rules.marketPoints?.[p]??1))}</td></tr>`).join("")}</tbody></table><p class="tiny muted">${quotaScoring?"Ogni esito corretto vale la quota accettata alla conferma. Gli esiti sbagliati valgono zero punti.":`Modalità ${rules.mode === "classic" ? "classica: ogni esito corretto vale lo stesso punteggio." : "ponderata: i punteggi corretti dipendono dal mercato scelto."} ${["difficulty-v1","difficulty-v2"].includes(rules.scoring) ? "Doppie chance, Goal/No Goal e Under/Over hanno premi e penalità basati sulla probabilità delle quote, senza margine bookmaker, a passi di 0,25: una scelta più probabile rende meno e costa di più se sbagliata, fino a −2. I valori sono mostrati su ogni scelta e fissati alla conferma. Senza quote si usa una probabilità di base dichiarata." : "Ogni pronostico sbagliato vale " + fmt(rules.wrong) + " punti."} Le impostazioni dell’amministratore prevalgono sui valori predefiniti.`}</p></article><article class="card"><h3>4. Quote: arrivano anche dopo di te</h3><p>${quotaScoring?"Le quote mancanti sono indicate con ?. Se un esito corretto attende ancora la quota, i suoi punti vengono assegnati appena la quota è disponibile.":"Puoi salvare la schedina anche senza quote. Dove mancano vedrai “in arrivo”: compariranno automaticamente, insieme alla vincita potenziale, senza modificare i tuoi pronostici."}</p><p>Le quote reali sono la media di almeno due bookmaker, arrotondata a due decimali e congelata alla prima acquisizione. Dopo ogni recupero, se la giornata ha già quote reali ma ne manca qualcuna, quelle assenti vengono completate subito. In ogni caso da 72 ore prima della prima partita della giornata, con orari confermati, le quote ancora mancanti sono sostituite da stime del rendimento stagionale: gol fatti e subiti, medie del campionato, fattore campo e modello di Poisson con margine del 5%. Con pochi dati il modello usa maggiormente le medie di campionato. Ogni stima è etichettata, congelata alla pubblicazione e valida per tutti: non viene sostituita dalle quote arrivate dopo. Si può compilare e salvare anche prima. Se gli orari vengono confermati o anticipati tardivamente, non è possibile garantire retroattivamente le 72 ore.</p></article><article class="card"><h3>5. Crediti: serve la perfezione</h3><p>La puntata viene scalata al salvataggio; se la modifichi viene addebitata o restituita soltanto la differenza. Vinci crediti se indovini tutte le partite che hai scelto. Quelle saltate valgono zero punti e non incidono sul ritorno.</p><p><b>Ritorno lordo = puntata × prodotto delle quote.</b> Comprende la puntata iniziale. Esempio: 10 crediti × quota totale 12 = 120 crediti accreditati, con guadagno netto di 110. Se sbagli anche una sola partita giocata non ricevi crediti, ma partecipi comunque alla classifica punti.</p></article><article class="card"><h3>6. Punti: anche quasi conta</h3><p>${quotaScoring?"I punti si sommano partita per partita. Due esiti corretti a quota 1,35 e 2,80 valgono 4,15 punti complessivi, anche se sbagli le altre partite.":`I punti si sommano partita per partita, indipendentemente dalla vincita in crediti. Con i valori predefiniti, 9 pronostici corretti e 1 sbagliato valgono <b>${fmt(9*pointTerms({},"1",rules).correct+pointTerms({},"1",rules).wrong)} punti</b> (9 × ${fmt(pointTerms({},"1",rules).correct)} ${pointTerms({},"1",rules).wrong<0?"−":"+"} ${fmt(Math.abs(pointTerms({},"1",rules).wrong))}).</p><p>La giornata selezionata usa ${rules.mode === "classic" ? `+${fmt(rules.correct)} per ogni esito corretto` : "i valori per mercato indicati nella tabella"} ${["difficulty-v1","difficulty-v2"].includes(rules.scoring) ? "con la penalità indicata per la scelta confermata" : "e " + fmt(rules.wrong) + " per ogni errore"}.`} Nessuna schedina salvata significa nessuna puntata e nessun punto per quella giornata.</p></article><article class="card"><h3>7. Risultati e casi particolari</h3><p>Nella schedina bloccata il pronostico scelto diventa verde se vincente sul punteggio attuale e rosso se perdente. Finché si gioca il colore è provvisorio e può cambiare. Il live è provvisorio. I punteggi e i crediti vengono assegnati automaticamente solo quando tutte le partite valide della giornata sono finite e i risultati sono confermati dal fornitore finale. Gol e cartellini sono consultabili nei dettagli, quando disponibili.</p><p>Una partita rinviata resta in attesa. Se un evento viene annullato e marcato nullo non assegna punti e pesa quota 1. Se tutti gli eventi sono nulli la puntata viene restituita. Se mancano quote di una schedina interamente corretta, i crediti restano in attesa: non si inventano moltiplicatori.</p></article><article class="card rule-wide"><h3>8. La gloria, in due classifiche</h3><p>Tutti i membri vedono la classifica punti e quella dei crediti residui. Il bilancio personale è la differenza fra crediti residui e dotazione iniziale. A pari merito la posizione è condivisa.</p><p><b>Vincitori previsti:</b> ${(rules.winners || []).map((w) => (w === "points" ? "primo in classifica punti" : w === "credits" ? "primo in classifica crediti" : esc(w))).join(" · ") || "da definire dall’amministratore"}.</p><p>L’amministratore può configurare dotazione, punti per esito e categorie dei vincitori. Per la Serie A, dalla giornata 12 del 2026/27 il punteggio segue le quote. Ogni giornata precedente conserva il proprio regolamento.</p><p class="tiny muted">${r ? "Valori mostrati: " + esc(r.title) + ". Puoi cambiare giornata dalla schedina." : "Valori mostrati: impostazioni attuali della lega."} Stemmi e nomi delle squadre appartengono ai rispettivi titolari e sono usati per identificarle; nessuna affiliazione è implicita.</p></article></div>`;
+function regulation(l){
+ const initial=fmt(l?.rules?.initial??500);
+ return `<section class="hero"><h1>IL REGOLAMENTO.</h1></section><div class="rule-grid">
+  <article class="card"><h3>Come giocare</h3><p>Scegli le partite che vuoi, con un esito per partita. Ogni scelta si chiude al suo calcio d’inizio. La puntata si blocca quando inizia la prima partita che hai scelto.</p></article>
+  <article class="card"><h3>Punti</h3><p>Ogni esito giusto vale la quota accettata. Quota 1,35 significa 1,35 punti. Esiti sbagliati o saltati valgono zero. Si parte dalla giornata 11 di Serie A 2026/27 e dalle giornate Fanta corrispondenti ancora da liquidare.</p></article>
+  <article class="card"><h3>Puntata</h3><p>Hai ${initial} crediti virtuali iniziali. Puoi puntare da 1 credito al saldo disponibile, tenendo da parte 1 credito per ogni giornata successiva in cui devi ancora giocare.</p></article>
+  <article class="card"><h3>Crediti</h3><p>Se indovini tutte le partite giocate, ricevi la puntata moltiplicata per il prodotto delle quote. Gli eventi annullati valgono quota 1. Se sono tutti annullati, ti viene restituita la puntata.</p></article>
+  <article class="card"><h3>Risultati</h3><p>Live, punti e crediti diventano definitivi dopo la conferma dei risultati. Le quote mancanti sono indicate con ?. Le giornate già liquidate conservano il loro punteggio.</p></article>
+ </div>`;
 }
 function calendarPage() {return serieACalendarPage();}
 
@@ -1665,14 +1635,10 @@ function bind(l, r) {
         rules = {
           initial: +d.initial,
           maxStake: l.rules.maxStake,
-          correct: +d.correct,
-          wrong: +d.wrong,
-          mode: d.mode,
-          marketPoints: Object.fromEntries(
-            Object.entries(d)
-              .filter(([k]) => k.startsWith("market:"))
-              .map(([k, v]) => [k.slice(7), +v]),
-          ),
+          correct: l.rules.correct,
+          wrong: l.rules.wrong,
+          mode: l.rules.mode,
+          marketPoints: l.rules.marketPoints,
           winners: [
             ...(d.points ? ["points"] : []),
             ...(d.credits ? ["credits"] : []),
@@ -2136,25 +2102,15 @@ function bindNew(l, r) {
     };
   if ($("#save")) $("#save").onclick = saveCurrentSlip;
   if (document.querySelector(".v2-slip")) {
-    const controls = () => {
-      const template = document.createElement("template");
-      template.innerHTML = renderSlipV2({ round: R(), picks, stake, credits: me().credits, openMatch: activeMatchId, esc, fmt, date });
-      const bar = $(".v2-slipbar"), fresh = template.content.querySelector(".v2-slipbar");
-      if (!bar || !fresh) return;
-      const save = bar.querySelector("#save-slip"), next = fresh.querySelector("#save-slip");
-      save.innerHTML = next.innerHTML;
-      save.className = next.className;
-      save.disabled = next.disabled || busy || offline || !!draftConflict;
-      if(busy){save.innerHTML='<span>Salvataggio in corso…</span>';save.setAttribute('aria-busy','true');}else save.removeAttribute('aria-busy');
-      const state = bar.querySelector(".v2-state"), nextState = fresh.querySelector(".v2-state");
-      if (state && nextState) { state.className = nextState.className; state.textContent = nextState.textContent; }
-      if(state&&nextState)state.title=nextState.title;
-      for(const selector of ['[data-v2-stake-current]','[data-v2-slip-total]']){const current=bar.querySelector(selector),next=fresh.querySelector(selector);if(current&&next){current.textContent=next.textContent;current.title=next.title;}}
-      bar.querySelectorAll("[data-v2-stake]").forEach(b => b.classList.toggle("is-on", Number(b.dataset.v2Stake) === stake));
-      const stakeInput = bar.querySelector("#stake");
-      if(stakeInput&&stakeInput!==document.activeElement){const freshInput=fresh.querySelector('#stake');if(freshInput)stakeInput.value=freshInput.value;}
-      bar.querySelector(".v2-error")?.remove();
-      if (fresh.querySelector(".v2-error")) bar.append(fresh.querySelector(".v2-error"));
+    const controls=()=>{
+      const bar=$(".v2-slipbar");
+      patchSlipBar(bar,{round:R(),picks,stake,credits:me().credits,esc,fmt,date});
+      const save=bar?.querySelector("#save-slip");
+      if(!save)return;
+      save.disabled=save.disabled||busy||offline||!!draftConflict;
+      if(busy){save.textContent="Salvataggio in corso…";save.setAttribute("aria-busy","true");}
+      else save.removeAttribute("aria-busy");
+      if(busy)bar.querySelectorAll("#stake,[data-stake-step]").forEach(control=>control.disabled=true);
     };
     const redrawChoices=()=>{
       if(!patchSlipV2(document,{round:R(),picks,stake,credits:me().credits,openMatch:activeMatchId,esc,fmt,date})){render();return;}
@@ -2197,10 +2153,11 @@ function bindNew(l, r) {
       picks = draftConflict.picks;
       stake = draftConflict.stake;
       draftConflict = null;
+      reconcileSlipDraft(R());
       editBaseSavedAt = R()?.slip?.savedAt || null;
       editBaseFingerprint = fingerprint(
         R()?.slip?.picks,
-        R()?.pointsOnly ? 0 : R()?.slip?.stake || 10,
+        R()?.pointsOnly ? 0 : R()?.slip?.stake || 1,
       );
       market = {};
       for (const [id, p] of Object.entries(picks))
@@ -2449,7 +2406,7 @@ function applyLive(data){
   if(L()?.id!==data.league)return;
   mergeLiveSnapshot(state,data);
   if(preferredFanta())return;
-  if(R()&&editingClosed(R()))document.querySelectorAll("#save-slip,#stake,[data-v2-stake]").forEach(e=>e.disabled=true);
+  if(R()&&editingClosed(R()))document.querySelectorAll("#save-slip,#stake,[data-stake-step]").forEach(e=>e.disabled=true);
   if(R())patchSlipResults($('#app'),R(),picks,isClosed(R()));
   const matches=[...(L().rounds||[]),...(state.calendar?.rounds||[])].flatMap(r=>r.matches);
   const credit=$('.v2-credits b');if(credit){const value=fmt(me()?.credits||0);if(credit.textContent!==value)credit.textContent=value;}

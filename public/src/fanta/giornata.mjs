@@ -1,5 +1,5 @@
 import {pitchPerformance,hasPitchPerformance,eventCounts,ballIcon,assistBootIcon} from '../pitch-events.mjs';
-import {pitchFixture,playerSurname} from '../player-label.mjs';
+import {pitchFixture} from '../player-label.mjs';
 import {renderPitchFlip} from '../lineup-pitch.mjs';
 import {statNumber,formatStatNumber} from './stat-number.mjs';
 import {playerVisual} from './player-visual.mjs';
@@ -48,13 +48,12 @@ export function events(e = {}) {
 function token(p, replaced) {
   const clickable = p.id!=null;
   const tag = clickable ? 'button' : 'div';
-  const surname = playerSurname(p);
   const performance = replaced ? {...p,enteredFor:replaced} : p;
   const playing = hasPitchPerformance(performance);
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.status}${replaced ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}" aria-haspopup="dialog"` : ''}
     title="${esc(p.name)}${replaced ? ' · entrato al posto di ' + esc(replaced) : ''}">
-    <span class="fanta-token-shirt">${playerVisual(p,{back:true})}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
-    <b>${esc(surname)}</b>${playing?'':pitchFixture(p)}${pitchPerformance(performance,playing)}
+    <span class="fanta-token-shirt">${playerVisual(p,{back:true,nameOnShirt:true})}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
+    ${playing?'':pitchFixture(p)}${pitchPerformance(performance,playing)}
   </${tag}>`;
 }
 

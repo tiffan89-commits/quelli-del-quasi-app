@@ -16,21 +16,27 @@ import {
   stateFor,
 } from "../lib/game.mjs";
 import { emptyState } from "../lib/db.mjs";
-test("Serie A changes from round twelve, preserves round eleven and keeps Fanta rules separate",()=>{
+test("quota points start with the unsettled eleventh Serie A day and its linked Fanta rounds",()=>{
  const base={rules:DEFAULT_RULES};
- assert.equal(roundPointRules({...base,sourceId:'seriea:2026:11'}),DEFAULT_RULES);
+ assert.equal(roundPointRules({...base,sourceId:'seriea:2026:10'}),DEFAULT_RULES);
+ assert.equal(roundPointRules({...base,sourceId:'seriea:2026:11',settled:true}),DEFAULT_RULES);
+ assert.equal(roundPointRules({...base,sourceId:'seriea:2026:11'}).scoring,QUOTA_SCORING);
+ const fanta={...base,source:'fantacalcio',virtualBookmaker:true,season:'2026/27',number:2,serieARound:11};
+ assert.equal(roundPointRules(fanta).scoring,QUOTA_SCORING);
+ assert.equal(roundPointRules({...fanta,settled:true}),DEFAULT_RULES);
+ assert.equal(roundPointRules({...fanta,settled:true,pointScoring:QUOTA_SCORING}).scoring,QUOTA_SCORING);
  assert.equal(roundPointRules({...base,sourceId:'seriea:2026:12'}).scoring,QUOTA_SCORING);
  assert.equal(roundPointRules({...base,sourceId:'seriea:2026:12',source:'fantacalcio'}),DEFAULT_RULES);
  assert.equal(roundPointRules({...base,sourceId:'seriea:2026:12',pointsOnly:true}),DEFAULT_RULES);
  const match={id:'m',odds:{'1':1.5}},slip={picks:{m:'1'},acceptedOdds:{m:1.35},pointTerms:{m:{pick:'1',correct:1,wrong:-0.5,source:'esito secco'}}};
- assert.equal(slipPointTerms({...base,sourceId:'seriea:2026:11'},match,slip).wrong,-0.5);
+ assert.equal(slipPointTerms({...base,sourceId:'seriea:2026:10'},match,slip).wrong,-0.5);
  assert.deepEqual(slipPointTerms({...base,sourceId:'seriea:2026:12'},match,slip),{pick:'1',correct:1.35,wrong:0,source:QUOTA_SCORING});
 });
 
-test("round twelve credits accepted quotes as points, waits for missing winning quotes and settles idempotently",()=>{
+test("round eleven credits accepted quotes as points, waits for missing winning quotes and settles idempotently",()=>{
  const s=emptyState(),u={id:'u',name:'Mister',emailVerified:true};
  s.users.push(u);
- const l=newLeague(s,u,'Test',true),r={id:'r',league:l.id,sourceId:'seriea:2026:12',rules:{...DEFAULT_RULES},kickoff:new Date(Date.now()+86400000).toISOString(),matches:[
+ const l=newLeague(s,u,'Test',true),r={id:'r',league:l.id,sourceId:'seriea:2026:11',rules:{...DEFAULT_RULES},kickoff:new Date(Date.now()+86400000).toISOString(),matches:[
   {id:'a',odds:{'1':1.35},status:'NS'},
   {id:'b',odds:{Goal:2.8},status:'NS'},
   {id:'c',odds:{'2':2.2},status:'NS'},

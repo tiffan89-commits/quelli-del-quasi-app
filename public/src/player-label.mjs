@@ -17,7 +17,7 @@ export function playerSurname(player){
  if(words.length&&abbreviated(name.at(-1)))name.push(words.shift());
  return name.join(' ').replace(/&(?:apos|#0*39|#x0*27);?|[^\p{L}\p{M}\p{N}\s.-]/giu,'');
 }
-export const playerJersey=p=>p?.jersey||p?.number||p?.seasonStats?.games?.number||'';
+export const playerJersey=p=>[p?.jersey,p?.number,p?.seasonStats?.games?.number].find(n=>/^[1-9][0-9]?$/.test(String(n)))??'';
 
 export const opponentLabel=n=>n?.opponent?`${n.home?'':'@ '}${KITS[({'AC Milan':'Milan','AS Roma':'Roma','Hellas Verona':'Verona'})[n.opponent]||n.opponent]?.code||String(n.opponent).slice(0,3).toUpperCase()}`:'–';
 

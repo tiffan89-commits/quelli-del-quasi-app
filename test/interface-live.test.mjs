@@ -4,7 +4,7 @@ import {renderFantaNotificationSettings} from '../public/src/fanta/io.mjs';
 import {clubShirt} from '../public/src/club-crest.mjs';
 import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
-import {pointTerms,QUOTA_SCORING} from '../public/scoring.mjs';
+import {slipCreditReserve,slipStakeLimit} from '../public/slip-events.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
 import {settingsLogout,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
@@ -16,7 +16,7 @@ import {randomLeagueControls,bindRandomLeagues} from '../public/src/random-leagu
 import {fantasyAccount,fantasyGroup,fantasyWalletKey} from '../public/src/fantasy-accounts.mjs';
 import * as v2Tabs from '../public/src/v2/tabs.mjs';
 import {renderLeagueChip,isLeagueAdmin} from '../public/src/v2/league-switcher.mjs';
-import {renderSlipV2,patchSlipV2} from '../public/src/v2/slip-v2.mjs';
+import {renderSlipV2,patchSlipV2,patchSlipBar} from '../public/src/v2/slip-v2.mjs';
 import {barModeSwitch} from '../public/src/fanta-mode.mjs';
 import {inlineResultView,patchSlipResults} from '../public/src/slip-results.mjs';
 import { LEAGUE_COLORS, LEAGUE_EMBLEMS } from "../public/src/league-theme.mjs";
@@ -134,7 +134,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     rewardsView,roomSvg,REWARD_SLOTS,
     bindProgression(){},bindRewards(){},bindStyledSelects(){},syncStyledSelects(){},closeStyledSelect(){},pushSupported(){return false;},enableLeagueNotifications(){},
     ...slipState,
-    communityView,pointTerms,QUOTA_SCORING,
+    communityView,slipCreditReserve,slipStakeLimit,
     createVerdictCard,
     integrationBindings() {},
     playerRanking,

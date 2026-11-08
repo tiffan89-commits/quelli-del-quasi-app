@@ -1,3 +1,4 @@
+import {slipCreditReserve} from '../slip-events.mjs';
 import {slipSummary} from './slip-state.mjs';
 import {MAIN,EXTRA} from './v2/slip-v2.mjs';
 import {fantasyAccount} from './fantasy-accounts.mjs';
@@ -7,7 +8,7 @@ export function saveDemoSlip(state,payload){
  if(!round||!member)throw Error('Lega o giornata non disponibile');
  const wallet=round.source==='fantacalcio'?fantasyAccount(member,round,league):member;
  if(Object.hasOwn(payload,'baseSavedAt')&&(payload.baseSavedAt||null)!==(round.slip?.savedAt||null)){const e=Error('La schedina è cambiata: ricarica la versione salvata.');e.status=409;throw e;}
- const summary=slipSummary(round,payload.picks,payload.stake,wallet.credits);
+ const summary=slipSummary({...round,stakeReserve:slipCreditReserve(round,league.rounds,league,uid)},payload.picks,payload.stake,wallet.credits);
  const legal=round.pointsOnly?MAIN:[...MAIN,...EXTRA];
  if(Object.values(payload.picks||{}).some(p=>!legal.includes(p))||!summary.canSave||round.eventBetting&&(Object.keys(summary.picks).length!==Object.keys(payload.picks||{}).length||Object.entries(payload.picks||{}).some(([id,pick])=>summary.picks[id]!==pick)))throw Error(summary.closed?'Giornata chiusa':'Scegli gli esiti ancora aperti e verifica la puntata');
  const stake=round.pointsOnly?0:Number(payload.stake),delta=(round.slip?.stake||0)-stake;

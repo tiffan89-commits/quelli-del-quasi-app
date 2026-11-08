@@ -2,12 +2,13 @@
 export const QUOTA_SCORING='seriea-quota-v1';
 
 export function roundPointRules(round){
-  if(round.pointsOnly||round.virtualBookmaker||round.source&&round.source!=='seriea')return round.rules;
-  // Round 11 of the 2026/27 season started before the change.
+  if(round.pointsOnly||round.pointScoring==='legacy'||round.source==='fantacalcio'&&!round.virtualBookmaker)return round.rules;
   const id=/^seriea:(\d{4}):(\d+)$/.exec(round.sourceId||'');
-  const season=Number(id?.[1]??(round.source==='seriea'?round.season:0));
-  const number=Number(id?.[2]??round.number);
-  return season>2026||season===2026&&number>=12?{...round.rules,scoring:QUOTA_SCORING,wrong:0}:round.rules;
+  const season=parseInt(id?.[1]??round.season,10);
+  const number=Number(id?.[2]??(round.virtualBookmaker?round.serieARound:round.number));
+  const afterCutover=season>2026||season===2026&&number>=11;
+  const alreadyPaid=round.settled&&((round.virtualBookmaker)||(season===2026&&number===11));
+  return round.pointScoring===QUOTA_SCORING||afterCutover&&!alreadyPaid?{...round.rules,scoring:QUOTA_SCORING,wrong:0}:round.rules;
 }
 
 export function slipPointTerms(round,match,slip){
