@@ -1,3 +1,4 @@
+import {slipCreditReserve,slipStakeLimit} from '../../slip-events.mjs';
 import {fantasyMatchHeadline} from '../bar-fanta-match.mjs';
 import {createSportsPush} from '../sports-push.mjs';
 import {openMatchPage} from '../match-page.mjs';
@@ -8,7 +9,7 @@ import {readAppRoute,writeAppRoute} from '../routes.mjs';
 import {playerRanking} from '../bar-fanta-rankings.mjs';
 import {showQuasi} from '../quasi-scene.mjs';
 import {esc,pts} from './formato.mjs';
-import {renderSlipV2,patchSlipV2,bindSlipV2} from '../v2/slip-v2.mjs';
+import {renderSlipV2,patchSlipV2,patchSlipBar,bindSlipV2} from '../v2/slip-v2.mjs';
 import {barSlipsView} from '../bar-slips.mjs';
 import {fantasyAccount} from '../fantasy-accounts.mjs';
 import {patchSlipResults} from '../slip-results.mjs';
@@ -46,15 +47,19 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   const snapshot=services?.snapshot?.(),data=fantaSlipContext(snapshot,context.leagueId,context.competitionId);
   const eligible=selectableSlipRounds(data.rounds,now(),data.calendar);
   const round=eligible.find(r=>r.id===selection||String(r.number)===selection)||defaultSlipRound(data.rounds,now(),data.calendar);
-  return {...data,round,eligible};
+  return {...data,round:round?{...round,stakeReserve:slipCreditReserve(round,data.league.rounds,data.league,data.uid)}:round,eligible};
  }
  function draft(data){
   const {round,uid,league}=data;if(!round||!uid||!league)return null;
-  const key=draftKey(uid,league.id,round),serverBase=fingerprint(round.slip?.picks,round.pointsOnly?0:round.slip?.stake||10);
+  const key=draftKey(uid,league.id,round),serverBase=fingerprint(round.slip?.picks,round.pointsOnly?0:round.slip?.stake||1);
   let d=drafts.get(key);
-  if(!d){const saved=loadDraft(storage,key,round,now());d={key,picks:{...(saved?.picks||round.slip?.picks||{})},stake:saved?.stake??round.slip?.stake??10,base:saved?.base??serverBase,baseSavedAt:round.slip?.savedAt||null,conflict:!!saved?.conflict};drafts.set(key,d);}
+  if(!d){const saved=loadDraft(storage,key,round,now());d={key,picks:{...(saved?.picks||round.slip?.picks||{})},stake:round.pointsOnly?0:saved?.stake??round.slip?.stake??1,base:saved?.base??serverBase,baseSavedAt:round.slip?.savedAt||null,conflict:!!saved?.conflict};drafts.set(key,d);}
   if(d.base!==serverBase){if(fingerprint(d.picks,round.pointsOnly?0:d.stake)===d.base){drafts.delete(key);return draft(data);}d.conflict=true;}
   if(round.eventBetting){d.picks=editablePicks(round,d.picks,now());if(slipSummary(round,d.picks,d.stake,Infinity,now()).fixedStake)d.stake=round.slip.stake;}
+  if(!round.pointsOnly&&!slipSummary(round,d.picks,d.stake,Infinity,now()).fixedStake){
+   const credits=fantasyAccount(league.members?.find(m=>m.uid===uid),round,league).credits;
+   d.stake=Math.max(1,Math.min(d.stake,slipStakeLimit(credits,round.slip?.stake,round.stakeReserve)));
+  }
   return d;
  }
  function persist(data,d){saveDraft(storage,d.key,{round:data.round,picks:d.picks,stake:d.stake,base:d.base},now());}
@@ -111,7 +116,10 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   bindSlipV2(root,{
    onPick:(id,value)=>{if(saving||editingEventLocked(data.round,data.round.matches.find(m=>m.id===id),now()))return;if(data.round.eventBetting&&d.picks[id]===value)delete d.picks[id];else d.picks[id]=value;persist(data,d);message='';redrawChoices();},
    onToggle:id=>{expanded=expanded===id?null:id;redrawChoices();},
-   onStake:value=>{if(saving||editingClosed(data.round,now())||slipSummary(data.round,d.picks,d.stake,Infinity,now()).fixedStake)return;d.stake=value;persist(data,d);redrawChoices();},
+   onStake:value=>{if(saving||editingClosed(data.round,now())||slipSummary(data.round,d.picks,d.stake,Infinity,now()).fixedStake)return;d.stake=value;persist(data,d);
+    const credits=fantasyAccount(data.league.members?.find(m=>m.uid===data.uid),data.round,data.league).credits;
+    patchSlipBar(root.querySelector(".v2-slipbar"),{round:data.round,picks:d.picks,stake:d.stake,credits,esc,fmt,date});
+    const save=root.querySelector("#save-slip");if(save&&(d.conflict||globalThis.navigator?.onLine===false||!services?.save))save.disabled=true;},
    onSave:async()=>{
     const summary=slipSummary(data.round,d.picks,d.stake,fantasyAccount(data.league.members?.find(m=>m.uid===data.uid),data.round,data.league).credits,now());
     if(saving||d.conflict||globalThis.navigator?.onLine===false||!services?.save||!summary.canSave)return;
@@ -124,7 +132,7 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   root.querySelectorAll('[data-v2-more]').forEach(b=>{b.textContent='Altri esiti '+(b.getAttribute('aria-expanded')==='true'?'−':'+');});
   const save=root.querySelector('#save-slip');if(save&&saving){save.textContent='Salvataggio in corso…';save.setAttribute('aria-busy','true');save.classList.add('is-busy');}
   if(save&&(saving||d.conflict||globalThis.navigator?.onLine===false||!services?.save))save.disabled=true;
-  if(saving)root.querySelectorAll('[data-pick],#stake,[data-v2-stake]').forEach(b=>b.disabled=true);
+  if(saving)root.querySelectorAll('[data-pick],#stake,[data-stake-step]').forEach(b=>b.disabled=true);
   patchSlipResults(root,data.round,d.picks,isClosed(data.round,now()));
  }
  function ranking(context,metric='points'){const data=current(context);return data.league?playerRanking(data.league,'fantacalcio',metric,{id:data.uid},esc,fmt,data.round?.competitionKey).replace(/<section class="round-heading">[\s\S]*?<\/section>/,'<p class="fanta-note">Punti e crediti delle schedine del Fanta.</p>'):'<section class="fanta-block"><h2>Classifica schedine</h2><p>La classifica arriva con il calendario della lega.</p></section>';}

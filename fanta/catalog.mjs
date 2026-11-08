@@ -1,6 +1,44 @@
 import {hashInput,ROLE} from './votes.mjs';
 import {connection} from '../lib/db.mjs';
 import {normalizeTeam} from '../lib/calendar.mjs';
+import {playerJersey} from '../public/src/player-label.mjs';
+
+// Reuse the stored season data, matching by API player ID and club.
+export async function backfillPlayerJerseys({connect=connection,season=2026,apply=false,squadNumbers=[]}={}){
+ const c=await connect();
+ try{
+  if(apply)await c.query('BEGIN');
+  const players=(await c.query('SELECT p.id,p.api_id,p.club_id,p.data,c.name AS club FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id'+(apply?' FOR UPDATE OF p':''))).rows;
+  const squads=(await c.query("SELECT metadata FROM football_player_catalog WHERE season=$1 AND metadata->>'number' ~ '^[1-9][0-9]?$'",[String(season)])).rows.map(r=>r.metadata);
+  const appearances=(await c.query(`SELECT DISTINCT ON (line->'team'->>'id',p->>'id')
+    line->'team'->>'id' AS club_id,p->>'id' AS player_id,p->>'number' AS number
+   FROM fanta.fixtures f CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(f.data->'lineups')='array' THEN f.data->'lineups' ELSE '[]' END) line
+   CROSS JOIN LATERAL jsonb_array_elements(coalesce(line->'startXI','[]')||coalesce(line->'substitutes','[]')) entry
+   CROSS JOIN LATERAL (SELECT entry->'player' AS p) player
+   WHERE f.season=$1 AND p->>'number' ~ '^[1-9][0-9]?$'
+   ORDER BY line->'team'->>'id',p->>'id',f.kickoff DESC`,[season])).rows;
+  const knownSquad=new Map(squads.map(p=>[String(p.providerId)+':'+normalizeTeam(p.team),Number(p.number)]));
+  const knownAppearance=new Map(appearances.map(p=>[p.player_id+':af:'+p.club_id,Number(p.number)]));
+  const supplied=new Map(squadNumbers.filter(p=>playerJersey(p)).map(p=>[String(p.playerId)+":af:"+p.clubId,Number(p.number)]));
+  const updates=[],missingClubs=new Set();
+  let missing=0,activeMissing=0;
+  for(const p of players){
+   const number=Number(playerJersey(p.data)||knownSquad.get(p.api_id+':'+normalizeTeam(p.club))||knownAppearance.get(p.api_id+':'+p.club_id)||supplied.get(p.api_id+':'+p.club_id));
+   if(!number){
+    missing++;
+    if(p.data.active!==false){activeMissing++;if(/^af:\d+$/.test(p.club_id))missingClubs.add(Number(p.club_id.slice(3)));}
+    continue;
+   }
+   if(p.data.jersey!==number)updates.push({id:p.id,jersey:number});
+  }
+  if(apply&&updates.length){
+   await c.query("UPDATE fanta.players p SET data=jsonb_set(p.data,'{jersey}',to_jsonb(x.jersey)) FROM jsonb_to_recordset($1::jsonb) x(id text,jersey int) WHERE p.id=x.id",[JSON.stringify(updates)]);
+  }
+  if(apply)await c.query('COMMIT');
+  return {players:players.length,updated:updates.length,missing,activeMissing,missingClubs:[...missingClubs]};
+ }catch(error){if(apply)await c.query('ROLLBACK');throw error;}finally{c.release();}
+}
+
 export async function seedStoredCatalog({connect=connection}={}){
  const c=await connect();try{
   const teams=(await c.query(`SELECT DISTINCT t FROM fanta_state s CROSS JOIN LATERAL jsonb_array_elements(s.payload#>'{football,calendar,rounds}') r CROSS JOIN LATERAL jsonb_array_elements(r->'matches') m CROSS JOIN LATERAL jsonb_each(m#>'{details,matchInfo,teams}') q(key,t) WHERE t->>'id' IS NOT NULL`)).rows.map(x=>x.t);

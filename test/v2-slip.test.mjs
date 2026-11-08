@@ -26,7 +26,7 @@ test('passo 9: mercati aggiuntivi e callback mantengono gli identificatori',()=>
  const {document}=parseHTML('<html><body>'+renderSlipV2({round:round(),openMatch:'1',esc,fmt:String,date:String})+'</body></html>');
  const calls=[];bindSlipV2(document,{onPick:(...a)=>calls.push(['pick',...a]),onToggle:id=>calls.push(['toggle',id]),onStake:v=>calls.push(['stake',v]),onSave:()=>calls.push(['save'])});
  document.querySelector('[data-pick="1"][data-value="X2"]').click();
- document.querySelector('[data-v2-more="2"]').click();document.querySelector('[data-v2-stake="20"]').click();
+ document.querySelector('[data-v2-more="2"]').click();const slider=document.querySelector('#stake');slider.value='20';slider.oninput();
  document.querySelector('#save-slip').click();
  assert.deepEqual(calls,[['pick','1','X2'],['toggle','2'],['stake',20],['save']]);
 });

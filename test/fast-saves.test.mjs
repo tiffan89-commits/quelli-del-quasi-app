@@ -13,10 +13,11 @@ test('targeted Bar saves preserve unrelated data, replay without duplicate debit
  const f=await fixtureDb();try{
   const s=emptyState(),u={id:'u1',username:'frankwood',emailVerified:true};s.users.push(u);const l=newLeague(s,u,'Test salvataggio'),token=session(s,u.id);l.members.push({uid:'u2',credits:500,initial:500,points:0});
   const other={uid:'u2',stake:5,picks:{m:'2'},secretExample:'retained',savedAt:'2026-11-01'};
-  const r={id:'fast-round',league:l.id,source:'seriea',number:11,title:'Giornata 11',kickoff:'2099-01-01T15:00Z',rules:l.rules,slips:[other],matches:[{id:'m',odds:{1:2,X:3,2:4},details:{large:'x'.repeat(100000)}}]};s.rounds.push(r);s.football.extra='retained';
+  const r={id:'fast-round',league:l.id,source:'seriea',number:11,title:'Giornata 11',kickoff:'2099-01-01T15:00Z',rules:l.rules,slips:[other],matches:[{id:'m',odds:{1:2,X:3,2:4},details:{large:'x'.repeat(100000)}}]};s.rounds.push(r,...[12,13].map(number=>({...r,id:'future-'+number,number,kickoff:null,slips:[],matches:[{id:'future-match-'+number}]})));s.football.extra='retained';
   await f.db.query('UPDATE fanta_state SET payload=$1 WHERE id=1',[JSON.stringify(s)]);
   let bytes=0;const connect=async()=>{const c=await f.connect();return {...c,query:async(sql,args)=>{const value=await c.query(sql,args);if(sql.startsWith('WITH base'))bytes=Buffer.byteLength(JSON.stringify(value.rows));return value;}};};
   const input={league:l.id,round:r.id,picks:{m:'1'},stake:10,baseSavedAt:null,requestId:'request_first_00001'};
+  await assert.rejects(saveBarSlip(token,{...input,stake:499},{connect}),/un credito per ogni giornata/);
   const first=await saveBarSlip(token,input,{connect});assert.equal(first.receipt.member.credits,490);assert.equal(first.receipt.ledger.length,1);assert.ok(bytes<20000);
   const payload=async()=>(await f.db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload;
   const saved=await payload();assert.equal(saved.rounds[0].matches[0].details.large.length,100000);assert.deepEqual(saved.rounds[0].slips.find(x=>x.uid==='u2'),other);assert.equal(saved.football.extra,'retained');

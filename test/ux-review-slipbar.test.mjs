@@ -4,16 +4,19 @@ import {createFantaSlips} from '../public/src/fanta/schedine.mjs';
 import {demoSlipServices} from '../public/src/fanta/demo-slips.mjs';
 const make=(extra={})=>({id:'round',number:11,deadline:new Date(Date.now()+86400000).toISOString(),kickoff:new Date(Date.now()+86400000).toISOString(),rules:{maxStake:20},matches:[1,2,3].map(id=>({id:'m'+id,home:'Casa '+id,away:'Ospite '+id,odds:{1:2,X:3,2:4}})),...extra});
 const render=(round,picks={})=>renderSlipV2({round,picks,stake:10,credits:500,esc:String,fmt:String,date:()=> 'domani'});
-test('one compact status contains missing picks; stake choices stay in a closed accessible picker',()=>{
- const {document}=parseHTML(render(make())),bar=document.querySelector('.v2-slipbar');assert.equal(bar.querySelector('.v2-state').textContent,'Mancano 3 partite');assert.equal(bar.querySelector('details').hasAttribute('open'),false);assert.equal(bar.querySelectorAll('.v2-stakes').length,1);assert.ok(bar.querySelector('.v2-stake-panel #stake'));assert.equal(bar.querySelector('#save-slip').disabled,true);assert.match(bar.querySelector('.v2-error').className,/sr-only/);assert.equal(bar.querySelector('[data-v2-stake-menu]').getAttribute('aria-label'),'Modifica la puntata in crediti');
+test('a single slider reserves future credits and replaces presets and the free-form field',()=>{
+ const {document}=parseHTML(render(make({stakeReserve:27}))),bar=document.querySelector('.v2-slipbar'),range=bar.querySelector('#stake');
+ assert.equal(bar.querySelector('.v2-state').textContent,'Mancano 3 partite');
+ assert.equal(range.getAttribute('type'),'range');assert.equal(range.getAttribute('min'),'1');assert.equal(range.getAttribute('max'),'473');
+ assert.equal(bar.querySelectorAll('[data-stake-step]').length,2);assert.equal(bar.querySelector('details,input[type=number],.v2-stake'),null);
+ assert.equal(bar.querySelector('#save-slip').disabled,true);assert.match(bar.textContent,/27 cr di riserva/);
 });
-test('quick amounts close the picker, custom decimals are preserved, Escape restores focus and save returns its promise',async()=>{
- const {document,window}=parseHTML('<html><body><div id="root">'+render(make(),{m1:'1',m2:'1',m3:'1'})+'</div></body></html>'),root=document.querySelector('#root'),amounts=[];const pending=Promise.resolve('saved');
- bindSlipV2(root,{onStake:n=>amounts.push(n),onSave:()=>pending,onPick(){},onToggle(){}});
- const picker=root.querySelector('details');picker.setAttribute('open','');root.querySelector('[data-v2-stake="20"]').click();assert.deepEqual(amounts,[20]);assert.equal(picker.hasAttribute('open'),false);
- picker.setAttribute('open','');const field=root.querySelector('#stake');field.value='6.5';field.oninput();assert.deepEqual(amounts,[20,6.5]);assert.equal(picker.hasAttribute('open'),true);
- const event=new window.Event('keydown',{bubbles:true,cancelable:true});event.key='Escape';picker.dispatchEvent(event);assert.equal(picker.hasAttribute('open'),false);
- picker.setAttribute('open','');assert.equal(root.querySelector('#save-slip').onclick(),pending);assert.equal(picker.hasAttribute('open'),false);assert.equal(await pending,'saved');
+test('slider and step buttons change the stake and save returns its promise',async()=>{
+ const {document}=parseHTML(render(make(),{m1:'1',m2:'1',m3:'1'})),amounts=[];const pending=Promise.resolve('saved');
+ bindSlipV2(document,{onStake:n=>amounts.push(n),onSave:()=>pending,onPick(){},onToggle(){}});
+ const field=document.querySelector('#stake');field.value='26';field.oninput();
+ document.querySelector('[data-stake-step="1"]').click();document.querySelector('[data-stake-step="-1"]').click();
+ assert.deepEqual(amounts,[26,27,25]);assert.equal(document.querySelector('#save-slip').onclick(),pending);assert.equal(await pending,'saved');
 });
 test('confirmed, points-only and closed slips keep their original action rules',()=>{
  const picks={m1:'1',m2:'1',m3:'1'},round=make({slip:{picks,stake:10,odds:8}}),saved=parseHTML(render(round,picks)).document;assert.equal(saved.querySelector('#save-slip').disabled,true);assert.match(saved.querySelector('.v2-state').textContent,/Confermata/);
@@ -35,6 +38,6 @@ test('Fanta picking, expanding markets and changing stake do not redraw the app 
  const {document}=parseHTML('<html><body><main></main></body></html>'),root=document.querySelector('main'),services=demoSlipServices(),context={leagueId:'lega-quasi',competitionId:'demo-main'},storage={getItem:()=>null,setItem(){},removeItem(){}};let draws=0;
  const slips=createFantaSlips({services,storage,teamResolver:name=>({name,branding:{type:'image',imageUrl:'/fanta-api/team/logo/image?id='+encodeURIComponent(name)}}),redraw:()=>{draws++;root.innerHTML=slips.render(context);slips.bind(root,context);}});
  root.innerHTML=slips.render(context);slips.bind(root,context);const images=[...root.querySelectorAll('.v2-match-head img')],input=root.querySelector('#stake');assert.ok(images.length>0);
- const first=root.querySelector('[data-pick]');first.onclick();root.querySelector('[data-v2-more]').onclick();const amount=root.querySelector('#stake');amount.value='13.5';amount.oninput();
- assert.equal(draws,0);assert.deepEqual([...root.querySelectorAll('.v2-match-head img')],images);assert.equal(root.querySelector('#stake'),input);assert.match(root.querySelector('[data-v2-stake-current]').textContent,/13,5/);assert.equal(services.snapshot().leagues[0].members[0].fantasyWallets['lega-quasi'].credits,500);
+ const first=root.querySelector('[data-pick]');first.onclick();root.querySelector('[data-v2-more]').onclick();const amount=root.querySelector('#stake');amount.value='13';amount.oninput();
+ assert.equal(draws,0);assert.deepEqual([...root.querySelectorAll('.v2-match-head img')],images);assert.equal(root.querySelector('#stake'),input);assert.match(root.querySelector('[data-v2-stake-current]').textContent,/13/);assert.equal(services.snapshot().leagues[0].members[0].fantasyWallets['lega-quasi'].credits,500);
 });

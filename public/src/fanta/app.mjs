@@ -651,7 +651,11 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   }
   async function editLogo(){
     const team=ui.home?homeTeam(ui.home):ui.squadra.data?.team;if(!team?.id)return;const id=league()?.id,{openLogoEditor}=await import('./logo-editor.mjs');if(destroyed||league()?.id!==id)return;
-    openLogoEditor({team,teamNameDeadline:ui.home?.teamNameDeadline??ui.squadra.data?.teamNameDeadline,onSave:async input=>{
+    const known=[ui.home,ui.squadra.data].find(data=>data&&Object.hasOwn(data,'teamNameDeadline'));
+    let teamNameDeadline=known?.teamNameDeadline;
+    if(!known){try{teamNameDeadline=(await api.home(id)).teamNameDeadline;}catch{}}
+    if(destroyed||league()?.id!==id)return;
+    openLogoEditor({team,teamNameDeadline,onSave:async input=>{
       const result=await api.saveLogo(id,{team:team.id,...input});if(destroyed||league()?.id!==id)return;
       const identity={name:result.name??team.name,branding:result.branding};
       const patch=obj=>{if(!obj||typeof obj!=='object')return;if(obj.id===team.id&&obj.name)Object.assign(obj,identity);for(const value of Object.values(obj))if(value&&typeof value==='object')patch(value);};

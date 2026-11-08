@@ -40,7 +40,7 @@ test('partial slip has a timer per event and no fixed stake cap; six Fanta outco
  assert.equal(doc.querySelectorAll('[data-slip-event-at]').length,9);
  assert.ok(doc.querySelector('[data-pick=m0]').disabled);
  assert.equal(doc.querySelector('[data-pick=m1]').disabled,false);
- assert.equal(doc.querySelector('#stake').hasAttribute('max'),false);
+ assert.equal(doc.querySelector('#stake').getAttribute('max'),'500');
  assert.equal(doc.querySelector('#save-slip').disabled,false);
  assert.match(doc.querySelector('[data-os-footer]').textContent,/Quota in arrivo/);
  r.matches=r.matches.slice(0,6);r.publicSlips=[{uid:'me',picks:{m1:'1'},stake:50}];r.closed=true;
