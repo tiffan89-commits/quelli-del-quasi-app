@@ -617,7 +617,7 @@ body:has(#app>main .bar-ticket){
   position:fixed;inset:0;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
 }
 body:has(#app>main .bar-ticket) #app-header{flex:none}
-body:has(#app>main .bar-ticket) #app{
+body:not(.match-page-active):has(#app>main .bar-ticket) #app{
   flex:1;min-height:0!important;display:flex;flex-direction:column;padding-bottom:0!important;
 }
 body:has(#app>main .bar-ticket) #app>main{
@@ -632,13 +632,16 @@ body:has(#app>main .bar-ticket) #app>main{
 }
 #app>main:has(.bar-ticket)>.slip-section-buttons .seg-long{display:none}
 #app>main:has(.bar-ticket)>.slip-section-buttons>button::after{content:attr(data-short)}
-body:has(#app>main .bar-ticket) #app>.v2-tabbar{
+body:not(.match-page-active):has(#app>main .bar-ticket) #app>.v2-tabbar{
   position:static!important;inset:auto!important;transform:none!important;order:0;
   flex:none;width:100%!important;max-width:760px!important;margin:0 auto!important;
   min-height:0;border-radius:0;grid-template-rows:auto;row-gap:0;
 }
 #app>main:has(.bar-ticket)~.v2-tabbar>[data-app-footer]{display:none}
 #app>main:has(.bar-ticket)~.v2-tabbar>.v2-tab{min-height:44px}
+body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
+  flex:1 1 auto;overflow:auto;overscroll-behavior:contain;
+}
 .bar-ticket.v2-slip{
   --ticket-accent:#83cbf6;--ticket-ink:#10211c;--ticket-muted:#b3c3bb;
   display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;

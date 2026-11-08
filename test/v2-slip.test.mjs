@@ -7,6 +7,20 @@ import {QUOTA_SCORING} from '../public/scoring.mjs';
 const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
 const round=()=>({id:'r',kickoff:'2099-01-01T12:00:00Z',rules:{maxStake:20},matches:[1,2,3].map(id=>({id:String(id),home:'Casa '+id,away:'Ospite '+id,odds:{'1':2,'X':3,'2':4,'X2':1.5},status:'NS'}))});
 const view=r=>renderSlipV2({round:r,picks:{'1':'1'},esc,fmt:String,date:String});
+test('the Bar ticket stays editable per fixture after kickoff, including outcomes awaiting a quote',()=>{
+ const r={...round(),eventBetting:true,closed:true,deadline:'2000-01-01T00:00:00Z'};
+ r.matches.forEach(match=>{match.kickoff=r.kickoff;});
+ r.matches[0]={...r.matches[0],status:'LIVE',liveScore:[1,0]};
+ r.matches[1]={...r.matches[1],odds:{}};
+ const html=renderSlipV2({round:r,barTicket:true,picks:{'2':'X'},esc,fmt:String,date:String});
+ const {document}=parseHTML(html);
+ assert.equal(document.querySelector('[data-pick="1"][data-value="1"]').disabled,true);
+ const choice=document.querySelector('[data-pick="2"][data-value="X"]');
+ assert.equal(choice.disabled,false);
+ assert.equal(choice.getAttribute('aria-pressed'),'true');
+ assert.match(choice.textContent,/—/);
+ assert.equal(document.querySelector('#save-slip').disabled,false);
+});
 test('passo 9: quota totale assente o prodotto di tre scelte',()=>{
  const r=round();assert.equal(totalOdds(r,{}),null);assert.equal(totalOdds(r,{'1':'1','2':'X','3':'2'}),24);
 });
