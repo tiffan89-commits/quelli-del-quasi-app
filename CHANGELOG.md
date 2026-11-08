@@ -236,6 +236,37 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.32.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.31.3...v0.32.0) (2026-11-08)
+
+
+### Features
+
+* **fanta:** integrate the responsive lineup bench ([2cee709](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/2cee709df65dc30e283593a7e9636afd7a900984))
+* **game:** add partial slips and refine league navigation ([c9fd11f](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c9fd11ffe7bf062dbeff6318bd103182b995e7d0))
+* **release:** gate frontend previews by verified account ([cc38bde](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/cc38bde4d55975326c589a0043f21b23b07c1ea7))
+* **scoring:** award accepted odds as Serie A slip points ([aa0088e](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/aa0088e6cf3406d08c5c9cf899c64962896d7349))
+* **ux:** add Fanta live studio and smooth match navigation ([5714397](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/57143973192a58be5c5eed7d22a9e172e0eb8e6c))
+* **ux:** compact Fanta Today and improve live player details ([9baabdc](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/9baabdc68020beabece8cbbcf940a87ab93bb50f))
+* **ux:** flip match pitches to show the bench ([92febba](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/92febbafea6b765537da04b09628d6890d102e99))
+* **ux:** page match benches and condense match details ([3a3d22c](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3a3d22cfcb8686ad70131ff9d0dad8758c3c4def))
+* **ux:** preview the next slip on Friends and Family ([0f86d0c](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/0f86d0c0ce9cb8882751f2e57c4075eda893d617))
+* **ux:** promote the unified Bar and Fanta experience ([9079723](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/90797236eae2b225a3b97f897d550c15cd2c484c))
+* **ux:** promote the unified Bar and Fanta experience ([9079723](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/90797236eae2b225a3b97f897d550c15cd2c484c))
+* **ux:** refine match details, saved lineups and Bar slips ([3f0206c](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3f0206c4c90a27cf1b720acc0834e835fd98b797))
+* **ux:** separate league settings and preserve Quasi artwork ([364aca3](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/364aca3152a263e82557882a39428239d3251fd4))
+* **ux:** una sezione, una schermata ([026fcd0](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/026fcd09f24b8525c866ab79638b05b7bf40c424))
+* **ux:** unify account settings and refine matchday views ([7e45099](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/7e45099e9c9882138ccc0caba84b41645e9f261d))
+
+
+### Bug Fixes
+
+* **fanta:** release the compact auction table ([c9140f5](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c9140f586de121da00ca16a5c46e1847d9b2719b))
+* **ux:** chat flottante, puntini minimi, scorrimento sopra la barra ([c570824](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c5708243934208f302a754049fa67694d43d0e47))
+* **ux:** condense match headers and open details by swipe ([781235c](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/781235c014d7da7811593b2322b6f93602c1854e))
+* **ux:** keep pilot headers fixed and simplify settings ([81159dd](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/81159dd9578234628b9efcad92817c5d8d861b51))
+* **ux:** simplify Bar navigation, rewards and footer ([d956df0](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/d956df0d1ab54a143f84d0b62dc0a3e312998441))
+* **ux:** unify Bar and Fanta home cards ([2cd530f](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/2cd530fde328aafa60d154b33bbefa36573efd8c))
+
 ## [0.31.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.31.1...v0.31.2) (2026-11-07)
 
 
