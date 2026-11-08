@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.34.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.34.0...v0.34.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **live:** avoid repeated large JSONB copies during sports sync ([bd144f6](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/bd144f60b2c8eef173213beb9610967000e90cba))
+
 ## [0.34.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.33.4...v0.34.0) (2026-11-08)
 
 
