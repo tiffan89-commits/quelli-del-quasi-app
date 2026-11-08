@@ -610,3 +610,130 @@ html.os-on main.os-root .home-sections .dash-recap-details .round-recap{border:0
 .home-sections .recap-gift{margin-top:8px}
 .home-sections .dash-last-round>span:last-child{text-align:right}
 @media(min-width:900px){html.os-on main.os-root .league-dashboard.home-sections>*~*{margin-top:0!important}}
+
+/* Bar · La mia. Only the fixtures move between the round controls and the ticket summary. */
+html:has(#app>main .bar-ticket){overflow:hidden}
+body:has(#app>main .bar-ticket){
+  position:fixed;inset:0;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+}
+body:has(#app>main .bar-ticket) #app-header{flex:none}
+body:has(#app>main .bar-ticket) #app{
+  flex:1;min-height:0!important;display:flex;flex-direction:column;padding-bottom:0!important;
+}
+body:has(#app>main .bar-ticket) #app>main{
+  display:flex;flex-direction:column;flex:1 1 auto;min-height:0;min-width:0;
+  margin-block:0!important;padding:4px 12px 0!important;max-width:760px!important;overflow:hidden;
+}
+#app>main:has(.bar-ticket)>.slip-section-buttons{
+  flex:none;margin:2px 0 4px;mask-image:none;overflow:visible;padding:2px;gap:2px;
+}
+#app>main:has(.bar-ticket)>.slip-section-buttons>button{
+  flex:1 1 0;min-width:0;min-height:44px;padding:3px 4px;
+}
+#app>main:has(.bar-ticket)>.slip-section-buttons .seg-long{display:none}
+#app>main:has(.bar-ticket)>.slip-section-buttons>button::after{content:attr(data-short)}
+body:has(#app>main .bar-ticket) #app>.v2-tabbar{
+  position:static!important;inset:auto!important;transform:none!important;order:0;
+  flex:none;width:100%!important;max-width:760px!important;margin:0 auto!important;
+  min-height:0;border-radius:0;grid-template-rows:auto;row-gap:0;
+}
+#app>main:has(.bar-ticket)~.v2-tabbar>[data-app-footer]{display:none}
+#app>main:has(.bar-ticket)~.v2-tabbar>.v2-tab{min-height:44px}
+.bar-ticket.v2-slip{
+  --ticket-accent:#83cbf6;--ticket-ink:#10211c;--ticket-muted:#b3c3bb;
+  display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;
+  padding:0;margin:0;overflow:hidden;
+}
+.bar-ticket button:focus-visible{outline:2px solid var(--ticket-accent);outline-offset:-2px}
+.ticket-round{display:flex;align-items:center;gap:8px;flex:none;margin-bottom:4px}
+.ticket-round .round-selector{width:auto!important;max-width:min(68%,260px);min-width:0;margin:0!important}
+.ticket-round .quasi-select-button{min-height:44px;padding:7px 30px 7px 12px;border-radius:999px}
+.ticket-round .quasi-select-value{white-space:nowrap;display:block;text-overflow:ellipsis}
+.ticket-round .quasi-select-arrow{border-color:var(--ticket-accent)}
+.bar-ticket [data-ticket-count]{
+  border:0;background:none;color:var(--ticket-accent);padding:0 4px;
+  min-height:44px;white-space:nowrap;font-size:12px;font-weight:700;
+}
+.bar-ticket [data-ticket-count]:disabled{opacity:1;color:var(--ticket-muted)}
+.ticket-matches{
+  flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;padding-bottom:12px;scroll-padding-block:8px;scrollbar-width:thin;
+}
+.ticket-day{
+  margin:0;padding:8px 2px 3px;color:var(--ticket-muted);
+  font:700 11px/1.3 'DM Sans',sans-serif;letter-spacing:.07em;
+}
+.bar-ticket .ticket-match{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px;
+  height:60px;min-height:60px;margin:0;padding:2px 0;
+  background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;min-width:0;
+}
+.bar-ticket .ticket-match .v2-match-head{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(30px,auto);gap:3px;
+  align-items:center;min-height:44px;padding:0;min-width:0;text-align:left;
+}
+.ticket-match .slip-teams{display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;font-size:12px}
+.ticket-match .slip-team-label{display:flex;align-items:center;min-width:0;gap:4px}
+.bar-ticket .ticket-match .slip-team-label :is(svg,img,.team-logo){width:17px;min-width:17px;height:16px;flex:none}
+.ticket-match .slip-team-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticket-match .slip-match-indicator{margin:0;min-width:0;max-width:none;gap:0;text-align:center}
+.ticket-match .ticket-time{color:var(--ticket-muted);font-size:10px;white-space:nowrap}
+.ticket-match .inline-result{gap:0;line-height:1.1}
+.ticket-match .inline-result:empty{display:none}
+.ticket-match .inline-result :is(small,.inline-live){font-size:9px;color:var(--ticket-muted)}
+.ticket-match .inline-score{font-size:13px;white-space:nowrap}
+.ticket-match .inline-live i{display:none}
+.bar-ticket .ticket-match .v2-odds-main{display:grid;grid-auto-flow:column;grid-auto-columns:44px;grid-template-columns:none;gap:3px;padding:0}
+.bar-ticket :is(.ticket-match,.ticket-extra) :is(.v2-odd,.v2-more){
+  box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;height:44px;min-width:44px;min-height:44px;padding:1px;gap:1px;
+  background:#14241f;color:var(--white);border:1px solid #40534b;border-radius:8px;
+  font:700 16px/1.1 'DM Sans',sans-serif;
+}
+.bar-ticket :is(.ticket-match,.ticket-extra) :is(.v2-odd,.v2-more) b{font-size:13px}
+.bar-ticket :is(.ticket-match,.ticket-extra) :is(.v2-odd,.v2-more) span{display:block;font-size:10px;color:inherit}
+.bar-ticket :is(.ticket-match,.ticket-extra) .v2-odd:disabled{opacity:1;color:#b2bdb8}
+.bar-ticket :is(.ticket-match,.ticket-extra) :is(.v2-odd,.v2-more).is-on{
+  background:var(--ticket-accent)!important;border-color:var(--ticket-accent)!important;color:var(--ticket-ink)!important;
+}
+.bar-ticket :is(.v2-odd,.v2-more):focus-visible{outline:2px solid currentColor;outline-offset:-4px}
+.bar-ticket .ticket-summary.v2-slipbar{
+  position:static;inset:auto;transform:none;flex:none;display:grid;gap:5px;
+  grid-template-columns:minmax(0,1fr);
+  max-width:none;width:auto;margin:0;padding:8px 0;background:#0e1c18;border-radius:0;
+}
+.ticket-totals{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--white);line-height:1.35}
+.ticket-totals strong{color:#afe5b3;text-align:right}
+.ticket-stake{
+  display:grid;grid-template-columns:44px minmax(0,1fr) repeat(5,44px);
+  gap:2px;align-items:center;width:100%;
+}
+.ticket-stake-fixed{display:block}
+.ticket-stake b{font-size:clamp(14px,4.5vw,21px);line-height:1.1;text-align:center}
+.ticket-stake button,.ticket-sheet-head button{
+  min-height:44px;min-width:44px;padding:0;border:1px solid #40534b;border-radius:9px;
+  background:#172923;color:var(--white);font-size:13px;font-weight:700;
+}
+.ticket-stake [data-stake-step]{font-size:20px}
+.ticket-stake button:disabled{opacity:1;color:#a4b0a9;background:#10201a}
+.ticket-reserve{font-size:11px;line-height:1.25;color:var(--ticket-muted)}
+.bar-ticket .ticket-save{
+  width:100%;min-height:44px;padding:5px 10px;display:flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:9px;border:1px solid var(--ticket-accent);background:var(--ticket-accent);color:var(--ticket-ink);
+  font-size:14px;font-weight:800;
+}
+.bar-ticket .ticket-save.is-done{color:var(--ticket-accent);background:transparent}
+.bar-ticket .ticket-save:disabled{background:#26332e;color:#c5ccc8;border-color:#4b5a53;opacity:1}
+.bar-ticket .ticket-markets{
+  position:fixed;inset:auto 0 0;max-width:560px;width:100%;max-height:80dvh;
+  margin:0 auto;padding:0;border:0;background:transparent;color:var(--white);overflow:auto;
+}
+.ticket-markets::backdrop{background:#000a}
+.ticket-sheet{
+  background:#14241f;border:1px solid #40534b;border-radius:18px 18px 0 0;
+  padding:12px 14px calc(14px + env(safe-area-inset-bottom));touch-action:pan-x;
+}
+.ticket-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.ticket-sheet-head h2{margin:0;font-size:20px;line-height:1.2}
+.ticket-sheet-head button{font-size:22px}
+.ticket-extra{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
