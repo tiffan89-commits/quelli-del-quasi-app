@@ -1189,6 +1189,11 @@ function bindObjectives(){
  target.onclick=e=>{const token=e.target.closest('[data-goal]');if(!token)return;const i=Number(token.dataset.goal);showGoal(target,target.dataset.openGoal===String(i)?-1:i);};
 }
 function bindDashboard() {
+  const dashboard=$('#league-dashboard');
+  if(dashboard)dashboard.onclick=e=>{
+    const reward=e.target.closest('[data-recap-reward]')?.dataset.recapReward;
+    if(reward)void openStudio(reward);
+  };
   document.querySelectorAll('[data-dashboard-source]').forEach(b=>b.onclick=()=>{
     dashboardSource=b.dataset.dashboardSource;
     const region=$('#league-dashboard');
