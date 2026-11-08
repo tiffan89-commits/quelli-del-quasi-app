@@ -5,6 +5,12 @@
 
 # Unreleased
 
+- Il presidente cerca i calciatori liberi per cognome dalla quarta lettera quando aggiunge un giocatore alla rosa.
+
+- Le schede di «Del Bar» usano tutta l’altezza disponibile con dimensioni uniformi. Una pressione prolungata sul Quasi apre il ritratto ingrandito. Il footer legale è più staccato dalla navigazione.
+
+- Nei pronostici con quota, Bar e Fanta mostrano la quota senza ripetere i punti sotto l’esito.
+
 - I promemoria formazione aprono lo Studio della lega e della competizione indicate. Le notifiche di giornata e asta aprono la schermata relativa.
 
 - Le notifiche chat mostrano lega, autore e messaggio. Toccandole si apre la conversazione della lega indicata.

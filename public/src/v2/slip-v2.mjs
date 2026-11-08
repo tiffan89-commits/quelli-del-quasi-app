@@ -25,16 +25,22 @@ export function totalOdds(round, picks) {
 
 function option(m, p, picks, closed, esc, fmt, pointsOnly,round) {
   const on = picks[m.id] === p;
-  const rules=roundPointRules(round),quotaScoring=rules?.scoring===QUOTA_SCORING;
-  const accepted=closed&&round.slip?.picks?.[m.id]===p?(quotaScoring?slipPointTerms(round,m,round.slip):round.slip.pointTerms?.[m.id]):null;
-  const odd=quotaScoring&&accepted?.correct!=null?accepted.correct:round.eventBetting&&round.slip?.picks?.[m.id]===p?round.slip.acceptedOdds?.[m.id]??m.odds?.[p]:m.odds?.[p];
-  const terms=accepted||(quotaScoring?pointTerms(m,p,rules,odd):m.pointOffers?.[p])||pointTerms(m,p,{mode:'weighted',scoring:'difficulty-v2',correct:1,wrong:-1,...round.rules});
-  const amount=n=>Number.isFinite(n)?(n>0?'+':n<0?'−':'')+Number(Math.abs(n).toFixed(2)).toLocaleString('it-IT'):'—';
-  const gain=terms.correct===null?'?':amount(terms.correct),loss=amount(terms.wrong);
-  const points='<small class="v2-odd-points"><em class="points-gain">'+gain+'</em>'+(quotaScoring?'':'<span aria-hidden="true"> / </span><em class="points-loss">'+loss+'</em>')+' pt</small>';
+  const saved=round.slip?.picks?.[m.id]===p?round.slip:null;
+  const rules=roundPointRules(round);
+  const accepted=closed&&saved&&rules?.scoring===QUOTA_SCORING?slipPointTerms(round,m,saved).correct:null;
+  const odd=accepted??(round.eventBetting?saved?.acceptedOdds?.[m.id]:null)??m.odds?.[p];
+  const quote=Number.isFinite(odd)?fmt(odd)+(m.oddsEstimated?.[p]?'*':''):null;
+  let label=quote?'Quota '+quote:'Quota in arrivo', points='';
+  if(pointsOnly){
+    const terms=(closed&&saved?.pointTerms?.[m.id])||m.pointOffers?.[p]||pointTerms(m,p,{mode:'weighted',scoring:'difficulty-v2',correct:1,wrong:-1,...rules});
+    const amount=n=>Number.isFinite(n)?(n>0?'+':n<0?'−':'')+Number(Math.abs(n).toFixed(2)).toLocaleString('it-IT'):'—';
+    const gain=terms.correct===null?'?':amount(terms.correct),loss=amount(terms.wrong);
+    label=(terms.correct===null?'punti in attesa della quota':gain+' punti se corretto')+', '+loss+' punti se sbagliato';
+    points='<small class="v2-odd-points"><em class="points-gain">'+esc(gain)+'</em><span aria-hidden="true"> / </span><em class="points-loss">'+esc(loss)+'</em> pt</small>';
+  }
   return '<button type="button" class="v2-odd' + (on ? ' is-on' : '') + '" data-pick="' + esc(m.id) + '" data-value="' + esc(p) + '"' +
-    (closed ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(m.home + ' – ' + m.away + ': ' + show(p)+'; '+(terms.correct===null?'punti in attesa della quota':gain+' punti se corretto')+', '+loss+' punti se sbagliato') + '">' +
-    '<b>' + esc(show(p)) + '</b><span' + (!pointsOnly && Number.isFinite(odd) ? ' data-odd="' + esc(fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '')) + '"' : '') + '>' + (pointsOnly ? 'Solo punti' : Number.isFinite(odd) ? 'Quota '+fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '') : '?') + '</span>'+points+'</button>';
+    (closed ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(m.home + ' – ' + m.away + ': ' + show(p)+'; '+label) + '">' +
+    '<b>' + esc(show(p)) + '</b><span' + (!pointsOnly&&quote?' data-odd="'+esc(quote)+'"':'') + '>' + esc(pointsOnly?'Solo punti':quote?label:'?') + '</span>'+points+'</button>';
 }
 
 const kickoffFormatter=new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',weekday:'short',day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
