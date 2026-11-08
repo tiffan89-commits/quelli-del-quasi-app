@@ -42,7 +42,7 @@ test('partial slip has a timer per event and no fixed stake cap; six Fanta outco
  assert.equal(doc.querySelector('[data-pick=m1]').disabled,false);
  assert.equal(doc.querySelector('#stake').hasAttribute('max'),false);
  assert.equal(doc.querySelector('#save-slip').disabled,false);
- assert.match(doc.querySelector('[data-os-footer]').textContent,/Gioco fantasy con solo crediti virtuali/);
+ assert.match(doc.querySelector('[data-os-footer]').textContent,/Quota in arrivo/);
  r.matches=r.matches.slice(0,6);r.publicSlips=[{uid:'me',picks:{m1:'1'},stake:50}];r.closed=true;
  const other=parseHTML(barSlipsView({l:{members:[]},r,uid:'me',fmt:String,rounds:[r],sourceOf:()=> 'fantacalcio',compact:true})).document;
  assert.equal(other.querySelectorAll('.bar-bet').length,6);

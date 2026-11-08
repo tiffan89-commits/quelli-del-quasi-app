@@ -16,7 +16,7 @@ export function placeAppFooter(root){
  if(nav&&!nav.querySelector('[data-app-footer]')){
   const footer=doc.createElement('small');
   footer.dataset.appFooter='true';
-  footer.textContent=`© ${new Date().getFullYear()} QUELLI DEL QUASI.`;
+  footer.textContent=`© ${new Date().getFullYear()} QUELLI DEL QUASI. Gioco fantasy con solo crediti virtuali`;
   nav.append(footer);
  }
  if(context.links){

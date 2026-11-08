@@ -50,9 +50,9 @@ test('an unpriced preview allows local picks but blocks confirmation and removes
  assert.match(document.querySelector('.v2-state').textContent,/Anteprima/);
  assert.equal(document.querySelector('[data-v2-slip-total]').textContent,'?');
  assert.equal(document.querySelector('[data-pick="2"][data-value="1"]>span').textContent,'?');
- assert.match(document.querySelector('[data-os-footer]').textContent,/\? = Quota in arrivo.*Gioco fantasy con solo crediti virtuali/);
- assert.equal(document.querySelector('.slip-odds-legend').hidden,false);
- assert.equal(parseHTML(view(round())).document.querySelector('.slip-odds-legend').hidden,true);
+ assert.match(document.querySelector('[data-os-footer]').textContent,/^\? = Quota in arrivo$/);
+ assert.equal(document.querySelector('.slip-play-note').hidden,false);
+ assert.equal(parseHTML(view(round())).document.querySelector('.slip-play-note').hidden,true);
  assert.doesNotMatch(document.body?.textContent||document.toString(),/una scelta per partita|Punti per gli esiti|Regolamento/);
  const standard=parseHTML(renderSlipV2({...options,round:r})).document;
  assert.equal(standard.querySelectorAll('[data-pick]:not([disabled])').length,0);

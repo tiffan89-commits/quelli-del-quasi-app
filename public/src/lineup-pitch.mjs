@@ -23,7 +23,7 @@ function availablePlayers(team){
  return `<details class="lineup-bench"><summary>Altri giocatori a disposizione · ${players.length}</summary><div class="lineup-role-tabs" role="group" aria-label="Filtra i giocatori disponibili per ruolo">${roles.map(([role,label])=>`<button type="button" data-lineup-role="${role}" aria-pressed="${role==='all'}">${label} <small>${role==='all'?players.length:players.filter(p=>availablePlayerRole(p)===role).length}</small></button>`).join('')}</div><div class="bench-stickers">${players.map(p=>sticker(p,team,true)).join('')}</div><p class="lineup-role-empty muted" data-lineup-role-empty hidden>Non ci sono altri giocatori disponibili in questo ruolo.</p></details>`;
 }
 function sticker(p,team,available=false,bench=false){
- const started=!!team.started||hasPitchPerformance(p);
+ const started=(!team.fantasy&&!!team.started)||hasPitchPerformance(p);
  const probability=!started&&Number.isFinite(p.probability)&&p.probability>=0&&p.probability<=100?(p.probabilityKind==='official'?p.probability:roundPresenceEstimate(p.probability)):null;
  const club=!started&&!team.fantasy&&p.club&&!sameClub(p.club,team.team)?'<small class="pitch-player-club">'+esc(p.club)+'</small>':'';
  const kit=team.fantasy?{vs:p.next?.opponent??p.opponent,home:p.next?.home??p.home}:team.kit;
@@ -88,7 +88,7 @@ export function setPitchFlip(button,bench){
  button.querySelector('span').textContent=bench?(button.dataset.pitchBackLabel||'Titolari'):button.dataset.pitchFlip;
 }
 
-function pagedLineup(l,title,notes,details,detailsAvailable){
+function pagedLineup(l,title,notes,details,detailsAvailable,showExtras=true){
  const teams=l.teams.map((team,i)=>{
   const benchLabel=l.kind==='probable'&&!team.started?'A disposizione':'Panchina';
   return `<section class="pitch-team" data-pitch-team="${i}" aria-label="Formazione ${esc(team.team)}">
@@ -99,11 +99,11 @@ function pagedLineup(l,title,notes,details,detailsAvailable){
  return `<section class="lineup-section lineup-paged">${title?`<h3>${title}</h3>`:''}
    ${l.teams.length?`<div class="pitch-tabs" role="tablist" aria-label="Squadra da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div>`:''}
    <div class="pitch-slides" aria-label="Titolari, panchine e dettagli">${teams}${details!==null?`<section class="pitch-details-panel" aria-label="Dettagli della partita" ${detailsAvailable?'':'hidden'}>${details}</section>`:''}</div>
-   ${details!==null?'':l.teams.map((t,i)=>`<div data-pitch-extras="${i}" ${i?'hidden':''}>${pitchExtras(t,l.kind)}</div>`).join('')}${notes}
+   ${details!==null||!showExtras?'':l.teams.map((t,i)=>`<div data-pitch-extras="${i}" ${i?'hidden':''}>${pitchExtras(t,l.kind)}</div>`).join('')}${notes}
  </section>`;
 }
 
-export function renderLineup(data,{paged=false,details=null,detailsAvailable=true}={}){
+export function renderLineup(data,{paged=false,details=null,detailsAvailable=true,showExtras=true}={}){
  const source=recoverOfficialPitchLayout(data.lineups,data.details?.sourceLineups),started=['1H','HT','2H','LIVE','FT','AET','PEN','ET'].includes(data.status)||source?.started;
  const homeTeam=data.home??source?.teams[0]?.team,awayTeam=data.away??source?.teams[1]?.team;
  const l=source?{...source,teams:source.teams.map((t,i)=>{
@@ -113,7 +113,7 @@ export function renderLineup(data,{paged=false,details=null,detailsAvailable=tru
  if(!l)return paged&&details!==null?pagedLineup({teams:[]},'','',details,detailsAvailable):'<section class="card"><h3>Probabili formazioni</h3><p class="muted">Formazioni non ancora disponibili.</p></section>';
  const title=l.kind==='fantasy'?'Le formazioni':l.kind==='official'?'Formazioni ufficiali':'Probabili formazioni';
  const notes=`<p class="lineup-source">${l.kind==='fantasy'?(l.complete?'Definitive':l.teams.some(t=>t.players.length)?'Formazioni consegnate':'In attesa delle formazioni'):l.kind==='official'?'Formazione confermata':['minutes-presence-v1','recent-form-v2','recent-form-v3'].includes(l.method)?'Presenza stimata':'Stima basata su '+(l.sourceCount||1)+' fonti'+((l.sourceCount||1)<5?' · copertura parziale':'')}${l.updatedAt?' · '+new Date(l.updatedAt).toLocaleString('it-IT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):''}</p>${l.kind==='probable'?'<small class="lineup-method">Presenza stimata da minuti, titolarità e forma recente. Verde: formazione ufficiale.</small>':''}${l.kind==='probable'&&Number(l.accuracy?.validMatches)>=10&&Number.isFinite(l.accuracy?.accuracyPct)?'<p class="lineup-accuracy">Accuratezza degli 11: <strong>'+Number(l.accuracy.accuracyPct).toLocaleString('it-IT',{maximumFractionDigits:1})+'%</strong> · su '+Math.floor(l.accuracy.validMatches)+' partite</p>':''}`;
- if(paged)return pagedLineup(l,details!==null&&l.kind==='official'?'':title,notes,details,detailsAvailable);
+ if(paged)return pagedLineup(l,details!==null&&l.kind==='official'?'':title,notes,details,detailsAvailable,showExtras);
  return `<section class="lineup-section"><h3>${title}</h3><div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
 }
 export function bindLineupPitch(root,{onPage,autoHeight=true}={}){

@@ -11,16 +11,14 @@ const NOTIFY = [
   ['auction', 'Asta', 'Quando un\'asta è programmata, quando si apre e quando tocca a te chiamare'],
 ];
 
+export function renderFantaNotificationSettings(settings,{disabled=false,compact=false}={}) {
+ const n=settings?.notify||{};
+ return `<section class="fanta-block is-first${compact?' fanta-notify-compact':''}"><h2>Notifiche del Fanta</h2><ul class="fanta-io-toggles">${NOTIFY.map(([key,title,description])=>`<li><label><span><b>${title}</b><small${compact?' class="sr-only"':''}>${description}</small></span><input type="checkbox" role="switch" class="fanta-switch" data-notify="${key}" ${n[key]!==false?'checked':''} ${disabled?'disabled':''}></label></li>`).join('')}</ul></section>`;
+}
+
 export function renderIo(me, leagues, activeLeagueId, ui = {}, demo = false) {
   if (!me) return '<div class="fanta-loading" role="status">Carichiamo il tuo profilo…</div>';
-  const n = me.settings?.notify || {};
-  const notifications=`    <section class="fanta-block is-first${ui.settingsOnly?' fanta-notify-compact':''}"><div class="dash-section-head"><div><h2>Notifiche del Fanta</h2><small>${ui.saved ? 'Salvate ✓' : 'Scegli quali avvisi ricevere'}</small></div></div>
-      <ul class="fanta-io-toggles">${NOTIFY.filter(([k])=>!ui.pilot||k!=='auction').map(([k, title, sub]) => `<li><label>
-        <span><b>${title}</b><small${ui.settingsOnly?' class="sr-only"':''}>${sub}</small></span>
-        <input type="checkbox" class="fanta-switch" data-notify="${k}"${n[k] ? ' checked' : ''}>
-      </label></li>`).join('')}</ul>
-    </section>
-`;
+  const notifications=renderFantaNotificationSettings(me.settings,{compact:ui.settingsOnly});
   if(ui.settingsOnly)return notifications;
   return `<div class="fanta-io">
     <header class="fanta-sq-head"><span class="eyebrow">Il tuo profilo</span><h1>${esc(me.user.name)}</h1>${me.user.username?`<p>@${esc(me.user.username)}</p>`:""}</header>

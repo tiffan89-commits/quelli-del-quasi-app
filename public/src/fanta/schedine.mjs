@@ -1,3 +1,4 @@
+import {fantasyMatchHeadline} from '../bar-fanta-match.mjs';
 import {createSportsPush} from '../sports-push.mjs';
 import {openMatchPage} from '../match-page.mjs';
 import {patchFantasyMatch} from '../fantasy-live-detail.mjs';
@@ -33,8 +34,8 @@ function nativeSlipMatch(match,view){
    ...(team.bench||[]).map(p=>({...p,starter:false})),
   ]};
  });
- return {...match,status,...(score.every(Number.isFinite)?status==='FT'?{score}:{liveScore:score}:{}),
-  fantasyPoints:[view.home.total,view.away.total],details:{...match.details,teams,complete:view.official}};
+ return {...match,homeTeam:view.home.team,awayTeam:view.away.team,status,...(score.every(Number.isFinite)?status==='FT'?{score}:{liveScore:score}:{}),
+  fantasyPoints:[view.home.total,view.away.total],details:{...match.details,teams,started:status==='LIVE'||status==='FT',complete:view.official}};
 }
 export function createFantaSlips({services,redraw,loadMatchup,teamResolver,storage=globalThis.localStorage,now=()=>Date.now()}){
  let sub='mine',selection=null,expanded=null,message='',saving=false,detail=null,scope=null,lastView=null;
@@ -61,7 +62,7 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   const match=round?.matches?.find(m=>m.id===detail);if(!match)return '';
   const cached=detailCache.get(scope+':'+round.id+':'+match.id);
   const m=cached?.data?nativeSlipMatch(match,cached.data):match;
-  return `<section class="fanta-block" data-slip-detail><button type="button" class="secondary" data-fanta-slip-detail-close>Chiudi dettaglio</button><h2 class="match-page-title">${esc(m.home)} – ${esc(m.away)}</h2><p data-live-detail-score>${m.score?'Risultato: '+m.score.join(' – '):m.liveScore?'Live: '+m.liveScore.join(' – '):'In attesa del calcio d’inizio.'}</p><p data-fantasy-points ${m.fantasyPoints?.some(Number.isFinite)?'':'hidden'}>${m.fantasyPoints?.some(Number.isFinite)?'Fantapunti: '+m.fantasyPoints.map(fmt).join(' – '):''}</p>${m.details?.teams?renderFantasyLineup(m.details,{paged:true}):`<p role="status">${esc(cached?.error||'Carichiamo le formazioni…')}</p>`}</section>`;
+  return `<section class="fanta-block" data-slip-detail>${fantasyMatchHeadline(m,name=>'<span class="team-label">'+teamLogo((name===m.home?m.homeTeam:m.awayTeam)||teamResolver?.(name)||{name},{eager:true})+'<span>'+esc(name)+'</span></span>','data-fanta-slip-detail-close')}<p data-fantasy-points ${m.fantasyPoints?.some(Number.isFinite)?'':'hidden'}>${m.fantasyPoints?.some(Number.isFinite)?'Fantapunti: '+m.fantasyPoints.map(fmt).join(' – '):''}</p>${m.details?.teams?renderFantasyLineup(m.details,{paged:true,showExtras:false}):`<p role="status">${esc(cached?.error||'Carichiamo le formazioni…')}</p>`}</section>`;
  }
 
  const signature=data=>JSON.stringify([scope,sub,data.round?.id,editingClosed(data.round,now()),data.round?.eventBetting?data.round.matches.map(m=>[editingEventLocked(data.round,m,now()),m.kickoff||m.officialKickoff]):null,data.eligible.map(r=>r.id)]);

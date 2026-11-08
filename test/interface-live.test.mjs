@@ -1,3 +1,4 @@
+import {renderFantaNotificationSettings} from '../public/src/fanta/io.mjs';
 import {clubShirt} from '../public/src/club-crest.mjs';
 import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
@@ -40,7 +41,7 @@ import { calendarSections } from "../public/src/calendar-order.mjs";
 import { leagueDashboard, countdownLabel } from '../public/src/league-dashboard.mjs';
 import { avatarSvg, AVATAR_OPTIONS } from '../public/src/avatar.mjs';
 import {quasiScene,showQuasi} from '../public/src/quasi-scene.mjs';
-import {barSlipsView,barVerdictPatch,barProfileView} from '../public/src/bar-slips.mjs';
+import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from '../public/src/bar-slips.mjs';
 import {rosterView} from '../public/src/quasi-roster.mjs';
 import {achievementBoard} from '../public/src/achievement-board.mjs';
 import {renderLineup} from '../public/src/lineup-pitch.mjs';
@@ -110,7 +111,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     readAppRoute,writeAppRoute,saveOnce,applySlipReceipt,loadAppStyles(){},displayCache,clearDisplayCaches,retainAppHeader(){},barModeSwitch,preferredFanta:()=>false,leaveFanta(){},clearFantaSessions(){},enterFanta(){fantaEntries++;},
     createSportsPush(){return {start(){},wake(){},stop(){}};},trackAuctionBadges(){},paintAuctionBadges(){},
     createLiveChannel(){return {start(){},wake(){},stop(){}};},requestJson:async()=>{requestCount++;if(blockRequests)return new Promise(resolve=>pendingRequests.push(resolve));return state;},
-    barSlipsView,barVerdictPatch,barProfileView,
+    barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,renderFantaNotificationSettings,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
     ...v2Tabs, leagueActions,barHomeInvite,settingsLogout,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
@@ -125,7 +126,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     clearAdminState() {},
     calendarSections,
     leagueDashboard, countdownLabel, quasiScene, rosterView, achievementBoard, avatarSvg, AVATAR_OPTIONS, whatsappInvite,renderAppInvite,bindAppInvites,
-    fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},showQuasi,barSlipsView,barVerdictPatch,barProfileView,
+    fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},showQuasi,barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,
     bindRoster(){},openQuasiStudio(){},renderLineup,bindLineupPitch(){},
     rewardsView,roomSvg,REWARD_SLOTS,
     bindProgression(){},bindRewards(){},bindStyledSelects(){},syncStyledSelects(){},closeStyledSelect(){},pushSupported(){return false;},enableLeagueNotifications(){},
@@ -234,7 +235,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.equal(html.includes("Il Marcatore"), false);
   vm.runInContext("page='profilo';render()", ctx);
   assert.doesNotMatch(html, /Movimenti e giornate archiviate/);
-  assert.match(html, /inline-support/);
+  assert.match(html, /data-president-section="assistenza"/);
   assert.doesNotMatch(
     html,
     /profile-regulation|id="switch"|id="support-modal"/,
@@ -334,8 +335,8 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='admin';render()",ctx);
   assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita nella tua lega/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);
   vm.runInContext("page='profilo';render()",ctx);
-  assert.ok(html.indexOf('inline-support')<html.indexOf('profile-logout'));
-  assert.ok(html.indexOf('inline-support')>html.indexOf('profile-reminder-settings'));
+  assert.ok(html.indexOf('id="support-form"')<html.indexOf('profile-logout'));
+  assert.ok(html.indexOf('data-president-section="assistenza"')>html.indexOf('data-president-section="avvisi"'));
   vm.runInContext("state={user:null,leagues:[]};page='profilo'",ctx);
   workerMessage({data:{type:'open-slip',league:state.leagues[0].id,round:state.leagues[0].rounds[0].id}});
   await vm.runInContext('refresh(true)',ctx);

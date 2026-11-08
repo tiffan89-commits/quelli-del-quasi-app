@@ -44,6 +44,7 @@ import {
   requestAccountMail,
   activateAccount,
   resetAccountPassword,
+  changeAccountPassword,
   setAccountEmail,
 } from "../../lib/account.mjs";
 import { mailReady } from "../../lib/mail.mjs";
@@ -153,7 +154,7 @@ export function createApi({
         .split("/")
         .filter(Boolean)
         .at(-1);
-    const authRoute=activityRoute.startsWith('social-')||['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email'].includes(activityRoute);
+    const authRoute=activityRoute.startsWith('social-')||['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email','change-password'].includes(activityRoute);
     const membershipRoute=['create','join','member-remove','member-restore','league-prizes'].includes(activityRoute);
     const profileRoute=['profile','profile-avatar','profile-reminders','profile-email-reminders','support','fantacalcio-waitlist'].includes(activityRoute);
     const deliverAccount=async jobId=>deliverMail!==deliverPendingMail?deliverMail({jobId,transactionFn:authTransact,env}):dispatchMail(jobId,{env});
@@ -448,12 +449,13 @@ export function createApi({
             "activate",
             "reset-password",
             "set-email",
+            "change-password",
             "support",
             "fantacalcio-waitlist",
           ].includes(route)
         ) {
           const ip = sha(context.ip || req.headers.get('x-nf-client-connection-ip') || 'identity:'+String(p.identity||p.username||p.token||u?.id||'unknown').trim().toLowerCase()),
-            key = `${route}:${ip}:${sha(String(p.username||p.identity||p.email||p.token||u?.id||'').trim().toLowerCase())}`;
+            key = `${route}:${ip}:${sha(String(route==='change-password'?u?.id||'':p.username||p.identity||p.email||p.token||u?.id||'').trim().toLowerCase())}`;
           const rate = await c.query(
             "INSERT INTO fanta_login_limits(key) VALUES($1) ON CONFLICT(key) DO UPDATE SET attempts=CASE WHEN fanta_login_limits.window_start < now()-interval '15 minutes' THEN 1 ELSE fanta_login_limits.attempts+1 END,window_start=CASE WHEN fanta_login_limits.window_start < now()-interval '15 minutes' THEN now() ELSE fanta_login_limits.window_start END RETURNING attempts",
             [key],
@@ -463,6 +465,7 @@ export function createApi({
             "forgot-password",
             "resend-verification",
             "set-email",
+            "change-password",
           ].includes(route)
             ? 10
             : 30;
@@ -529,6 +532,11 @@ export function createApi({
                   "Password aggiornata. Accedi con la nuova password. Riceverai un’email di conferma.",
               },
             };
+          }
+          if (route === "change-password") {
+            if(!u)fail("Accedi prima",401);
+            if(!changeAccountPassword(s,u,token,p))return {data:{error:"Password attuale errata"},status:403};
+            return {data:{ok:true}};
           }
           if (route === "set-email") {
             if (!u || u.demo) fail("Accedi con un account registrato", 401);

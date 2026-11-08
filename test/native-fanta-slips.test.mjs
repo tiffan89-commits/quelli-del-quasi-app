@@ -77,7 +77,9 @@ test('opening a native slip match reads saved XIs once, renders club jerseys and
  resolve(matchup);await pending;
  const page=f.root.ownerDocument.getElementById('match-page-root');
  assert.match(page.innerHTML,/>ROSSI<\/text>/);
- assert.match(page.textContent,/Gol ×2/);
+ assert.equal(page.querySelectorAll('.is-goals').length,2);
+ assert.equal(page.querySelector('.lineup-votes'),null);
+ assert.equal(page.querySelectorAll('.match-headline .team-logo').length,2);
  assert.match(page.textContent,/Formazione non ancora salvata/);
  assert.equal(page.querySelectorAll('.fanta-shirt-back').length,2);
  const {document:giornata}=parseHTML(renderGiornata({round:{round:{number:11,state:'in-corso'},rounds:[],matchups:[]},matchup,side:'home',view:'campo'}));

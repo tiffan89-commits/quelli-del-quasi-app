@@ -42,13 +42,12 @@ test('live fantasy score and player votes patch in place, preserving formations 
  const html=fantasyMatchView(match,round,esc,(h,a)=>h+' – '+a,String);
  assert.match(html,/1 – 0/);assert.match(html,/Fantapunti live/);
  const {document}=parseHTML('<html><body><dialog>'+html+'</dialog></body></html>'),root=document.querySelector('dialog');
- root.querySelector('.live-score').setAttribute('data-live-detail-score','');
- const section=root.querySelector('.lineup-section'),pitch=root.querySelector('.pitch-slides'),accordion=root.querySelector('.lineup-votes');accordion.open=true;
+ const section=root.querySelector('.lineup-section'),pitch=root.querySelector('.pitch-slides');assert.equal(root.querySelector('.lineup-votes'),null);
  const updated=structuredClone(match);updated.liveScore=[2,0];updated.fantasyPoints=[74,60];updated.details.teams[0].players[0]={id:'p',grade:7,fantagrade:10,events:[{label:'Gol'},{label:'Gol'}]};
  patchFantasyMatch(root,updated);
- assert.equal(root.querySelector('.lineup-section'),section);assert.equal(root.querySelector('.pitch-slides'),pitch);assert.equal(accordion.open,true);
- assert.equal(root.querySelector('.live-score').textContent,'2 – 0');assert.match(root.querySelector('[data-fantasy-points]').textContent,/74 – 60/);
- assert.equal(root.querySelector('[data-fantasy-grade="pitch"]').textContent,'10');assert.equal(root.querySelector('[data-fantasy-events]').textContent,'Gol ×2');
+ assert.equal(root.querySelector('.lineup-section'),section);assert.equal(root.querySelector('.pitch-slides'),pitch);assert.equal(root.querySelector('.lineup-votes'),null);
+ assert.equal(root.querySelector('[data-live-detail-score]').textContent,'2 – 0');assert.match(root.querySelector('[data-fantasy-points]').textContent,/74 – 60/);
+ assert.equal(root.querySelector('[data-fantasy-grade="pitch"]').textContent,'10');assert.equal(root.querySelectorAll('.is-goals').length,2);
 });
 test('DB-only minute snapshot carries fantasy points and revisions without downloading all formations',async()=>{
  const f=await fixtureDb();try{

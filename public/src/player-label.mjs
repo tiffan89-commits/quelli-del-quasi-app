@@ -1,15 +1,21 @@
 import {KITS} from './fanta/maglie.mjs';
 import {esc,fixtureTime} from './fanta/formato.mjs';
-// Prefer the provider's explicit family name. Short display names remain untouched.
+const particles=/^(?:d[aeiou]|de|del|della|di|dos|das|van|von|der|den|el|al|la|le)$/i;
+const abbreviated=word=>/^\p{L}\.$/u.test(word);
 export function playerSurname(player){
  const p=typeof player==='string'?{name:player}:player||{};
  const family=p.surname||p.lastName||p.lastname||p.last_name;
- if(family)return String(family).trim();
- const name=String(p.name||'').trim().replace(/^(?:\p{Lu}\.\s*)+/u,'').replace(/\s+(?:\p{Lu}\.)+$/u,'');
- if(name==='Juan Jesus'||!name.includes(' '))return name;
- const words=name.split(/\s+/),parts=[words.pop()];
- while(words.length&&/^(?:d[aeiou]|de|del|della|di|dos|das|van|von|der|den|el|al|la|le)$/i.test(words.at(-1)))parts.unshift(words.pop());
- return parts.join(' ');
+ const words=String(family||p.name||'').trim().split(/\s+/).filter(Boolean);
+ if(!words.length)return "";
+ if(!family){
+  if(words.length>1&&abbreviated(words.at(-1)))words.pop();
+  else if(words.length>1&&!abbreviated(words[0])&&!particles.test(words[0])&&!/^(Kolo Muani|Zambo Anguissa)$/i.test(words.join(" ")))words.shift();
+  else if(words.length>1&&abbreviated(words[0]))words.shift();
+ }
+ const name=[words.shift()];
+ while(words.length&&particles.test(name.at(-1)))name.push(words.shift());
+ if(words.length&&abbreviated(name.at(-1)))name.push(words.shift());
+ return name.join(' ').replace(/&(?:apos|#0*39|#x0*27);?|[^\p{L}\p{M}\p{N}\s.-]/giu,'');
 }
 export const playerJersey=p=>p?.jersey||p?.number||p?.seasonStats?.games?.number||'';
 

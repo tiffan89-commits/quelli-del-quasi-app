@@ -5,6 +5,10 @@
 
 # Unreleased
 
+- Le dirette delle schedine Fanta mostrano il punteggio al centro degli stemmi. Il calendario Squadra apre intorno alla giornata corrente e permette di caricare quattro giornate alla volta in entrambe le direzioni.
+- Il retro delle schedine del Bar riprende la cartolina, con Quasi al centro, sottotitoli variati e rischio accanto al nome. Data e orario restano sotto le squadre, con il conto alla rovescia a lato.
+- Account, Avvisi e Assistenza sono condivisi da Bar e Fanta. Gli account con password locale possono cambiarla. I promemoria via email partono due ore prima e rispettano il consenso.
+
 - Menu di selezione leggibili, con freccia centrata e più spazio per le opzioni. Le immagini pubbliche ricorrenti vengono riutilizzate dalla cache locale.
 
 - Le schedine accettano una selezione di partite, ciascuna giocabile fino al suo calcio d’inizio. La puntata usa il saldo disponibile e il ritorno considera solo le partite pronosticate. Le partite saltate entrano nello sfottò del Bar.

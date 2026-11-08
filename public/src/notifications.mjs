@@ -25,7 +25,7 @@ export function requestChatConsent({ user, league }) {
   // Called directly from the chat-opening click, before rendering or awaiting network requests.
   return Notification.requestPermission().catch(() => "default");
 }
-export async function enableLeagueNotifications({ league, user, api, config }) {
+export async function enableLeagueNotifications({ league, user, api, config, notifyChat = true }) {
   if(user?.demo)throw Error('Le notifiche sono simulate nella demo.');
   if (!pushSupported() || Notification.permission !== "granted")
     throw Error("Autorizza le notifiche per questo dispositivo.");
@@ -46,6 +46,7 @@ export async function enableLeagueNotifications({ league, user, api, config }) {
   await api("chat-subscribe", {
     league: league.id,
     subscription: subscription.toJSON(),
+    ...(!notifyChat?{notifyChat:false}:{}),
   });
   if (user)
     try {

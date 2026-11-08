@@ -40,6 +40,14 @@ function option(m, p, picks, closed, esc, fmt, pointsOnly,round) {
     '<b>' + esc(show(p)) + '</b><span' + (!pointsOnly && Number.isFinite(odd) ? ' data-odd="' + esc(fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '')) + '"' : '') + '>' + (pointsOnly ? 'Solo punti' : Number.isFinite(odd) ? 'Quota '+fmt(odd) + (m.oddsEstimated?.[p] ? '*' : '') : '?') + '</span>'+points+'</button>';
 }
 
+const kickoffFormatter=new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',weekday:'short',day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+export function barKickoff(value){
+ if(!Number.isFinite(Date.parse(value)))return '';
+ const parts=Object.fromEntries(kickoffFormatter.formatToParts(new Date(value)).map(({type,value})=>[type,value]));
+ const capital=text=>text[0].toUpperCase()+text.slice(1).replace(/\.$/,'');
+ return [capital(parts.weekday),parts.day,capital(parts.month),parts.year,parts.hour+':'+parts.minute].join(' ');
+}
+
 export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity, openMatch = null, esc, fmt, date, fantasyMeta, teamLabel=slipTeamLabel }) {
   if (!round) return '<section class="card empty"><h1>La prossima è quella buona.</h1><p>La prossima schedina sarà disponibile a breve.</p></section>';
   const partial=round.eventBetting===true,closed=editingClosed(round),preview=round.preview===true&&!closed,ready=(partial?!closed:roundAvailability(round)==='aperta')||preview, fanta = sourceOf(round) === 'fantacalcio', pointsOnly = round.pointsOnly === true;
@@ -52,9 +60,10 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = Infinity
     const extraOn=EXTRA.includes(picks[m.id]),open=openMatch===m.id,locked=editingEventLocked(round,m),at=eventDeadline(round,m);
     const clock=partial&&!locked?`<small class="slip-event-clock" data-slip-event-at="${at}" title="Tempo per giocare">${eventCountdown(at)}</small>`:'';
 
-    const meta = fanta && fantasyMeta ? fantasyMeta(m) : (m.kickoff ? date(m.kickoff) : '');
-    const live = m.status === 'LIVE', status = live ? 'In corso' : m.score ? 'Risultato finale' : (meta || '');
-    return '<article class="v2-match" data-match-card="' + esc(m.id) + '" data-result-score="' + esc(JSON.stringify(live ? m.liveScore || null : m.score || null)) + '"><button type="button" class="v2-match-head match-link" data-detail="' + esc(m.id) + '" aria-label="' + esc(m.home+' – '+m.away) + '"><div><b class="slip-teams">' + teamLabel(m.home,{home:true,vs:m.away,short:teamCode(m.home)}) + '<span class="slip-versus">–</span>' + teamLabel(m.away,{home:false,vs:m.home,short:teamCode(m.away)}) + '</b><small data-match-status>' + esc(status) + '</small>'+clock+'</div><span class="inline-result" data-inline-result aria-live="polite">' + inlineResultView(m) + '</span></button>' +
+    const kickoff=m.officialKickoff||m.kickoff;
+    const meta=fanta?(fantasyMeta?.(m)||(kickoff?date(kickoff):'')):barKickoff(kickoff);
+    const live = m.status === 'LIVE', status = fanta?(live?'In corso':m.score?'Risultato finale':meta):meta;
+    return '<article class="v2-match" data-match-card="' + esc(m.id) + '" data-result-score="' + esc(JSON.stringify(live ? m.liveScore || null : m.score || null)) + '"><button type="button" class="v2-match-head match-link" data-detail="' + esc(m.id) + '" aria-label="' + esc(m.home+' – '+m.away) + '"><div><b class="slip-teams">' + teamLabel(m.home,{home:true,vs:m.away,short:teamCode(m.home)}) + '<span class="slip-versus">–</span>' + teamLabel(m.away,{home:false,vs:m.home,short:teamCode(m.away)}) + '</b><small data-match-status>' + esc(status) + '</small></div><span class="slip-match-indicator">'+clock+'<span class="inline-result" data-inline-result aria-live="polite">' + inlineResultView(m) + '</span></span></button>' +
       '<div class="v2-odds-main">' + MAIN.map(p => option(m, p, picks, locked||!ready, esc, fmt, pointsOnly,round)).join('') +
       (pointsOnly ? '' : '<button type="button" class="v2-more' + (extraOn ? ' is-on' : '') + '" data-v2-more="' + esc(m.id) + '" data-short-pick="' + esc(open?'−':extraOn?pickCode(picks[m.id]):'+') + '" aria-expanded="' + open + '" aria-label="' + esc(extraOn?'Altri mercati · '+show(picks[m.id]):'Altri mercati') + '">' + (open ? '–' : '+') + '</button>') + '</div>' +
       (open && !pointsOnly ? '<div class="v2-odds-extra">' + EXTRA.map(p => option(m, p, picks, locked||!ready, esc, fmt, pointsOnly,round)).join('') + '</div>' : '') +
@@ -97,7 +106,7 @@ export function patchSlipV2(root,options){
   if(extra&&nextExtra)patchRegion(extra,nextExtra.outerHTML);
   else if(extra)extra.remove();else if(nextExtra)odds.after(nextExtra);
  }
- current.querySelector('.slip-odds-legend').hidden=fresh.querySelector('.slip-odds-legend').hidden;
+ current.querySelector('.slip-play-note').hidden=fresh.querySelector('.slip-play-note').hidden;
  if(bar){patchRegion(bar,nextBar.outerHTML);const input=bar.querySelector('#stake'),next=nextBar.querySelector('#stake');if(input&&next){input.disabled=next.disabled;if(doc.activeElement!==input)input.value=next.value;}}
  return true;
 }

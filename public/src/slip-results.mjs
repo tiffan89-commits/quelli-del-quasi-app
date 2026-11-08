@@ -29,7 +29,7 @@ export function patchSlipResults(root,round,picks,closed){
   const m=round.matches.find(m=>m.id===(row.dataset.matchCard||row.dataset.resultRow));if(!m)continue;
   const score=m.status==='LIVE'?m.liveScore:m.score,previous=row.dataset.resultScore?JSON.parse(row.dataset.resultScore):null;
   const result=row.querySelector('[data-inline-result]');if(result){const html=inlineResultView(m);if(result.innerHTML!==html)result.innerHTML=html;}
-  const status=row.querySelector('[data-match-status]');if(status&&(m.status==='LIVE'||m.score))status.textContent=m.status==='LIVE'?'In corso':'Risultato finale';
+  const status=row.querySelector('[data-match-status]');if(status&&row.closest('[data-slip-source]')?.dataset.slipSource!=='seriea'&&(m.status==='LIVE'||m.score))status.textContent=m.status==='LIVE'?'In corso':'Risultato finale';
   if(increasedScore(previous||(m.status==='LIVE'?[0,0]:null),score)){
    row.classList.remove('goal-flash');void row.offsetWidth;row.classList.add('goal-flash');
    row.addEventListener('animationend',()=>row.classList.remove('goal-flash'),{once:true});
@@ -49,5 +49,5 @@ export function patchSlipResults(root,round,picks,closed){
 }
 
 export function slipNotice(missingOdds=false){
- return `<p class="tiny muted slip-play-note" data-os-footer><span class="slip-odds-legend"${missingOdds?'':' hidden'}>? = Quota in arrivo <i aria-hidden="true">·</i> </span>Gioco fantasy con solo crediti virtuali</p>`;
+ return '<p class="tiny muted slip-play-note" data-os-footer'+(missingOdds?'':' hidden')+'>? = Quota in arrivo</p>';
 }

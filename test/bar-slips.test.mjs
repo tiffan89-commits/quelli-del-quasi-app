@@ -47,9 +47,9 @@ test('records without the short texts are regenerated once',()=>{
 });
 test('profile back keeps risk beside the name and omits evolution and disclaimer',()=>{
  const s=fixture();updatePlayerProfiles(s);const p=analysisRoundSummary(s,'l','r',['a'])[0];
- const html=barProfileView({...p,evolution:'Test evolution',disclaimer:'Test disclaimer'},{name:'Anna',avatar:{},slip:{stake:10},fmt});
- assert.match(html,/Anna/);assert.match(html,/Puntata/);assert.match(html,/bar-dossier-quip/);assert.ok(html.replace(/<svg[\s\S]*?<\/svg>/g,'').length<6000);assert.ok(html.length<16000);
- assert.match(html,/bar-dossier-identity"><p class="bar-dossier-name">Anna<\/p><span class="bar-dossier-risk"/);
+ const html=barProfileView({...p,evolution:'Test evolution',disclaimer:'Test disclaimer'},{name:'Anna',avatar:{},slip:s.rounds[0].publicSlips[0],round:s.rounds[0],fmt});
+ assert.match(html,/Anna/);assert.match(html,/bar-stub/);assert.match(html,/bar-dossier-quip/);assert.ok(html.replace(/<svg[\s\S]*?<\/svg>/g,'').length<6000);assert.ok(html.length<16000);
+ assert.match(html,/bar-dossier-identity"><h3 class="bar-dossier-name">Anna<\/h3><span class="bar-risk-badge"[^>]*>Rischio \d+\/100/);
  assert.doesNotMatch(html,/<dialog|id="close-modal"|Test evolution|Test disclaimer|bar-hists/);
 });
 

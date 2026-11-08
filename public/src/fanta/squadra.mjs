@@ -1,9 +1,10 @@
+import {playerSurname} from '../player-label.mjs';
 import {playerVisual} from './player-visual.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderPitchFlip} from '../lineup-pitch.mjs';
 // Pagina "Squadra": formazione della giornata sul campo (modulo, titolari, panchina, salvataggio) e rosa.
 // La bozza della formazione vive solo nel browser finché non si salva; il server controlla scadenza e regole.
-import { esc, pts, countdown, timeAgo, fixtureTime, resultsFirst } from './formato.mjs';
+import { esc, pts, countdown, timeAgo, fixtureTime } from './formato.mjs';
 import { shirt, KITS } from './maglie.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
@@ -125,20 +126,7 @@ export function quickAdd(draft, roster, id, benchMax) {
 
 // ---------- Rendering ----------
 
-export function surname(player) {
-  const explicit=typeof player==='object'&&(player?.surname||player?.lastName||player?.lastname);
-  if(explicit)return String(explicit).trim();
-  const name=String(typeof player==='object'?player?.name||'':player||'').trim().replace(/\s+/g,' ');
-  // Abbreviated provider names already identify the surname, including compound names.
-  const abbreviated=name.replace(/^(?:\p{L}\.\s*)+/u,'').replace(/\s+\p{Lu}\.$/u,'');
-  if(abbreviated!==name)return abbreviated;
-  const parts=name.split(' ');if(parts.length<2)return name;
-  // Preserve registered compound surnames when only a display name is available.
-  if(/^(?:Juan Jesus|Carlos Augusto|Kolo Muani|Zambo Anguissa)$/i.test(name))return name;
-  let start=parts.length-1;
-  while(start>0&&/^(?:de|del|della|di|da|do|dos|das|van|von|der|den|el|le|la|kolo|zambo)$/i.test(parts[start-1]))start--;
-  return parts.slice(start).join(' ');
-}
+export const surname = playerSurname;
 const codeOf = club => KITS[club]?.code || String(club||'').slice(0, 3).toUpperCase();
 export const nextLabel = n => n?.opponent ? `${n.home ? '' : '@ '}${codeOf(n.opponent)}` : '–';
 const statusBadge = s => STATUS[s?.type] ? `<i class="fanta-st is-${s.type}" title="${esc(s.note)}">${STATUS[s.type][0]}</i>` : '';
@@ -257,17 +245,25 @@ function rosterView(data, d) {
 }
 
 export const TEAM_CALENDAR_PAGE=4;
-export function renderTeamCalendar(data,limit=TEAM_CALENDAR_PAGE){
- const fixtures=resultsFirst(data.calendar||[],data.round.number,'round');
- const rows=fixtures.slice(0,limit).map(m=>{
+export function teamCalendarWindow(data,{earlier=0,later=0}={}){
+ const fixtures=[...(data.calendar||[])].sort((a,b)=>a.round-b.round);
+ const current=data.calendarCurrent??data.round.number;
+ const index=fixtures.findIndex(m=>m.round>=current);
+ const active=Math.max(0,index<0?fixtures.length-1:index);
+ const start=Math.max(0,active-2-earlier),end=Math.min(fixtures.length,active+2+later);
+ return {fixtures:fixtures.slice(start,end),current,hasEarlier:start>0,hasLater:end<fixtures.length};
+}
+export function renderTeamCalendar(data,range){
+ const {fixtures,current,hasEarlier,hasLater}=teamCalendarWindow(data,range);
+ const rows=fixtures.map(m=>{
   const score=Number.isFinite(m.home.goals)&&Number.isFinite(m.away.goals)?`${m.home.goals}–${m.away.goals}`:'';
-  return `<button type="button" class="fanta-team-fixture ${m.round===data.round.number?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}">
+  return `<button type="button" class="fanta-team-fixture ${m.round===current?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}">
     ${score?`<strong class="team-calendar-score">${score}</strong>`:''}
     <span class="team-calendar-sides">${teamLogo(m.home.team)}<b>${esc(m.home.team.name)}</b><i aria-hidden="true">–</i><b>${esc(m.away.team.name)}</b>${teamLogo(m.away.team)}</span>
     <small>Giornata ${m.round} · ${m.official?'Finale':score?'Provvisorio':'Da giocare'}${m.home.points!=null?' · '+pts(m.home.points)+'–'+pts(m.away.points)+' FP':''}</small>
   </button>`;
  }).join('');
- return `<section class="fanta-team-calendar" aria-label="Calendario e risultati">${rows||'<p class="fanta-note">Il calendario arriva con l’avvio della competizione.</p>'}${fixtures.length>limit?'<button type="button" class="secondary fanta-calendar-more" data-sq-calendar-more aria-label="Mostra altre giornate">+ Altre giornate</button>':''}</section>`;
+ return `<section class="fanta-team-calendar" aria-label="Calendario e risultati">${hasEarlier?'<button type="button" class="secondary fanta-calendar-more" data-sq-calendar-previous>‹ Giornate precedenti</button>':''}${rows||'<p class="fanta-note">Il calendario arriva con l’avvio della competizione.</p>'}${hasLater?'<button type="button" class="secondary fanta-calendar-more" data-sq-calendar-more aria-label="Mostra altre giornate">+ Altre giornate</button>':''}</section>`;
 }
 export function renderTeamRoster(data,tools=''){return `<div class="fanta-ps-head"><div><h2 id="fanta-sheet-title">${esc(data.team.name)}</h2><small>Rosa · ${data.roster.length} giocatori</small></div><button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div>${tools}${rosterView(data,{slots:{},bench:[]})}`;}
 export function renderSquadra(sq, now = Date.now()) {
@@ -284,7 +280,7 @@ export function renderSquadra(sq, now = Date.now()) {
       <button type="button" role="tab" class="v2-chip${sq.sub === 'rosa' ? ' is-active' : ''}" data-sq-sub="rosa" aria-selected="${sq.sub === 'rosa'}">Rosa</button>
       <button type="button" role="tab" class="v2-chip${sq.sub === 'calendario' ? ' is-active' : ''}" data-sq-sub="calendario" aria-selected="${sq.sub === 'calendario'}">Calendario e risultati</button>
     </div>
-    <div data-os-content ${sq.sub==='formazione'?'class="fanta-team-formation" data-os-flow':''}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarLimit):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}</div>
+    <div data-os-content ${sq.sub==='formazione'?'class="fanta-team-formation" data-os-flow':''}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarRange):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}</div>
   </div>`;
 }
 

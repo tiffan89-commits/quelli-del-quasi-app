@@ -17,12 +17,8 @@
 .bar-id h3{margin:0;font:700 23px/1 'Barlow Condensed',sans-serif;overflow-wrap:anywhere}
 .bar-id h3 em{display:inline-block;vertical-align:3px;margin-left:6px;padding:2px 6px;border-radius:5px;background:var(--lime);color:#10200f;font:800 10px/1.2 sans-serif;letter-spacing:.06em;text-transform:uppercase;font-style:normal}
 .bar-archetype{display:block;margin-top:4px;min-height:15px;font-size:12px;line-height:1.25;color:#f1dba8}
-.bar-risk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--muted)}
-.bar-risk[hidden]{display:none}
-.bar-risk i{position:relative;flex:1;height:5px;border-radius:5px;background:#25392f;overflow:hidden}
-.bar-risk i:after{content:"";position:absolute;inset:0 auto 0 0;width:var(--risk,0);border-radius:5px;background:#8fe0b0}
-.bar-risk[data-tone=mid] i:after{background:#ffd27a}.bar-risk[data-tone=hot] i:after{background:#ff8a6b}
-.bar-risk b{font-weight:700;white-space:nowrap;color:var(--white)}
+.bar-name-line,.bar-dossier-identity{display:flex;align-items:center;gap:5px;min-width:0}
+.bar-risk-badge{display:inline-block;flex:none;white-space:nowrap;padding:2px 5px;border-radius:999px;background:hsl(var(--risk-hue) 32% 16%);color:hsl(var(--risk-hue) 86% 76%);font-size:10px;font-weight:750}
 .bar-crown,.bar-badge{position:absolute;top:-2px;right:0;font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px #0008)}
 .bar-crown+.bar-badge{right:30px}
 .bar-quip{margin:0;min-height:48px;padding:10px 12px;border-radius:12px;background:#183025;border-left:3px solid var(--lime);font-style:italic;font-weight:600;font-size:14.5px;line-height:1.35;color:var(--white)}
@@ -60,30 +56,29 @@
 .bar-profile.pitch-flip-button{inset:auto 5px 3px auto;flex-direction:row;justify-content:center;gap:3px;min-height:22px;padding:2px 5px;font-size:10px}
 .bar-profile.pitch-flip-button svg{width:13px;height:13px}
 .bar-foot-note{margin:14px 2px 0;text-align:center;color:var(--muted);font-size:11px}
-/* Profilo sul retro della tessera. */
-.bar-dossier{display:grid;gap:4px}
-.bar-dossier-top{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px;align-items:center}
-.bar-dossier-quasi .quasi-scene{width:30px;height:30px;aspect-ratio:1;border-radius:8px}
-.bar-dossier-quasi .quasi-scene-caption{display:none}
-.bar-dossier-identity{display:flex;align-items:center;gap:6px;min-width:0}
-.bar-dossier-name{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
-.bar-dossier-risk{flex:none;padding:2px 5px;border-radius:999px;background:#24392f;color:#8fe0b0;font-size:10px;line-height:1.2}
-.bar-dossier-risk[data-tone=mid]{color:#ffd27a}.bar-dossier-risk[data-tone=hot]{color:#ff9a83}
-.bar-delta{font-weight:700}
-.bar-dossier h2{margin:0;font:700 16px/1 'Barlow Condensed',sans-serif;text-transform:uppercase}
-.bar-dossier-quip,.bar-dossier-text{margin:0;padding:3px 5px;font-size:11px;line-height:1.25}
-.bar-dossier-quip{border-radius:8px;background:#1b3226;border-left:3px solid var(--lime);font-style:italic;font-weight:600}
-.bar-dossier-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0}
-.bar-dossier-stats div{padding:2px 4px;min-width:0;border:1px solid var(--line);border-radius:8px;background:#14231e}
-.bar-dossier-stats dt{font-size:9px;font-weight:700;color:var(--muted)}
-.bar-dossier-stats dd{margin:1px 0 0;font-size:11px;font-weight:700}
 @media(prefers-reduced-motion:reduce){.bar-skeleton,.bar-quip.is-ready,.bar-bet.goal-flash{animation:none}}
 
-.bar-card-back .bar-dossier{padding:2px;border-radius:13px;background:radial-gradient(ellipse at 0 0,#43654d55,transparent 65%)}
-.bar-card-back .bar-dossier-top{gap:8px;padding:3px 4px;border-bottom:1px solid var(--line)}
-.bar-card-back .bar-dossier-name{color:var(--cream,#f6f3e7);font-weight:700}
-.bar-card-back .bar-dossier h2{color:#e1cb95;letter-spacing:.02em}
-.bar-card-back .bar-dossier-stats{gap:5px}
-.bar-card-back .bar-dossier-stats div{border-color:#52685b;background:#26392d;text-align:center}
-.bar-card-back .bar-dossier-quip{background:#2d3928;border-color:#d8bb7d;color:#f6edda}
-.bar-card-back .bar-dossier-text{color:#d4e3d6}
+/* Retro della schedina, con l’impostazione della cartolina del Bar. */
+.bar-card-back{border-radius:12px;background:radial-gradient(ellipse at top right,#324d38,#13241d 80%)}
+.bar-dossier{display:grid;justify-items:center;gap:3px;padding:4px 6px 3px;text-align:center}
+.bar-dossier-quasi .quasi-scene{width:clamp(56px,18vw,76px);height:clamp(56px,18vw,76px);aspect-ratio:1;border-radius:10px}
+.bar-dossier-quasi .quasi-scene-caption{display:none}
+.bar-dossier-name{min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--lime);font:700 clamp(16px,5vw,22px)/1 "Barlow Condensed",sans-serif}
+.bar-dossier-subtitle,.bar-dossier-quip{margin:0;color:#f1dba8;font-size:11px;line-height:1.12}
+.bar-dossier-quip{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;color:#f6edda;font-style:italic}
+.bar-dossier .bar-stub{width:100%}
+.bar-dossier .bar-bet{cursor:default}
+
+html.os-on main.os-root .bar-tile .bar-dossier .bar-bets{grid-auto-rows:26px}
+html.os-on main.os-root .bar-tile .bar-dossier .bar-bet{display:grid;grid-template-columns:1fr 1fr;gap:0;justify-items:center;align-content:center}
+html.os-on main.os-root .bar-tile .bar-dossier .bar-teams{grid-column:1/-1;font-size:9px}
+html.os-on main.os-root .bar-tile .bar-dossier .bar-bet strong{font-size:13px}
+.bar-dossier .bar-score .inline-live{font-size:0}
+.bar-dossier .bar-score:empty{display:none}
+.bar-dossier .bar-bet:has(.bar-score:empty) strong{grid-column:1/-1}
+@media(max-height:740px){
+ .bar-dossier-quasi .quasi-scene{width:56px;height:56px}
+ .bar-dossier{gap:2px;padding-block:2px}
+ .bar-dossier-quip{display:none}
+ html.os-on main.os-root .bar-tile .bar-dossier .bar-bets{grid-auto-rows:23px}
+}

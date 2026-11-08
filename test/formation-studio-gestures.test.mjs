@@ -200,7 +200,7 @@ test('one reserve shelf orders the saved bench, swaps by role, and never drops a
 });
 
 test('studio surnames and fantamedia stay available for field, bench and free players',()=>{
- assert.equal(surname('Franco Mastantuono'),'Mastantuono');assert.equal(surname('F. Mastantuono'),'Mastantuono');assert.equal(surname('Randal Kolo Muani'),'Kolo Muani');assert.equal(surname('David de Gea'),'de Gea');assert.equal(surname('Juan Jesus'),'Juan Jesus');assert.equal(surname({name:'Full Display Name',surname:'Surname with space'}),'Surname with space');
+ assert.equal(surname('Franco Mastantuono'),'Mastantuono');assert.equal(surname('F. Mastantuono'),'Mastantuono');assert.equal(surname('Randal Kolo Muani'),'Kolo');assert.equal(surname('David de Gea'),'de Gea');assert.equal(surname('Juan Jesus'),'Jesus');assert.equal(surname({name:'Full Display Name',surname:'Surname with space'}),'Surname');
  const players=roster.map((p,i)=>({...p,name:['David de Gea','Franco Mastantuono','K. De Bruyne','Randal Kolo Muani'][i],stats:{...p.stats,avgFanta:i===2?null:6.5}}));
  const d=draftFrom(null,players);d.slots.P0=players[0].id;d.slots.D0=players[1].id;d.bench=[players[2].id];
  const {document}=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'tutti'},0));
@@ -209,7 +209,7 @@ test('studio surnames and fantamedia stay available for field, bench and free pl
  assert.equal(document.querySelectorAll('.fs-pitch .fs-fm').length,2);
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[2].id+'"] .fs-fm').textContent,'– FM');
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-fm').textContent,'6,50 FM');
- assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO MUANI');
+ assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO');
  const bench=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'panchina'},0)).document;assert.equal(bench.querySelector('.fs-grid .fs-tile .fs-shirt svg text').textContent,'DE BRUYNE');assert.ok(bench.querySelector('.fs-grid .fs-fm'));
 });
 

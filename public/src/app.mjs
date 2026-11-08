@@ -31,7 +31,7 @@ import {footballPenalties} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, bindSlipV2,tickSlipEventClocks } from "./v2/slip-v2.mjs";
 import { quasiScene, showQuasi } from "./quasi-scene.mjs";
-import {barSlipsView,barVerdictPatch,barProfileView} from "./bar-slips.mjs";
+import {barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages} from "./bar-slips.mjs";
 import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource } from "./v2/tabs.mjs";
 import { renderLeagueChip, bindLeagueSwitcher, isLeagueAdmin } from "./v2/league-switcher.mjs";
 import { showLanding, hideLanding, markSession, pendingInvite, clearPendingInvite } from "./v2/landing.mjs";
@@ -53,7 +53,9 @@ import {achievementBoard} from './achievement-board.mjs';
 import { LEAGUE_COLORS, LEAGUE_EMBLEMS, applyLeagueTheme } from "./league-theme.mjs";
 import {hubHead,hubTile} from './league-hub.mjs';
 import {shareLeagueInvite,whatsappInvite} from './league-invite.mjs';
-import {renderAppInvite,bindAppInvites,performAppInvite,signupShareData,appWhatsappInvite} from './app-invite.mjs';
+import {createFantaApi} from './fanta/api.mjs';
+import {renderFantaNotificationSettings} from './fanta/io.mjs';
+import {bindAppInvites,performAppInvite,signupShareData,appWhatsappInvite} from './app-invite.mjs';
 import {rewardsView,bindRewards} from './progression-ui.mjs';
 import {bindStyledSelects,syncStyledSelects,closeStyledSelect} from './styled-select.mjs';
 
@@ -230,7 +232,7 @@ function updateChatWidget() {
   if (chatContext !== key) {
     stopChat();
     widget.innerHTML =
-      '<header class="chat-widget-header"><div><strong>Chiacchiere da bar</strong><small id="chat-widget-league"></small></div><button class="secondary" id="chat-minimize" aria-label="Riduci la chat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button></header>' +
+      '<header class="chat-widget-header"><div><strong>Chiacchiere da bar</strong><small id="chat-widget-league"></small></div><button class="secondary" id="chat-minimize" aria-label="Chiudi la chat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>' +
       chatView(league, user);
     widget.querySelector("#chat-widget-league").textContent = league.name;
     widget.querySelector("#chat-minimize").onclick = closeLeagueChat;
@@ -1136,9 +1138,17 @@ function matchStatus(m) {
 function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt);}
 function adminBudget() { return ""; }
 function profile({embedded=false}={}) {
-  const u = state.user,
-    required = !u.emailVerified && !u.demo;
-  return `${nicknameNotice(u,{profile:true})}${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${required ? '<div class="notice" role="status">Per continuare devi inserire e confermare un indirizzo email. Punti, crediti e schedine restano salvati.</div>' : ""}${renderAppInvite()}${embedded?'<section class="profile-account profile-embedded">':'<details class="card profile-account" '+(required?'open':'')+'><summary>I tuoi dati e sicurezza</summary>'}<div class="split"><div class="card"><h3>I tuoi dati</h3>${u.username?`<p class="muted">Username del vecchio account: <b>${esc(u.username)}</b></p>`:""}<p class="muted">Email: ${esc(u.email || "Non inserita")}</p><p class="${u.emailVerified ? "green" : "orange"}">${u.emailVerified ? "✓ Email verificata" : "Email da verificare"}</p>${u.pendingEmail ? `<p class="muted">Conferma in attesa: ${esc(u.pendingEmail)}</p>` : ""}<form id="profile-name"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary">Salva soprannome</button></form></div><form id="account-email" class="card"><h3>${required ? "Attiva il tuo account" : "Email e sicurezza"}</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail || u.email || "")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button><p class="tiny muted">Apri il link ricevuto, poi torna qui. Premi Aggiorna dopo aver confermato.</p>${u.pendingEmail || (u.email && !u.emailVerified) ? '<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>' : ""}</form></div>${embedded?'</section>':'</details>'}${!required?(embedded?'<section class="profile-reminder-settings profile-embedded"><h3>Avvisi e promemoria</h3>':'<details class="card profile-reminder-settings"><summary>Avvisi e promemoria</summary>')+'<section class="card profile-alerts"><h2>Il bar ti chiama</h2><label class="reminder-toggle" data-chat-preference-row hidden><input id="chat-notify-preference" type="checkbox"><span>Messaggi di Chiacchiere da bar</span></label><label class="reminder-toggle"><input id="reminder-preference" type="checkbox" '+(u.remindersEnabled!==false?'checked':'')+'><span>Promemoria schedina · due ore prima</span></label><p class="tiny muted">Un avviso sul dispositivo per ogni lega prima della chiusura, anche se hai già salvato.'+(L()?' Notifiche sul telefono dopo il tuo consenso.</p><button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button>':'</p>')+'</section>':''}${!required&&!u.demo?'<section class="card profile-email-reminders"><label class="reminder-toggle"><input id="email-reminder-preference" type="checkbox" '+(u.emailRemindersEnabled?'checked':'')+'><span>Ricevi avvisi via mail se ho dimenticato di inserire la schedina</span></label><p class="tiny muted">Una sola email a un’ora dalla chiusura, solo se manca la schedina. Niente pubblicità, niente newsletter. Puoi disattivarla anche dal link nell’email.</p></section>':''}${!required?(embedded?'</section>':'</details>'):''}${!required && state.user?.emailVerified && !state.user.demo ? supportSection() : ""}<div data-account-privacy></div>${embedded?'':settingsLogout()}`;
+ const u=state.user,required=!u.emailVerified&&!u.demo;
+ const email=`<p class="profile-email-value">${esc(u.email||"Email non inserita")}${u.emailVerified?' <span class="green" role="img" aria-label="Email verificata">✓</span>':''}</p>`;
+ const verification=required?`<form id="account-email" class="profile-password"><h3>Email e sicurezza</h3><label class="field">Email<input name="email" type="email" required maxlength="254" autocomplete="email" value="${esc(u.pendingEmail||u.email||"")}"></label><label class="field">Password attuale<input name="password" type="password" required maxlength="200" autocomplete="current-password"></label><button class="primary">Invia conferma email</button>${u.pendingEmail||u.email?'<button type="button" class="secondary" id="resend-profile">Reinvia conferma</button>':''}</form>`:'';
+ const password=u.emailVerified&&u.hasLocalPassword?`<form id="account-password" class="profile-password"><h3>Cambia password</h3><label class="field">Password attuale<input name="currentPassword" type="password" required maxlength="200" autocomplete="current-password"></label><label class="field">Nuova password<input name="newPassword" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label><label class="field">Conferma nuova password<input name="confirmPassword" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></label><button class="secondary">Salva password</button></form>`:'';
+ return `${embedded?'':'<section class="hero"><h1>Impostazioni</h1></section>'}${nicknameNotice(u,{profile:true})}<section class="profile-account profile-embedded">${email}<form id="profile-name" class="profile-name-form"><label class="field">Soprannome<input name="name" value="${esc(u.name)}" required maxlength="60"></label><button class="secondary" aria-label="Salva soprannome">Salva</button></form>${verification}${password}</section><div data-account-privacy></div>${embedded?'':settingsLogout()}`;
+}
+function accountGroups(settings){
+ const u=state.user;
+ const toggle=(id,label,checked=false,attrs='')=>`<label class="account-toggle" ${attrs}><span>${label}</span><input type="checkbox" role="switch" class="fanta-switch" id="${id}" ${checked?'checked':''}></label>`;
+ const bar=`<section class="account-alerts"><h2>Il bar ti chiama</h2>${toggle('chat-notify-preference','Messaggi di Chiacchiere da bar',false,'data-chat-preference-row hidden')}${toggle('reminder-preference','Promemoria schedina - due ore prima',u.remindersEnabled!==false)}${toggle('email-reminder-preference','Promemoria mail schedina o formazione - due ore prima',u.emailRemindersEnabled)}<button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button></section>`;
+ return {account:{summary:'Soprannome e accesso',html:profile({embedded:true})},avvisi:{summary:'Bar e Fanta',html:bar+renderFantaNotificationSettings(settings,{disabled:!settings,compact:true})},...(u.emailVerified&&!u.demo?{assistenza:{summary:'Segnalazioni e suggerimenti',html:supportSection()}}:{})};
 }
 function updateDashboard() {
   const region = $('#league-dashboard');
@@ -1254,7 +1264,7 @@ function leagueAdmin(l){
  ...(admin?{
  identita:{summary:'Simbolo '+(l.branding?.emblem||'Q')+' · '+color,html:brandingForm(l)}
  }:{}),
- account:{summary:'Soprannome, email, avvisi e assistenza',html:profile({embedded:true})},
+ ...accountGroups(),
  ...(l.admin===state.user.id&&state.user.emailVerified&&!state.user.demo?{elimina:{summary:'Bar, Fanta e storico',html:'<form id="president-delete-league"><p>Eliminerai definitivamente <b>'+esc(l.name)+'</b>, il suo Bar, il Fanta collegato e lo storico di gioco. Gli account dei partecipanti restano attivi.</p><label class="field">Scrivi <strong>ELIMINA LEGA E STORICO</strong><input name="phrase" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label><button class="secondary league-delete-action" disabled>Elimina la lega</button><p role="alert"></p></form>'}}:{})
  }});
 }
@@ -1363,7 +1373,7 @@ function navigatePage(next) {
   window.scrollTo(0, 0);
 }
 function nativeSlipServices(){return {
- account:{view:()=>profile({embedded:true}),bind:bindAccount},
+ account:{groups:accountGroups,bind:(onChanged,barLeague)=>bindAccount(onChanged,{manageFanta:false,barLeague})},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
  save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
@@ -1389,8 +1399,8 @@ function openBarTarget(target) {
   if(target?.page==='invita')document.querySelector('[data-app-invite]')?.scrollIntoView({block:'start'});
   if(target?.match)[...document.querySelectorAll('[data-match-card]')].find(row=>row.dataset.matchCard===target.match)?.scrollIntoView({block:'center'});
 }
-function bindAccount(onChanged=()=>{}) {
-  const chatSetting=$('#chat-notify-preference'),room=chatLeague();
+function bindAccount(onChanged=()=>{},{manageFanta=true,barLeague}={}) {
+  const chatSetting=$('#chat-notify-preference'),room=barLeague??chatLeague();
   const chatRow=chatSetting?.closest?.('[data-chat-preference-row]');
   if(chatRow&&room&&!state.user?.demo){
     chatRow.hidden=false;
@@ -1412,7 +1422,7 @@ function bindAccount(onChanged=()=>{}) {
   if($("#edit-suggested-nickname"))$("#edit-suggested-nickname").onclick=()=>{const d=$(".profile-account");if(d)d.open=true;$("#profile-name input")?.focus();};
   if($('#email-reminder-preference'))$('#email-reminder-preference').onchange=async e=>{const enabled=e.target.checked;try{await api('profile-email-reminders',{enabled});state.user.emailRemindersEnabled=enabled;notify(enabled?'Promemoria email attivato':'Promemoria email disattivato');}catch(error){e.target.checked=!enabled;notify(error.message);}};
   if($('#reminder-preference'))$('#reminder-preference').onchange=async e=>{const enabled=e.target.checked;try{await api('profile-reminders',{enabled});state.user.remindersEnabled=enabled;notify(enabled?'Promemoria schedina attivi':'Promemoria schedina disattivati');}catch(error){e.target.checked=!enabled;notify(error.message);}};
-  if($('#enable-device-alerts'))$('#enable-device-alerts').onclick=async e=>{if(state.user?.demo){notify('Nella demo gli avvisi sono simulati. Non attiviamo notifiche sul dispositivo.');return;}if(!pushSupported()){notify('Apri la PWA installata per attivare gli avvisi sul dispositivo.');return;}const permission=Notification.requestPermission();e.target.disabled=true;try{if(await permission!=='granted')throw Error('Consenso non concesso. Puoi cambiarlo nelle impostazioni del dispositivo.');await enableLeagueNotifications({league:room||L(),user:state.user,api});if(room){room.chat={...room.chat,notify:true};if(chatSetting)chatSetting.checked=true;}notify('Avvisi attivati su questo dispositivo');}catch(error){notify(error.message);}finally{e.target.disabled=false;}};
+  if($('#enable-device-alerts'))$('#enable-device-alerts').onclick=async e=>{if(state.user?.demo){notify('Nella demo gli avvisi sono simulati. Non attiviamo notifiche sul dispositivo.');return;}if(!pushSupported()){notify('Apri la PWA installata per attivare gli avvisi sul dispositivo.');return;}const permission=Notification.requestPermission();e.target.disabled=true;try{if(await permission!=='granted')throw Error('Consenso non concesso. Puoi cambiarlo nelle impostazioni del dispositivo.');await enableLeagueNotifications({league:room||L(),user:state.user,api,notifyChat:false});notify('Avvisi attivati su questo dispositivo');}catch(error){notify(error.message);}finally{e.target.disabled=false;}};
   if ($("#profile-name"))
     $("#profile-name").onsubmit = async (e) => {
       e.preventDefault();
@@ -1455,8 +1465,34 @@ function bindAccount(onChanged=()=>{}) {
         busy = false;
       }
     };
+  const password=$('#account-password');
+  if(password)password.onsubmit=async event=>{
+    event.preventDefault();
+    const data=Object.fromEntries(new FormData(password)),button=password.querySelector('button');
+    if(data.newPassword!==data.confirmPassword){notify('Le nuove password non coincidono.');return;}
+    button.disabled=true;
+    try{await api('change-password',data);password.reset();notify('Password aggiornata.');}catch(error){notify(error.message);}finally{button.disabled=false;}
+  };
+  if(manageFanta)bindBarFantaAlerts();
   bindSupportInline();
   if($("#logout"))$("#logout").onclick=e=>void returnToLanding(e.currentTarget);
+}
+function bindBarFantaAlerts(){
+ const section=document.querySelector('[data-president-section="avvisi"]');
+ if(!section)return;
+ const toggles=[...section.querySelectorAll('[data-notify]')];
+ let pending=false,settings;
+ let client;
+ const paint=()=>{for(const toggle of toggles){toggle.disabled=pending||!settings;toggle.checked=settings?.notify?.[toggle.dataset.notify]!==false;}};
+ const load=async()=>{if(!section.open||pending||settings)return;pending=true;try{client??=state.user.demo?(await import('./demo-session.mjs')).getDemoSession().fanta:createFantaApi({userId:state.user.id});settings=(await client.me()).settings;}catch(error){notify(error.message);}finally{pending=false;paint();}};
+ section.addEventListener('toggle',load);
+ void load();
+ for(const toggle of toggles)toggle.onchange=async()=>{
+   if(pending||!settings)return;
+   const next={...settings,notify:{...settings.notify,[toggle.dataset.notify]:toggle.checked}};
+   pending=true;for(const input of toggles)input.disabled=true;
+   try{await client.saveSettings(next);settings=next;}catch(error){notify(error.message);}finally{pending=false;paint();}
+ };
 }
 function bind(l, r) {
   bindRandomLeagues(document);
@@ -1713,6 +1749,7 @@ function bindBarSlips() {
   const root = document.querySelector(".bar-table"),
     l = L(),
     r = R();
+  bindBarSlipPages(root);
   if (!root || !l || !r?.closed || r.pointsOnly || sourceOf(r) === "fantacalcio") return;
   const round = r.id;
   loadBarVerdicts(r)
@@ -1744,7 +1781,7 @@ async function flipAnalysis(button) {
     if (!a) throw new Error("Nessun profilo disponibile per questa giornata");
     const member = l.members.find((m) => m.uid === uid) || {},
       slip = (r.publicSlips || []).find((x) => x.uid === uid);
-    back.innerHTML = barProfileView(a, { name: member.name || "Giocatore", avatar: member.avatar, slip, fmt });
+    back.innerHTML = barProfileView(a, { name: member.name || "Giocatore", avatar: member.avatar, slip, round:r, fmt });
     back.dataset.profileState='ready';
   } catch (e) {
     back.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
@@ -1818,12 +1855,11 @@ async function openMatch(id, quiet = false) {
       match,
       fantasyRound,
       esc,
-      (home,away)=>fixtureTeams(home,away,true),
+      name=>teamLabel(name,{fantasy:true}),
       fmt,
     );
     d.dataset.match = id;
     d.dataset.fantasyRevision=match.detailRevision||match.details?.at||'';
-    const fantasyScore=d.querySelector(".live-score");if(fantasyScore)fantasyScore.setAttribute("data-live-detail-score", "");
     d.querySelectorAll('details[open]').forEach(x=>x.open=false);
     const bookmaker=d.querySelector('details.card');if(bookmaker)d.append(bookmaker);
     bindLineupPitch(d);
@@ -1866,7 +1902,7 @@ async function openMatch(id, quiet = false) {
       <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
     </div>`;
     dialog.innerHTML = `<div class="match-headline">
-      <button type="button" class="secondary match-nav-button" id="close-modal" aria-label="Chiudi partita">×</button>
+      <button type="button" class="secondary match-nav-button match-close" id="close-modal" aria-label="Chiudi partita">×</button>
       <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,fantasy:false})}</h2>
       <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
       <button type="button" class="secondary match-nav-button" data-match-details-button aria-label="Dettagli della partita" ${hasDetails?'':'hidden'}>›</button>
@@ -1909,7 +1945,7 @@ async function openMatch(id, quiet = false) {
 }
 
 function supportSection() {
-  return '<details class="card inline-support"><summary>Invia un suggerimento o segnala un bug</summary><p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field">Messaggio<textarea name="message" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form></details>';
+  return '<p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field">Messaggio<textarea name="message" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form>';
 }
 function bindSupportInline() {
   const form = $("#support-form");
