@@ -9,7 +9,7 @@ const EXCLUDED = [
  '[data-bid-form]', '.auction-countdown-overlay', '[data-lega-sub="asta"][aria-selected="true"]', '.pb-landing'
 ].join(',');
 const FIXED_BOTTOM = '.v2-tabbar,.v2-slipbar,#pwa-install-card';
-const DOTS_SPACE = 22;
+const DOTS_SPACE = 10; // riga dei puntini: il minimo indispensabile (18 px su desktop, con le frecce)
 // Sottosezioni di una schermata lunga: ogni voce apre la pagina in cui inizia
 // il suo blocco. `when` riconosce la sezione dal contenuto già disegnato.
 // Riga da tenere sempre a vista (la tua posizione) quando sta in un'altra pagina.
@@ -39,8 +39,10 @@ export function pageMetrics(scrollWidth, clientWidth, scrollLeft) {
 export function startOneScreen(doc = globalThis.document) {
  const win = doc?.defaultView;
  if (started || !win || typeof win.MutationObserver !== 'function') return;
- if (!win.CSS?.supports?.('column-fill', 'auto')) return;
+ // Senza colonne CSS (browser molto vecchi) resta lo scorrimento verticale, ma dentro la pagina e sopra la barra in basso.
+ const columns = !!win.CSS?.supports?.('column-fill', 'auto');
  started = true;
+ if (!columns) doc.documentElement.classList.add('os-nocols');
  const root = doc.documentElement;
  const saved = new Map();
  const bound = new WeakSet();
@@ -112,14 +114,14 @@ export function startOneScreen(doc = globalThis.document) {
    if (!typing() || !height) {
     const inset = bottomInset();
     const top = main.getBoundingClientRect().top;
-    const fab = doc.getElementById('open-chat'), fabShown = !!fab && win.getComputedStyle(fab).display !== 'none' && fab.getBoundingClientRect().height > 0;
-    const space = fabShown ? 46 : DOTS_SPACE; // il pulsante della chat sta nella riga dei puntini, non sopra il contenuto
+    const space = win.innerWidth >= 760 ? 18 : DOTS_SPACE;
     root.style.setProperty('--os-dots-h', space + 'px');
     pinned = segAnchors.length ? null : PINS.map(sel => main.querySelector(sel)).find(Boolean) || null; // nelle schermate a sottosezioni non serve
     height = Math.max(240, Math.floor(win.innerHeight - Math.max(0, top) - inset - space - (pinned ? 48 : 0)));
     root.style.setProperty('--os-h', height + 'px');
     root.style.setProperty('--os-dots-bottom', Math.round(inset) + 'px');
    }
+   if (!columns) { refresh(false); return; }
    if (win.getComputedStyle(main).columnFill !== 'auto') { win.setTimeout(schedule, 200); return; } // foglio non ancora caricato
    markTall();
    markBreaks();
