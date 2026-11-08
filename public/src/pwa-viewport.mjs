@@ -23,6 +23,30 @@ export function installPwaViewport({
   win
     .matchMedia?.("(display-mode: standalone)")
     .addEventListener?.("change", update);
+  const viewport = win.visualViewport;
+  if (viewport && win.matchMedia?.("(pointer: coarse)").matches) {
+    const visibleHeight = () => viewport.height * viewport.scale;
+    let fullHeight = visibleHeight();
+    let keyboardOpen = false;
+    const updateKeyboard = () => {
+      const active = doc.activeElement;
+      const editing = !active?.readOnly && !active?.disabled &&
+        active?.matches?.('textarea,input:not([type]),input[type=text],input[type=search],input[type=email],input[type=password],input[type=url],input[type=tel],input[type=number],[contenteditable]:not([contenteditable=false])');
+      const reduced = Math.max(fullHeight, win.innerHeight) - visibleHeight() > 100;
+      keyboardOpen = (editing || keyboardOpen) && reduced;
+      if (!editing && !keyboardOpen) fullHeight = visibleHeight();
+      doc.documentElement.classList.toggle("qdq-keyboard-open", !!keyboardOpen);
+    };
+    viewport.addEventListener("resize", updateKeyboard);
+    win.addEventListener("resize", updateKeyboard);
+    win.addEventListener("orientationchange", () => {
+      fullHeight = visibleHeight();
+      keyboardOpen = false;
+      updateKeyboard();
+    });
+    for (const event of ["focusin", "focusout"])
+      doc.addEventListener(event, () => win.requestAnimationFrame(updateKeyboard));
+  }
   for (const event of ["gesturestart", "gesturechange"])
     doc.addEventListener(
       event,
