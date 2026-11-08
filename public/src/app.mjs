@@ -583,7 +583,7 @@ function slipsPage(l, r, m) {
     "</div>";
   const body =
     slipScope === 'standings' && sourceScope === 'seriea' ? serieATable() : slipScope === "community"
-      ? (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : '') + '<div data-os-content data-os-flow>'+communityView(
+      ? (r ? '<div data-os-header>'+roundSelector(l,r)+'</div>' : '') + '<div data-os-content class="verdict-content">'+communityView(
           l,
           sourceScope,
           esc,

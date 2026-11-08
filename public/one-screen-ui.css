@@ -270,7 +270,7 @@ html.os-on main.os-split .fanta-squadra>.v2-chips[data-os-header]{margin-inline:
 html.os-on main.os-split .fanta-squadra>.fanta-sq-head[data-os-header],
 html.os-on main.os-split .fanta-lega>.fanta-sq-head[data-os-header]{margin-inline:14px!important}
 html.os-on main.os-split .slip-section-buttons[data-os-header],
-html.os-on main.os-split .fanta-slip-tabs[data-os-header]{margin:6px 14px 8px!important}
+html.os-on main.os-split .fanta-slip-tabs[data-os-header]{margin:0 14px 8px!important}
 html.os-on main.os-split .bar-head{margin-block:0 6px}
 html.os-on main.os-split .bar-round{width:100%}
 
@@ -368,15 +368,15 @@ html.os-on main.os-root .president-panel .president-body{padding:2px 10px 10px}
 .president-panel #branding-form .theme-swatch{width:21px;height:21px}
 .president-panel #branding-form .emblem-presets button{min-height:29px;padding:3px 6px}
 .president-panel #branding-form>.field{margin:5px 0}
-html.os-on main.os-root [data-os-flow] .community-grid{grid-template-columns:minmax(0,1fr)}
-html.os-on main.os-root [data-os-flow] .community-grid>.card{padding:8px 10px!important}
-html.os-on main.os-root [data-os-flow] .verdict-honours>summary{font-size:13px;font-weight:700}
+html.os-on main.os-root .verdict-content .community-grid{grid-template-columns:minmax(0,1fr)}
+html.os-on main.os-root .verdict-content .community-grid>.card{padding:8px 10px!important}
+html.os-on main.os-root .verdict-content .verdict-honours>summary{font-size:13px;font-weight:700}
 .verdict-almost{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
 .verdict-almost h3{margin:0 0 4px;font-size:14px}
 .verdict-almost .almost-row{padding:4px 0}
 .verdict-almost .almost-row strong{margin-right:8px}
 .verdict-almost .almost-row p{margin:2px 0;font-size:12px}
-html.os-on main.os-root [data-os-flow] .verdict-honours{padding:7px 10px;margin-block:5px}
+html.os-on main.os-root .verdict-content .verdict-honours{padding:7px 10px;margin-block:5px}
 .os-drill-target .community-grid{display:block!important}
 .os-track.os-drill .os-drill-parent.community-grid{display:block!important}
 .fanta-notify-compact .fanta-io-toggles{gap:3px}
@@ -436,4 +436,47 @@ body.match-page-active main.match-page.verdict-page{
  .verdict-page .postcard-bets .bar-bet strong{font-size:16px}
  .verdict-page .postcard-totals{padding-block:3px}
  .verdict-page .postcard-totals b{display:inline}
+}
+
+html.os-on main.os-root .fanta-home-compact{display:block!important}
+html.os-on main.os-root .fanta-home-compact>*+*{margin-top:8px!important}
+html.os-on main.os-root .fanta-home-compact>[data-fanta-auction-banner]:empty{display:none}
+html.os-on main.os-root .fanta-home-compact .fanta-hero{padding:8px 12px!important;gap:4px}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-identity{grid-template-columns:40px minmax(0,1fr)!important;gap:8px!important;margin-top:1px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest{width:40px!important;height:auto!important;min-height:0!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-crest>.team-logo{width:40px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-copy h1{font-size:21px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{margin:3px 0 0!important;gap:6px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-stats dd{font-size:17px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-hero-form{margin-top:1px;gap:6px}
+html.os-on main.os-root .fanta-home-compact .fanta-form i{width:16px;height:16px;font-size:9px}
+html.os-on main.os-root .fanta-home-compact .fanta-next{break-inside:avoid;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px;padding:8px 10px!important}
+html.os-on main.os-root .fanta-home-compact .fanta-next h2{font-size:19px!important;margin:2px 0!important}
+html.os-on main.os-root .fanta-home-compact .fanta-next .dash-cta{grid-column:1/-1;margin:0;min-height:34px;padding:5px 8px}
+html.os-on main.os-root .fanta-home-compact .fanta-next .dash-clock strong{font-size:19px}
+html.os-on main.os-root .fanta-home-match{padding:0!important}
+html.os-on main.os-root .fanta-home-match .fanta-match-link{padding:7px 10px!important}
+.fanta-home-match-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:6px;text-align:left;font-size:13px;margin-bottom:3px}
+.fanta-home-match-head small{text-align:right;color:var(--muted);font-size:10px}
+.fanta-home-match-head>span,.fanta-last-result>span:last-child{color:var(--lime)}
+.fanta-home-match .fanta-vs{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;border-radius:8px;gap:6px;padding-inline:5px!important}
+.fanta-home-match .fanta-vs-team{display:grid;grid-template-columns:22px minmax(0,1fr);gap:2px 5px;text-align:left}
+.fanta-home-match .fanta-vs-team .team-logo{grid-row:1/span 2;width:22px;height:24px;margin:0}
+.fanta-home-match .fanta-vs-team b{font-size:15px}
+.fanta-home-match .fanta-vs-team small{font-size:10px}
+.fanta-home-score{font:700 23px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+.fanta-home-compact .final-verification-note{margin:3px 2px 0;font-size:10px}
+.fanta-home-compact .fanta-bar-link,.fanta-home-compact .fanta-last-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 10px;min-height:35px;margin-top:4px;text-align:left;font-size:13px}
+.fanta-home-compact .fanta-last-result{grid-template-columns:minmax(0,1fr) auto auto}
+.fanta-last-result small{display:block;color:var(--muted);font-size:10px}
+.fanta-last-result strong{font:700 21px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
+html.os-on main.os-root .president-todos-fanta .president-action{min-height:34px;padding:5px 10px;border-radius:9px;font-size:12px}
+html.os-on main.os-root .fanta-league-auction .fanta-lg-card{margin:2px 0 8px;padding:10px 12px}
+html.os-on main.os-root .fanta-league-auction .fanta-lg-card :is(h2,h3,p){margin:3px 0}
+html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-name{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;overflow-wrap:anywhere;line-height:1.1}
+html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-code{display:none}
+@media(max-width:620px){
+ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-teams{display:grid;gap:3px}
+ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-label{font-size:11px}
+ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-versus{display:none}
 }

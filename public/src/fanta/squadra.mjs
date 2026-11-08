@@ -3,7 +3,7 @@ import {teamLogo} from './team-logo.mjs';
 import {renderPitchFlip} from '../lineup-pitch.mjs';
 // Pagina "Squadra": formazione della giornata sul campo (modulo, titolari, panchina, salvataggio) e rosa.
 // La bozza della formazione vive solo nel browser finché non si salva; il server controlla scadenza e regole.
-import { esc, pts, countdown, timeAgo, fixtureTime, orderRounds } from './formato.mjs';
+import { esc, pts, countdown, timeAgo, fixtureTime, resultsFirst } from './formato.mjs';
 import { shirt, KITS } from './maglie.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
@@ -258,9 +258,7 @@ function rosterView(data, d) {
 
 export const TEAM_CALENDAR_PAGE=4;
 export function renderTeamCalendar(data,limit=TEAM_CALENDAR_PAGE){
- const calendar=data.calendar||[];
- const completed=calendar.filter(m=>m.official).sort((a,b)=>b.round-a.round);
- const fixtures=[...completed,...orderRounds(calendar.filter(m=>!m.official),data.round.number,'round')];
+ const fixtures=resultsFirst(data.calendar||[],data.round.number,'round');
  const rows=fixtures.slice(0,limit).map(m=>{
   const score=Number.isFinite(m.home.goals)&&Number.isFinite(m.away.goals)?`${m.home.goals}–${m.away.goals}`:'';
   return `<button type="button" class="fanta-team-fixture ${m.round===data.round.number?'is-current':''}" data-go="giornata" data-round="${m.round}" data-mu="${esc(m.id)}">
@@ -286,7 +284,7 @@ export function renderSquadra(sq, now = Date.now()) {
       <button type="button" role="tab" class="v2-chip${sq.sub === 'rosa' ? ' is-active' : ''}" data-sq-sub="rosa" aria-selected="${sq.sub === 'rosa'}">Rosa</button>
       <button type="button" role="tab" class="v2-chip${sq.sub === 'calendario' ? ' is-active' : ''}" data-sq-sub="calendario" aria-selected="${sq.sub === 'calendario'}">Calendario e risultati</button>
     </div>
-    <div data-os-content ${sq.sub==='rosa'?'':sq.sub==='calendario'?'data-os-flow':'class="fanta-team-formation" data-os-flow'}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarLimit):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}</div>
+    <div data-os-content ${sq.sub==='formazione'?'class="fanta-team-formation" data-os-flow':''}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarLimit):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}</div>
   </div>`;
 }
 

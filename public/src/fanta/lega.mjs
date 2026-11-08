@@ -3,7 +3,7 @@ import {leagueActions} from '../league-actions.mjs';
 import {settingsLogout,presidentPanel} from '../president-panel.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
-import { esc, pts, dayTime, OUTCOME, extremeClass, orderRounds } from './formato.mjs';
+import { esc, pts, dayTime, OUTCOME, extremeClass, resultsFirst } from './formato.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderCompetitions} from './competitions-ui.mjs';
 import {renderAppInvite} from '../app-invite.mjs';
@@ -36,10 +36,10 @@ function standings(l) {
 }
 
 function calendar(l, ui) {
-  const open = ui.openRound ?? l.calendar.current;
+  const rounds=resultsFirst(l.calendar.rounds,l.calendar.current),open=ui.openRound??rounds[0]?.number;
   return `<section class="fanta-block is-first">
     <p class="fanta-note">Giornata ${l.calendar.current} di ${l.calendar.last}. Tocca una sfida per vedere formazioni e voti.</p>
-    <div class="fanta-cal">${orderRounds(l.calendar.rounds,l.calendar.current).map(r => {
+    <div class="fanta-cal">${rounds.map(r => {
       const label = { calcolata: 'Calcolata', 'in-corso': 'In corso', 'schierata': 'Si gioca', 'da-schierare': 'Si gioca', futura: 'Da giocare' }[r.state];
       const isOpen = r.number === open;
       return `<div class="fanta-cal-round${isOpen ? ' is-open' : ''}${r.number === l.calendar.current ? ' is-current' : ''}">
@@ -62,7 +62,7 @@ function calendar(l, ui) {
 export function auctionSection(l) {
   const a=l.auction;
   const title=a.status==='scheduled'?'Asta programmata':a.status==='running'?'Asta in corso':a.status==='ended'?'Asta conclusa':'Nessuna asta in programma';
-  return `<section class="fanta-block is-first"><div class="fanta-lg-card"><h2>${title}</h2>
+  return `<section class="fanta-block is-first fanta-league-auction"><div class="fanta-lg-card card"><h2>${title}</h2>
     ${a.status==='scheduled'?`<p>${esc(auctionWhen(a.startsAt))} · ${MODE[a.mode]}</p>`:''}
     ${['running','scheduled','ended'].includes(a.status)?'<button type="button" class="primary" data-go="asta">Entra nella sala →</button>':''}
   </div></section>`;
@@ -105,19 +105,19 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   return `<div class="fanta-lega">
     <header class="fanta-sq-head" data-os-header><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1>${esc(l.league.name.replace(/^Random League/i,'Lega pilota'))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
     <div class="v2-chips fanta-lg-tabs" data-os-header role="tablist">${tabs.map(([k, label]) => `<button type="button" role="tab" class="v2-chip${sub === k ? ' is-active' : ''}" data-lega-sub="${k}" aria-selected="${sub === k}">${label}${k === 'asta' && l.auction.status === 'running' ? ' <i class="fanta-lg-live"></i>' : ''}</button>`).join('')}</div>
-    ${sub!=='asta'?'<div data-os-content>':''}
+    <div data-os-content>
     ${body}
     ${group==='lega'?leagueActions({bridge:true}):''}
     ${l.isAdmin && l.importReview?.length ? `<details class="fanta-block"><summary>Import · ${l.importReview.length} elementi da controllare</summary><ul class="fanta-rule-list">${l.importReview.map(p=>`<li><span>${esc(p.team)}${p.name?' · '+esc(p.name):''}${p.round?' · Giornata '+p.round:''}</span><small>${esc(p.issue)}</small></li>`).join('')}</ul></details>` : ''}
-    ${sub!=='asta'?'</div>':''}
+    </div>
   </div>`;
 }
 
 export function fantaPresidentTasks(l){
  if(!l?.isAdmin)return [];
  const tasks=[],free=l.league.maxMembers-(l.members?l.members.filter(m=>m.human).length:l.league.humanMembers??l.league.maxMembers);
- if(l.league.kind!=='pilot')tasks.push({action:'Gestisci asta',auction:true});
- if(free>0)tasks.push({group:'persone',action:'Invita'});
+ if(l.league.kind!=='pilot')tasks.push({action:'Gestisci asta',auction:true,button:true});
+ if(free>0)tasks.push({group:'persone',action:'Invita',button:true});
  tasks.push({group:'persone',action:'Partecipanti ›'});
  if(l.competition?.status==='draft')tasks.push({text:'Competizione da avviare',group:'competizioni',action:'Verifica'});
  return tasks;

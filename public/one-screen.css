@@ -6,14 +6,14 @@ html.os-on body{position:fixed;inset:0;width:100%}
 html.os-on body #app>main.os-root:not(.os-split),
 html.os-on body #app>main.os-split [data-os-content]{
  height:var(--os-h,calc(100dvh - 200px));box-sizing:border-box;margin-bottom:0;
- padding-top:10px!important;padding-bottom:0!important;padding-inline:14px!important;
- overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;column-count:1;column-gap:28px;column-fill:auto;
+ padding-top:6px!important;padding-bottom:0!important;padding-inline:14px!important;
+ overflow:hidden;overscroll-behavior:contain;column-count:1;column-gap:28px;column-fill:auto;
  touch-action:pan-y pinch-zoom;scrollbar-width:none
 }
-html.os-on body #app>main.os-split{height:auto;min-height:0;overflow:visible;margin-bottom:0;padding:0!important}
+html.os-on body #app>main.os-split{height:auto;min-height:0;overflow:visible;margin-bottom:0;padding:6px 0 0!important}
 html.os-on body #app>main.os-split [data-os-content]{width:100%;max-width:100%;padding-top:2px!important}
 html.os-on body #app>main.os-split [data-os-header]{margin-inline:14px}
-html.os-on body #app>main.os-split [data-os-content][data-os-flow],
+html.os-on body #app>main.os-split [data-os-content][data-os-flow]{columns:auto}
 html.os-nocols.os-on body #app .os-track{columns:auto;overflow-y:auto}
 html.os-on body #app .os-track::-webkit-scrollbar{display:none}
 
@@ -57,7 +57,7 @@ html.os-on #pwa-install-card>[data-install-help]{grid-column:1/-1}
 
 /* Sottosezioni generate (es. Oggi: Adesso · Borsa · Obiettivi): ciascuna inizia su una pagina nuova. */
 html.os-on main.os-root .os-seg-start{break-before:column;-webkit-column-break-before:always}
-html.os-on #app>.os-segs{display:flex;gap:3px;margin:8px 14px 0;padding:3px;border:1px solid var(--line,#2b3c32);border-radius:999px;background:#0f1c18}
+html.os-on #app>.os-segs{display:flex;gap:3px;margin:6px 14px 0;padding:3px;border:1px solid var(--line,#2b3c32);border-radius:999px;background:#0f1c18}
 html.os-on #app>.os-segs button{flex:1;min-height:32px;padding:5px 8px;border:0;border-radius:999px;background:transparent;color:var(--muted,#9ba99e);font:600 12px/1.1 'DM Sans',sans-serif;cursor:pointer}
 html.os-on #app>.os-segs button.is-on{background:var(--white,#f6f3e7);color:#10200f}
 html.os-on #app>.os-segs button:focus-visible{outline:2px solid var(--lime,#d6f77b);outline-offset:1px}
@@ -73,8 +73,6 @@ html.os-on .os-pin td{padding:0 4px}
 html.os-on #app>.os-segs{order:0!important}
 html.os-on main.os-split>#live-channel-status{margin:0!important;padding:0 14px 3px!important}
 html.os-on main.os-split>#live-channel-status:empty{display:none}
-html.os-on body #app>main.os-root.os-drill:not(.os-split,.os-drill-paged),
-html.os-on body #app>main.os-split [data-os-content].os-drill:not(.os-drill-paged){columns:auto;overflow-x:hidden;overflow-y:auto}
 .os-track.os-drill.os-drill-parent>:not(.os-drill-path),
 .os-track.os-drill .os-drill-parent>:not(.os-drill-path){display:none!important}
 .os-track.os-drill .os-drill-path{display:block!important;max-height:none!important;overflow:visible!important}

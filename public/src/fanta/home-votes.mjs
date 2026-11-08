@@ -8,6 +8,6 @@ export function withHomeVotes(home,matchup){
  if(!home?.match?.live||!matchup)return home;
  const match={...home.match,live:{...home.match.live}};
  for(const key of ['home','away']){const side=matchup[key],dest=home.match.home?.id===side?.team?.id?'home':home.match.away?.id===side?.team?.id?'away':null;
-  const count=effectiveVoteCount(side);if(dest&&count!==null)match.live[dest]={...match.live[dest],withVote:count,played:count};}
+  const count=effectiveVoteCount(side);if(dest&&count!==null)match.live[dest]={...match.live[dest],withVote:count,played:count,goals:side.goals,points:side.total??side.points??match.live[dest]?.points};}
  return {...home,match};
 }

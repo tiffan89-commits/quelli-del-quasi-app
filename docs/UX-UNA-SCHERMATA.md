@@ -1,6 +1,6 @@
 # Una sezione = una schermata — recap per chi lavora sul branch
 
-Branch: `feat/una-schermata`, nato da `origin/main` 0.31.3 (`c9140f5`). Nessuna modifica all'asta.
+Branch: `feat/una-schermata`, nato da `origin/main` 0.31.3 (`c9140f5`). Sala e wizard d’asta conservano il loro layout.
 
 ## Obiettivo
 Nel Bar e nel Fanta nessuna sezione scorre in verticale. Ogni sezione mostra l'essenziale in una schermata; quello che non ci sta passa a pagine da scorrere di lato (swipe, puntini, rotella/frecce/← → su desktop).
@@ -9,9 +9,11 @@ Nel Bar e nel Fanta nessuna sezione scorre in verticale. Ogni sezione mostra l'e
 
 ### Aggiornamento Friends & Family
 - I blocchi `data-os-header` restano fermi. Il contenitore `data-os-content` ospita le colonne e mantiene la pagina corrente durante le patch live. Schedine, classifiche, Squadra e Lega usano questa separazione.
-- Gli accordion delle sezioni paginate aprono un dettaglio a destra, con ritorno tramite pulsante o swipe verso destra. Se un dettaglio eccede lo spazio, scorre in verticale all’interno della schermata.
-- La cartolina usa il telaio della pagina partita. Nel dettaglio delle partite un carosello dedicato mostra titolari e panchina di casa, poi titolari e panchina ospiti. Gli eventi della Serie A si aprono dall’intestazione. Il calendario della squadra resta in una sola pagina e carica quattro giornate alla volta.
+- Gli accordion delle sezioni paginate aprono un dettaglio a destra, con ritorno tramite pulsante o swipe verso destra. Se il contenuto eccede lo spazio, prosegue nelle pagine laterali.
+- La cartolina usa il telaio della pagina partita. Nel dettaglio delle partite un carosello dedicato mostra titolari e panchina di casa, poi titolari e panchina ospiti. Gli eventi della Serie A si aprono dall’intestazione. Il calendario della squadra carica quattro giornate alla volta, a partire dalle più recenti concluse. Ogni risultato apre la sua sfida nello Studio Live.
 - In Impostazioni resta solo «Il tuo banco di comando» nell’intestazione. Gli inviti e la gestione membri restano raggiungibili dai collegamenti della lega. Gestisci asta resta nel pannello del presidente del Fanta dove l’asta è disponibile.
+- Fanta Oggi mostra la sfida provvisoria in Adesso prima della prossima formazione. L’ultimo risultato apre la partita e la giornata esatte. «Segui la schedina» compare dopo il salvataggio di una giocata.
+- Nello Studio Live il tap su una maglia apre dal basso voti e valutazione. Lega → Asta usa la paginazione laterale e mantiene fermi i tab.
 ### Motore: `public/src/one-screen.mjs` + `public/one-screen.css`
 - `startOneScreen()` è chiamato da `app.mjs` (dopo `loadAppStyles()`) e da `fanta-mode.mjs` (`enterFanta`), sempre con guardia `typeof startOneScreen==='function'`. Il test `interface-live` toglie gli import: la guardia serve.
 - Quando c'è `#app > .v2-tabbar` e la pagina non è esclusa, aggiunge `html.os-on` e `main.os-root`. `#app > main` diventa un contenitore a **colonne CSS** (`column-fill:auto`), alto quanto lo spazio tra intestazione e barra in basso (`--os-h`). Ogni colonna è una pagina.
@@ -23,14 +25,14 @@ Nel Bar e nel Fanta nessuna sezione scorre in verticale. Ogni sezione mostra l'e
   - un contenitore a scorrimento orizzontale che in realtà ci sta in larghezza si spezza (`.os-unclip`);
   - un blocco più alto di una pagina **e** più largo dello schermo scorre al suo interno (`.os-tall`).
 - **Scorrimento verticale di riserva**: il documento non scorre mai (`html.os-on body{position:fixed;inset:0}`, serve anche per iOS). Se qualcosa dovesse comunque scorrere in verticale, scorre dentro `main`, che finisce **sopra** la barra in basso e non ci passa sotto. Se un browser non supporta le colonne (`html.os-nocols`), la pagina scorre in verticale, sempre dentro `main`.
-- **Copyright**: visibile solo sull’ultima pagina, fuori dalle colonne per evitare una pagina vuota. I controlli privacy e statistiche sono nelle impostazioni account.
+- **Copyright**: visibile sotto le icone nella barra di navigazione. I controlli privacy e statistiche sono nelle impostazioni account.
 
 ### Configurazione (in `one-screen.mjs`)
-- `EXCLUDED` — mai attivo su: sala d'asta e wizard (`.auction-room`, `.fanta-asta`, `.auction-lobby`, `.auction-wizard-fields`, `.auction-page-head`, `[data-bid-form]`, `.auction-countdown-overlay`), voce "Asta" della Lega Fanta, `#/fanta/asta`, pagina partita (`body.match-page-active`) e landing (`.pb-landing`).
+- `EXCLUDED` — mai attivo su: sala d'asta e wizard (`.auction-room`, `.fanta-asta`, `.auction-lobby`, `.auction-wizard-fields`, `.auction-page-head`, `[data-bid-form]`, `.auction-countdown-overlay`), `#/fanta/asta`, pagina partita (`body.match-page-active`) e landing (`.pb-landing`).
 - `SEGMENTS` — sottosezioni generate sopra la pagina, ognuna inizia su una pagina nuova (`.os-seg-start`):
   - Bar Oggi: *Adesso · Obiettivi*;
   - Bar Quasi: *La squadra · I tuoi premi*;
-  - Fanta Oggi: *Adesso · Sfida · Classifica*.
+  - Fanta Oggi: *Adesso · Classifica*.
 
   Per aggiungerne una: `{ when: main => …, label, items: [[etichetta, selettore | null]] }`, con i selettori nell'ordine del DOM.
 - `PINS` — riga sempre a vista quando sta in un'altra pagina (oggi `.rankrow.is-me`, la tua riga nella classifica del Bar). Toccandola si va alla sua pagina.
@@ -97,8 +99,7 @@ Tutto sotto `html.os-on main.os-root`. Cambia solo l'aspetto, non i dati né le 
 - `npm test`: 738/740. I 2 che falliscono controllano gli artefatti di build (`dist/index.html`, `docs/BUILD-METAFILE.json`) e falliscono uguali sulla 0.31.3 originale nell'ambiente di lavoro, perché lì esbuild non girava. Vanno rilanciati dopo `npm run build`.
 
 ## Limiti noti / da decidere
-- La Lega del Fanta si apre sulla scheda "Asta", esclusa, quindi lì l'aspetto è quello di prima. I riquadri come nella bozza richiederebbero di aprire la Lega su un'altra scheda, ma questo cambia la destinazione del tab: serve l'OK del proprietario.
-- La pagina "Asta" della Lega Fanta e la sala d'asta scorrono ancora in verticale come in 0.31.3, sotto la barra in basso: sono escluse per regola.
+- Lega apre il riepilogo Asta, impaginato con gli stessi tab della sezione. La sala e il wizard conservano la propria interfaccia.
 - Pill "Mister di Bordo" in Lega › Partecipanti (Fanta): contrasto basso, già presente in 0.31.3.
 
 ## Per caricare il branch

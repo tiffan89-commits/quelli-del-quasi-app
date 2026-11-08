@@ -31,7 +31,7 @@ test('weighted lineup respects probability, injury and unique roles; old bench c
 });
 test('A2 actual ratings count replacements once; complete Serie A removes LIVE and the direct CTA',()=>{
  const side={starters:[{id:'1',vote:6},{id:'2',vote:null,replacedBy:'Sub'},{id:'3',vote:6.5}],bench:[{id:'4',vote:7,enteredFor:'Two'},{id:'5',vote:8}]};assert.equal(effectiveVoteCount(side),3);
- const h=homeFor('lega-quasi','in-corso');h.round.matchesDone=10;h.match.live.home.played=0;const next=withHomeVotes(h,{home:{...side,team:h.match.home},away:{starters:[],team:h.match.away}});assert.equal(next.match.live.home.withVote,3);const html=renderHome(next);assert.ok(!html.includes('>LIVE<'));assert.ok(html.includes('3/11 a voto'));assert.ok(!html.includes('Segui in diretta'));assert.ok(html.includes('Risultati e voti'));
+ const h=homeFor('lega-quasi','in-corso');h.round.matchesDone=10;h.match.live.home.played=0;const next=withHomeVotes(h,{home:{...side,team:h.match.home},away:{starters:[],team:h.match.away}});assert.equal(next.match.live.home.withVote,3);const html=renderHome(next);assert.ok(!html.includes('>LIVE<'));assert.ok(html.includes('3/11 a voto'));assert.ok(!html.includes('Segui in diretta'));assert.ok(html.includes('Voti provvisori'));
 });
 test('hash routes preserve league, screen, subsection and round through encoding',()=>{
  const route={mode:'fanta',page:'classifica',section:'calendario',league:'lega a/1',round:11};assert.deepEqual(readAppRoute(appRoute(route)),{...route,round:'11'});assert.equal(readAppRoute('#registrati'),null);assert.throws(()=>appRoute({mode:'other',page:'x'}));

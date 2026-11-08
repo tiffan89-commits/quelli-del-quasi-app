@@ -10,7 +10,6 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fanta-live-studio .fs-title small.is-live{color:var(--lime)}
 .fanta-live-studio .fs-head{gap:5px;padding-inline:10px}
 .fanta-live-studio .fanta-step{flex:none;width:28px;height:34px;padding:0}
-.live-studio-points{min-height:34px;padding:3px 6px;color:var(--lime);border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:10px}
 .fanta-live-studio .fs-stage{max-width:760px;padding:6px 10px calc(env(safe-area-inset-bottom,0px) + 6px)}
 .fanta-live-studio .fanta-mu-rail{flex:none;margin:0 0 6px;padding:0 0 3px;touch-action:pan-x}
 .fanta-live-studio .fanta-mu{display:grid;min-width:min(184px,70vw);gap:2px;padding:3px}
@@ -27,6 +26,8 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .studio-live-lineup .fanta-pitch{height:100%;margin:0;padding:5px 4px 27px;grid-template-rows:repeat(4,minmax(0,1fr));gap:3px}
 .studio-live-lineup .fanta-pitch-row{align-items:center;min-height:0}
 .studio-live-lineup .fanta-token{min-width:0;gap:1px;padding:2px 0}
+.studio-live-lineup button[data-player]{cursor:pointer;touch-action:manipulation}
+.studio-live-lineup button[data-player]>*{pointer-events:none}
 .studio-live-lineup .fanta-pitch .fanta-token-shirt{width:clamp(23px,calc(25cqh - 47px),85px);height:clamp(23px,calc(25cqh - 47px),85px)}
 .studio-live-lineup .fanta-token :is(.pitch-next-opponent,.pitch-next-kickoff){line-height:1.05}
 .studio-live-lineup .live-studio-bench{height:100%;padding-bottom:35px}
@@ -34,6 +35,17 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .live-studio-reserves .fanta-token{max-width:100%}
 .live-studio-reserves .fanta-token-shirt{width:37px;height:37px}
 .studio-live-lineup .pitch-flip-button{right:6px;bottom:5px}
+.live-player-sheet{
+ inset:auto 0 0;width:100%;max-height:min(88dvh,860px);box-sizing:border-box;color:var(--white);
+ border:1px solid var(--line);border-bottom:0;padding-bottom:calc(var(--safe-bp) + 12px)
+}
+.live-player-sheet:not([open]){display:none}
+.live-player-sheet::backdrop{background:#050a09b3}
+.live-player-sheet>.fanta-ps-head{position:sticky;top:0;background:var(--panel);padding:2px 0;z-index:1}
+@media(prefers-reduced-motion:no-preference){
+ .live-player-sheet[open]{animation:live-player-rise .22s ease-out}
+ @keyframes live-player-rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+}
 .fs-actions{display:flex;flex:none;flex-wrap:nowrap;gap:5px;align-items:center}.fs-actions .fs-quick{flex:none;min-height:38px;padding:0 9px;border:0;border-radius:999px;background:var(--lime);color:#0c1815;font:700 11px 'DM Sans',sans-serif;white-space:nowrap}.fs-actions .fs-quick.is-danger{background:#a83836;color:#fff3ef;border:1px solid #e7746e}.fs-quick:disabled{opacity:.4;cursor:default}
 .fs-stage{flex:1;min-height:0;width:100%;max-width:1100px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}.fs-top{flex:1;min-height:0;display:flex;flex-direction:column;padding:6px 10px 8px;background:linear-gradient(#0f1f1a,var(--bg))}
 .fs-formations{display:flex;flex:none;gap:6px;width:100%;max-width:1000px;margin:0 auto;padding-bottom:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}.fs-formations::-webkit-scrollbar{display:none}

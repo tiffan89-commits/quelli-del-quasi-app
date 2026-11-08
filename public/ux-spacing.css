@@ -148,3 +148,12 @@ body.match-page-active main.match-page{max-width:650px!important;margin-inline:a
 .fanta-token>.pitch-event-ring{min-height:17px;max-width:80px}.fanta-events .ev-goal>svg,.fanta-events .ev-own>svg,.fanta-events .ev-assist>svg{width:17px;height:17px}.fanta-events .ev-own,.fanta-events .ev-assist{display:inline-flex;background:none;padding:0}
 
 .fanta-lineup .fanta-p,.fanta-lineup .fanta-p.is-to-play{grid-template-columns:28px minmax(0,1fr) 62px}.fanta-cols-row .fanta-cols{display:block;width:62px;text-align:right}
+
+@media(max-width:1023px){
+ body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){
+  grid-template-rows:44px 12px;height:auto;min-height:0;
+  padding:2px max(4px,env(safe-area-inset-right,0px)) calc(max(6px,env(safe-area-inset-bottom,0px)) + 1px) max(4px,env(safe-area-inset-left,0px))!important
+ }
+ body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab{height:44px;min-height:0;padding-block:1px!important;gap:2px}
+ body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab svg{width:19px;height:19px}
+}
