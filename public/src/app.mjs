@@ -309,6 +309,7 @@ function fantasyAvailable(l = L()) {
   return !!l?.rounds?.some((r) => sourceOf(r) === "fantacalcio");
 }
 let displayedSlipRoundId=null;
+let activeMarketId=null,refreshBarTicket=null;
 const publicSlipView=()=>slipScope==='bar'||slipScope==='community';
 function availableRounds() {
  const all=(L()?.rounds||[]).filter(r=>!r.archived&&sourceOf(r)===sourceScope&&(sourceScope!=='fantacalcio'||!competitionScope||r.competitionKey===competitionScope));
@@ -459,7 +460,9 @@ function hydrateDraft() {
     r?.slip?.picks,
     r?.pointsOnly ? 0 : r?.slip?.stake || 1,
   );
-  viewKey = state.user && L() && r && !r.preview ? draftKey(state.user.id, L().id, r) : null;
+  const nextViewKey=state.user && L() && r && !r.preview ? draftKey(state.user.id,L().id,r) : null;
+  if(nextViewKey!==viewKey)activeMarketId=null;
+  viewKey=nextViewKey;
   draftConflict = null;
   picks = { ...(r?.slip?.picks || {}) };
   stake = r?.pointsOnly ? 0 : r?.slip?.stake || 1;
@@ -605,7 +608,7 @@ function slipsPage(l, r, m) {
         ? fantasyEmpty(l)
         : slipScope === "bar"
           ? otherSlips(l, r)
-          : renderSlipV2({ round: r, picks, stake, credits: m.credits, openMatch: activeMatchId, esc, fmt, date,
+          : renderSlipV2({ round: r, picks, stake, credits: m.credits, openMatch: activeMarketId, esc, fmt, date,
             barTicket: true, roundPicker: r ? roundSelector(l,r) : '',
             conflictNotice: draftConflict ? '<div class="notice"><b>La schedina è stata aggiornata da un altro dispositivo.</b><p>Puoi tenere la versione salvata oppure recuperare la bozza locale e rivederla.</p><button class="secondary" id="keep-server">Tieni quella salvata</button> <button class="secondary" id="recover-draft">Recupera la bozza</button></div>' : '' });
   return (
@@ -2126,22 +2129,26 @@ function bindNew(l, r) {
       else save.removeAttribute("aria-busy");
       if(busy)bar.querySelectorAll("#stake,[data-stake-step],[data-ticket-stake]").forEach(control=>control.disabled=true);
     };
-    const redrawChoices=()=>{
-      if(!patchSlipV2(document,{round:R(),picks,stake,credits:me().credits,openMatch:activeMatchId,esc,fmt,date})){render();return;}
-      bindSlipV2(document,choiceHandlers);controls();patchSlipResults($('#app'),R(),picks,isClosed(R()));
+    const redrawChoices=(fromLive=false)=>{
+      const round=R();
+      if(!patchSlipV2(document,{round,picks,stake,credits:me().credits,openMatch:activeMarketId,esc,fmt,date})){if(!fromLive)render();return;}
+      controls();bindSlipV2(document,choiceHandlers);
+      if(!fromLive)patchSlipResults($('#app'),round,picks,isClosed(round));
     };
     const choiceHandlers={
       onPick: (id, value) => {
-        if(busy||editingEventLocked(r,r.matches.find(m=>m.id===id)))return;
+        const round=R();
+        if(busy||editingEventLocked(round,round?.matches.find(m=>m.id===id)))return;
         if (picks[id] === value) delete picks[id]; else picks[id] = value;
         persistDraft(); redrawChoices();
       },
-      onToggle: (id) => { activeMatchId = activeMatchId === id ? null : id; redrawChoices(); },
+      onToggle: (id) => { activeMarketId = activeMarketId === id ? null : id; redrawChoices(); },
       onStake: (value) => { if(busy||editingClosed(r)||slipSummary(r,picks,stake).fixedStake)return; stake = value; persistDraft(); controls(); },
       onSave: async () => { const pending = saveCurrentSlip(); controls(); await pending; controls(); },
     };
-    bindSlipV2(document,choiceHandlers);
     controls();
+    bindSlipV2(document,choiceHandlers);
+    refreshBarTicket=()=>redrawChoices(true);
     patchSlipResults($("#app"), r, picks, isClosed(r));
   }
   if ($("#review-slip"))
@@ -2427,7 +2434,7 @@ function applyLive(data){
   const round=R();
   if(round&&editingClosed(round))document.querySelectorAll("#save-slip,#stake,[data-stake-step],[data-ticket-stake]").forEach(e=>e.disabled=true);
   if(round){
-    if($('.bar-ticket')&&!busy&&!offline&&!draftConflict)patchSlipV2(document,{round,picks,stake,credits:me().credits,openMatch:activeMatchId,esc,fmt,date});
+    if($('.bar-ticket')&&!busy&&!offline&&!draftConflict)refreshBarTicket?.();
     patchSlipResults($('#app'),round,picks,isClosed(round));
   }
   const matches=[...(L().rounds||[]),...(state.calendar?.rounds||[])].flatMap(r=>r.matches);

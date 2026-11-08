@@ -38,7 +38,7 @@ function option(m, p, picks, closed, esc, fmt, pointsOnly,round,barTicket=false)
   if(barTicket){
     const quote=Number.isFinite(odd)?ticketQuote.format(odd):'—';
     return `<button type="button" class="v2-odd${on?' is-on':''}" data-pick="${esc(m.id)}" data-value="${esc(p)}"
-      ${closed||!Number.isFinite(odd)?'disabled':''} aria-pressed="${on}"
+      ${closed||round.virtualBookmaker&&!Number.isFinite(odd)?'disabled':''} aria-pressed="${on}"
       aria-label="${esc(m.home+' – '+m.away+': '+show(p)+' · '+(Number.isFinite(odd)?'quota '+quote:'quota non disponibile'))}">
       <b>${esc(pickCode(p))}</b><span>${quote}</span></button>`;
   }
@@ -150,7 +150,7 @@ function renderTicketBar({round,picks,stake,credits,fmt}){
     </div><small class="ticket-reserve">Riserva obbligatoria: ${fmt(sum.reserve)} cr</small>`}
     ${sum.closed?`<button type="button" class="ticket-save" disabled><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Chiusa</button>`:
       saved?`<button type="button" class="ticket-save is-done" id="save-slip" data-ticket-edit>Confermata ✓ · Modifica</button>`:
-      `<button type="button" class="ticket-save" id="save-slip" ${sum.canSave?'':'disabled'}>${preview||unavailable?'Non ancora aperta':'Salva schedina'+(sum.pointsOnly?'':' · '+fmt(stake)+' cr')}</button>`}
+      `<button type="button" class="ticket-save" id="save-slip" ${sum.canSave?'':'disabled'}>${preview||unavailable&&!sum.canSave?'Non ancora aperta':'Salva schedina'+(sum.pointsOnly?'':' · '+fmt(stake)+' cr')}</button>`}
   </div>`;
 }
 
