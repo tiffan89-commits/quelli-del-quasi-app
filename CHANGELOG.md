@@ -258,6 +258,16 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.32.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.32.1...v0.32.2) (2026-11-08)
+
+
+### Bug Fixes
+
+* **ux:** fill Bar slip pages and enlarge Quasi portraits ([b6f0a76](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/b6f0a7630034375d20a28f9f8766551414a815f0))
+* **ux:** refine slips and roster corrections for one production channel ([edb6b0d](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/edb6b0d7a66e623d52797a393a676cf852163681))
+* **ux:** search free players when correcting rosters ([f5e797e](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/f5e797e0ecc1b20180a0e830257ce7e73d9f9b5b))
+* **ux:** show only odds in priced slip choices ([cf45c7e](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/cf45c7e7b387c08baafa8edd676fd92049045f0f))
+
 ## [0.32.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.32.0...v0.32.1) (2026-11-08)
 
 
