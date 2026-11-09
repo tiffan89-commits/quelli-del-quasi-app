@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {fixtureDb} from './fanta/helpers.mjs';
 import {sqlFantaStore} from '../fanta/store.mjs';
 import {createFantaApi} from '../fanta/api.mjs';
@@ -32,8 +33,20 @@ test('targeted lineup save is atomic, idempotent, own-roster only and rejects de
 test('explicit Bar probabilities project by stable ID or unambiguous club/name, ignore previous rounds and old consensus, never infer booleans',async()=>{
  const f=await fixtureDb();try{
   const p={id:'af:99',name:'Éderson',club:'Club 1'},lineups={kind:'official',teams:[{team:'Club 1',players:[{name:'Ederson',probability:100},{name:'Other',playerId:'af:100',probability:0},{name:'No percentage',starter:true}],bench:[]}]};
-  await f.db.query(`UPDATE fanta_state SET payload=payload||$1::jsonb`,[JSON.stringify({football:{calendar:{season:2026,rounds:[{number:10,matches:[{lineups}]}]},rounds:{'seriea:11':{number:11,matches:[]}}}})]);
-  const data=await f.connect();let rounds;try{rounds=await readPlayProbabilities(data,11,2026);}finally{data.release();}
+  await f.db.query(`UPDATE fanta_state SET payload=payload||$1::jsonb`,[JSON.stringify({football:{calendar:{season:2026,rounds:[{number:10,matches:[{id:'m10',lineups}]}]},rounds:{11:{matches:[]}}}})]);
+  const data=await f.connect();let rounds;
+  try{
+   rounds=await readPlayProbabilities(data,11,2026);
+   for(const file of ['017_live_storage_backfill.sql','020_live_storage_round_cache.sql']){
+    await f.db.exec(await readFile(new URL('../netlify/database/migrations/'+file,import.meta.url),'utf8'));
+   }
+   await f.db.query(`UPDATE public.fanta_state SET payload=payload #- '{football,calendar,rounds}' #- '{football,rounds}'`);
+   const previous=process.env.SELFHOST_BAR_STORAGE;process.env.SELFHOST_BAR_STORAGE='rows';
+   try{
+    assert.deepEqual(await readPlayProbabilities(data,11,2026),rounds);
+    assert.deepEqual(await readPlayProbabilities(data,11,2025),[]);
+   }finally{if(previous===undefined)delete process.env.SELFHOST_BAR_STORAGE;else process.env.SELFHOST_BAR_STORAGE=previous;}
+  }finally{data.release();}
   assert.equal(probabilityFor(p,rounds,11),null);assert.deepEqual(probabilityFor(p,rounds,10),{pct:100,source:'official'});
   assert.deepEqual(probabilityFor({...p,id:'af:100',name:'Alias'},rounds,10),{pct:0,source:'official'});
   assert.equal(probabilityFor({...p,club:'Different club'},rounds,11),null);

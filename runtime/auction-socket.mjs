@@ -96,7 +96,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   if([...io.sockets.sockets.values()].filter(s=>s.data.user?.id===user.id).length>=8)throw Error('Troppi dispositivi collegati');
   socket.data={league,token,user,acked:0,passive:socket.handshake.auth?.passive===true};next();
  }catch{next(Error('Accedi alla lega per seguire l’asta.'));}});
- function roomFor(league,uid){if(!rooms.has(league))rooms.set(league,{league,uid,sockets:new Set(),state:null,pending:false,refreshing:null,timer:null,attemptedComputerTurn:null});return rooms.get(league);}
+ function roomFor(league,uid){if(!rooms.has(league))rooms.set(league,{league,uid,sockets:new Set(),state:null,pending:false,refreshing:null,timer:null,attemptedComputerTurn:null,tickFailures:0,retryAt:0});return rooms.get(league);}
  function pushPresence(room){
   const present=new Set([...room.sockets].filter(s=>s.connected&&s.data.inAuction).map(s=>s.data.user.id));
   const ids=(room.state?.teams||[]).filter(t=>present.has(t.userId)).map(t=>t.id);
@@ -135,8 +135,15 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
     room.attemptedComputerTurn=planned;
    }
   },{write:true,auction:true,catalog:!!room.state&&(auctionTickNeedsCatalog(room.state.auction)||computerActionAt(room.state)!=null&&!room.state.auction.lot)});
+  room.tickFailures=0;room.retryAt=0;
   if(notice)try{await dispatchFanta('auction-notify:'+notice);}catch{}
-  }catch{log('AUCTION_TIMER_RETRY',{league:room.league});}
+  }catch(error){
+   const retryMs=Math.min(60000,1000*2**Math.min(room.tickFailures++,6));
+   room.retryAt=now()+retryMs;
+   log('AUCTION_TIMER_RETRY',{league:room.league,code:error?.code,retryMs});
+   if(rooms.get(room.league)===room&&!closed)schedule(room);
+   return;
+  }
   await refresh(room);
  }
  function schedule(room){
@@ -144,7 +151,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   const deadline=a.status==='scheduled'?a.startsAt:a.status==='running'&&a.mode==='live'&&a.phase!=='releases'?(a.lobbyEndsAt||a.pausedUntil||a.lot?.endsAt||a.callDeadline):null;
   const botDeadline=computerActionAt(room.state);
   const nextDeadline=Math.min(deadline?Date.parse(deadline):Infinity,botDeadline!==room.attemptedComputerTurn?botDeadline??Infinity:Infinity);
-  if(Number.isFinite(nextDeadline)){const delay=Math.max(20,Math.min(86400000,nextDeadline-now()+10));room.timer=setTimeout(()=>void tick(room),delay);}
+  if(Number.isFinite(nextDeadline)){const delay=Math.max(20,Math.min(86400000,Math.max(nextDeadline+10,room.retryAt)-now()));room.timer=setTimeout(()=>void tick(room),delay);}
  }
  async function refresh(room){
   if(closed)return;room.pending=true;if(room.refreshing)return room.refreshing;

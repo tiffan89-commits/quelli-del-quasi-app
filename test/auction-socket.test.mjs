@@ -48,7 +48,13 @@ test('Socket.IO pushes committed snapshots, isolates rooms, acknowledges all pee
 });
 
 test('server advances an auction deadline without any connected client or client tick',async()=>{
- const f=await fixtureDb(),bus=new EventEmitter(),base=sqlFantaStore(f),server=http.createServer((req,res)=>res.end()),store={...base,league:async(uid,id,fn,options)=>{const result=await base.league(uid,id,fn,options);if(options?.write)bus.emit('change',id);return result;}};let hub;
+ const f=await fixtureDb(),bus=new EventEmitter(),base=sqlFantaStore(f),server=http.createServer((req,res)=>res.end());
+ let failNextTick=false,failedAt=0,recoveredAt=0,hub;
+ const store={...base,league:async(uid,id,fn,options)=>{
+  if(failNextTick&&options?.write){failNextTick=false;failedAt=Date.now();throw Object.assign(Error('Database busy'),{code:'53200'});}
+  if(failedAt&&!recoveredAt&&options?.write)recoveredAt=Date.now();
+  const result=await base.league(uid,id,fn,options);if(options?.write)bus.emit('change',id);return result;
+ }};
  try{
   await f.db.query("UPDATE fanta.leagues SET rules=rules||'{\"callSeconds\":0.15}' WHERE id='fanta-lucas-a'");
   await f.db.query("UPDATE fanta_state SET payload=jsonb_set(payload,'{leagues}','[{\"id\":\"bar-auction\",\"members\":[{\"uid\":\"u1\"},{\"uid\":\"bar-only\"}]}]') WHERE id=1");
@@ -61,7 +67,9 @@ test('server advances an auction deadline without any connected client or client
   const retry=await schedule();assert.equal((await retry.json()).version,planned.version);
   const notices=(await f.db.query("SELECT user_id,data FROM fanta.notifications WHERE kind='auction' ORDER BY user_id")).rows;
   assert.deepEqual(notices.map(n=>n.user_id),['bar-only','u1','u2']);assert.ok(notices.every(n=>n.data.title.startsWith('Asta programmata')&&n.data.url.includes('/fanta/asta')));
+  failNextTick=true;
   await waitFor(()=>hub.stats()[0]?.version===planned.version+1,5000);assert.equal(hub.stats()[0].devices,0);
+  assert.ok(failedAt&&recoveredAt-failedAt>=950,'a failed tick waits before retrying and still advances');
   const startedAt=Date.now(),start=await api(new Request(origin+'/fanta-api/auction/lobby-start',{method:'POST',headers:{cookie:'sid=token1'},body:JSON.stringify({league:settings.league})}));
   assert.equal(start.status,200,await start.clone().text());const lobby=await start.json();assert.equal(lobby.phase,'lobby');
   assert.ok(Date.parse(lobby.lobbyEndsAt)>=startedAt+10000);assert.equal(lobby.caller,null);

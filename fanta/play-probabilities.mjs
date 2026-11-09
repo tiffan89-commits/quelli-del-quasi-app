@@ -1,6 +1,7 @@
 import {normalizeTeam} from '../lib/calendar.mjs';
 import {normalizePersonName} from './player-identities.mjs';
 import {PRESENCE_MODEL} from '../public/src/fanta/presence-probability.mjs';
+import {barStorageMode} from '../lib/storage-mode.mjs';
 
 // Reuse only explicit percentages already stored by the Bar. Never infer a
 // percentage from starter/bench flags or associate an ambiguous namesake.
@@ -19,18 +20,35 @@ export function probabilityFor(player,rounds,current){
  return null;
 }
 
+const seasonMatches=`coalesce(s.payload#>>'{football,calendar,season}',$2::text)=$2::text`;
+const relevantRounds=`IN ($1::text,($1::int-1)::text)`;
+const cacheRound=(data,key)=>`coalesce(${data}->>'number',CASE WHEN ${key} ~ '^[0-9]+$' THEN (${key}::int)::text END)`;
+const legacyLineups=`
+ SELECT r.number,m->'lineups' AS lineup
+ FROM fanta_state s
+ CROSS JOIN LATERAL (
+  SELECT r->>'number' AS number,r->'matches' AS matches FROM jsonb_array_elements(coalesce(s.payload#>'{football,calendar,rounds}','[]')) r
+  UNION ALL
+  SELECT ${cacheRound('value','key')},value->'matches' FROM jsonb_each(coalesce(s.payload#>'{football,rounds}','{}'))
+ ) AS r(number,matches)
+ CROSS JOIN LATERAL jsonb_array_elements(coalesce(r.matches,'[]')) m
+ WHERE ${seasonMatches} AND r.number ${relevantRounds}`;
+const rowLineups=`
+ SELECT r.data->>'number' AS number,m.data->'lineups' AS lineup
+ FROM public.fanta_state s CROSS JOIN fanta.bar_seriea_calendar_rounds r
+ JOIN fanta.bar_seriea_matches m ON m.round_position=r.position
+ WHERE s.id=1 AND ${seasonMatches} AND r.data->>'number' ${relevantRounds}
+ UNION ALL
+ SELECT ${cacheRound('r.data','r.cache_key')},m->'lineups'
+ FROM public.fanta_state s CROSS JOIN fanta.bar_football_round_cache r
+ CROSS JOIN LATERAL jsonb_array_elements(coalesce(r.data->'matches','[]')) m
+ WHERE s.id=1 AND ${seasonMatches} AND ${cacheRound('r.data','r.cache_key')} ${relevantRounds}`;
+
 export async function readPlayProbabilities(c,round,season){
  if(!Number.isInteger(round))return [];
- const result=await c.query(`WITH rounds AS (
-  SELECT r FROM fanta_state s CROSS JOIN LATERAL jsonb_array_elements(coalesce(s.payload#>'{football,calendar,rounds}','[]')) r
-   WHERE coalesce(s.payload#>>'{football,calendar,season}',$2::text)=$2::text
-  UNION ALL
-  SELECT r FROM fanta_state s CROSS JOIN LATERAL jsonb_each(coalesce(s.payload#>'{football,rounds}','{}')) pair CROSS JOIN LATERAL (SELECT pair.value||jsonb_build_object('number',coalesce(pair.value->'number',CASE WHEN pair.key ~ '^[0-9]+$' THEN to_jsonb(pair.key::int) ELSE 'null'::jsonb END)) AS r) item
-   WHERE coalesce(s.payload#>>'{football,calendar,season}',$2::text)=$2::text
- ), players AS (
-  SELECT (r->>'number')::int AS number,t->>'team' AS club,p->>'name' AS name,coalesce(p->>'apiId',p->>'playerId',p->>'id') AS id,p->'probability' AS pct,m#>>'{lineups,kind}' AS kind,m#>>'{lineups,method}' AS method
-  FROM rounds CROSS JOIN LATERAL jsonb_array_elements(coalesce(r->'matches','[]')) m CROSS JOIN LATERAL jsonb_array_elements(coalesce(m#>'{lineups,teams}','[]')) t CROSS JOIN LATERAL jsonb_array_elements(coalesce(t->'players','[]')||coalesce(t->'bench','[]')) p
-  WHERE r->>'number' IN ($1::text,($1::int-1)::text)
+ const result=await c.query(`WITH lineups AS (${barStorageMode()==='rows'?rowLineups:legacyLineups}), players AS (
+  SELECT number::int,t->>'team' AS club,p->>'name' AS name,coalesce(p->>'apiId',p->>'playerId',p->>'id') AS id,p->'probability' AS pct,lineup->>'kind' AS kind,lineup->>'method' AS method
+  FROM lineups CROSS JOIN LATERAL jsonb_array_elements(coalesce(lineup->'teams','[]')) t CROSS JOIN LATERAL jsonb_array_elements(coalesce(t->'players','[]')||coalesce(t->'bench','[]')) p
  ) SELECT number,jsonb_agg(jsonb_build_object('club',club,'name',name,'id',id,'pct',pct,'kind',kind,'method',method)) AS players FROM players GROUP BY number`,[round,season]);
  return result.rows;
 }
