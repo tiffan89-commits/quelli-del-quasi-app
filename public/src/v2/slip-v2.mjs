@@ -140,7 +140,9 @@ function renderTicketBar({round,picks,stake,credits,fmt}){
   const quick=[10,25,50,'Max'];
   return `<div class="v2-slipbar ticket-summary">
     <div class="ticket-totals"><span>${sum.count} ${sum.count===1?'selezione':'selezioni'}${sum.odds===null?'':' · quota '+ticketQuote.format(sum.odds)}</span>
-      ${sum.potential===null||sum.pointsOnly?'':`<strong>Vinci ${fmt(sum.potential)} cr</strong>`}</div>
+      ${sum.closed?'':`<span>Punti max <b>${sum.maximumPoints===null?'—':fmt(sum.maximumPoints)}</b></span>
+      ${sum.pointsOnly?'':`<strong class="${sum.potential===null?'ticket-pending':''}">Vinci ${sum.potential===null?'—':fmt(sum.potential)} cr</strong>`}`}</div>
+    ${!sum.closed&&sum.missing?`<small class="ticket-reserve">In attesa di quote per le selezioni</small>`:''}
     ${sum.pointsOnly||sum.closed?'':`<div class="ticket-stake${adjust?'':' ticket-stake-fixed'}" role="group" aria-label="Puntata in crediti">
       ${adjust?`<button type="button" data-stake-step="-1" aria-label="Diminuisci di un credito" ${value<=1?'disabled':''}>−</button>`:''}
       <b data-v2-stake-current>${fmt(stake)} cr</b>

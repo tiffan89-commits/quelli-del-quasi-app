@@ -9,6 +9,7 @@ import {sha} from '../lib/game.mjs';
 import {readSnapshot} from '../lib/db.mjs';
 import {persistApiOdds,readOddsSnapshot} from '../lib/operations/odds-db.mjs';
 import {refreshFutureCalendar} from '../lib/operations/future-calendar.mjs';
+import {changeBarStorage} from '../runtime/bar-storage.mjs';
 
 test('replaying a final settles once and resumes interrupted rewards on row storage',async()=>{
  const db=new PGlite();
@@ -119,5 +120,16 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   assert.equal((await snapshot('match','rows')).football.calendar.rounds[0].matches[0].kickoff,newKickoff);
   assert.equal((await state()).rounds[0].matches[0].kickoff,kickoff);
   assert.deepEqual((await db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload,original);
+  for(const name of ['022_live_storage_cutover','023_live_storage_membership_view']){
+   await db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
+  }
+  assert.equal((await changeBarStorage('enable',{connect})).after.active,true);
+  assert.deepEqual((await db.query('SELECT payload FROM fanta.fanta_state WHERE id=1')).rows[0].payload,original);
+  await db.query("UPDATE fanta.bar_membership_document SET payload=jsonb_set(payload,'{leagues,0,name}',to_jsonb('New name'::text)) WHERE id=1");
+  assert.equal((await snapshot('live','rows')).leagues[0].name,'New name');
+  assert.equal((await changeBarStorage('disable',{connect})).after.active,false);
+  const restored=(await db.query('SELECT payload FROM public.fanta_state WHERE id=1')).rows[0].payload;
+  original.leagues[0].name='New name';
+  assert.deepEqual(restored,original);
  }finally{await db.close();}
 });

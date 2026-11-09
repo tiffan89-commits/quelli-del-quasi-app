@@ -5,6 +5,7 @@ import {id,settle,creditAccount} from '../lib/game.mjs';
 import {fantasyQuote} from '../lib/bar-fanta-odds.mjs';
 import {migrateFantasyWallets} from '../lib/bar-fanta-wallet.mjs';
 import {readBarRows,writeBarRows} from '../lib/operations/bar-rows.mjs';
+import {barStorageMode} from '../lib/storage-mode.mjs';
 
 // Keep the old Bar IDs and accepted prices: a slip is a contract, even after
 // the calendar starts being maintained by the native Fanta engine.
@@ -41,7 +42,7 @@ export function projectNativeBar(s,native,{now=Date.now()}={}){
 }
 
 // One targeted transaction after the shared calculation, never per client.
-export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagueIds=null,sportsStorage='snapshot'}={}){
+export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagueIds=null,sportsStorage=barStorageMode()}={}){
  const c=await connect();try{await c.query('BEGIN');await c.query('SELECT pg_advisory_xact_lock(826501)');
   const links=(await c.query(`SELECT b.*,l.name,l.season,l.max_members,l.auto_lineups_from AS cutover FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id WHERE b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL AND ($1::text[] IS NULL OR l.id=ANY($1::text[]))`,[onlyLeagueIds])).rows;if(!links.length){await c.query('COMMIT');return {changed:0};}
   const leagueIds=links.map(l=>l.fanta_league_id),competitions=links.map(l=>l.competition_id),native={links};

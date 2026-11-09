@@ -1,3 +1,4 @@
+import {barMembershipRoot} from '../lib/storage-mode.mjs';
 import {computerActionAt,computerDecision} from '../fanta/auction-computer.mjs';
 import {Server} from 'socket.io';
 import {connection} from '../lib/db.mjs';
@@ -50,7 +51,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   try{return (await c.query(`WITH membership AS (
     SELECT t.user_id AS uid,t.league_id FROM fanta.teams t WHERE t.user_id=ANY($1::text[])
     UNION
-    SELECT m->>'uid',b.fanta_league_id FROM fanta_state s
+    SELECT m->>'uid',b.fanta_league_id FROM ${barMembershipRoot()} s
       CROSS JOIN LATERAL jsonb_array_elements(s.payload->'leagues') bar
       JOIN fanta.bar_links b ON b.active AND b.bar_league_id=bar->>'id'
       CROSS JOIN LATERAL jsonb_array_elements(bar->'members') m

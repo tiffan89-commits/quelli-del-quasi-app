@@ -1,4 +1,5 @@
 import {eventLocked,noOpenEvents,stakeLocked,slipStakeLimit} from '../slip-events.mjs';
+import {slipPointTerms} from '../scoring.mjs';
 export function roundAvailability(round,now=Date.now()){
  if(round?.eventBetting){
   if(noOpenEvents(round,now))return 'chiusa';
@@ -74,6 +75,19 @@ export function cleanPicks(round, picks = {}) {
 export function fingerprint(picks = {}, stake = 1) {
   return JSON.stringify([Object.entries(picks).sort(([a],[b]) => a.localeCompare(b)), Number(stake)]);
 }
+function maximumSlipPoints(round, matches, picks) {
+  if(!round?.rules)return null;
+  const selected=matches.filter(m=>!m.void&&Object.hasOwn(picks,m.id));
+  if(!selected.length)return null;
+  let total=0;
+  for(const match of selected){
+    const saved=round.slip?.picks?.[match.id]===picks[match.id]?round.slip:null;
+    const {correct}=slipPointTerms(round,match,saved||{picks});
+    if(!Number.isFinite(correct))return null;
+    total+=correct;
+  }
+  return Math.round(total*100)/100;
+}
 export function slipSummary(round, picks, stake, credits = Infinity, now = Date.now()) {
   const matches = round?.matches || [], partial=round?.eventBetting===true, valid = editablePicks(round, picks,now);
   const count = Object.keys(valid).length, total = matches.length;
@@ -86,7 +100,7 @@ export function slipSummary(round, picks, stake, credits = Infinity, now = Date.
   const odds = missing || !count || (!partial&&count!==total) ? null : matches.reduce((a,m) => m.void ? a : a * (price(m) || 1), 1);
   const closed = editingClosed(round, now);
   const status = round?.settled ? 'Liquidata' : roundAvailability(round,now)==='non ancora aperta'?'Non ancora aperta':closed?'Chiusa' : round?.slip && !dirty ? 'Salvata' : round?.slip ? 'Modifiche da salvare' : 'Bozza';
-  return {count,total,missing,odds,pointsOnly,validStake,dirty,closed,status,fixedStake,maxStake,reserve,picks:valid,potential:odds === null ? null : Math.round(odds*value*100)/100,canSave:round?.preview!==true && total>0 && (partial?count>0&&(!round.virtualBookmaker||!missing):count===total) && validStake && !closed && (partial||roundAvailability(round,now)==='aperta')};
+  return {count,total,missing,odds,pointsOnly,validStake,dirty,closed,status,fixedStake,maxStake,reserve,picks:valid,maximumPoints:maximumSlipPoints(round,matches,valid),potential:odds === null ? null : Math.round(odds*value*100)/100,canSave:round?.preview!==true && total>0 && (partial?count>0&&(!round.virtualBookmaker||!missing):count===total) && validStake && !closed && (partial||roundAvailability(round,now)==='aperta')};
 }
 export function draftKey(user, league, round) {
   return ['quasi-draft-v1',user,league,sourceOf(round),round?.id].join(':');
