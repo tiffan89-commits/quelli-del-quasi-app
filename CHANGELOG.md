@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.0...v0.35.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* alleggerisci il caricamento squadra e limita i retry delle aste ([3cb2fdd](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3cb2fddf7a18e38ed922cb1262fae9d0aa6a66ba))
+* alleggerisci il caricamento squadra e limita i retry delle aste ([1d89c93](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/1d89c9347fe6554c5c69648b15a6fbc956223d30))
+
 ## [0.35.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.34.2...v0.35.0) (2026-11-09)
 
 
