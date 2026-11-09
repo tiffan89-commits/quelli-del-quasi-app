@@ -351,7 +351,7 @@ async function refresh(reset = false) {
   if (refreshing) return false;
   refreshing = true;
   try {
-    const next = await api("state?lite=1");
+    const next = await api("state?lite=1&ledger=0");
     if (!next || !Array.isArray(next.leagues))
       throw Error("Risposta del servizio non valida");
     const previousUser = state.user?.id,
@@ -371,7 +371,7 @@ async function refresh(reset = false) {
     const invite=state.user?.emailVerified&&!state.user.demo?pendingInvite():null;
     if(invite&&inviteAttempt!==state.user.id+':'+invite){inviteAttempt=state.user.id+':'+invite;try{
       const joined=await joinInvite(invite,{join:code=>api('join',{code}),clear:()=>{clearPendingInvite();v2Invite=null;clearEntry(localStorage);}});
-      state=await api('state?lite=1');leagueId=joined.league;selectedRoundId=null;page='lega';writeAppRoute({mode:'bar',page:'oggi',league:joined.league},{replace:true});
+      state=await api('state?lite=1&ledger=0');leagueId=joined.league;selectedRoundId=null;page='lega';writeAppRoute({mode:'bar',page:'oggi',league:joined.league},{replace:true});
     }catch(error){notify(error.message);}}
     if(next.adminOnly){location.replace("/admin.html");return;}
     if(state.user?.emailVerified&&!state.user.demo&&new URLSearchParams(location.search).get('entry')==='fanta'&&!accountAction&&!pendingInvite()){rememberEntry(localStorage);location.replace('/entra-fanta.html'+location.search);return true;}
@@ -637,7 +637,7 @@ function render() {
   }
   if(state.adminOnly){location.replace('/admin.html');return;}
   loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();
-  sourceScope='seriea';
+  if(sourceScope==='fantacalcio'&&!fantasyAvailable())sourceScope='seriea';
   const l = L(),
     r = R(),
     m = me();
@@ -1371,7 +1371,7 @@ function nativeSlipServices(){return {
  account:{groups:accountGroups,bind:(onChanged,barLeague)=>bindAccount(onChanged,{manageFanta:false,barLeague})},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
- save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
+ save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1&ledger=0');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1&ledger=0');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
  refresh:async id=>{if(!sportsWindowActive(state.calendar?.rounds||[]))return false;const before=JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);const data=await api('live?'+new URLSearchParams({league:id}));mergeLiveSnapshot(state,data);return before!==JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);}
 };}
 function markPublicSlipChoices(){for(const l of state.leagues||[])for(const r of l.rounds||[])r.publicChoicesAvailable=!!r.closed&&Array.isArray(r.publicSlips);}
