@@ -705,8 +705,9 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
   grid-template-columns:minmax(0,1fr);
   max-width:none;width:auto;margin:0;padding:8px 0;background:#0e1c18;border-radius:0;
 }
-.ticket-totals{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--white);line-height:1.35}
+.ticket-totals{display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px 8px;font-size:12px;color:var(--white);line-height:1.35}
 .ticket-totals strong{color:#afe5b3;text-align:right}
+.ticket-totals .ticket-pending{color:inherit}
 .ticket-stake{
   display:grid;grid-template-columns:44px minmax(0,1fr) repeat(5,44px);
   gap:2px;align-items:center;width:100%;

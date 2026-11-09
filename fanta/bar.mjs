@@ -4,6 +4,8 @@ import {connection} from '../lib/db.mjs';
 import {id,settle,creditAccount} from '../lib/game.mjs';
 import {fantasyQuote} from '../lib/bar-fanta-odds.mjs';
 import {migrateFantasyWallets} from '../lib/bar-fanta-wallet.mjs';
+import {readBarRows,writeBarRows} from '../lib/operations/bar-rows.mjs';
+import {barStorageMode} from '../lib/storage-mode.mjs';
 
 // Keep the old Bar IDs and accepted prices: a slip is a contract, even after
 // the calendar starts being maintained by the native Fanta engine.
@@ -40,7 +42,7 @@ export function projectNativeBar(s,native,{now=Date.now()}={}){
 }
 
 // One targeted transaction after the shared calculation, never per client.
-export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagueIds=null}={}){
+export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagueIds=null,sportsStorage=barStorageMode()}={}){
  const c=await connect();try{await c.query('BEGIN');await c.query('SELECT pg_advisory_xact_lock(826501)');
   const links=(await c.query(`SELECT b.*,l.name,l.season,l.max_members,l.auto_lineups_from AS cutover FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id WHERE b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL AND ($1::text[] IS NULL OR l.id=ANY($1::text[]))`,[onlyLeagueIds])).rows;if(!links.length){await c.query('COMMIT');return {changed:0};}
   const leagueIds=links.map(l=>l.fanta_league_id),competitions=links.map(l=>l.competition_id),native={links};
@@ -49,9 +51,13 @@ export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagu
   native.results=(await c.query('SELECT r.* FROM fanta.results r JOIN fanta.matchups m ON m.id=r.matchup_id WHERE m.competition_id=ANY($1::text[])',[competitions])).rows;
   native.players=(await c.query('SELECT DISTINCT p.id,p.name,p.role,c.name AS club FROM fanta.players p JOIN fanta.clubs c ON c.id=p.club_id JOIN fanta.lineups l ON l.league_id=ANY($1::text[]) AND (l.starters?p.id OR l.bench?p.id)',[leagueIds])).rows;
   native.votes=(await c.query("SELECT DISTINCT ON(v.player_id,f.round) v.player_id,f.round,v.data FROM fanta.votes v JOIN fanta.fixtures f ON f.id=v.fixture_id WHERE f.round=ANY($1::int[]) AND f.season=$2 AND v.model_key=coalesce((SELECT data->>'key' FROM fanta.jobs WHERE id='votes:active-model'),v.model_key) ORDER BY v.player_id,f.round,v.id DESC",[[...new Set(native.rounds.filter(r=>Date.parse(r.deadline)>=Math.min(...links.map(l=>Date.parse(l.cutover)))-7*86400000).map(r=>r.seriea_round))],links[0].season])).rows;
-  const state=(await c.query(`SELECT jsonb_build_object('leagues',(SELECT coalesce(jsonb_agg(l),'[]') FROM jsonb_array_elements(payload->'leagues') l WHERE l->>'id'=ANY($1::text[])),'rounds',(SELECT coalesce(jsonb_agg(r),'[]') FROM jsonb_array_elements(payload->'rounds') r WHERE r->>'league'=ANY($1::text[])),'ledger','[]'::jsonb) AS data FROM fanta_state WHERE id=1`,[links.map(l=>l.bar_league_id)])).rows[0]?.data;
+  const linked=links.map(l=>l.bar_league_id);
+  const rowStorage=sportsStorage==='rows';
+  const state=rowStorage?await readBarRows(c,{leagueIds:linked}):(await c.query(`SELECT jsonb_build_object('leagues',(SELECT coalesce(jsonb_agg(l),'[]') FROM jsonb_array_elements(payload->'leagues') l WHERE l->>'id'=ANY($1::text[])),'rounds',(SELECT coalesce(jsonb_agg(r),'[]') FROM jsonb_array_elements(payload->'rounds') r WHERE r->>'league'=ANY($1::text[])),'ledger','[]'::jsonb) AS data FROM fanta_state WHERE id=1`,[linked])).rows[0]?.data;
+  const previous=rowStorage?structuredClone(state):null;
   const changed=state?projectNativeBar(state,native,{now}):0;
-  if(changed){
+  if(changed&&rowStorage)await writeBarRows(c,previous,state);
+  else if(changed){
    const {rows:[current]}=await c.query('SELECT payload FROM fanta_state WHERE id=1 FOR UPDATE');
    const payload=current?.payload;
    if(!payload)throw Error('Bar state unavailable');

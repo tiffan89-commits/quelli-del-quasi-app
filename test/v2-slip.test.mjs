@@ -7,6 +7,15 @@ import {QUOTA_SCORING} from '../public/scoring.mjs';
 const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
 const round=()=>({id:'r',kickoff:'2099-01-01T12:00:00Z',rules:{maxStake:20},matches:[1,2,3].map(id=>({id:String(id),home:'Casa '+id,away:'Ospite '+id,odds:{'1':2,'X':3,'2':4,'X2':1.5},status:'NS'}))});
 const view=r=>renderSlipV2({round:r,picks:{'1':'1'},esc,fmt:String,date:String});
+test('Bar ticket uses accepted odds for maximum points and updates potential credits with the stake',()=>{
+ const r={...round(),eventBetting:true,season:2026,number:12};
+ r.slip={picks:{1:'1'},acceptedOdds:{1:1.35},stake:10};
+ const render=(stake,picks={1:'1',2:'X'})=>parseHTML(renderSlipV2({round:r,barTicket:true,picks,stake,esc,fmt:String,date:String})).document;
+ assert.match(render(10).querySelector('.ticket-totals').textContent,/Punti max 4\.35\s*Vinci 40\.5 cr/);
+ assert.match(render(25).querySelector('.ticket-totals').textContent,/Punti max 4\.35\s*Vinci 101\.25 cr/);
+ delete r.matches[1].odds.X;
+ assert.match(render(25).querySelector('.ticket-summary').textContent,/Punti max —\s*Vinci — cr\s*In attesa di quote/);
+});
 test('the Bar ticket stays editable per fixture after kickoff, including outcomes awaiting a quote',()=>{
  const r={...round(),eventBetting:true,closed:true,deadline:'2000-01-01T00:00:00Z'};
  r.matches.forEach(match=>{match.kickoff=r.kickoff;});

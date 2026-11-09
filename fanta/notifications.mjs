@@ -1,3 +1,4 @@
+import {barStorageRoot} from '../lib/storage-mode.mjs';
 import {appRoute} from '../public/src/routes.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import webpush from 'web-push';
@@ -41,7 +42,7 @@ export async function queueFantaNotifications({connect=connection,now=Date.now}=
   for(const a of auctions){const d=a.data,key=d.status==='scheduled'?d.scheduleNotificationKey:d.openNotificationKey;if(!key)await enqueue(a.user_id,'auction',a.id+':'+d.status+':'+(d.startsAt||''),'Asta · il tavolo è pronto',d.status==='scheduled'?'La tua lega ha programmato un’asta.':'La sala d’asta è aperta.',a.league_id);if(d.status==='running'&&d.caller===a.team_id&&!d.lot)await enqueue(a.user_id,'auction',a.id+':turn:'+d.callDeadline,'Tocca a te','Chiami un giocatore o chiami un altro giro?',a.league_id);}
  }finally{c.release();}
 }
-export const DELIVERY_SQL=`SELECT u AS user,(SELECT coalesce(jsonb_agg(d),'[]'::jsonb) FROM jsonb_array_elements(coalesce(payload->'chatSubscriptions','[]'::jsonb)) d WHERE d->>'uid'=$1) AS devices,payload->'chatPushKeys' AS keys FROM fanta_state CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u WHERE u->>'id'=$1`;
+export const DELIVERY_SQL=`SELECT u AS user,(SELECT coalesce(jsonb_agg(d),'[]'::jsonb) FROM jsonb_array_elements(coalesce(payload->'chatSubscriptions','[]'::jsonb)) d WHERE d->>'uid'=$1) AS devices,payload->'chatPushKeys' AS keys FROM ${barStorageRoot()} CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u WHERE u->>'id'=$1`;
 export async function deliverFantaNotifications({connect=connection,env=process.env,now=Date.now,sendPush=(...args)=>webpush.sendNotification(...args),deliverMail=sendMail}={}){
  const c=await connect(),lease=new Date(now()+90000).toISOString();let jobs;
  try{await c.query('BEGIN');jobs=(await c.query(`SELECT n.*,s.data AS settings FROM fanta.notifications n LEFT JOIN fanta.notification_settings s ON s.user_id=n.user_id WHERE NOT EXISTS(SELECT 1 FROM fanta.leagues k WHERE k.id=n.data->>'league' AND k.rules->>'disabledAt' IS NOT NULL) AND n.delivered_at IS NULL AND n.attempts<4 AND n.expires_at>$1 AND (n.lease_until IS NULL OR n.lease_until<$1) ORDER BY n.id LIMIT 5 FOR UPDATE OF n SKIP LOCKED`,[new Date(now()).toISOString()])).rows;for(const j of jobs)await c.query('UPDATE fanta.notifications SET lease_until=$2,attempts=attempts+1 WHERE id=$1',[j.id,lease]);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}

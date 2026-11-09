@@ -1,3 +1,4 @@
+import {barStorageRoot} from '../lib/storage-mode.mjs';
 import {createHash} from 'node:crypto';
 import {readSnapshot,connection} from '../lib/db.mjs';
 import {userFor} from '../lib/game.mjs';
@@ -7,7 +8,7 @@ import {roundView,matchupView} from '../fanta/views.mjs';
 const digest=data=>createHash('sha256').update(JSON.stringify(data)).digest('hex');
 const sid=req=>String(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('sid='))?.slice(4)||'';
 export async function sportsIdentities(tokens,{connect=connection}={}){
- if(!tokens.length)return new Map();const byHash=new Map(tokens.map(token=>[createHash('sha256').update(token).digest('hex'),token])),c=await connect();try{const {rows}=await c.query(`WITH matched AS (SELECT a FROM fanta_state CROSS JOIN LATERAL jsonb_array_elements(payload->'sessions') a WHERE a->>'token'=ANY($1::text[]) AND (a->>'expires')::numeric>$2) SELECT a->>'token' AS digest,u->>'id' AS id,u->>'username' AS username,(a->>'expires')::numeric AS expires FROM fanta_state CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u JOIN matched ON u->>'id'=a->>'uid' WHERE (u->>'emailVerified')::boolean AND NOT coalesce((u->>'demo')::boolean,false) AND NOT coalesce((u->>'adminOnly')::boolean,false)`,[[...byHash.keys()],Date.now()]);return new Map(rows.map(({digest,...u})=>[byHash.get(digest),u]));}finally{c.release();}
+ if(!tokens.length)return new Map();const byHash=new Map(tokens.map(token=>[createHash('sha256').update(token).digest('hex'),token])),c=await connect();try{const {rows}=await c.query(`WITH matched AS (SELECT a FROM ${barStorageRoot()} CROSS JOIN LATERAL jsonb_array_elements(payload->'sessions') a WHERE a->>'token'=ANY($1::text[]) AND (a->>'expires')::numeric>$2) SELECT a->>'token' AS digest,u->>'id' AS id,u->>'username' AS username,(a->>'expires')::numeric AS expires FROM ${barStorageRoot()} CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u JOIN matched ON u->>'id'=a->>'uid' WHERE (u->>'emailVerified')::boolean AND NOT coalesce((u->>'demo')::boolean,false) AND NOT coalesce((u->>'adminOnly')::boolean,false)`,[[...byHash.keys()],Date.now()]);return new Map(rows.map(({digest,...u})=>[byHash.get(digest),u]));}finally{c.release();}
 }
 export async function sportsIdentity(token){return readSnapshot(s=>{const u=userFor(s,token),session=s.sessions?.find(s=>s.token===createHash('sha256').update(token).digest('hex'));if(!u||u.adminOnly||u.demo||!u.emailVerified)throw Error('Accedi per seguire la diretta');return {id:u.id,username:u.username,expires:session.expires};},{kind:'player-auth',tokenHash:createHash('sha256').update(token).digest('hex')});}
 // A single DB snapshot per watched league/round every minute; fan-out is entirely in memory.
