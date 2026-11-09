@@ -268,6 +268,22 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.34.2...v0.35.0) (2026-11-09)
+
+
+### Features
+
+* **live:** rehearse row-based settlement and rewards ([352c417](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/352c4178a67d0cc0d3418dfc7c26f3852d677e6a))
+* **storage:** activate normalized Bar storage with reversible cutover ([a27a7c2](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/a27a7c274275f6b5aaf180b4b6dc6b27b5a62e64))
+* **storage:** migrate calendar and odds writes to rows in rehearsal ([5e73861](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/5e73861588282172d58bcc6cd633f6d0915d26ab))
+* **storage:** read live Bar snapshots from normalized rows ([037b8b5](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/037b8b5b5be5269d854bb2d384e7dd2e602c3f35))
+* **storage:** rehearse Bar league membership writes on rows ([34f3f67](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/34f3f67f0620d9c89a6f1feba9448faf2d36a2f3))
+
+
+### Bug Fixes
+
+* **storage:** require normalized schema when adopting backups ([cc939bd](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/cc939bd6bf78b3628a7f44f5f48dc9f89a95d637))
+
 ## [0.34.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.34.1...v0.34.2) (2026-11-08)
 
 
