@@ -81,7 +81,7 @@ body.v2-landing-on #app{display:none}
 
 /* Passo 10: la barra della schedina deve restare interamente sopra la navigazione. */
 .v2-slipbar{bottom:calc(84px + var(--safe-bp))}
-body.v2-on:has(.v2-slipbar) main{padding-bottom:calc(230px + var(--safe-bp))}
+body.v2-on:has(.v2-slipbar:not(.ticket-summary)) main{padding-bottom:calc(230px + var(--safe-bp))}
 @media (min-width:900px){.v2-slipbar{bottom:calc(108px + var(--safe-bp))}}
 @media (max-width:899px){body:has(.v2-slipbar) .chat-fab{bottom:calc(224px + var(--safe-bp))}}
 
@@ -100,7 +100,7 @@ body.v2-on:has(.v2-slipbar) main{padding-bottom:calc(230px + var(--safe-bp))}
 .v2-error.is-hint{color:var(--muted)}
 .v2-save.is-done{background:transparent;border:1px solid var(--lime);color:var(--lime)}
 .v2-save.is-done:disabled{opacity:1}
-body.v2-on:has(.v2-slipbar) main{padding-bottom:calc(270px + var(--safe-bp))}
+body.v2-on:has(.v2-slipbar:not(.ticket-summary)) main{padding-bottom:calc(270px + var(--safe-bp))}
 
 /* 0.27 · home essenziale: il Quasi vive in "Io" */
 .league-dashboard .dashboard-stage{grid-template-columns:1fr;min-height:0}
@@ -213,7 +213,7 @@ body.v2-on .league-dashboard .dashboard-sources{padding:14px 0 0;justify-content
 /* Spazio sotto l'ultimo contenuto: solo barra delle tab (+ barra schedina quando c'è), niente vuoti.
    !important perché experience.css imposta 220px su mobile. */
 body.v2-on main{padding-bottom:calc(106px + var(--safe-bp))!important}
-body.v2-on:has(.v2-slipbar) main{padding-bottom:calc(300px + var(--safe-bp))!important}
+body.v2-on:has(.v2-slipbar:not(.ticket-summary)) main{padding-bottom:calc(300px + var(--safe-bp))!important}
 /* L'attribuzione SportScore sta nel piè di pagina dell'app (prima restava nascosta dietro la barra delle tab) */
 body.v2-on .data-attribution{display:none}
 .footer .footer-line a{color:inherit;text-decoration:underline;text-underline-offset:2px}

@@ -1196,6 +1196,8 @@ function bindDashboard() {
   if(dashboard)dashboard.onclick=e=>{
     const reward=e.target.closest('[data-recap-reward]')?.dataset.recapReward;
     if(reward)void openStudio(reward);
+    const slip=e.target.closest('[data-dashboard-slip]');
+    if(slip)openDashboardSlip(slip);
   };
   document.querySelectorAll('[data-dashboard-source]').forEach(b=>b.onclick=()=>{
     dashboardSource=b.dataset.dashboardSource;
@@ -1215,12 +1217,12 @@ function bindDashboard() {
   document.querySelectorAll('[data-dashboard-rank]').forEach(b=>b.onclick=()=>{
     changeSource(); tab=b.dataset.dashboardRank; rankingScope=sourceScope==='fantacalcio'?'bet:'+fantasyGroup(L(),competitionScope)?.key:'league'; page='classifiche'; hydrateDraft(); render(); window.scrollTo(0,0);
   });
-  document.querySelectorAll('[data-dashboard-slip]').forEach(b=>b.onclick=()=>{
+  function openDashboardSlip(b){
     const targetRound=L().rounds.find(x=>x.id===b.dataset.dashboardSlip);if(targetRound?.source==='fantacalcio'){openNativeSlips();return;}
     changeSource(); const round=L().rounds.find(x=>x.id===b.dataset.dashboardSlip);
     if(round){sourceScope=sourceOf(round);selectedRoundId=round.id;competitionScope=round.competitionKey||null;}
     slipScope='mine';page='schedina';writeAppRoute({mode:'bar',page:'schedina',league:L()?.id,round:selectedRoundId});hydrateDraft();render();window.scrollTo(0,0);
-  });
+  }
   const avatar=$('[data-open-quasi-studio]');
   if(avatar)avatar.onclick=()=>{void openStudio();};
   bindObjectives();
