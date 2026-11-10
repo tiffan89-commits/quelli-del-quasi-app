@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.2...v0.35.3) (2026-11-10)
+
+
+### Bug Fixes
+
+* uniforma il riepilogo delle schedine Bar e Fanta ([6e05eb2](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/6e05eb2a511b75ee13d9fd8b516fe4836428bd11))
+* uniforma il riepilogo delle schedine Bar e Fanta ([8d93f78](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/8d93f78fd9c51640701db38e5c3d0ce36090011b))
+
 ## [0.35.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.1...v0.35.2) (2026-11-10)
 
 
