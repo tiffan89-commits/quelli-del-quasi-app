@@ -6,8 +6,12 @@ $root=(Resolve-Path -LiteralPath $InstallRoot).Path
 if(-not(Test-Path -LiteralPath (Join-Path $root 'app\runtime\server.mjs')) -or -not(Test-Path -LiteralPath (Join-Path $root 'data\postgres18\PG_VERSION'))){throw 'Cartella server non riconosciuta: nessuna modifica eseguita.'}
 if($Domain -notmatch '^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$'){throw 'Dominio non valido'}
 $node=(Get-Command node.exe).Source
+$guard=Join-Path $root 'tools\QuasiMemoryGuard.exe'
+$compiler=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 foreach($file in @('tools\winsw.exe','tools\caddy.exe','config\app.env')){if(-not(Test-Path -LiteralPath (Join-Path $root $file))){throw "File mancante: $file"}}
 foreach($name in @('QuasiPostgres','QuasiWeb','QuasiWorker','QuasiCaddy')){if(Get-Service -Name $name -ErrorAction SilentlyContinue){throw "Servizio $name già presente. Usare la procedura di aggiornamento, senza reinstallarlo."}}
+& $compiler /nologo /platform:x64 "/out:$guard" (Join-Path $PSScriptRoot 'MemoryGuard.cs')
+if($LASTEXITCODE -ne 0){throw 'Compilazione del limite di memoria non riuscita'}
 $services=Join-Path $root 'services';New-Item -ItemType Directory -Path $services -Force | Out-Null
 function Xml([string]$value){$separator=[string][char]92;[Security.SecurityElement]::Escape($value.Replace($separator+$separator,$separator))}
 # All permission changes stay within this explicitly selected server directory.
@@ -48,8 +52,9 @@ $pg=Join-Path $root 'tools\pg18\pgsql\bin\pg_ctl.exe'
 & $pg status -D (Join-Path $root 'data\postgres18') | Out-Null
 if($LASTEXITCODE -eq 0){& $pg stop -D (Join-Path $root 'data\postgres18') -m fast -w;if($LASTEXITCODE -ne 0){throw 'Arresto database non completato'}}
 Add-QuasiService 'QuasiPostgres' (Join-Path $root 'tools\pg18\pgsql\bin\postgres.exe') ('-D "'+(Join-Path $root 'data\postgres18')+'" -p '+$DatabasePort+' -h 127.0.0.1') 'NetworkService'
-Add-QuasiService 'QuasiWeb' $node ('--env-file="'+(Join-Path $root 'config\app.env')+'" runtime/server.mjs') 'LocalService' 'QuasiPostgres'
-Add-QuasiService 'QuasiWorker' $node ('--env-file="'+(Join-Path $root 'config\app.env')+'" runtime/worker.mjs') 'LocalService' 'QuasiPostgres'
+$guardEnv='<env name="SELFHOST_MEMORY_GUARD" value="'+$(Xml $guard)+'"/>'
+Add-QuasiService 'QuasiWeb' $node ('--env-file="'+(Join-Path $root 'config\app.env')+'" runtime/server.mjs') 'LocalService' 'QuasiPostgres' $guardEnv
+Add-QuasiService 'QuasiWorker' $node ('--env-file="'+(Join-Path $root 'config\app.env')+'" runtime/worker.mjs') 'LocalService' 'QuasiPostgres' $guardEnv
 $extra='<env name="XDG_DATA_HOME" value="'+$(Xml (Join-Path $root 'data\caddy'))+'"/><env name="XDG_CONFIG_HOME" value="'+$(Xml (Join-Path $root 'data\caddy-config'))+'"/>'
 Add-QuasiService 'QuasiCaddy' (Join-Path $root 'tools\caddy.exe') ('run --config "'+(Join-Path $root 'config\Caddyfile')+'" --adapter caddyfile') 'LocalService' 'QuasiWeb' $extra
 foreach($port in @(80,443)){if(-not(Get-NetFirewallRule -Name "QuasiWeb$port" -ErrorAction SilentlyContinue)){New-NetFirewallRule -Name "QuasiWeb$port" -DisplayName "Quelli del Quasi HTTPS/HTTP $port" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port -Program (Join-Path $root 'tools\caddy.exe') | Out-Null}}

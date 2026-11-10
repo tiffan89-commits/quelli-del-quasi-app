@@ -25,6 +25,6 @@ Il 6 novembre 2026 il proprietario ha chiesto che ogni modifica completata sia c
 - Verificare l'interfaccia mobile per modifiche grafiche, compreso lo studio formazione e gli stati di salvataggio.
 - I rilasci di produzione vanno eseguiti soltanto sul server Windows di casa. Per il dominio ufficiale Netlify gestisce unicamente il DNS verso il server Windows. Qualsiasi ritorno temporaneo all'hosting Netlify richiede una richiesta esplicita e attuale del proprietario. Se il dominio risponde da Netlify durante un rilascio, verificare DNS e server Windows prima di procedere.
 - GitHub versiona i sorgenti. Il sito ufficiale è attualmente sul server Windows; un push non deve attivare automaticamente un deploy, un ricalcolo o una modifica al DB.
-- Distribuire ogni rilascio autorizzato sul solo canale stabile del server Windows, uguale per tutti gli account. Tenere disattivata la selezione Friends & Family e conservare la revisione precedente per il rollback.
+- Distribuire ogni rilascio autorizzato sul solo canale stabile del server Windows, uguale per tutti gli account. Conservare la revisione precedente per il rollback.
 - Per pubblicare sul canale stabile serve l’OK del proprietario. Usare il commit del tag pubblicato da Release Please e verificare tag e versione sul server.
 - Pubblicazione e operazioni sui dati devono restare nel perimetro esplicitamente autorizzato per il lavoro in corso.
