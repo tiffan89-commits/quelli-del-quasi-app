@@ -97,7 +97,13 @@ internal static class MemoryGuard
                     if (!received) Check(Marshal.GetLastWin32Error() == 258); // WAIT_TIMEOUT
                     app.Refresh();
                     if (app.HasExited) break;
-                    long committed = app.PrivateMemorySize64;
+                    long committed;
+                    try { committed = app.PrivateMemorySize64; }
+                    catch (InvalidOperationException)
+                    {
+                        if (app.HasExited) break;
+                        throw;
+                    }
                     if ((received && message == JobMemoryLimitMessage) || committed >= softMiB * MiB)
                     {
                         Console.Error.WriteLine("QUASI_MEMORY_RESTART pid={0} privateMiB={1} softMiB={2} hardMiB={3}",

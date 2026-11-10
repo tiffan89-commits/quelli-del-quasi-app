@@ -23,5 +23,8 @@ export async function startMemoryGuard(executable=process.env.SELFHOST_MEMORY_GU
   console.error('QUASI_MEMORY_GUARD_EXIT',code);
   process.exit(75);
  });
+ output.close();
+ guard.stdout.unref();
+ guard.unref();
  console.info('QUASI_MEMORY_GUARD_READY',JSON.stringify({restartMiB:1792,limitMiB:2048}));
 }
