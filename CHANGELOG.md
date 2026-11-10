@@ -268,6 +268,17 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.1...v0.35.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* consenti la chiusura pulita dei servizi con il limite attivo ([2bc6be3](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/2bc6be3d5c1338854b120c75be058ae560f2e36e))
+* conserva i controlli e lo scorrimento delle schedine ([fbc2a0f](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/fbc2a0f697b680e360171a9b7d543faa190f8123))
+* mantieni le schedine Bar separate e verifica gli snapshot mirati ([c3275be](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c3275beb73d57e702bfe40f0ec14d4c903b2270f))
+* ottimizza le letture Bar, unifica il frontend e limita la memoria ([5793a58](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/5793a58e60b18125d7cbe8622eba9f7511daea11))
+* unifica il frontend e limita la memoria dei servizi Windows ([733cd46](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/733cd46791370b9af0a779be6f65b2dafc55bec0))
+
 ## [0.35.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.0...v0.35.1) (2026-11-09)
 
 
