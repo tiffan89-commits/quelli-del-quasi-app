@@ -158,8 +158,8 @@ body.match-page-active main.match-page{max-width:650px!important;margin-inline:a
 
 @media(max-width:1023px){
  body[data-game-mode] .v2-tabbar:has(>[data-app-footer]){
-  grid-template-rows:44px auto;height:auto;min-height:0;
-  padding:2px max(4px,env(safe-area-inset-right,0px)) max(2px,calc(env(safe-area-inset-bottom,0px) - 5px)) max(4px,env(safe-area-inset-left,0px))!important
+  grid-template-rows:44px auto;row-gap:2px;height:auto;min-height:0;
+  padding:2px max(4px,env(safe-area-inset-right,0px)) 2px max(4px,env(safe-area-inset-left,0px))!important
  }
  body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab{height:44px;min-height:0;padding-block:1px!important;gap:2px}
  body[data-game-mode] .v2-tabbar:has(>[data-app-footer]) .v2-tab svg{width:19px;height:19px}
