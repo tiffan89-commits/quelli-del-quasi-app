@@ -276,7 +276,7 @@ export function createApi({
           };
 
           return compactClientState(result.data,{compact:url.searchParams.get('lite')==='1'});
-        },{kind:'game',tokenHash:sha(token||'')});return reply(data);
+        },{kind:'game',tokenHash:sha(token||''),includeLedger:url.searchParams.get('ledger')!=='0'});return reply(data);
       }
       if(route==='live'&&req.method==='GET'){
         let data;try{data=await read(s=>liveSnapshot(s,userFor(s,token),url.searchParams.get('league')),{kind:'live',league:url.searchParams.get('league')});}catch(error){return reply({error:error.status?error.message:'Live temporaneamente non disponibile'},error.status||503);}

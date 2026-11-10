@@ -7,6 +7,7 @@ import {pathToFileURL} from 'node:url';
 import {configure} from './config.mjs';
 import {installRuntimeLogging} from './observability.mjs';
 import {previewGate} from './preview-gate.mjs';
+import {startMemoryGuard} from './memory-guard.mjs';
 import packageInfo from '../package.json' with {type:'json'};
 const mime={'.txt':'text/plain; charset=utf-8','.xml':'application/xml; charset=utf-8','.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.woff2':'font/woff2','.wasm':'application/wasm'};
 const json=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
@@ -47,6 +48,7 @@ export function createServer({api,fanta,scores,chatUpdate,origin=process.env.PUB
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  configure();installRuntimeLogging('web');if(!process.env.DATABASE_URL)throw Error('DATABASE_URL obbligatorio');
+ await startMemoryGuard();
  const {installInternalDispatch}=await import('./dispatch.mjs');installInternalDispatch();
  const [{default:api},{default:fanta},{default:scores},{closeDatabase}]=await Promise.all([import('../netlify/functions/api.mjs'),import('../netlify/functions/fanta-api.mjs'),import('../netlify/functions/public-football.mjs'),import('../lib/db.mjs')]);
  let auctionHub;

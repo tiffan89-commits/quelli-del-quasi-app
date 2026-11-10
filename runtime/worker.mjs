@@ -5,7 +5,9 @@ import path from 'node:path';
 import {installRuntimeLogging} from './observability.mjs';
 import {syncDns} from './ddns.mjs';
 import {refreshInsights} from '../lib/admin-insights/service.mjs';
+import {startMemoryGuard} from './memory-guard.mjs';
 configure();installRuntimeLogging('worker');
+await startMemoryGuard();
 if(process.env.SELFHOST_MAINTENANCE==='true'){
  console.info('QUASI_WORKER_PAUSED_FOR_FAILOVER');const hold=setInterval(()=>{},60000);
  await new Promise(resolve=>{process.once('SIGTERM',resolve);process.once('SIGINT',resolve);});clearInterval(hold);process.exit(0);

@@ -18,11 +18,9 @@ Il repository usa Release Please su `main`. Il punto di partenza è il tag `v0.2
 
 ## Produzione unica sul server Windows
 
-- Tutti gli account ricevono il frontend stabile. La selezione Friends & Family è disattivata con `enabled: false` nel file privato `FRIENDS_CONFIG`. Le build precedenti possono essere conservate per il rollback sul canale stabile.
-- La configurazione storica del canale pilota resta documentata qui sotto per la manutenzione dell’infrastruttura.
-- Il processo `runtime/friends-release.mjs` legge `FRIENDS_STABLE_DIR`, `FRIENDS_CANDIDATE_DIR`, `FRIENDS_CONFIG`, `FRIENDS_PORT` e `FRIENDS_SIGNING_KEY` da file ambiente privati. La configurazione locale è un JSON con `enabled`, `revision` (SHA del candidato) ed `emails` (account verificati). La build candidata è in `<FRIENDS_CANDIDATE_DIR>/<revision>`. Caddy instrada al processo la pagina iniziale, gli inviti e i percorsi `/_friends/*`. Il resto, comprese le API, resta sul servizio web principale.
-- Il server verifica l'account della sessione prima di servire il candidato. Gli asset candidati hanno un percorso legato alla revisione e richiedono un cookie firmato e vincolato alla sessione. Un errore di selezione fa ripiegare sul frontend stabile.
-- Per ogni rilascio verifica che il selettore restituisca `stable` e che gli asset del vecchio canale pilota risultino inaccessibili. Chi ha già aperto la pagina rientra sullo stabile tornando alla scheda o ricaricandola.
+- Caddy inoltra al servizio web principale. Tutti gli account ricevono la stessa build stabile. Le build precedenti sono riservate al rollback.
+- Il limite di memoria impegnata è di 4 GiB complessivi per web e worker, con due Job Object Windows da 2 GiB. Da 1.792 MiB il supervisore termina il processo interessato e WinSW lo riavvia. PostgreSQL e Caddy sono servizi separati.
+- Su installazioni esistenti compila `windows/MemoryGuard.cs` con il compilatore .NET Framework x64 e configura il percorso dell’eseguibile in `SELFHOST_MEMORY_GUARD` nel file ambiente dei servizi. Dopo l’avvio verifica `QUASI_MEMORY_GUARD_READY` nei log di entrambi.
 - I rilasci backend sono unici per tutti. Conserva una copia precedente e verifica la compatibilità dello schema prima di attivare il codice nuovo. Tornare al codice precedente lascia intatte le scritture del database.
 
 ## Prima integrazione

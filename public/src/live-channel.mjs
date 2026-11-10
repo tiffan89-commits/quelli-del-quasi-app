@@ -141,7 +141,7 @@ export function patchRegion(current,html) {
 export function patchDashboard(root,html) {
   if(!root)return;
   const template=root.ownerDocument.createElement('template');template.innerHTML=html;
-  for(const selector of ['.dash-next','.dash-numbers','.round-recap']) {
+  for(const selector of ['.dash-next','.dash-numbers','.dash-summary']) {
     const fresh=template.content.querySelector(selector),current=root.querySelector(selector);
     if(fresh&&current)patch(current,fresh);
   }

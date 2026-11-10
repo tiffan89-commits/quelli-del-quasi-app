@@ -68,7 +68,7 @@ import { calendarSections } from "./calendar-order.mjs";
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
-  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,nextSlipPreview,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
+  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
   deadlineOf,
   isClosed,editingClosed,editingEventLocked,editablePicks,
   slipSummary,
@@ -313,16 +313,12 @@ let activeMarketId=null,refreshBarTicket=null;
 const publicSlipView=()=>slipScope==='bar'||slipScope==='community';
 function availableRounds() {
  const all=(L()?.rounds||[]).filter(r=>!r.archived&&sourceOf(r)===sourceScope&&(sourceScope!=='fantacalcio'||!competitionScope||r.competitionKey===competitionScope));
- const now=Date.now(),rounds=selectableSlipRounds(all,now,state.calendar);
- const pilot=sourceScope==='seriea'&&globalThis.document?.querySelector('meta[name="qdq-release-channel"]')?.content==='friends';
- const preview=pilot&&nextSlipPreview(all,now);
- if(preview)rounds.push(preview);
- return rounds.sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
+ return selectableSlipRounds(all,Date.now(),state.calendar).sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
 }
 
 function R() {
   const rounds = availableRounds();
-  const round=rounds.find(r=>r.id===selectedRoundId)||rounds.find(r=>r.preview)||defaultSlipRound(rounds,Date.now(),state.calendar);
+  const round=rounds.find(r=>r.id===selectedRoundId)||defaultSlipRound(rounds,Date.now(),state.calendar);
   const league=L();
   if(round)round.stakeReserve=slipCreditReserve(round,league.rounds,league,state.user?.id);
   return round;
@@ -351,7 +347,7 @@ async function refresh(reset = false) {
   if (refreshing) return false;
   refreshing = true;
   try {
-    const next = await api("state?lite=1");
+    const next = await api("state?lite=1&ledger=0");
     if (!next || !Array.isArray(next.leagues))
       throw Error("Risposta del servizio non valida");
     const previousUser = state.user?.id,
@@ -371,7 +367,7 @@ async function refresh(reset = false) {
     const invite=state.user?.emailVerified&&!state.user.demo?pendingInvite():null;
     if(invite&&inviteAttempt!==state.user.id+':'+invite){inviteAttempt=state.user.id+':'+invite;try{
       const joined=await joinInvite(invite,{join:code=>api('join',{code}),clear:()=>{clearPendingInvite();v2Invite=null;clearEntry(localStorage);}});
-      state=await api('state?lite=1');leagueId=joined.league;selectedRoundId=null;page='lega';writeAppRoute({mode:'bar',page:'oggi',league:joined.league},{replace:true});
+      state=await api('state?lite=1&ledger=0');leagueId=joined.league;selectedRoundId=null;page='lega';writeAppRoute({mode:'bar',page:'oggi',league:joined.league},{replace:true});
     }catch(error){notify(error.message);}}
     if(next.adminOnly){location.replace("/admin.html");return;}
     if(state.user?.emailVerified&&!state.user.demo&&new URLSearchParams(location.search).get('entry')==='fanta'&&!accountAction&&!pendingInvite()){rememberEntry(localStorage);location.replace('/entra-fanta.html'+location.search);return true;}
@@ -1196,6 +1192,8 @@ function bindDashboard() {
   if(dashboard)dashboard.onclick=e=>{
     const reward=e.target.closest('[data-recap-reward]')?.dataset.recapReward;
     if(reward)void openStudio(reward);
+    const slip=e.target.closest('[data-dashboard-slip]');
+    if(slip)openDashboardSlip(slip);
   };
   document.querySelectorAll('[data-dashboard-source]').forEach(b=>b.onclick=()=>{
     dashboardSource=b.dataset.dashboardSource;
@@ -1215,12 +1213,12 @@ function bindDashboard() {
   document.querySelectorAll('[data-dashboard-rank]').forEach(b=>b.onclick=()=>{
     changeSource(); tab=b.dataset.dashboardRank; rankingScope=sourceScope==='fantacalcio'?'bet:'+fantasyGroup(L(),competitionScope)?.key:'league'; page='classifiche'; hydrateDraft(); render(); window.scrollTo(0,0);
   });
-  document.querySelectorAll('[data-dashboard-slip]').forEach(b=>b.onclick=()=>{
+  function openDashboardSlip(b){
     const targetRound=L().rounds.find(x=>x.id===b.dataset.dashboardSlip);if(targetRound?.source==='fantacalcio'){openNativeSlips();return;}
     changeSource(); const round=L().rounds.find(x=>x.id===b.dataset.dashboardSlip);
     if(round){sourceScope=sourceOf(round);selectedRoundId=round.id;competitionScope=round.competitionKey||null;}
     slipScope='mine';page='schedina';writeAppRoute({mode:'bar',page:'schedina',league:L()?.id,round:selectedRoundId});hydrateDraft();render();window.scrollTo(0,0);
-  });
+  }
   const avatar=$('[data-open-quasi-studio]');
   if(avatar)avatar.onclick=()=>{void openStudio();};
   bindObjectives();
@@ -1371,7 +1369,7 @@ function nativeSlipServices(){return {
  account:{groups:accountGroups,bind:(onChanged,barLeague)=>bindAccount(onChanged,{manageFanta:false,barLeague})},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
- save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
+ save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1&ledger=0');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1&ledger=0');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
  refresh:async id=>{if(!sportsWindowActive(state.calendar?.rounds||[]))return false;const before=JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);const data=await api('live?'+new URLSearchParams({league:id}));mergeLiveSnapshot(state,data);return before!==JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);}
 };}
 function markPublicSlipChoices(){for(const l of state.leagues||[])for(const r of l.rounds||[])r.publicChoicesAvailable=!!r.closed&&Array.isArray(r.publicSlips);}

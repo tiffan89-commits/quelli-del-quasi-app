@@ -20,8 +20,9 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
  const token='synthetic-session',input={league:leagueId,round:roundId,stake:10,picks:{[fixtureId]:'1'},baseSavedAt:null};
  const original={
   users:[{id:userId,name:'Test',emailVerified:true}],
-  sessions:[{uid:userId,token:sha(token),expires:Date.parse('2026-11-10T00:00:00Z')}],
-  leagues:[{id:leagueId,name:'Test',rules,members:[{uid:userId,credits:500,points:0}]}],
+  sessions:[{uid:userId,token:sha(token),expires:Date.now()+3600000}],
+  leagues:[{id:leagueId,name:'Test',rules,members:[{uid:userId,credits:500,points:0}]},
+   {id:'unrelated',name:'Unrelated',rules,members:[{uid:'other',credits:500,points:0}]}],
   rounds:[{id:roundId,league:leagueId,title:'Giornata 11',source:'seriea',number:11,
    kickoff,deadline:'2000-01-01T00:00:00Z',rules,requiresOfficialScores:true,matches:[match],slips:[]}],
   ledger:[],football:{calendar:{season:2026,rounds:[{number:11,matches:[match]}]},rounds:{bookable:{matches:[match]}}},
@@ -69,7 +70,7 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   }
   const loginSnapshot=(storage,sessionToken)=>snapshot('game',storage,{tokenHash:sha(sessionToken)});
   assert.deepEqual(await loginSnapshot('rows','unknown'),await loginSnapshot('snapshot','unknown'));
-  assert.equal((await loginSnapshot('rows',token)).leagues[0].id,leagueId);
+  assert.deepEqual((await loginSnapshot('rows',token)).leagues.map(l=>l.id),[leagueId]);
   const saved=await saveBarSlip(token,input,{connect,sportsStorage:'rows',now:()=>Date.parse('2026-11-08T19:00:00Z')});
   assert.equal(saved.receipt.member.credits,490);
   assert.equal((await state()).rounds[0].slips[0].acceptedOdds[fixtureId],2.5);
@@ -102,6 +103,10 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   const app=await appSnapshot();
   assert.equal(app.rounds[0].slips[0].prize,25);
   assert.equal(app.leagues[0].members[0].credits,515);
+  const withLedger=await loginSnapshot('rows',token);
+  const withoutLedger=await snapshot('game','rows',{tokenHash:sha(token),includeLedger:false});
+  assert.ok(withLedger.ledger.length>0);
+  assert.deepEqual(withoutLedger,{...withLedger,ledger:[]});
   assert.equal((await snapshot('live','rows')).rounds[0].slips[0].prize,25);
   assert.deepEqual((await snapshot('results','rows')).rounds[0].matches[0].score,[1,0]);
   assert.deepEqual((await snapshot('match','rows')).football.calendar.rounds[0].matches[0].score,[1,0]);

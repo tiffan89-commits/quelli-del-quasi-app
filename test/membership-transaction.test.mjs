@@ -34,11 +34,24 @@ for(const sportsStorage of ['snapshot','rows'])test(`create/join preserve archiv
  }finally{await db.close();}
 });
 
-test('first login without a league reads only identity and onboarding data, without images or calendars',async()=>{
+test('login loads onboarding data and then only the leagues, rewards and chat counters visible to the actor',async()=>{
  const db=new PGlite();try{await db.exec('CREATE TABLE fanta_state(id int,payload jsonb)');const base={...emptyState(),users:[{id:'new',username:'new',emailVerified:true}],sessions:[{uid:'new',token:'hash',expires:Date.now()+3600000}],football:{calendar:{huge:'x'.repeat(100000)}},playerRewards:{new:['owned'],other:['private']}};await db.query('INSERT INTO fanta_state VALUES(1,$1)',[JSON.stringify(base)]);
   const s=(await db.query(LOGIN_GAME_SNAPSHOT_SQL,['hash'])).rows[0].payload;assert.deepEqual(s.football,{});assert.deepEqual(s.rounds,[]);assert.equal(s.users[0].id,'new');assert.deepEqual(s.playerRewards,{new:['owned']});assert.ok(JSON.stringify(s).length<2000);
   const anonymous=(await db.query(LOGIN_GAME_SNAPSHOT_SQL,['invalid'])).rows[0].payload;assert.deepEqual(anonymous.users,[]);assert.deepEqual(anonymous.sessions,[]);
-  base.leagues=[{id:'existing',members:[{uid:'new'}]}];await db.query('UPDATE fanta_state SET payload=$1',[JSON.stringify(base)]);const scoped=(await db.query(LOGIN_GAME_SNAPSHOT_SQL,['hash'])).rows[0].payload,original=(await db.query(GAME_SNAPSHOT_SQL)).rows[0].payload;assert.deepEqual(scoped,original);
+  base.leagues=[{id:'existing',members:[{uid:'new'}]},{id:'private',members:[{uid:'other'}]}];
+  base.leagueChats={existing:{sequence:4,revision:5,messages:[
+   {uid:'other',seq:1,text:'read'},{uid:'other',seq:2,text:'unread'},
+   {uid:'new',seq:3,text:'own'},{uid:'other',seq:4,deleted:true},
+  ]},private:{messages:[{seq:1,text:'private'}]}};
+  base.chatReaders={'existing:new':{read:1,notify:true},'private:other':{read:1}};
+  await db.query('UPDATE fanta_state SET payload=$1',[JSON.stringify(base)]);
+  const scoped=(await db.query(LOGIN_GAME_SNAPSHOT_SQL,['hash'])).rows[0].payload;
+  const original=(await db.query(GAME_SNAPSHOT_SQL)).rows[0].payload;
+  assert.deepEqual(scoped.football,original.football);
+  assert.deepEqual(scoped.leagues,[base.leagues[0]]);
+  assert.deepEqual(scoped.playerRewards,{new:['owned']});
+  assert.deepEqual(scoped.leagueChats,{existing:{sequence:4,revision:5,unread:1}});
+  assert.deepEqual(scoped.chatReaders,{'existing:new':{read:1,notify:true}});
  }finally{await db.close();}
 });
 
