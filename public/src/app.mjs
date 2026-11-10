@@ -68,7 +68,7 @@ import { calendarSections } from "./calendar-order.mjs";
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
-  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,nextSlipPreview,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
+  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
   deadlineOf,
   isClosed,editingClosed,editingEventLocked,editablePicks,
   slipSummary,
@@ -313,16 +313,12 @@ let activeMarketId=null,refreshBarTicket=null;
 const publicSlipView=()=>slipScope==='bar'||slipScope==='community';
 function availableRounds() {
  const all=(L()?.rounds||[]).filter(r=>!r.archived&&sourceOf(r)===sourceScope&&(sourceScope!=='fantacalcio'||!competitionScope||r.competitionKey===competitionScope));
- const now=Date.now(),rounds=selectableSlipRounds(all,now,state.calendar);
- const pilot=sourceScope==='seriea'&&globalThis.document?.querySelector('meta[name="qdq-release-channel"]')?.content==='friends';
- const preview=pilot&&nextSlipPreview(all,now);
- if(preview)rounds.push(preview);
- return rounds.sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
+ return selectableSlipRounds(all,Date.now(),state.calendar).sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
 }
 
 function R() {
   const rounds = availableRounds();
-  const round=rounds.find(r=>r.id===selectedRoundId)||rounds.find(r=>r.preview)||defaultSlipRound(rounds,Date.now(),state.calendar);
+  const round=rounds.find(r=>r.id===selectedRoundId)||defaultSlipRound(rounds,Date.now(),state.calendar);
   const league=L();
   if(round)round.stakeReserve=slipCreditReserve(round,league.rounds,league,state.user?.id);
   return round;
@@ -637,7 +633,7 @@ function render() {
   }
   if(state.adminOnly){location.replace('/admin.html');return;}
   loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();
-  if(sourceScope==='fantacalcio'&&!fantasyAvailable())sourceScope='seriea';
+  sourceScope='seriea';
   const l = L(),
     r = R(),
     m = me();
