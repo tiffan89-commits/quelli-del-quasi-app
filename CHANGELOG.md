@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.3...v0.35.4) (2026-11-10)
+
+
+### Bug Fixes
+
+* uniforma le intestazioni delle schedine e abbassa il footer ([7a8f5d4](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/7a8f5d4a8f44a344af2cf9d60ae8d41943a2292d))
+* uniforma le intestazioni delle schedine e abbassa il footer ([33d4d24](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/33d4d24ce62d284194af90bf71d2e9a95259b248))
+
 ## [0.35.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.2...v0.35.3) (2026-11-10)
 
 
