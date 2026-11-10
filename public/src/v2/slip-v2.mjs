@@ -106,24 +106,7 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
   }
   return '<section class="v2-slip" data-slip-source="'+(fanta?'fantacalcio':'seriea')+'" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
     '<h1 class="v2-title">La schedina</h1><div data-os-content data-os-slip data-slip-match-list>' + rows + '</div>'+slipNotice(missingOdds)+'</section>' +
-    (ready ? renderSlipBar({round,picks,stake,credits,esc,fmt,date}) : '');
-}
-
-function renderSlipBar({round,picks,stake,credits=500,esc,fmt,date}){
-  const sum=slipSummary(round,picks,stake,credits),partial=round.eventBetting===true,preview=round.preview===true;
-  const saved=!!round.slip&&!sum.dirty,missing=partial?!sum.count:sum.total-sum.count;
-  const status=preview?'Anteprima':saved?'Confermata ✓':missing?partial?'Scegli una partita':'Mancano '+missing+(missing===1?' partita':' partite'):!sum.validStake?'Controlla puntata e saldo':round.slip?'Modifiche da salvare':'Non ancora confermata';
-  const title=saved&&!partial?'Confermata · modificabile fino a '+date(round.deadline||round.kickoff):status;
-  const total=sum.missing?'?':sum.odds?'Quota '+fmt(sum.odds)+' · '+fmt(Math.round(stake*sum.odds))+' cr':'Quota –';
-  const label=saved?'Confermata ✓':round.slip?'Salva':'Conferma';
-  const state=saved?'is-ok':round.slip?'is-warn':'is-todo';
-  const hint=!sum.validStake&&!preview?sum.fixedStake?'La puntata è bloccata.':sum.reserve?'Tieni da parte un credito per ogni giornata rimanente.':'Crediti insufficienti.':null;
-  const stakeText=sum.fixedStake?'Puntata bloccata':'Puntata';
-  return `<div class="v2-slipbar">${sum.pointsOnly||sum.fixedStake?'':renderStakeRange(sum,stake,fmt,preview)}
-    <div class="v2-slip-summary"><p class="v2-state ${state}" role="status" title="${esc(title)}">${esc(status)}</p>
-      ${sum.pointsOnly?'':`<div class="v2-slip-meta"><b data-v2-stake-current title="${stakeText}">${fmt(stake)} cr</b><span data-v2-slip-total>${total}</span></div>`}</div>
-    <button type="button" class="v2-save${saved?' is-done':''}" id="save-slip" ${sum.canSave&&!saved?'':'disabled'}><span>${label}</span></button>
-    ${hint||missing&&!preview?`<p class="v2-error sr-only" role="${hint?'alert':'status'}">${hint||status}</p>`:''}</div>`;
+    (ready ? renderTicketBar({round,picks,stake,credits,fmt}) : '');
 }
 
 function stakeBounds(sum,stake){
@@ -142,7 +125,7 @@ function renderTicketBar({round,picks,stake,credits,fmt}){
     <div class="ticket-totals"><span>${sum.count} ${sum.count===1?'selezione':'selezioni'}${sum.odds===null?'':' · quota '+ticketQuote.format(sum.odds)}</span>
       ${sum.closed?'':`<span>Punti max <b>${sum.maximumPoints===null?'—':fmt(sum.maximumPoints)}</b></span>
       ${sum.pointsOnly?'':`<strong class="${sum.potential===null?'ticket-pending':''}">Vinci ${sum.potential===null?'—':fmt(sum.potential)} cr</strong>`}`}</div>
-    ${!sum.closed&&sum.missing?`<small class="ticket-reserve">In attesa di quote per le selezioni</small>`:''}
+    <small class="ticket-reserve" ${!sum.closed&&sum.missing?'':'hidden'}>In attesa di quote per le selezioni</small>
     ${sum.pointsOnly||sum.closed?'':`<div class="ticket-stake${adjust?'':' ticket-stake-fixed'}" role="group" aria-label="Puntata in crediti">
       ${adjust?`<button type="button" data-stake-step="-1" aria-label="Diminuisci di un credito" ${value<=1?'disabled':''}>−</button>`:''}
       <b data-v2-stake-current>${fmt(stake)} cr</b>
@@ -156,26 +139,14 @@ function renderTicketBar({round,picks,stake,credits,fmt}){
   </div>`;
 }
 
-function renderStakeRange(sum,stake,fmt,disabled){
-  const {step,max,value}=stakeBounds(sum,stake),fill=100*(value-1)/Math.max(1,max-1);
-  return `<div class="auction-offer-amount v2-slip-range" role="group" aria-label="Puntata in crediti">
-    <button type="button" class="secondary auction-offer-step" data-stake-step="-1" aria-label="Diminuisci di un credito" ${disabled||value<=1?'disabled':''}>−</button>
-    <div class="auction-offer-slider">
-      <input id="stake" type="range" min="1" max="${Math.max(1,max)}" step="${step}" value="${value}" aria-label="Importo della puntata" aria-valuetext="${fmt(value)} crediti" style="--offer-fill:${fill}%" ${disabled||max<=1?'disabled':''}>
-      <div class="auction-offer-bounds"><span>1 cr</span>${sum.reserve?`<span>${sum.reserve} cr di riserva</span>`:''}<span>${fmt(max)} cr</span></div>
-    </div>
-    <button type="button" class="secondary auction-offer-step" data-stake-step="1" aria-label="Aumenta di un credito" ${disabled||value>=max?'disabled':''}>+</button>
-  </div>`;
-}
-
 export function patchSlipBar(bar,options){
   if(!bar)return;
-  const html=bar.classList.contains('ticket-summary')?renderTicketBar(options):renderSlipBar(options);
+  const html=renderTicketBar(options);
   const template=bar.ownerDocument.createElement('template');template.innerHTML=html;
   patchRegion(bar,html);
   const input=bar.querySelector('#stake'),fresh=template.content.querySelector('#stake');
   if(input&&fresh){
-    for(const attr of ['min','max','step','value','style','aria-valuetext']){
+    for(const attr of ['min','max','value']){
       if(fresh.hasAttribute(attr))input.setAttribute(attr,fresh.getAttribute(attr));
     }
     input.disabled=fresh.disabled;
@@ -228,7 +199,7 @@ export function bindSlipV2(root, { onPick, onToggle, onStake, onSave }) {
   });
   root.querySelectorAll('[data-ticket-stake]').forEach(button=>button.onclick=()=>{
     const value=button.dataset.ticketStake;
-    onStake(Number(value==='Max'?input.max:value));
+    onStake(Number(value==='Max'?input.getAttribute('max'):value));
   });
   const ticket=root.querySelector('.bar-ticket');
   const count=ticket?.querySelector('[data-ticket-count]');
@@ -236,8 +207,8 @@ export function bindSlipV2(root, { onPick, onToggle, onStake, onSave }) {
   const save=root.querySelector('#save-slip');
   if(save)save.onclick=()=>{
     if(!save.hasAttribute('data-ticket-edit'))return onSave();
-    const row=ticket.querySelector('[data-pick]:enabled');
-    focusTicketMatch(row||ticket.querySelector('[data-detail]'));
+    const matches=root.querySelector('.v2-slip');
+    focusTicketMatch(matches?.querySelector('[data-pick]:enabled')||matches?.querySelector('[data-detail]'));
   };
   const dialog=ticket?.querySelector('.ticket-markets');
   if(dialog)bindTicketSheet(dialog,()=>onToggle(dialog.dataset.ticketMarkets));
