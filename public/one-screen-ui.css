@@ -705,6 +705,9 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
   grid-template-columns:minmax(0,1fr);
   max-width:none;width:auto;margin:0;padding:8px 0;background:#0e1c18;border-radius:0;
 }
+.ticket-summary{
+  --ticket-accent:#83cbf6;--ticket-ink:#10211c;--ticket-muted:#b3c3bb;
+}
 .ticket-totals{display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px 8px;font-size:12px;color:var(--white);line-height:1.35}
 .ticket-totals strong{color:#afe5b3;text-align:right}
 .ticket-totals .ticket-pending{color:inherit}
@@ -721,13 +724,16 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
 .ticket-stake [data-stake-step]{font-size:20px}
 .ticket-stake button:disabled{opacity:1;color:#a4b0a9;background:#10201a}
 .ticket-reserve{font-size:11px;line-height:1.25;color:var(--ticket-muted)}
-.bar-ticket .ticket-save{
+.ticket-summary .ticket-save{
   width:100%;min-height:44px;padding:5px 10px;display:flex;align-items:center;justify-content:center;gap:6px;
   border-radius:9px;border:1px solid var(--ticket-accent);background:var(--ticket-accent);color:var(--ticket-ink);
   font-size:14px;font-weight:800;
 }
-.bar-ticket .ticket-save.is-done{color:var(--ticket-accent);background:transparent}
-.bar-ticket .ticket-save:disabled{background:#26332e;color:#c5ccc8;border-color:#4b5a53;opacity:1}
+.ticket-summary .ticket-save.is-done{color:var(--ticket-accent);background:transparent}
+.ticket-summary .ticket-save:disabled{background:#26332e;color:#c5ccc8;border-color:#4b5a53;opacity:1}
+.ticket-summary button:focus-visible{outline:2px solid var(--ticket-accent);outline-offset:-2px}
+.fanta-native-slips .ticket-stake:not(.ticket-stake-fixed){grid-template-columns:repeat(4,minmax(0,1fr))}
+.fanta-native-slips .ticket-stake b{grid-column:span 2}
 .bar-ticket .ticket-markets{
   position:fixed;inset:auto 0 0;max-width:560px;width:100%;max-height:80dvh;
   margin:0 auto;padding:0;border:0;background:transparent;color:var(--white);overflow:auto;

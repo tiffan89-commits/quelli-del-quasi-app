@@ -132,7 +132,7 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   root.querySelectorAll('[data-v2-more]').forEach(b=>{b.textContent='Altri esiti '+(b.getAttribute('aria-expanded')==='true'?'−':'+');});
   const save=root.querySelector('#save-slip');if(save&&saving){save.textContent='Salvataggio in corso…';save.setAttribute('aria-busy','true');save.classList.add('is-busy');}
   if(save&&(saving||d.conflict||globalThis.navigator?.onLine===false||!services?.save))save.disabled=true;
-  if(saving)root.querySelectorAll('[data-pick],#stake,[data-stake-step]').forEach(b=>b.disabled=true);
+  if(saving)root.querySelectorAll('[data-pick],#stake,[data-stake-step],[data-ticket-stake]').forEach(b=>b.disabled=true);
   patchSlipResults(root,data.round,d.picks,isClosed(data.round,now()));
  }
  function ranking(context,metric='points'){const data=current(context);return data.league?playerRanking(data.league,'fantacalcio',metric,{id:data.uid},esc,fmt,data.round?.competitionKey).replace(/<section class="round-heading">[\s\S]*?<\/section>/,'<p class="fanta-note">Punti e crediti delle schedine del Fanta.</p>'):'<section class="fanta-block"><h2>Classifica schedine</h2><p>La classifica arriva con il calendario della lega.</p></section>';}

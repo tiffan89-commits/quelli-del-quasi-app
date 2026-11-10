@@ -71,8 +71,8 @@ test('an unpriced preview allows local picks but blocks confirmation and removes
  const {document}=parseHTML(renderSlipV2(options));
  assert.equal(document.querySelectorAll('[data-pick]:not([disabled])').length,9);
  assert.ok(document.querySelector('#save-slip').hasAttribute('disabled'));
- assert.match(document.querySelector('.v2-state').textContent,/Anteprima/);
- assert.equal(document.querySelector('[data-v2-slip-total]').textContent,'?');
+ assert.match(document.querySelector('#save-slip').textContent,/Non ancora aperta/);
+ assert.equal(document.querySelector('.ticket-pending').textContent,'Vinci — cr');
  assert.equal(document.querySelector('[data-pick="2"][data-value="1"]>span').textContent,'?');
  assert.match(document.querySelector('[data-os-footer]').textContent,/^\? = Quota in arrivo$/);
  assert.equal(document.querySelector('.slip-play-note').hidden,false);
