@@ -1,5 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {newPlan,refreshPlan,dueWork,claimWork,completeWork,nextRomeMorning} from '../lib/operations/calendar.mjs';
+import {newPlan,refreshPlan,dueWork,claimWork,completeWork,nextRomeMorning,mergeUpcomingFixtures} from '../lib/operations/calendar.mjs';
+import {runOperation} from '../lib/operations/workflows.mjs';
 import {dispatchDue,mutatePlan,operationTicket,readOperationTicket} from '../lib/operations/store.mjs';
 const date=x=>Date.parse(x),start='2026-11-01T17:00:00Z';
 function calendar(matches){return [{number:10,matches:matches.map((m,i)=>({id:'m'+i,apiFootballId:100+i,home:'Home',away:'Away',officialKickoff:start,kickoff:start,status:'NS',...m}))}];}
@@ -17,4 +18,34 @@ test('07:00 closure follows the local finishing date and moves only queued old m
  assert.equal(nextRomeMorning('2026-11-02T23:15:00Z'),'2026-11-04T06:00:00.000Z');
  const now=date('2026-11-02T22:00:00Z'),p=newPlan(calendar([{officialKickoff:'2026-11-02T19:00:00Z',status:'FT',finishedAt:'2026-11-02T21:50:00Z'}]),{now});const j=p.jobs.find(j=>j.kind==='morning');j.at='2026-11-03T08:00:00.000Z';
  assert.equal(refreshPlan(p,[],{now}).jobs.find(x=>x.id===j.id).at,'2026-11-03T06:00:00.000Z');j.status='done';assert.equal(refreshPlan(p,[],{now}).jobs.find(j=>j.kind==='morning').at,'2026-11-03T08:00:00.000Z');
+});
+
+test('closure waits for the last match, survives downtime and replaces expired provider retries',async()=>{
+ const ended=date(start)+120*60000,cutoff=ended+86400000;
+ const source=calendar(Array.from({length:10},(_,i)=>i===9?{officialKickoff:new Date(ended-20*60000).toISOString()}:{}));
+ const bootstrap=newPlan(source,{now:date(start)-60000});
+ let plan={...bootstrap,fixtures:bootstrap.fixtures.slice(0,9)};
+ mergeUpcomingFixtures(plan,bootstrap,date(start)-60000);
+ plan=refreshPlan(plan,plan.fixtures.slice(0,9).map(f=>({id:f.id,status:'FT'})),{now:ended-40*60000});
+ assert.ok(!plan.jobs.some(j=>j.kind==='round-close'));
+ plan=refreshPlan(plan,[{id:'m9',status:'FT'}],{now:ended});
+ const closure=plan.jobs.find(j=>j.kind==='round-close');
+ assert.equal(date(closure.at),cutoff);
+ assert.ok(!claimWork(plan,{now:cutoff-1}).jobs.some(j=>j.kind==='round-close'));
+ const first=claimWork(plan,{now:cutoff+180*60000,nonce:'first'});
+ assert.deepEqual(first.jobs.map(j=>j.kind),['round-close']);
+ const blocked=first.plan.jobs.find(j=>j.kind==='morning');
+ assert.equal(blocked.status,'cancelled');
+ const skipped=await runOperation(blocked,first.plan,{now:()=>cutoff,provider:{get(){throw Error('Unexpected provider call');}}});
+ assert.equal(skipped.metrics.providerCalls,0);
+ const failed=completeWork(first.plan,first.jobs[0],{ok:false,error:'out-of-memory'},{now:cutoff+180*60000});
+ const retry=claimWork(failed,{now:cutoff+185*60000,nonce:'retry'});
+ assert.equal(retry.jobs[0].id,closure.id);
+ assert.equal(retry.jobs[0].attempts,2);
+ const restored=claimWork(retry.plan,{now:cutoff+194*60000,nonce:'expired'});
+ assert.equal(restored.jobs.length,0);
+ const again=claimWork(restored.plan,{now:cutoff+204*60000,nonce:'again'});
+ const done=completeWork(again.plan,again.jobs[0],{ok:true},{now:cutoff+204*60000});
+ assert.equal(done.jobs.find(j=>j.id===closure.id).status,'done');
+ assert.equal(claimWork(done,{now:cutoff+215*60000}).jobs.length,0);
 });

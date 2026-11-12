@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {fixtureDb} from './fanta/helpers.mjs';import {computeRounds} from '../fanta/ingest.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {leagueView} from '../fanta/views.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {fixtureDb} from './fanta/helpers.mjs';import {computeRounds} from '../fanta/ingest.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {leagueView,matchupView} from '../fanta/views.mjs';
 test('complete statistical results populate a provisional comparison table; an incomplete recalculation cannot zero it',async()=>{
  const f=await fixtureDb();try{await f.db.query("UPDATE fanta.rounds SET deadline='2026-08-01'");for(const t of ['t1','t2']){const l=f.lineup(t);await f.db.query("INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench) VALUES('fanta-lucas-a',1,$1,$2,$3,$4)",[t,l.formation,JSON.stringify(l.starters),JSON.stringify(l.bench)]);}
   for(let i=0;i<10;i++)await f.db.query("INSERT INTO fanta.fixtures(id,api_id,season,round,kickoff,status,home_id,away_id,data) VALUES($1,$2,2026,1,'2026-08-01','FT','c1','c2','{}')",['fx'+i,8000+i]);
@@ -6,6 +6,31 @@ test('complete statistical results populate a provisional comparison table; an i
   await computeRounds({connect:f.connect,recalculate:true});const first=(await f.db.query("SELECT data,official FROM fanta.results WHERE matchup_id='m1'")).rows[0];assert.equal(first.official,false);assert.equal(first.data.calculation.complete,true);
   const store=sqlFantaStore(f);const view=await store.league('u1','fanta-lucas-a',s=>leagueView(s,'u1'));assert.ok(view.standings.every(r=>r.played===1&&r.fantapoints>0));assert.equal(view.standingsProvisional,true);
   await f.db.query("UPDATE fanta.fixtures SET status='NS' WHERE id='fx0'");await computeRounds({connect:f.connect,recalculate:true});assert.deepEqual((await f.db.query("SELECT data FROM fanta.results WHERE matchup_id='m1'")).rows[0].data,first.data);
+ }finally{await f.close();}
+});
+
+test('stored-data closure uses existing votes, enables substitutions and is idempotent',async()=>{
+ const f=await fixtureDb();
+ try{
+  await f.db.query("UPDATE fanta.rounds SET deadline='2026-08-01'");
+  const lineup=f.lineup('t1');
+  await f.db.query("INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench) VALUES('fanta-lucas-a',1,'t1',$1,$2,$3)",[lineup.formation,JSON.stringify(lineup.starters),JSON.stringify(lineup.bench)]);
+  await f.db.query("INSERT INTO fanta.fixtures(id,api_id,season,round,kickoff,status,home_id,away_id,data) VALUES('fx',8000,2026,1,'2026-08-01','LIVE','c1','c2','{}')");
+  await f.db.query("INSERT INTO fanta.votes(fixture_id,player_id,version,input_hash,input,data) VALUES('fx','p1-1','test','v1','{}','{\"status\":\"playing\",\"vote\":null}'),('fx','p1-12','test','v2','{}','{\"status\":\"voted\",\"vote\":7,\"fantavote\":8}')");
+  const now=()=>Date.parse('2026-08-03T00:00Z'),scope={connect:f.connect,now,season:2026,serieARounds:[1],closeWithStoredVotesAt:'2026-08-02T00:00Z'};
+  assert.equal(await computeRounds(scope),1);
+  const result=async()=>(await f.db.query("SELECT data,official FROM fanta.results WHERE matchup_id='m1'")).rows[0];
+  const first=await result();
+  assert.equal(first.official,true);
+  assert.equal(first.data.calculation.verified,false);
+  assert.equal(first.data.home.points,8);
+  assert.equal(first.data.away.points,0);
+  const view=await sqlFantaStore(f).league('u1','fanta-lucas-a',s=>matchupView(s,s.rounds[0],'m1','u1',now()),{number:1});
+  assert.equal(view.state,'calcolata');
+  assert.equal(view.home.starters.find(p=>p.id==='p1-1').status,'sv');
+  assert.deepEqual(view.home.substitutions,[{out:'p1-1',in:'p1-12'}]);
+  assert.equal(await computeRounds(scope),0);
+  assert.deepEqual(await result(),first);
  }finally{await f.close();}
 });
 test('missing or automatically inherited lineup scores zero, completes the round and leaves player votes untouched',async()=>{

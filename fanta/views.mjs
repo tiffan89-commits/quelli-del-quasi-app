@@ -19,25 +19,27 @@ export function savedLineup(s,t,number){
 export function sheet(s,t,r,{now=Date.now()}={}){
  if(r.data?.archivedWithoutResults)return {team:team(t),hidden:true,hiddenReason:'Risultato storico non disponibile',total:null,goals:null};
  const lineup=savedLineup(s,t,r.number);if(!lineup){const locked=r.official||Date.parse(r.deadline)<=now;return {team:team(t),hidden:true,needsLineup:!locked,notSubmitted:true,unmapped:0,unresolved:0,hiddenReason:locked?'Formazione non schierata · 0 fantapunti':'Formazione non ancora salvata',total:locked?0:null,goals:locked?0:null};}
+ const cutoff=r.data?.storedDataClosure;
  const votes=new Map(s.votes.map(v=>[v.player_id,v.data]));
  const allIds=new Set([...lineup.starters,...lineup.bench]);
  const catalog=new Map(s.players.map(p=>[p.id,p]));
  const imported=lineup.source_data?.players||[],pool=[...[...s.players,...t.roster,...imported].reduce((m,p)=>m.set(p.id,{...m.get(p.id),...p}),new Map()).values()];
- const rows=pool.filter(p=>allIds.has(p.id)).map(p=>{const f=s.fixtures.find(f=>f.round===r.seriea_round&&(f.home_id===p.clubId||f.away_id===p.clubId)),v=votes.get(p.id)||(!s.voteModel&&r.official&&Number.isFinite(p.grade)?{status:'voted',vote:p.grade,fantavote:p.fantagrade??p.grade,events:p.events||{},why:'Voto storico archiviato',importedVote:true}:null),home=f?.home_id===p.clubId,other=f?.data?.teams?.[home?'away':'home']?.name;return {...p,jersey:playerJersey(catalog.get(p.id))||playerJersey(p),...(v||{status:f&&['FT','AET','PEN'].includes(f.status)?'sv':'to-play',vote:null,fantavote:null,events:{},why:'Voto non ancora disponibile'}),opponent:other||'Da definire',home,kickoff:f?.kickoff||'',score:f?.data?.goals?[f.data.goals.home,f.data.goals.away]:null};});
+ const rows=pool.filter(p=>allIds.has(p.id)).map(p=>{const f=s.fixtures.find(f=>f.round===r.seriea_round&&(f.home_id===p.clubId||f.away_id===p.clubId)),v=votes.get(p.id)||(!s.voteModel&&r.official&&Number.isFinite(p.grade)?{status:'voted',vote:p.grade,fantavote:p.fantagrade??p.grade,events:p.events||{},why:'Voto storico archiviato',importedVote:true}:null),home=f?.home_id===p.clubId,other=f?.data?.teams?.[home?'away':'home']?.name;return {...p,jersey:playerJersey(catalog.get(p.id))||playerJersey(p),...(cutoff&&!Number.isFinite(v?.vote)?{...v,status:'sv',vote:null,fantavote:null,events:v?.events||{},why:'Voto assente alla chiusura della giornata'}:v||{status:f&&['FT','AET','PEN'].includes(f.status)?'sv':'to-play',vote:null,fantavote:null,events:{},why:'Voto non ancora disponibile'}),opponent:other||'Da definire',home,kickoff:f?.kickoff||'',score:f?.data?.goals?[f.data.goals.home,f.data.goals.away]:null};});
  return {team:team(t),unmapped:lineup.starters.filter(id=>!rows.some(p=>p.id===id&&!p.unmapped)).length,unresolved:rows.filter(p=>lineup.starters.includes(p.id)&&(p.unmapped||p.needsReview)).length,imported:imported.length>0,...scoreLineup({...lineup,savedAt:lineup.saved_at},rows,s.rules)};
 }
 function resultRows(s){return tableResults(s.results);}
 export function matchupView(s,r,id,uid,now,fresh=false){
  const m=s.matchups.find(m=>m.round===r.number&&m.id===id);if(!m)return null;
  const historical=!fresh&&s.results.find(x=>x.matchup_id===id&&x.historical),home=s.teams.find(t=>t.id===m.home_id),away=s.teams.find(t=>t.id===m.away_id);
- const side=(t,k)=>{const v=sheet(s,t,r,{now});return historical?{...v,...(v.hidden?{hiddenReason:'Risultato storico importato'}:{}),total:historical.data[k].points,goals:historical.data[k].goals,historical:true}:v;};
+ const saved=historical||(!fresh&&r.data?.storedDataClosure&&s.results.find(x=>x.matchup_id===id&&x.official));
+ const side=(t,k)=>{const v=sheet(s,t,r,{now});return saved?{...v,...(historical&&v.hidden?{hiddenReason:'Risultato storico importato'}:{}),total:saved.data[k].points,goals:saved.data[k].goals,...(historical?{historical:true}:{})}:v;};
  const view={id:m.id,round:r.number,state:roundState(s,r,uid,now),official:r.official,home:side(home,'home'),away:side(away,'away')};
  view.comparison=comparisonView(s.references?.find(x=>x.matchup_id===id)?.data,view.home,view.away,{historical:!!historical});return view;
 }
 export function roundView(s,r,uid,now=Date.now(),fresh=false){
  const fixtures=s.fixtures.filter(f=>f.round===r.seriea_round),state=roundState(s,r,uid,now),mine=s.teams.find(t=>t.userId===uid)?.id;
  return {round:{number:r.number,state,official:r.official,label:r.data?.label,stage:r.data?.stage,byes:(r.data?.byes||[]).map(b=>s.teams.find(t=>t.id===b.team)).filter(Boolean).map(team),updatedAt:new Date(now).toISOString(),matchesDone:fixtures.filter(f=>['FT','AET','PEN'].includes(f.status)).length,matchesTotal:fixtures.length,serieARound:r.seriea_round,fixtures:fixtures.map(f=>({id:f.id,kickoff:f.kickoff,status:f.status}))},rounds:s.rounds.map(r=>({number:r.number,state:roundState(s,r,uid,now)})),matchups:s.matchups.filter(m=>m.round===r.number).map(m=>{
-  const saved=fresh?null:s.results.find(x=>x.matchup_id===m.id),view=matchupView(s,r,m.id,uid,now,fresh),side=k=>({team:view[k].team,withVote:view[k].withVote??0,points:saved?.data[k]?.points??(state==='in-corso'?view[k].total:null),goals:saved?.data[k]?.goals??(state==='in-corso'?view[k].goals:null),pending:!!view[k].unresolved,lineupSaved:!!savedLineup(s,s.teams.find(t=>t.id===m[k+'_id']),r.number)});
+  const saved=fresh?null:s.results.find(x=>x.matchup_id===m.id),view=matchupView(s,r,m.id,uid,now,fresh),side=k=>({team:view[k].team,withVote:view[k].withVote??0,points:saved?.data[k]?.points??(state==='in-corso'?view[k].total:null),goals:saved?.data[k]?.goals??(state==='in-corso'?view[k].goals:null),pending:!r.data?.storedDataClosure&&!!view[k].unresolved,lineupSaved:!!savedLineup(s,s.teams.find(t=>t.id===m[k+'_id']),r.number)});
   return {id:m.id,isMine:m.home_id===mine||m.away_id===mine,missingLineup:!!(view.home.needsLineup||view.away.needsLineup),unmapped:(view.home.unmapped||0)+(view.away.unmapped||0),home:side('home'),away:side('away')};})};
 }
 export function leagueView(s,uid,now=Date.now(),{calendar=true}={}){

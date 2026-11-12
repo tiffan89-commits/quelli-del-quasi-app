@@ -23,6 +23,12 @@ Il repository usa Release Please su `main`. Il punto di partenza è il tag `v0.2
 - Su installazioni esistenti compila `windows/MemoryGuard.cs` con il compilatore .NET Framework x64 e configura il percorso dell’eseguibile in `SELFHOST_MEMORY_GUARD` nel file ambiente dei servizi. Dopo l’avvio verifica `QUASI_MEMORY_GUARD_READY` nei log di entrambi.
 - I rilasci backend sono unici per tutti. Conserva una copia precedente e verifica la compatibilità dello schema prima di attivare il codice nuovo. Tornare al codice precedente lascia intatte le scritture del database.
 
+## Chiusura delle giornate
+
+- A 24 ore dalla fine registrata dell'ultima partita di Serie A, il worker esegue `round-close` usando solo i dati già salvati. Se manca il segnale di fine di una partita, usa la fine della finestra live prevista. Una partita rinviata non blocca la giornata.
+- Nel Fanta restano validi i voti disponibili. I giocatori senza voto seguono le sostituzioni esistenti. Nel Bar le selezioni senza risultato definitivo o senza quota vengono annullate. Se tutte le selezioni sono annullate, la puntata viene rimborsata.
+- I nuovi controlli del provider per quella giornata terminano alla scadenza. Un errore di esecuzione o un riavvio rimette in coda soltanto il calcolo sui dati locali.
+
 ## Prima integrazione
 
 La configurazione parte dal commit taggato `v0.29.52`. Integra la PR di adozione su `main` con un merge commit per conservare quel tag nella storia di `main`.
