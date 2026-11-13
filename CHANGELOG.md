@@ -268,6 +268,15 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.6](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.5...v0.35.6) (2026-11-13)
+
+
+### Bug Fixes
+
+* limita il carico dei batch sul database ([32569c8](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/32569c8c291932cd4f1e5257f88544ee5df9cd57))
+* riduci memoria e query dei batch live ([972bcab](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/972bcab69adfc8934c996c81e0ee8c040b195d24))
+* riduci memoria e query dei batch live ([6983949](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/6983949316bbc468eef8ba54dede389f149438ff))
+
 ## [0.35.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.4...v0.35.5) (2026-11-12)
 
 
