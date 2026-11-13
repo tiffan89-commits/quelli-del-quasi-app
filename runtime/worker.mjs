@@ -6,7 +6,7 @@ import {installRuntimeLogging} from './observability.mjs';
 import {syncDns} from './ddns.mjs';
 import {refreshInsights} from '../lib/admin-insights/service.mjs';
 import {startMemoryGuard} from './memory-guard.mjs';
-configure();installRuntimeLogging('worker');
+configure();process.env.SELFHOST_PROCESS_ROLE='worker';installRuntimeLogging('worker');
 await startMemoryGuard();
 if(process.env.SELFHOST_MAINTENANCE==='true'){
  console.info('QUASI_WORKER_PAUSED_FOR_FAILOVER');const hold=setInterval(()=>{},60000);

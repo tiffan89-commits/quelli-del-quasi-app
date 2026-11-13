@@ -14,24 +14,40 @@ export async function sportsIdentity(token){return readSnapshot(s=>{const u=user
 // A single DB snapshot per watched league/round every minute; fan-out is entirely in memory.
 export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot,store=sqlFantaStore(),intervalMs=60000,now=Date.now,revalidate}={}){
  const validateAll=revalidate||(identify===sportsIdentity?sportsIdentities:async tokens=>new Map(await Promise.all(tokens.map(async t=>[t,await identify(t)]))));
- const ns=io.of('/sports'),rooms=new Map();let closed=false;
+ const ns=io.of('/sports'),rooms=new Map(),pending=new Set();let closed=false,draining=null;
  ns.use(async(s,next)=>{try{const c=s.handshake.auth||{},token=sid(s.request);if(!['bar','fanta'].includes(c.mode)||typeof c.league!=='string'||!c.league||c.league.length>200||c.competition&&String(c.competition).length>200||c.mode==='fanta'&&(!Number.isInteger(c.round)||c.round<1||c.round>100))throw Error('Contesto non valido');const user=await identify(token);s.data={user,token,context:c};next();}catch{next(Error('Accedi alla lega per seguire la diretta.'));}});
- async function refresh(room){
-  if(closed||room.loading)return room.loading;room.loading=(async()=>{try{
+ async function load(room){
+  try{
    const peer=[...room.sockets].find(s=>s.connected);if(!peer)return;
    const c=room.context,state=c.mode==='bar'?await read(s=>s,{kind:'live',league:c.league}):await store.league(peer.data.user.id,c.league,s=>s,{number:c.round,competition:c.competition,catalog:false,detailedVotes:true});
+   if(closed||!room.sockets.size)return;
    room.state=state;room.loadedAt=now();for(const s of room.sockets)send(s,room);
-  }catch{for(const s of room.sockets)s.emit('sports:unavailable');}finally{room.loading=null;if(!closed&&room.sockets.size){clearTimeout(room.timer);room.timer=setTimeout(()=>void refresh(room),intervalMs);room.timer.unref?.();}}})();return room.loading;
+  }catch{for(const s of room.sockets)s.emit('sports:unavailable');}
+  finally{if(!closed&&room.sockets.size){clearTimeout(room.timer);room.timer=setTimeout(()=>void refresh([room]),intervalMs);room.timer.unref?.();}}
+ }
+ function refresh(watched){
+  if(closed)return;
+  for(const room of watched)if(room.sockets.size&&!room.loading){room.loading=true;pending.add(room);}
+  if(!draining)draining=Promise.resolve().then(async()=>{
+   for(const room of pending){
+    pending.delete(room);
+    if(closed)break;
+    try{await load(room);}finally{room.loading=false;}
+   }
+  }).finally(()=>{draining=null;if(!closed&&pending.size)return refresh([]);});
+  return draining;
  }
  function send(s,room){try{const c=s.data.context;if(s.data.user.expires<=now())throw Error('Sessione scaduta');let data;
   if(c.mode==='bar')data=liveSnapshot(room.state,userFor(room.state,s.data.token),c.league);
   else{if(!room.state.teams.some(t=>t.userId===s.data.user.id)||room.state.league.sourceKey&&s.data.user.username!=='frankwood')throw Error('Lega non accessibile');const r=room.state.rounds.find(r=>r.number===c.round);if(!r)throw Error('Giornata assente');data={round:roundView(room.state,r,s.data.user.id,room.loadedAt),matchup:matchupView(room.state,r,c.matchup,s.data.user.id,room.loadedAt)};}
-  const version=digest(data);if(version===s.data.sent)return;s.data.sent=version;s.emit('sports:update',{context:c,revision:version,data,at:room.loadedAt});
+  // The snapshot timestamp changes on every poll, even when the score and votes are identical.
+  const stable=data.round?.round?{...data,round:{...data.round,round:{...data.round.round,updatedAt:null}}}:data;
+  const version=digest(stable);if(version===s.data.sent)return;s.data.sent=version;s.emit('sports:update',{context:c,revision:version,data,at:room.loadedAt});
  }catch{s.disconnect(true);}}
  ns.on('connection',s=>{const c=s.data.context,key=JSON.stringify([c.mode,c.league,c.competition||null,c.round||null]);let room=rooms.get(key);if(!room){room={context:c,sockets:new Set(),state:null,timer:null,loading:null};rooms.set(key,room);}room.sockets.add(s);
-  s.on('disconnect',()=>{room.sockets.delete(s);if(!room.sockets.size){clearTimeout(room.timer);rooms.delete(key);}});
-  if(room.state&&now()-room.loadedAt<intervalMs)send(s,room);else void refresh(room);
+  s.on('disconnect',()=>{room.sockets.delete(s);if(!room.sockets.size){clearTimeout(room.timer);pending.delete(room);room.state=null;rooms.delete(key);}});
+  if(room.state&&now()-room.loadedAt<intervalMs)send(s,room);else void refresh([room]);
  });
  let checking=false,authFailures=0;const authTimer=setInterval(async()=>{if(checking||closed||!ns.sockets.size)return;checking=true;try{const users=await validateAll([...new Set([...ns.sockets.values()].map(s=>s.data.token))]);authFailures=0;for(const socket of ns.sockets.values()){const u=users.get(socket.data.token);if(!u)socket.disconnect(true);else socket.data.user=u;}}catch{if(++authFailures>=3)ns.disconnectSockets(true);else for(const s of ns.sockets.values())s.emit('sports:unavailable');}finally{checking=false;}},intervalMs);authTimer.unref?.();
- return {refresh:()=>Promise.all([...rooms.values()].map(room=>refresh(room))),stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();}};
+ return {refresh:()=>refresh(rooms.values()),stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
 }

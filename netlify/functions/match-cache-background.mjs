@@ -1,8 +1,6 @@
 import {schedulesEnabled} from '../../lib/release-env.mjs';
-import { transaction } from "../../lib/db.mjs";
 import {seedPlayerMedia} from '../../lib/player-seed.mjs';
 import {runPlayerMediaBatch} from '../../lib/player-media.mjs';
-import { flushExternalActivity } from "../../lib/platform-admin.mjs";
 import {
   runMatchCache,
   validMatchCacheTicket,

@@ -11,7 +11,7 @@ test('sports push shares one DB read across all viewers, catches up reconnects, 
  try{const a=open('u1'),b=open('u2');peers.push(a,b);const first=[once(a,'sports:update'),once(b,'sports:update')];while(!release)await new Promise(r=>setImmediate(r));release();await Promise.all(first);assert.equal(reads,1);
  const c=open('u1');peers.push(c);const snap=await once(c,'sports:update');assert.equal(snap.data.round.matchups[0].isMine,true);assert.equal(reads,1);
  const outsider=open('stranger');peers.push(outsider);await once(outsider,'disconnect');assert.equal(reads,1);
- const updates=[once(a,'sports:update'),once(b,'sports:update')];await Promise.all(updates);assert.equal(reads,2);
+ const updates=[once(a,'sports:update'),once(b,'sports:update')];s.rounds[0].official=true;await Promise.all(updates);assert.equal(reads,2);
  for(const p of peers)p.disconnect();await new Promise(r=>setTimeout(r,30));assert.equal(hub.stats().rooms,0);assert.equal(hub.stats().clients,0);
  }finally{for(const p of peers)p.disconnect();await hub.close();await new Promise(r=>io.close(r));}
 });
@@ -27,4 +27,29 @@ test('committed results wake all viewers immediately without per-device reads or
  const hub=attachSportsSocket(io,{identify:async token=>({id:token,expires:Date.now()+60000}),store:{league:async(uid,id,fn)=>{reads++;return fn(s);}},intervalMs:60000});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const peers=['u1','u2'].map(id=>client('http://127.0.0.1:'+server.address().port+'/sports',{transports:['websocket'],auth:{mode:'fanta',league:'l',round:1,matchup:'m'},extraHeaders:{cookie:'sid='+id},reconnection:false}));
  try{await Promise.all(peers.map(p=>once(p,'sports:update')));assert.equal(reads,1);const old=Date.now();s.rounds[0].official=true;const updates=peers.map(p=>once(p,'sports:update'));await hub.refresh();await Promise.all(updates);assert.equal(reads,2);assert.ok(Date.now()-old<2000);}finally{peers.forEach(p=>p.disconnect());await hub.close();await new Promise(r=>io.close(r));}
+});
+
+test('sports room refreshes use one database connection at a time',async()=>{
+ const server=http.createServer(),io=new Server(server,{transports:['websocket']});
+ let active=0,peak=0,reads=0;
+ const hub=attachSportsSocket(io,{
+  identify:async token=>({id:token,expires:Date.now()+60000}),
+  store:{async league(uid,id,fn){
+   reads++;
+   peak=Math.max(peak,++active);
+   await new Promise(resolve=>setTimeout(resolve,15));
+   active--;
+   return fn({league:{id},teams:[{id:'t',userId:uid}],rounds:[{number:1,deadline:'2026-01-01'}],matchups:[],fixtures:[],results:[],lineups:[]});
+  }},
+ });
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const peers=['a','b','c'].map(id=>client('http://127.0.0.1:'+server.address().port+'/sports',{
+  transports:['websocket'],auth:{mode:'fanta',league:id,round:1},extraHeaders:{cookie:'sid='+id},reconnection:false,
+ }));
+ try{
+  await Promise.all(peers.map(peer=>once(peer,'sports:update')));
+  await hub.refresh();
+  assert.equal(reads,6);
+  assert.equal(peak,1);
+ }finally{peers.forEach(peer=>peer.disconnect());await hub.close();await new Promise(resolve=>io.close(resolve));}
 });

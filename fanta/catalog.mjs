@@ -1,3 +1,4 @@
+import {barCalendarRows,barStorageMode} from '../lib/storage-mode.mjs';
 import {hashInput,ROLE} from './votes.mjs';
 import {connection} from '../lib/db.mjs';
 import {normalizeTeam} from '../lib/calendar.mjs';
@@ -39,13 +40,13 @@ export async function backfillPlayerJerseys({connect=connection,season=2026,appl
  }catch(error){if(apply)await c.query('ROLLBACK');throw error;}finally{c.release();}
 }
 
-export async function seedStoredCatalog({connect=connection}={}){
+export async function seedStoredCatalog({connect=connection,env=process.env}={}){
  const c=await connect();try{
-  const teams=(await c.query(`SELECT DISTINCT t FROM fanta_state s CROSS JOIN LATERAL jsonb_array_elements(s.payload#>'{football,calendar,rounds}') r CROSS JOIN LATERAL jsonb_array_elements(r->'matches') m CROSS JOIN LATERAL jsonb_each(m#>'{details,matchInfo,teams}') q(key,t) WHERE t->>'id' IS NOT NULL`)).rows.map(x=>x.t);
+  const teams=(await c.query(`SELECT DISTINCT t FROM ${barCalendarRows(barStorageMode(env),{round:true})} CROSS JOIN LATERAL jsonb_each(m#>'{details,matchInfo,teams}') q(key,t) WHERE t->>'id' IS NOT NULL`)).rows.map(x=>x.t);
   const clubs=[...new Map(teams.map(t=>[t.id,{id:'af:'+t.id,api_id:t.id,name:t.name}])).values()].sort((a,b)=>a.api_id-b.api_id),byName=new Map(clubs.map(t=>[normalizeTeam(t.name),t]));
   const cached=(await c.query("SELECT DISTINCT ON(player_id) metadata FROM football_player_catalog ORDER BY player_id,season DESC,metadata->>'checkedAt' DESC")).rows.map(r=>r.metadata);
   let players=cached.filter(p=>/^\d+$/.test(String(p.providerId))&&byName.has(p.team)&&ROLE[p.position]).map(p=>({id:'af:'+p.providerId,api_id:Number(p.providerId),club_id:byName.get(p.team).id,name:p.name,role:ROLE[p.position],data:{photoUrl:p.placeholder?null:'/api/player-photo?id='+encodeURIComponent(p.id)+'&v='+p.digest,active:true}}));
-  const fresh=(await c.query(`SELECT DISTINCT ON(p#>>'{player,id}') p#>>'{player,id}' AS id,p#>>'{player,name}' AS name,t#>>'{team,id}' AS club_id,p#>>'{statistics,0,games,position}' AS position FROM fanta_state s CROSS JOIN LATERAL jsonb_array_elements(s.payload#>'{football,calendar,rounds}') r CROSS JOIN LATERAL jsonb_array_elements(r->'matches') m CROSS JOIN LATERAL jsonb_array_elements(m#>'{details,players}') t CROSS JOIN LATERAL jsonb_array_elements(t->'players') p WHERE m#>>'{details,source}'='API-FOOTBALL' ORDER BY p#>>'{player,id}',(r->>'number')::int DESC`)).rows;
+  const fresh=(await c.query(`SELECT DISTINCT ON(p#>>'{player,id}') p#>>'{player,id}' AS id,p#>>'{player,name}' AS name,t#>>'{team,id}' AS club_id,p#>>'{statistics,0,games,position}' AS position FROM ${barCalendarRows(barStorageMode(env),{round:true})} CROSS JOIN LATERAL jsonb_array_elements(m#>'{details,players}') t CROSS JOIN LATERAL jsonb_array_elements(t->'players') p WHERE m#>>'{details,source}'='API-FOOTBALL' ORDER BY p#>>'{player,id}',(r->>'number')::int DESC`)).rows;
   const merged=new Map(players.map(p=>[p.id,p]));for(const p of fresh){if(!/^\d+$/.test(p.id)||!ROLE[p.position]||!clubs.some(t=>t.id==='af:'+p.club_id))continue;const id='af:'+p.id,old=merged.get(id);merged.set(id,{...old,id,api_id:Number(p.id),club_id:'af:'+p.club_id,name:p.name,role:ROLE[p.position],data:old?.data||{active:true}});}players=[...merged.values()].sort((a,b)=>a.api_id-b.api_id);
   const digest=hashInput([clubs,players]),old=(await c.query("SELECT data->>'digest' AS digest FROM fanta.jobs WHERE id='seed:stored-catalog'")).rows[0];if(old?.digest===digest)return {cached:true,players:players.length};
   await c.query('BEGIN');

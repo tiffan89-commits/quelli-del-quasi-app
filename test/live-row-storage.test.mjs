@@ -10,13 +10,15 @@ import {readSnapshot} from '../lib/db.mjs';
 import {persistApiOdds,readOddsSnapshot} from '../lib/operations/odds-db.mjs';
 import {refreshFutureCalendar} from '../lib/operations/future-calendar.mjs';
 import {changeBarStorage} from '../runtime/bar-storage.mjs';
+import {storedOdds} from '../fanta/statistical-votes/repository.mjs';
+import {runMatchCache} from '../lib/match-cache.mjs';
 
 test('replaying a final settles once and resumes interrupted rewards on row storage',async()=>{
  const db=new PGlite();
  const kickoff='2026-11-08T19:45:00.000Z';
  const fixtureId='seriea:2026:11:2',roundId='round-11',leagueId='league',userId='user';
  const rules={mode:'classic',correct:1,wrong:-1};
-  const match={id:fixtureId,home:'Fiorentina',away:'Juventus',status:'NS',score:null,kickoff,odds:{1:2.5},frozen:{}};
+ const match={id:fixtureId,home:'Fiorentina',away:'Juventus',status:'NS',score:null,kickoff,odds:{1:2.5},frozen:{}};
  const token='synthetic-session',input={league:leagueId,round:roundId,stake:10,picks:{[fixtureId]:'1'},baseSavedAt:null};
  const original={
   users:[{id:userId,name:'Test',emailVerified:true}],
@@ -115,6 +117,7 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   const replay=await batch();
   assert.equal(replay.metrics.dbWrites,0);
   assert.equal(replay.metrics.cacheWrites,0);
+  assert.equal(replay.metrics.derived,undefined);
   assert.deepEqual(await state(),awarded);
   assert.deepEqual(await movements(),ledger);
   assert.deepEqual(await rewards(),awards);
@@ -130,10 +133,37 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   }
   assert.equal((await changeBarStorage('enable',{connect})).after.active,true);
   assert.deepEqual((await db.query('SELECT payload FROM fanta.fanta_state WHERE id=1')).rows[0].payload,original);
+  await db.query(`UPDATE fanta.bar_seriea_matches SET data=data||jsonb_build_object('apiFootballId',123456,'frozen',$2::jsonb) WHERE id=$1`,
+   [fixtureId,JSON.stringify(Object.fromEntries([['1',2.5],['X',3.1],['2',3.2]].map(([pick,value])=>[pick,{value,acquiredAt:'2026-11-08T19:10:00Z'}])))]);
+  const direct=await storedOdds(db,123456,{sportsStorage:'rows'});
+  assert.equal(direct.available,true);
+  // The old public snapshot has no odds after cutover, so this would fail if it were used.
+  assert.equal(await storedOdds(db,123456,{sportsStorage:'snapshot'}),null);
+  await db.query("UPDATE fanta.bar_seriea_matches SET data=$2::jsonb WHERE id=$1",[fixtureId,JSON.stringify(match)]);
+  const statements=[];
+  const cacheConnect=async()=>{
+   const c=await connect();
+   return {...c,query(sql,args){statements.push(sql);return c.query(sql,args);}};
+  };
+  const cacheReport=await runMatchCache({
+   connect:cacheConnect,sportsStorage:'rows',recordAccuracy:null,
+   now:()=>new Date('2026-11-08T17:00:00Z'),
+   lineupFetcher:async()=>new Response(null,{status:503}),
+   fetcher:async()=>{throw Error('Archive fetch was not due');},
+  });
+  assert.equal(cacheReport.processed,1);
+  assert.ok(!statements.some(sql=>sql.includes('bar_matchday_documents')||sql.includes('bar_replace_calendar')));
+  assert.equal((await db.query("SELECT data->>'lineupCheckedAt' AS at FROM fanta.bar_seriea_matches WHERE id=$1",[fixtureId])).rows[0].at,'2026-11-08T17:00:00.000Z');
+  await db.query("UPDATE fanta.bar_seriea_matches SET data=$2::jsonb WHERE id=$1",[fixtureId,JSON.stringify(match)]);
+  await db.query("UPDATE fanta.bar_matchday_matches SET data=$2::jsonb WHERE id=$1",[fixtureId,JSON.stringify(match)]);
+  await db.query("UPDATE fanta.bar_football_round_cache SET data=$1::jsonb WHERE cache_key='bookable'",[JSON.stringify(original.football.rounds.bookable)]);
   await db.query("UPDATE fanta.bar_membership_document SET payload=jsonb_set(payload,'{leagues,0,name}',to_jsonb('New name'::text)) WHERE id=1");
   assert.equal((await snapshot('live','rows')).leagues[0].name,'New name');
   assert.equal((await changeBarStorage('disable',{connect})).after.active,false);
   const restored=(await db.query('SELECT payload FROM public.fanta_state WHERE id=1')).rows[0].payload;
+  assert.equal(restored.football.matchCacheReport.processed,1);
+  delete restored.football.matchCacheReport;
+  delete restored.football.forecastSourceCache;
   original.leagues[0].name='New name';
   assert.deepEqual(restored,original);
  }finally{await db.close();}

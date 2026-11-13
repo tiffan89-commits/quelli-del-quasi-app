@@ -1,3 +1,4 @@
+import {beginBackgroundWrite} from '../lib/operations/background-db.mjs';
 import {createHash} from 'node:crypto';
 import {connection} from '../lib/db.mjs';
 import {PRESENCE_MODEL,estimatePresence} from '../public/src/fanta/presence-probability.mjs';
@@ -32,7 +33,7 @@ export const PRESENCE_INPUT_SQL=`WITH club_matches AS (
  GROUP BY p.id,totals.minutes ORDER BY p.id`;
 export async function refreshPresenceEstimates({connect=connection,season=Number(process.env.FANTA_SEASON||2026),now=Date.now()}={}){
  const c=await connect();try{
-  await c.query('BEGIN');await c.query("SELECT set_config('lock_timeout','5s',true),pg_advisory_xact_lock(826528)");
+  await beginBackgroundWrite(c);await c.query("SELECT pg_advisory_xact_lock(826528)");
   const players=(await c.query(PRESENCE_INPUT_SQL,[season,new Date(now).toISOString()])).rows,updates=[],examples=[];
   for(const player of players){
    const inputHash=createHash('sha256').update(JSON.stringify([PRESENCE_MODEL,season,player.clubId,player.status?.type||null,player.stats])).digest('hex');
