@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.4...v0.35.5) (2026-11-12)
+
+
+### Bug Fixes
+
+* chiudi le giornate dopo 24 ore con i dati salvati ([95ef5c1](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/95ef5c16c750c4567999e3a741496c635a2d82ce))
+* chiudi le giornate dopo 24 ore con i dati salvati ([fd7f283](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/fd7f28334893d1f2d280a5a2bba59da76ce01492))
+
 ## [0.35.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.3...v0.35.4) (2026-11-10)
 
 
