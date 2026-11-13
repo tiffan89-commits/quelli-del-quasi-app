@@ -10,6 +10,7 @@ import {readSnapshot} from '../lib/db.mjs';
 import {persistApiOdds,readOddsSnapshot} from '../lib/operations/odds-db.mjs';
 import {refreshFutureCalendar} from '../lib/operations/future-calendar.mjs';
 import {changeBarStorage} from '../runtime/bar-storage.mjs';
+import {storedOdds} from '../fanta/statistical-votes/repository.mjs';
 
 test('replaying a final settles once and resumes interrupted rewards on row storage',async()=>{
  const db=new PGlite();
@@ -130,6 +131,13 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   }
   assert.equal((await changeBarStorage('enable',{connect})).after.active,true);
   assert.deepEqual((await db.query('SELECT payload FROM fanta.fanta_state WHERE id=1')).rows[0].payload,original);
+  await db.query(`UPDATE fanta.bar_seriea_matches SET data=data||jsonb_build_object('apiFootballId',123456,'frozen',$2::jsonb) WHERE id=$1`,
+   [fixtureId,JSON.stringify(Object.fromEntries([['1',2.5],['X',3.1],['2',3.2]].map(([pick,value])=>[pick,{value,acquiredAt:'2026-11-08T19:10:00Z'}])))]);
+  const direct=await storedOdds(db,123456,{sportsStorage:'rows'});
+  assert.equal(direct.available,true);
+  // The old public snapshot has no odds after cutover, so this would fail if it were used.
+  assert.equal(await storedOdds(db,123456,{sportsStorage:'snapshot'}),null);
+  await db.query("UPDATE fanta.bar_seriea_matches SET data=$2::jsonb WHERE id=$1",[fixtureId,JSON.stringify(match)]);
   await db.query("UPDATE fanta.bar_membership_document SET payload=jsonb_set(payload,'{leagues,0,name}',to_jsonb('New name'::text)) WHERE id=1");
   assert.equal((await snapshot('live','rows')).leagues[0].name,'New name');
   assert.equal((await changeBarStorage('disable',{connect})).after.active,false);

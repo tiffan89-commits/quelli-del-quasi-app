@@ -1,4 +1,5 @@
 import {connection} from '../../lib/db.mjs';
+import {barCalendarRows,barStorageMode} from '../../lib/storage-mode.mjs';
 import {DEFAULT_CONFIG,MODEL,configDigest,voteConfig} from './config.mjs';
 import {prematchSnapshot} from './context.mjs';
 import {calibrateBaselines} from './individual.mjs';
@@ -6,8 +7,11 @@ import {digest,validTimestamp} from './math.mjs';
 export const currentModelKey=(config=DEFAULT_CONFIG)=>MODEL+':'+configDigest(config);
 export function configuredVotes(env=process.env){if(!env.FANTA_VOTE_CONFIG)return voteConfig();let x;try{x=JSON.parse(env.FANTA_VOTE_CONFIG);}catch{throw Error('FANTA_VOTE_CONFIG deve contenere JSON valido');}return voteConfig(x);}
 // Read only already-acquired pre-match quotes. No odds service, pricing or slip is modified.
-export async function storedOdds(c,fixtureId){
- const row=(await c.query(`SELECT jsonb_build_object('id',m->'id','apiFootballId',m->'apiFootballId','kickoff',m->'kickoff','frozen',jsonb_build_object('1',m#>'{frozen,1}','X',m#>'{frozen,X}','2',m#>'{frozen,2}')) AS data FROM fanta_state s CROSS JOIN LATERAL jsonb_array_elements(s.payload#>'{football,calendar,rounds}') r CROSS JOIN LATERAL jsonb_array_elements(r->'matches') m WHERE m->>'apiFootballId'=$1 LIMIT 1`,[String(fixtureId)])).rows[0];
+export async function storedOdds(c,fixtureId,{sportsStorage=barStorageMode()}={}){
+ const source=barCalendarRows(sportsStorage);
+ const {rows:[row]}=await c.query(`SELECT jsonb_build_object('id',m->'id','apiFootballId',m->'apiFootballId','kickoff',m->'kickoff',
+  'frozen',jsonb_build_object('1',m#>'{frozen,1}','X',m#>'{frozen,X}','2',m#>'{frozen,2}')) AS data
+  FROM ${source} WHERE m->>'apiFootballId'=$1 LIMIT 1`,[String(fixtureId)]);
  return row?prematchSnapshot(row.data):null;
 }
 export async function fixtureBaseline(c,raw,config){
