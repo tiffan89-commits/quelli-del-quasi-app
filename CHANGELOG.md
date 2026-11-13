@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.35.7](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.6...v0.35.7) (2026-11-13)
+
+
+### Bug Fixes
+
+* conserva la larghezza della barra nella schedina desktop ([40593a5](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/40593a5baa08a0fcaf16b20653bef27b811fdc1f))
+* conserva la larghezza della barra nella schedina desktop ([4e8e8b8](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/4e8e8b89dee86e363940ad7530d386c93f5fa2bc))
+
 ## [0.35.6](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.5...v0.35.6) (2026-11-13)
 
 
