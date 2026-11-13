@@ -1,3 +1,4 @@
+import {beginBackgroundWrite} from '../lib/operations/background-db.mjs';
 import {migrateStraightScoring} from '../lib/scoring.mjs';
 import {isDeepStrictEqual} from 'node:util';
 import {connection} from '../lib/db.mjs';
@@ -43,7 +44,7 @@ export function projectNativeBar(s,native,{now=Date.now(),onlySerieARound=null,f
 
 // One targeted transaction after the shared calculation, never per client.
 export async function syncNativeBar({connect=connection,now=Date.now(),onlyLeagueIds=null,onlySerieARound=null,fromSerieARound=null,season=null,sportsStorage=barStorageMode()}={}){
- const c=await connect();try{await c.query('BEGIN');await c.query('SELECT pg_advisory_xact_lock(826501)');
+ const c=await connect();try{await beginBackgroundWrite(c);await c.query('SELECT pg_advisory_xact_lock(826501)');
   const links=(await c.query(`SELECT b.*,l.name,l.season,l.max_members,l.auto_lineups_from AS cutover FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id WHERE b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL AND ($1::text[] IS NULL OR l.id=ANY($1::text[]))
    AND ($2::int IS NULL OR EXISTS(SELECT 1 FROM fanta.rounds r WHERE r.competition_id=b.competition_id AND r.seriea_round=$2))
    AND ($3::int IS NULL OR EXISTS(SELECT 1 FROM fanta.rounds r WHERE r.competition_id=b.competition_id AND r.seriea_round>=$3))

@@ -1,3 +1,4 @@
+import {beginBackgroundWrite} from '../lib/operations/background-db.mjs';
 import {connection} from '../lib/db.mjs';
 import {chooseAutoLineup,applyMatchDifficulty,applyStoredForecasts} from './auto-coach.mjs';
 import {hashInput} from './votes.mjs';
@@ -31,4 +32,4 @@ export async function writeAutoLineups(c,{now=Date.now(),leagueIds=null,initial=
   }
  }return report;
 }
-export async function runAutoLineups({connect=connection,...options}={}){const c=await connect();try{await c.query('BEGIN');const report=await writeAutoLineups(c,options);await c.query('COMMIT');return report;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
+export async function runAutoLineups({connect=connection,...options}={}){const c=await connect();try{await beginBackgroundWrite(c);const report=await writeAutoLineups(c,options);await c.query('COMMIT');return report;}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}}

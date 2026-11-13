@@ -22,6 +22,7 @@ Il repository usa Release Please su `main`. Il punto di partenza è il tag `v0.2
 - Il limite di memoria impegnata è di 4 GiB complessivi per web e worker, con due Job Object Windows da 2 GiB. Da 1.792 MiB il supervisore termina il processo interessato e WinSW lo riavvia. PostgreSQL e Caddy sono servizi separati.
 - Su installazioni esistenti compila `windows/MemoryGuard.cs` con il compilatore .NET Framework x64 e configura il percorso dell’eseguibile in `SELFHOST_MEMORY_GUARD` nel file ambiente dei servizi. Dopo l’avvio verifica `QUASI_MEMORY_GUARD_READY` nei log di entrambi.
 - I rilasci backend sono unici per tutti. Conserva una copia precedente e verifica la compatibilità dello schema prima di attivare il codice nuovo. Tornare al codice precedente lascia intatte le scritture del database.
+- Il worker Windows ha un pool separato con al massimo due connessioni PostgreSQL e con il parallelismo interno di PostgreSQL disabilitato. Le query scadono a 15 secondi e le transazioni a 20. Le transazioni dei batch sportivi hanno un limite di 8 secondi per query e di 2 secondi per attesa dei lock. Il log dei batch indica query, tempo complessivo sul DB e durata della query più lenta.
 
 ## Chiusura delle giornate
 

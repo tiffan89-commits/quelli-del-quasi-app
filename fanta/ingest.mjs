@@ -1,3 +1,4 @@
+import {beginBackgroundWrite} from '../lib/operations/background-db.mjs';
 import {finalReadiness} from './final-readiness.mjs';
 import {saveCompetitionSummary} from './summaries.mjs';
 import {connection} from '../lib/db.mjs';
@@ -10,7 +11,7 @@ import {DEFAULT_RULES} from './rules.mjs';
 import {sqlFantaStore} from './store.mjs';
 import {roundView} from './views.mjs';
 import {advanceCup} from './competitions.mjs';
-const transaction=async(connect,fn)=>{const c=await connect();try{await c.query('BEGIN');const x=await fn(c);await c.query('COMMIT');return x;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}};
+const transaction=async(connect,fn)=>{const c=await connect();try{await beginBackgroundWrite(c);const x=await fn(c);await c.query('COMMIT');return x;}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}};
 // The official report confirms the save omitted from the provider event.
 const bolognaMonzaReport="https://www.legaseriea.it/serie-a/news/bologna-monza-2026-2027-2-1-cronaca-risultato-gol";
 export function applyVerifiedFixtureEvents(raw){
@@ -58,7 +59,7 @@ export async function ingestFixture(source,{connect=connection,env=process.env,n
    await c.query('DELETE FROM fanta.events WHERE fixture_id=$1 AND NOT(id=ANY($2::text[]))',[id,events.map(e=>e.id)]);
   }
   await c.query('UPDATE fanta.fixtures SET frozen_at=$2,vote_model_key=$3,vote_rebuild_key=coalesce($4,vote_rebuild_key),vote_rebuilt_at=$5 WHERE id=$1',[id,before.official?stamp:null,modelKey,rebuildKey,stamp]);
-  return {fixture:id,players:votes.length,revisions,official:before.official,needsReview:votes.filter(x=>x.vote.needsReview).map(x=>x.p.id),readiness:finalReadiness(raw,normalized,votes),modelKey};
+  return {fixture:id,players:votes.length,revisions,changed:!before.unchanged,official:before.official,needsReview:votes.filter(x=>x.vote.needsReview).map(x=>x.p.id),readiness:finalReadiness(raw,normalized,votes),modelKey};
  });
 }
 export async function dailyCatalog({connect=connection,provider=fantaProvider(),env=process.env,now=Date.now}={}){
