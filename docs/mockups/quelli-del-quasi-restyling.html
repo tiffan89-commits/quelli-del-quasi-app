@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Quelli del Quasi — Proposte di restyling</title>
+<style>body{margin:24px auto;padding:0 12px;max-width:960px;color:#17281e;font:16px "Segoe UI",sans-serif}h1{font-size:24px}#choose{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}#choose button{font:inherit;padding:8px 12px;border:1px solid #405c49;border-radius:8px;background:#fff;color:#17281e}#choose button[aria-pressed=true]{background:#17281e;color:#fff}</style></head>
+<body><h1>Quelli del Quasi — Proposte di restyling</h1><nav id="choose" aria-label="Scegli proposta"></nav><style>
+#qdq .game{color-scheme:dark;background:#101c17;color:#f6f3e7;border:1px solid #31473a;border-radius:17px;overflow:hidden;font:14px/1.45 "DM Sans","Segoe UI",sans-serif;min-height:480px}
+#qdq .game *{box-sizing:border-box}
+#qdq .game [hidden]{display:none!important}
+#qdq header,#qdq nav,#qdq .spread{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#qdq header{padding:14px 22px;background:#17281e;border-bottom:1px solid #31473a}
+#qdq .brand{font-size:17px;font-weight:800;letter-spacing:-.04em}
+#qdq .eyebrow{color:#b4c5b8;font-size:12px}
+#qdq main{max-width:780px;margin:auto;padding:20px clamp(12px,4vw,32px)}
+#qdq h2{font-size:clamp(24px,5vw,34px);line-height:1.05;letter-spacing:-.045em;margin:0 0 4px}
+#qdq h3{font-size:19px;margin:0 0 5px;letter-spacing:-.025em}
+#qdq p{margin:4px 0 12px;color:#b4c5b8}
+#qdq button,#qdq select{font:inherit;color:inherit;background:#17281e;border:1px solid #405c49;border-radius:8px;padding:7px 12px;min-height:38px}
+#qdq button:hover{border-color:#c5dfac}
+#qdq button[aria-pressed=true]{border-color:#d7efc4;background:#293f2e}
+#qdq button.accent{background:#d7efc4;color:#16251a;font-weight:700;border-color:transparent}
+#qdq .bar-accent{--feature:#efc480}
+#qdq .fanta-accent{--feature:#b9e99b}
+#qdq .panel{border:1px solid #31473a;background:#17281e;border-radius:11px;padding:14px;margin-top:12px}
+#qdq .panel small{color:var(--feature,#b4c5b8)}
+#qdq .cards{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+#qdq .cards p{margin-bottom:12px}
+#qdq .split nav{justify-content:flex-start;margin:0 0 16px}
+#qdq .footer{margin-top:12px;border-top:1px solid #31473a;padding-top:12px}
+#qdq .match{display:grid;grid-template-columns:1fr auto;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #31473a}
+#qdq .match div{display:flex;gap:4px}
+#qdq .match button{min-width:36px;padding-inline:8px}
+#qdq fieldset{border:0;padding:0;margin:4px 0 0;min-width:0}
+#qdq legend{font-weight:700}
+#qdq .pitch{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;margin-top:12px;background:#203c23;border:1px solid #4a6b47;border-radius:10px}
+#qdq .pitch label{display:grid;gap:4px;min-width:0}
+#qdq .pitch select{width:100%;padding-inline:4px}
+#qdq .confirmed{color:#d7efc4;margin-top:10px}
+@media(max-width:530px){#qdq .cards{grid-template-columns:1fr;gap:0}#qdq .game{min-height:570px}#qdq header{padding-inline:12px}#qdq .pitch{grid-template-columns:1fr}}
+@media(pointer:coarse){#qdq button,#qdq select{min-height:44px}}
+</style>
+<div id="qdq" class="viz-carousel" aria-label="Restyling Quelli del Quasi" data-previous-label="Proposta precedente" data-next-label="Proposta successiva">
+<section data-variant="Home di giornata" aria-label="Home di giornata"><div class="game daily" aria-label="Home di giornata"></div></section>
+<section data-variant="Bar e Fanta" aria-label="Navigazione Bar e Fanta" hidden><div class="game split" aria-label="Spazi Bar e Fanta"></div></section>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('qdq');
+  const matches = ['Milan – Roma', 'Napoli – Torino', 'Lazio – Bologna'];
+  const roles = [['Portiere','Di Gregorio','Carnesecchi'],['Centrocampista','Barella','Orsolini'],['Attaccante','Lautaro','Kean']];
+  root.querySelectorAll('.game').forEach(game => {
+    const split = game.classList.contains('split');
+    const picks = {};
+    const lineup = roles.map(role => role[1]);
+    let savedPicks = {};
+    let submitted = false;
+    let view = split ? 'bar' : 'home';
+    let notice = '';
+    const design = {radius: 17};
+    function render(focus = false) {
+      const size = Object.keys(picks).length;
+      const savedSize = Object.keys(savedPicks).length;
+      const nav = split ? '<nav aria-label="Scegli area">' + [['bar','Bar'],['fanta','Fanta']].map(([id,label]) => '<button data-view="' + id + '" aria-pressed="' + (id === view || id === 'bar' && view === 'mine') + '">' + label + '</button>').join('') + '</nav>' : (view === 'home' ? '' : '<button data-view="' + (view === 'mine' ? 'bar' : 'home') + '">← ' + (view === 'mine' ? 'Schedina' : 'Oggi') + '</button>');
+      let content;
+      if (view === 'home') content = '<span class="eyebrow">LEGA DEMO · GIORNATA 12</span><h2>Oggi</h2><div class="cards"><article class="panel fanta-accent"><small>FANTA · CHIUDE OGGI ALLE 18:00</small><h3>La tua formazione</h3><p>' + (submitted ? 'Formazione schierata' : 'Formazione da schierare') + '</p><button class="accent" data-view="fanta">' + (submitted ? 'Rivedi formazione' : 'Schiera formazione') + '</button></article><article class="panel bar-accent"><small>BAR · CREDITI VIRTUALI</small><h3>La schedina</h3><p>' + (savedSize ? 'Pronostici salvati: ' + savedSize : '3 partite disponibili') + '</p><button data-view="bar">Apri schedina</button></article></div>';
+      if (view === 'bar') content = '<div class="spread"><div><span class="eyebrow">BAR · GIORNATA 12</span><h2>Schedina</h2></div><button data-view="mine">La mia</button></div><div class="panel bar-accent"><fieldset><legend>Pronostici 1X2</legend>' + matches.map((match, index) => '<div class="match"><span>' + match + '</span><div role="group" aria-label="' + match + '">' + ['1','X','2'].map(sign => '<button data-match="' + index + '" data-sign="' + sign + '" aria-pressed="' + (picks[index] === sign) + '">' + sign + '</button>').join('') + '</div></div>').join('') + '</fieldset><div class="spread footer"><span>' + size + ' di ' + matches.length + ' selezionati</span><button class="accent" data-save="bar" ' + (size ? '' : 'disabled') + '>Salva schedina</button></div></div>';
+      if (view === 'mine') content = '<span class="eyebrow">BAR · GIORNATA 12</span><h2>La mia schedina</h2><div class="panel">' + (savedSize ? Object.entries(savedPicks).map(([index, sign]) => '<div class="match"><span>' + matches[index] + '</span><strong>' + sign + '</strong></div>').join('') : '<p>Ancora nessun pronostico salvato.</p>') + '</div>';
+      if (view === 'fanta') content = '<span class="eyebrow">FANTA · GIORNATA 12</span><h2>Formazione</h2><p>Scadenza oggi alle 18:00 · Anteprima di tre ruoli</p><div class="pitch">' + roles.map(([role,...players], index) => '<label>' + role + '<select data-role="' + index + '">' + players.map(player => '<option' + (lineup[index] === player ? ' selected' : '') + '>' + player + '</option>').join('') + '</select></label>').join('') + '</div><div class="spread footer"><span>' + (submitted ? 'Formazione schierata' : 'Formazione da schierare') + '</span><button class="accent" data-save="fanta">Conferma formazione</button></div>';
+      game.innerHTML = '<header><span class="brand">Quelli del Quasi</span><span class="eyebrow">Dati demo</span></header><main>' + nav + (nav && !split ? '<div style="height:12px"></div>' : '') + content + '<div class="confirmed" role="status">' + notice + '</div></main>';
+      if (focus) {const heading = game.querySelector('h2'); heading.tabIndex = -1; heading.focus();}
+    }
+    game.addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      const {view: next, match, sign, save} = button.dataset;
+      notice = '';
+      if (next) view = next;
+      if (match !== undefined) {
+        if (picks[match] === sign) delete picks[match];
+        else picks[match] = sign;
+      }
+      if (save === 'bar') {savedPicks = {...picks}; view = 'mine'; notice = 'Schedina salvata nella demo.';}
+      if (save === 'fanta') {submitted = true; notice = 'Formazione confermata nella demo.';}
+      render(Boolean(next || save));
+      if (match !== undefined) game.querySelector('[data-match="' + match + '"][data-sign="' + sign + '"]').focus();
+    });
+    game.addEventListener('change', event => {
+      const index = event.target.dataset.role;
+      if (index === undefined) return;
+      lineup[index] = event.target.value;
+      submitted = false;
+      notice = '';
+      render();
+      game.querySelector('[data-role="' + index + '"]').focus();
+    });
+    render();
+    if (globalThis.Tweak) {
+      const tweak = new Tweak({container: game, onChange: () => {game.style.borderRadius = design.radius + 'px';}});
+      tweak.addSlider(design, 'radius', {label:'Raggio degli angoli', min:0, max:28, unit:'px'});
+    }
+  });
+})();
+</script>
+<script>
+const chooser = document.getElementById('choose');
+const variants = [...document.querySelectorAll('#qdq > [data-variant]')];
+const buttons = variants.map((variant, index) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = variant.dataset.variant;
+  button.setAttribute('aria-pressed', String(index === 0));
+  button.addEventListener('click', () => {
+    variants.forEach((panel, panelIndex) => { panel.hidden = panelIndex !== index; });
+    buttons.forEach((control, buttonIndex) => control.setAttribute('aria-pressed', String(buttonIndex === index)));
+  });
+  chooser.append(button);
+  return button;
+});
+</script></body></html>
+
