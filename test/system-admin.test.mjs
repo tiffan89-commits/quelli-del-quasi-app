@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import{emptyState,transaction}from'../lib/db.mjs';import{hash,session,userFor,sha,newLeague}from'../lib/game.mjs';
 import{readFile}from'node:fs/promises';
 import{fixtureDb}from'./fanta/helpers.mjs';
+import{changeBarStorage}from'../runtime/bar-storage.mjs';
 import{provisionSystemAdmin,beginAdminLogin,finishAdminLogin,requireSystemAdmin}from'../lib/system-admin-auth.mjs';
 import{planWipe,executeWipe,forceAllFantasy,adminLeagues,runAdminProbe}from'../lib/system-admin-operations.mjs';
 import{decodeMail}from'../lib/mail.mjs';import{createApi}from'../netlify/functions/api.mjs';
@@ -64,22 +65,50 @@ test('admin wipe atomically removes a Bar and its Fanta, and refuses a changed l
  assert.ok((await db.query("SELECT count(*)::int AS n FROM fanta.players")).rows[0].n>0);
 });
 
-test('only the verified president can delete their Bar and linked Fanta with the exact phrase',async t=>{
+for(const sportsStorage of ['snapshot','rows'])test(`the verified president can save league identity and delete the linked Bar and Fanta (${sportsStorage})`,async t=>{
  const {db,connect,close}=await fixtureDb();t.after(close);
- const migration=await readFile(new URL('../netlify/database/migrations/012_random_leagues.sql',import.meta.url),'utf8');await db.exec('BEGIN;'+migration+'COMMIT;');
+ const migrate=async name=>db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
+ await migrate('012_random_leagues');
  const {s,p,l}=fixture(),member={id:'member',name:'Membro',emailVerified:true},fanta='fanta-lucas-a';
  s.users.push(member);l.demo=false;l.members.push({uid:member.id});l.nativeFantaLink={leagueId:fanta};const other=newLeague(s,member,'Altro Bar',true);
+ s.platformStats={days:{}};
+ s.leagueChats={[l.id]:{messages:[]},[other.id]:{messages:[]}};
+ s.chatReaders={[`${l.id}:${member.id}`]:{read:2}};
+ s.rounds.push({id:'archive',league:l.id,matches:[],slips:[]});
+ s.ledger.push({id:'credit-archive',league:l.id,uid:p.id});
  const presidentToken=session(s,p.id),memberToken=session(s,member.id),phrase='ELIMINA LEGA E STORICO';
  await db.query('UPDATE fanta_state SET payload=$1 WHERE id=1',[s]);
  await db.query("INSERT INTO fanta.competitions(id,league_id,name,kind,status) VALUES('owned-comp',$1,'Coppa','league','draft')",[fanta]);
  await db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key) VALUES($1,$2,'owned-comp','native:owned')",[l.id,fanta]);
- const api=createApi({transact:fn=>transaction(fn,{connect}),env});
- const remove=(token,confirmation)=>api(new Request('https://example.test/api/league-delete',{method:'POST',headers:{cookie:'sid='+token,'content-type':'application/json'},body:JSON.stringify({league:l.id,phrase:confirmation})}));
+ if(sportsStorage==='rows'){
+  for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views','020_live_storage_round_cache','021_live_storage_league_order','022_live_storage_cutover','023_live_storage_membership_view'])await migrate(name);
+  await changeBarStorage('enable',{connect});
+ }
+ const api=createApi({transact:fn=>transaction(fn,{connect,sportsStorage}),env});
+ const call=(route,token,body)=>api(new Request('https://example.test/api/'+route,{method:'POST',headers:{cookie:'sid='+token,'content-type':'application/json'},body:JSON.stringify({league:l.id,...body})}));
+ const state=async()=> (await db.query(sportsStorage==='rows'
+  ?'SELECT fanta.bar_restore_document(payload,storage_shape) AS payload FROM fanta_state WHERE id=1'
+  :'SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload;
+ const branding={accent:'#ff9db4',emblem:'FC',motto:'La lega di prova'};
+ assert.equal((await call('league-profile',memberToken,{branding})).status,403);
+ const save=await call('league-profile',presidentToken,{branding});
+ assert.equal(save.status,200,await save.clone().text());
+ assert.deepEqual((await state()).leagues.find(x=>x.id===l.id).branding,branding);
+
+ const remove=(token,confirmation)=>call('league-delete',token,{phrase:confirmation});
  assert.equal((await remove(memberToken,phrase)).status,403);
  assert.equal((await remove(presidentToken,'elimina')).status,409);
  assert.equal((await db.query('SELECT count(*)::int n FROM fanta.leagues')).rows[0].n,1);
- const response=await remove(presidentToken,phrase);assert.equal(response.status,200,await response.clone().text());
- assert.equal((await db.query('SELECT count(*)::int n FROM fanta.leagues')).rows[0].n,0);
- const {payload}= (await db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0];
- assert.deepEqual(payload.leagues.map(l=>l.id),[other.id]);assert.ok(payload.users.some(u=>u.id===member.id));
+ const response=await remove(presidentToken,phrase);
+ assert.equal(response.status,200,await response.clone().text());
+ for(const table of ['leagues','teams','rosters','matchups','bar_links']){
+  assert.equal((await db.query('SELECT count(*)::int n FROM fanta.'+table)).rows[0].n,0,table);
+ }
+ const payload=await state();
+ assert.deepEqual(payload.leagues.map(x=>x.id),[other.id]);
+ assert.ok(payload.users.some(u=>u.id===member.id));
+ assert.ok(!payload.rounds.some(r=>r.league===l.id));
+ assert.ok(!payload.ledger.some(entry=>entry.league===l.id));
+ assert.deepEqual(payload.leagueChats,{[other.id]:{messages:[]}});
+ assert.deepEqual(payload.chatReaders,{});
 });
