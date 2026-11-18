@@ -767,3 +767,35 @@ body.fanta-active.v2-on:has(.fanta-native-slips .v2-slipbar) main{padding-bottom
 .fanta-team-choices{display:grid;gap:16px;min-width:0}.fanta-team-choices>.card{padding:16px;min-width:0}.fanta-team-choices h2{margin:0 0 8px}.fanta-team-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.fanta-team-choice{display:grid;justify-items:center;align-content:start;gap:9px;min-width:0;padding:14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:16px;color:var(--white);text-align:center}.fanta-team-choice>b{font-size:15px;line-height:1.2;overflow-wrap:anywhere}.fanta-team-choice>small{font-size:12px;color:var(--lime)}.fanta-team-choice:disabled{opacity:.5;cursor:default}.fanta-team-choice[aria-busy="true"]{background:#08120f;opacity:.8}.fanta-team-choice .fanta-team-logo{width:52px;height:52px}.fanta-pick-roles{display:flex;gap:6px;overflow-x:auto;flex:none;padding:8px 0 12px;touch-action:pan-x;max-width:100%}.fanta-pick-roles .v2-chip{flex:none;min-height:40px;font-size:12px}.fanta-pick-roles small{font-variant-numeric:tabular-nums}
 
 .fanta-team-choice .team-logo{width:48px;height:50px;flex:none}
+
+/* Scambi fra squadre */
+.fanta-trades { max-width: 720px; margin: 0 auto; padding: 0 0 20px; }
+.fanta-trades .president-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.fanta-trades h1, .fanta-trades h2, .fanta-trades h3 { margin: 0; }
+.fanta-trades h1 { font-size: clamp(24px, 5vw, 32px); }
+.fanta-trades h2 { font-size: 21px; }
+.fanta-trades h3 { font-size: 17px; }
+.fanta-trades [data-trades-body], .trade-requests { display: grid; gap: 10px; }
+.fanta-trades p { margin: 0; }
+.fanta-trades .card { margin: 0; padding: 12px; min-height: 0; }
+.trade-request, .trade-form { display: grid; gap: 10px; }
+.trade-form h2:focus { outline: none; }
+.trade-request header { display: flex; gap: 6px; align-items: baseline; justify-content: space-between; }
+.trade-request header span { font-size: 12px; color: var(--muted); }
+.trade-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.trade-actions:empty { display: none; }
+.trade-actions > button { padding: 7px 12px; min-height: 40px; }
+.trade-terms, .trade-rosters, .trade-credit-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.trade-terms > div { border-radius: 8px; background: color-mix(in srgb, var(--lime) 6%, transparent); padding: 7px; overflow-wrap: anywhere; font-size: 13px; }
+.trade-terms ul { margin: 3px 0 0; padding: 0; list-style: none; }
+.trade-roster { min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 4px; margin: 0; }
+.trade-roster legend { font-size: 13px; font-weight: 700; }
+.trade-players { max-height: 12rem; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.trade-players label { display: flex; min-height: 38px; align-items: center; gap: 5px; padding: 3px 2px; cursor: pointer; font-size: 13px; }
+.trade-players input { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--lime); }
+.trade-players b { color: var(--lime); }
+.trade-players span { overflow-wrap: anywhere; }
+.trade-players label:has(input:checked) { background: color-mix(in srgb, var(--lime) 12%, transparent); }
+.trade-credit-fields .field, .trade-form .field { margin: 0; }
+.trade-credit-fields [hidden] { display: none; }
+.trade-balance { font-size: 12px; }

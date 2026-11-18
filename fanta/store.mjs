@@ -3,6 +3,7 @@ import {saveLineup} from './lineup-save.mjs';
 import {activateCompletedLeague} from './competition-activation.mjs';
 import {readyRosters} from './competitions.mjs';
 import {persistRosterChanges} from './roster-persistence.mjs';
+import {readTradeStatus} from './trades.mjs';
 import {connection} from '../lib/db.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
 import {resolveLeagueBindings} from './player-identities.mjs';
@@ -56,34 +57,39 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
   logo:(uid,league,team)=>use(async c=>(await c.query('SELECT a.data,a.mime,a.digest FROM fanta.team_logos a JOIN fanta.teams t ON t.id=a.team_id WHERE t.id=$3 AND t.league_id=$2 AND EXISTS(SELECT 1 FROM fanta.teams own WHERE own.league_id=$2 AND own.user_id=$1)',[uid,league,team])).rows[0]||null),
   leagues:uid=>use(async c=>(await c.query(`SELECT l.*,t.id AS team_id,t.name AS team_name FROM fanta.leagues l JOIN fanta.teams t ON t.league_id=l.id AND t.user_id=$1 WHERE l.rules->>'disabledAt' IS NULL ORDER BY l.id`,[uid])).rows.map(x=>({id:x.id,name:x.name,season:x.season+'/'+String(x.season+1).slice(-2),role:x.admin_uid===uid?'admin':'member',accent:x.accent,teamName:x.team_name,teamId:x.team_id,kind:x.kind,sourceKey:x.source_key,slipsEnabled:x.slips_enabled!==false}))),
   settings:(uid,next)=>use(async c=>{if(next)await c.query('INSERT INTO fanta.notification_settings VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET data=EXCLUDED.data',[uid,JSON.stringify(next)]);return (await c.query('SELECT data FROM fanta.notification_settings WHERE user_id=$1',[uid])).rows[0]?.data||{notify:{lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true}};}),
-  async league(uid,id,fn,{write=false,auction=false,number,competition,catalog=true,detailedVotes=true,teamIdentity=false,calculation=false}={}){return use(async c=>{
-   if(!write&&!auction){
+  tradeStatus:(id,uid)=>use(c=>readTradeStatus(c,id,uid)),
+  async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,teamIdentity=false,calculation=false}={}){return use(async c=>{
+   if(!write&&!auction&&!market){
     const load=async()=>(await c.query(READ_LEAGUE_SQL,[id,uid,number?Number(number):null,competition||null,catalog,detailedVotes])).rows[0];let l;
     if(readCache){const access=(await c.query(`SELECT l.admin_uid,r.revision::text AS revision FROM fanta.leagues l CROSS JOIN fanta.cache_revision r WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND r.id=1 AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`,[id,uid])).rows[0];if(!access)fail('Lega non accessibile',403);l=await readCache.read(JSON.stringify(['fanta-read-v3',id,number||null,competition||null,catalog,detailedVotes]),access.revision,load,{ttl:60000});}
     else l=await load();if(!l)fail('Lega non accessibile',403);const s=resolveLeagueBindings({...readState(l),bindings:l.bindings||[]});if(s.league.adminUid!==uid)s.importReview=[];return fn(s,c);
    }
    await c.query('BEGIN');try{
-    const l=(await c.query(`SELECT l.* FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)${write?' FOR UPDATE':''}`,[id,uid])).rows[0];if(!l)fail('Lega non accessibile',403);
+    const l=(await c.query(`SELECT l.* FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)${write?' FOR UPDATE':market?' FOR SHARE':''}`,[id,uid])).rows[0];if(!l)fail('Lega non accessibile',403);
     const teamNameDeadline=teamIdentity?iso((await c.query(`SELECT ${FIRST_TEAM_KICKOFF} FROM fanta.leagues l WHERE l.id=$1`,[id])).rows[0].team_name_deadline):null;
     const league={id:l.id,name:l.name,season:l.season,kind:l.kind,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,maxMembers:l.max_members,inviteCode:l.invite_code};
     const rules={...DEFAULT_RULES,...l.rules,benchMax:null};
-    const competitions=(await c.query('SELECT * FROM fanta.competitions WHERE league_id=$1 ORDER BY created_at,id',[id])).rows,selected=competitions.find(x=>x.id===(competition||id+':main'))||(!competition?competitions[0]:null);if(!selected)fail('Competizione non accessibile',403);
-    const teams=(await c.query('SELECT * FROM fanta.teams WHERE league_id=$1 ORDER BY id',[id])).rows.map(t=>({id:t.id,name:t.name,manager:t.manager,color:t.color,branding:t.branding||{},creditAdjustment:t.credit_adjustment||0,coachName:t.coach_name,userId:t.user_id,joinedAt:iso(t.joined_at),roster:[]}));
-    const players=calculation&&!number?[]:(await c.query(calculation?`SELECT p.*,c.name AS club FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id WHERE p.id IN(
+    const competitions=market?[]:(await c.query('SELECT * FROM fanta.competitions WHERE league_id=$1 ORDER BY created_at,id',[id])).rows,selected=competitions.find(x=>x.id===(competition||id+':main'))||(!competition?competitions[0]:null);if(!selected&&!market)fail('Competizione non accessibile',403);
+    const teams=(await c.query('SELECT * FROM fanta.teams WHERE league_id=$1 ORDER BY id'+(market&&write?' FOR UPDATE':''),[id])).rows.map(t=>({id:t.id,name:t.name,manager:t.manager,color:t.color,branding:t.branding||{},creditAdjustment:t.credit_adjustment||0,coachName:t.coach_name,userId:t.user_id,joinedAt:iso(t.joined_at),roster:[]}));
+    const players=market||calculation&&!number?[]:(await c.query(calculation?`SELECT p.*,c.name AS club FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id WHERE p.id IN(
      SELECT player_id FROM fanta.rosters WHERE league_id=$1 UNION SELECT player_id FROM fanta.roster_entries WHERE league_id=$1
      UNION SELECT player_id FROM fanta.player_bindings WHERE league_id=$1
      UNION SELECT jsonb_array_elements_text(starters||bench) FROM fanta.lineups WHERE competition_id=$2 AND round=$3
     ) ORDER BY p.id`:'SELECT p.*,c.name AS club FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id ORDER BY p.id',calculation?[id,selected.id,number]:[])).rows.map(p=>({...p.data,id:p.id,name:p.name,role:p.role,club:p.club,clubId:p.club_id}));
     const byId=new Map(players.map(p=>[p.id,p]));if(!calculation||number){
-     for(const r of (await c.query('SELECT * FROM fanta.rosters WHERE league_id=$1',[id])).rows)teams.find(t=>t.id===r.team_id)?.roster.push({...byId.get(r.player_id),price:r.price});
+     const rosterRows=(await c.query(market?`SELECT r.*,p.name,p.role FROM fanta.rosters r JOIN fanta.players p ON p.id=r.player_id WHERE r.league_id=$1`:'SELECT * FROM fanta.rosters WHERE league_id=$1',[id])).rows;
+     for(const r of rosterRows){
+      const player=market?{id:r.player_id,name:r.name,role:r.role}:byId.get(r.player_id);
+      teams.find(t=>t.id===r.team_id)?.roster.push({...player,price:r.price});
+     }
      applyEntries(teams,byId,(await c.query('SELECT * FROM fanta.roster_entries WHERE league_id=$1',[id])).rows);
     }
     let row=calculation?null:(await c.query(`SELECT * FROM fanta.auctions WHERE league_id=$1${auction?' FOR UPDATE':''}`,[id])).rows[0];
     if(!row&&auction){await c.query(`INSERT INTO fanta.auctions(id,league_id,data) VALUES($1,$1,$2) ON CONFLICT(league_id) DO NOTHING`,[id,JSON.stringify({status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null})]);row=(await c.query('SELECT * FROM fanta.auctions WHERE league_id=$1 FOR UPDATE',[id])).rows[0];}
     const a={status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null,...row?.data};if(auction&&a.lot)await c.query('SELECT id FROM fanta.lots WHERE id=$1 FOR UPDATE',[a.lot.id]);
-    const state={voteModel:calculation&&!number?null:(await c.query("SELECT data->>'key' AS key FROM fanta.jobs WHERE id='votes:active-model'")).rows[0]?.key,teamNameDeadline,league,rules,teams,players,competition:selected,competitions,auction:a,rounds:[],matchups:[],results:[],lineups:[],fixtures:[],votes:[]};
-    if(l.admin_uid===uid&&!auction&&!calculation)state.importReview=(await c.query('SELECT data FROM fanta.import_issues WHERE league_id=$1 ORDER BY id',[id])).rows.map(x=>x.data);
-    if(!auction){
+    const state={voteModel:market||calculation&&!number?null:(await c.query("SELECT data->>'key' AS key FROM fanta.jobs WHERE id='votes:active-model'")).rows[0]?.key,teamNameDeadline,league,rules,teams,players,competition:selected,competitions,auction:a,rounds:[],matchups:[],results:[],lineups:[],fixtures:[],votes:[]};
+    if(l.admin_uid===uid&&!auction&&!calculation&&!market)state.importReview=(await c.query('SELECT data FROM fanta.import_issues WHERE league_id=$1 ORDER BY id',[id])).rows.map(x=>x.data);
+    if(!auction&&!market){
      state.rounds=(await c.query('SELECT * FROM fanta.rounds WHERE league_id=$1 AND competition_id=$2 ORDER BY number',[id,selected.id])).rows.map(r=>({...r,deadline:iso(r.deadline)}));
      state.matchups=(await c.query('SELECT * FROM fanta.matchups WHERE league_id=$1 AND competition_id=$2 ORDER BY round,id',[id,selected.id])).rows;
      state.results=(await c.query('SELECT r.* FROM fanta.results r JOIN fanta.matchups m ON m.id=r.matchup_id WHERE m.league_id=$1 AND m.competition_id=$2 ORDER BY m.round',[id,selected.id])).rows;
@@ -95,7 +101,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
       if(voteRound)state.votes=(await c.query('SELECT DISTINCT ON(v.player_id) v.player_id,v.data,v.official FROM fanta.votes v JOIN fanta.fixtures f ON f.id=v.fixture_id WHERE f.season=$1 AND f.round=$2 AND ($3::text IS NULL OR v.model_key=$3) ORDER BY v.player_id,v.id DESC',[l.season,voteRound.seriea_round,state.voteModel||null])).rows;
      }
     }
-    if(!calculation||number){
+    if(!market&&(!calculation||number)){
      state.bindings=(await c.query('SELECT * FROM fanta.player_bindings WHERE league_id=$1',[id])).rows;resolveLeagueBindings(state);
     }
     const result=await fn(state,c);await c.query('COMMIT');return result;
@@ -117,7 +123,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
    for(const sale of a.log)await c.query('INSERT INTO fanta.sales(id,auction_id,league_id,team_id,player_id,price,undone,released) VALUES($1,$2,$2,$3,$4,$5,$6,$7) ON CONFLICT(id) DO UPDATE SET undone=EXCLUDED.undone,released=EXCLUDED.released',[sale.id,id,sale.team,sale.player.id,sale.price,!!sale.undone,!!sale.released]);
    await c.query('INSERT INTO fanta.auction_actions(auction_id,lot_id,actor,kind,data) VALUES($1,$2,$3,$4,$5)',[id,a.lot?.id||before.auction.lot?.id||null,actor,kind,JSON.stringify(input)]);
   },
-  async persistRoster(c,before,after,options){const result=await persistRosterChanges(c,before,after,options);const activation=await activateCompletedLeague(c,after);if(activation.status==='active')after.auction.competitionActivation=activation;await c.query('UPDATE fanta.auctions SET version=$2,data=$3 WHERE league_id=$1',[after.league.id,after.auction.version,JSON.stringify(after.auction)]);if(process.env.SELFHOST_RUNTIME==='true')await c.query("SELECT pg_notify('quasi_auction',$1)",[JSON.stringify({league:after.league.id,version:after.auction.version})]);return result;},
+  async persistRoster(c,before,after,options){const result=await persistRosterChanges(c,before,after,options);if(options.kind!=='trade'){const activation=await activateCompletedLeague(c,after);if(activation.status==='active')after.auction.competitionActivation=activation;}await c.query('UPDATE fanta.auctions SET version=$2,data=$3 WHERE league_id=$1',[after.league.id,after.auction.version,JSON.stringify(after.auction)]);if(process.env.SELFHOST_RUNTIME==='true')await c.query("SELECT pg_notify('quasi_auction',$1)",[JSON.stringify({league:after.league.id,version:after.auction.version})]);return result;},
   saveLineup:(uid,id,input,options)=>use(c=>saveLineup(c,uid,id,input,options)),
   saveLineupForSession:(token,id,input,options)=>use(async c=>{const u=token?(await c.query(AUTH_SQL,[createHash('sha256').update(token).digest('hex'),Date.now()])).rows[0]:null;if(!u||!u.verified||u.demo||u.admin_only)fail('Accedi e conferma la tua email per entrare nel Fanta.',403);return saveLineup(c,u.id,id,input,{...options,username:u.username});}),
   connect,

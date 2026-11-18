@@ -1,7 +1,7 @@
 import {presidentEntry} from '../president-panel.mjs';
 import {leagueActions} from '../league-actions.mjs';
 import {leagueEmblem} from '../league-theme.mjs';
-import {leagueCreationFields,leagueCreationPayload} from '../league-create-form.mjs';
+import {leagueCreationFields,leagueCreationPayload,leagueJoinFields} from '../league-create-form.mjs';
 // Selettore lega v2: chip in alto con ruolo e crediti, bottom sheet con tutte le leghe.
 import { sourceOf, isClosed } from '../slip-state.mjs';
 import {paintAuctionBadges} from '../auction-index.mjs';
@@ -45,7 +45,7 @@ export function renderLeagueSheet(leagues, activeId, uid, esc) {
     }).join('') +
     leagueActions({sheet:true}) +
     (leagues.some(l=>l.id===activeId&&isLeagueAdmin(l,uid)&&!l.nativeFantaLink)?'<button type="button" hidden class="secondary" data-v2-action="create" data-existing-bar="'+esc(leagues.find(l=>l.id===activeId).name)+'" data-existing-size="'+Math.max(2,leagues.find(l=>l.id===activeId).members?.length||2)+'">Attiva il Fanta di questa lega</button>':'') +
-    '<form class="v2-sheet-form" id="v2-form-join" data-kind="join" hidden><label class="field">Codice lega<input name="code" required placeholder="ABC123" autocomplete="off" autocapitalize="characters"></label><button class="primary">Entra nella lega</button></form>' +
+    '<form class="v2-sheet-form" id="v2-form-join" data-kind="join" hidden>' + leagueJoinFields() + '<button class="primary">Entra nella lega</button></form>' +
     '<form class="v2-sheet-form" id="v2-form-create" data-kind="create" hidden>' + leagueCreationFields() + '<button type="submit" class="primary">Crea Bar e Fanta</button><p data-create-error role="alert"></p></form></div>';
 }
 

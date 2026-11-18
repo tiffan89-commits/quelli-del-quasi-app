@@ -4,7 +4,7 @@ export function closeStyledSelect(){active?.close();}
 export function bindStyledSelects(root=document){
  if(!installed){installed=true;document.addEventListener('pointerdown',e=>{if(active&&!active.panel.contains(e.target)&&!active.button.contains(e.target))active.close();});window.addEventListener('resize',closeStyledSelect);document.addEventListener('scroll',e=>{if(active&&!active.panel.contains(e.target))active.close();},true);}
  root.querySelectorAll('select').forEach(select=>{
-  if(select.dataset.styled||select.multiple)return;select.dataset.styled='true';
+  if(select.dataset.styled||select.hasAttribute('data-native-select')||select.multiple)return;select.dataset.styled='true';
   const wrapper=document.createElement('div');wrapper.className='quasi-select';select.before(wrapper);wrapper.append(select);
   const button=document.createElement('button'),panel=document.createElement('div'),id='quasi-select-'+(++serial);
   const label=select.getAttribute('aria-label')||[...(select.labels?.[0]?.childNodes||[])].filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ').trim()||select.labels?.[0]?.querySelector('span')?.textContent||'Scegli';
