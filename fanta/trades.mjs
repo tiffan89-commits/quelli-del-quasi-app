@@ -1,7 +1,16 @@
 import {teamBudget} from './auction.mjs';
 import {DEFAULT_RULES,fail} from './rules.mjs';
+import {queueTradeNotice} from './notifications.mjs';
 
 const auctionBusy=state=>['running','scheduled'].includes(state.auction.status);
+export function tradeWindow(rules,now=Date.now()){
+ const {startsAt,endsAt}=rules.tradeWindow||{};
+ if(startsAt&&endsAt){
+  const phase=now<Date.parse(startsAt)?'scheduled':now<Date.parse(endsAt)?'open':'ended';
+  return {phase,open:phase==='open',startsAt,endsAt};
+ }
+ return {phase:rules.tradesOpen===true?'open':'closed',open:rules.tradesOpen===true,startsAt:null,endsAt:null};
+}
 const uuid=/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
 const slots=Object.entries(DEFAULT_RULES.roster);
 const size=slots.reduce((sum,[,count])=>sum+count,0);
@@ -47,29 +56,33 @@ const pendingCountSQL=`SELECT count(*)::int
  JOIN fanta.teams sender ON sender.league_id=x.league_id AND sender.id=x.sender_team_id AND sender.user_id=x.sender_uid
  WHERE x.league_id=l.id AND x.recipient_team_id=t.id AND x.recipient_uid=t.user_id AND x.status='pending'`;
 
-export async function readTradeStatus(c,id,uid){
- const row=(await c.query(`SELECT coalesce(l.rules->>'tradesOpen'='true',false) AS open, (${pendingCountSQL}) AS pending,
+export async function readTradeStatus(c,id,uid,now=Date.now()){
+ const row=(await c.query(`SELECT l.rules,(SELECT data->>'status' FROM fanta.auctions WHERE league_id=l.id) AS auction, (${pendingCountSQL}) AS pending,
   (SELECT max(x.updated_at) FROM fanta.trades x WHERE x.league_id=l.id AND x.status='accepted'
    AND ((x.sender_team_id=t.id AND x.sender_uid=t.user_id) OR (x.recipient_team_id=t.id AND x.recipient_uid=t.user_id))) AS "latestAccepted"
   FROM fanta.leagues l JOIN fanta.teams t ON t.league_id=l.id
   WHERE l.id=$1 AND t.user_id=$2 AND l.rules->>'disabledAt' IS NULL`,[id,uid])).rows[0];
  if(!row)fail('Lega non accessibile',403);
- return row;
+ const {rules,auction,pending,latestAccepted}=row;
+ const window=tradeWindow(rules,now),open=window.open&&!['running','scheduled'].includes(auction);
+ return {open,pending:open?pending:0,latestAccepted,window,serverNow:now};
 }
 
-export async function tradeView(c,state,uid){
- const mine=state.teams.find(t=>t.userId===uid), open=state.rules.tradesOpen===true;
+export async function tradeView(c,state,uid,now=Date.now()){
+ const mine=state.teams.find(t=>t.userId===uid),window=tradeWindow(state.rules,now),open=window.open&&!auctionBusy(state);
  if(!mine)fail('Lega non accessibile',403);
  const {rows}=await c.query(`SELECT id,status,revision,terms,updated_at,sender_uid,recipient_uid,sender_team_id,recipient_team_id
   FROM fanta.trades WHERE league_id=$1
   AND ((sender_team_id=$2 AND sender_uid=$3) OR (recipient_team_id=$2 AND recipient_uid=$3))
-  ORDER BY (status='pending') DESC,updated_at DESC LIMIT 100`,[state.league.id,mine.id,uid]);
+  AND status<>'accepted' ORDER BY (status='pending') DESC,updated_at DESC LIMIT 100`,[state.league.id,mine.id,uid]);
+ const {rows:accepted}=await c.query(`SELECT id,terms,updated_at FROM fanta.trades WHERE league_id=$1 AND status='accepted' ORDER BY updated_at DESC,id`,[state.league.id]);
  const owners=new Map(state.teams.map(t=>[t.id,t.userId]));
- return {open,isAdmin:state.league.adminUid===uid,canOpen:!auctionBusy(state),teamId:mine.id,
+ return {open,window,serverNow:now,isAdmin:state.league.adminUid===uid,canOpen:!auctionBusy(state),teamId:mine.id,
+  history:accepted.map(x=>({...x.terms,id:x.id,acceptedAt:x.updated_at})),
   teams:open?state.teams.filter(t=>t.userId).map(t=>({...labelTeam(t),credits:teamBudget(t,state.rules).credits,roster:t.roster.map(labelPlayer)})):[],
   requests:rows.map(x=>({
    ...x.terms,id:x.id,revision:x.revision,updatedAt:x.updated_at,incoming:x.recipient_uid===uid,
-   status:x.status==='pending'&&(owners.get(x.sender_team_id)!==x.sender_uid||owners.get(x.recipient_team_id)!==x.recipient_uid)?'expired':x.status,
+   status:x.status==='pending'&&(!open||owners.get(x.sender_team_id)!==x.sender_uid||owners.get(x.recipient_team_id)!==x.recipient_uid)?'expired':x.status,
   })),
  };
 }
@@ -79,17 +92,29 @@ const samePlayers=(a,b)=>a.length===b.length&&a.every(p=>b.some(q=>p.id===q.id))
 export async function tradeAction(c,state,uid,kind,input,{persistRoster,now}){
  const id=state.league.id,mine=state.teams.find(t=>t.userId===uid);
  if(!mine)fail('Lega non accessibile',403);
+ const window=tradeWindow(state.rules,now);
  if(kind==='window'){
-  if(state.league.adminUid!==uid)fail('Solo il presidente può aprire o chiudere gli scambi.',403);
-  if(typeof input.open!=='boolean')fail('Scegli se aprire o chiudere gli scambi.');
-  if(input.open&&auctionBusy(state))fail('Chiudi l’asta prima di aprire gli scambi.',409);
-  if((state.rules.tradesOpen===true)===input.open)return {open:input.open};
-  await c.query("UPDATE fanta.leagues SET rules=jsonb_set(rules,'{tradesOpen}',to_jsonb($2::boolean)) WHERE id=$1",[id,input.open]);
-  if(!input.open)await c.query("UPDATE fanta.trades SET status='expired',updated_at=now() WHERE league_id=$1 AND status='pending'",[id]);
-  return {open:input.open};
+  if(state.league.adminUid!==uid)fail('Solo il presidente può gestire gli scambi.',403);
+  const scheduling=Object.hasOwn(input,'startsAt')||Object.hasOwn(input,'endsAt');
+  let schedule=null,open=input.open;
+  if(scheduling){
+   const starts=typeof input.startsAt==='string'?Date.parse(input.startsAt):NaN;
+   const ends=typeof input.endsAt==='string'?Date.parse(input.endsAt):NaN;
+   if(!Number.isFinite(starts)||!Number.isFinite(ends)||starts<=now||ends<=starts)
+    fail('Scegli un inizio futuro e una fine successiva all’inizio.');
+   if(window.open)fail('Chiudi gli scambi in corso prima di programmarli.',409);
+   schedule={startsAt:new Date(starts).toISOString(),endsAt:new Date(ends).toISOString()};
+   open=false;
+  }
+  if(typeof open!=='boolean')fail('Scegli se aprire o chiudere gli scambi.');
+  if((open||schedule)&&auctionBusy(state))fail('Chiudi l’asta prima di aprire o programmare gli scambi.',409);
+  if(!schedule&&!window.startsAt&&window.open===open)return {open};
+  if(!open||!window.open)await c.query("UPDATE fanta.trades SET status='expired',updated_at=now() WHERE league_id=$1 AND status='pending'",[id]);
+  await c.query("UPDATE fanta.leagues SET rules=(rules-'tradeWindow')||$2::jsonb WHERE id=$1",[id,JSON.stringify({tradesOpen:open,...(schedule?{tradeWindow:schedule}:{})})]);
+  return {open,update:{league:id,change:'trade-window',recipients:state.teams.map(t=>t.userId).filter(Boolean)}};
  }
  if(!['propose','accept','reject','counter'].includes(kind))fail('Operazione non disponibile',404);
- if(state.rules.tradesOpen!==true||auctionBusy(state))fail('Gli scambi sono chiusi.',409);
+ if(!window.open||auctionBusy(state))fail('Gli scambi sono chiusi.',409);
  if(typeof input.id!=='string'||!uuid.test(input.id))fail('Richiesta di scambio non valida.');
  if(kind==='propose'){
   const recipient=state.teams.find(t=>t.id===input.recipient&&t.userId&&t.id!==mine.id);
@@ -100,7 +125,8 @@ export async function tradeAction(c,state,uid,kind,input,{persistRoster,now}){
   const created=await c.query(`INSERT INTO fanta.trades (id,league_id,sender_team_id,recipient_team_id,sender_uid,recipient_uid,terms)
    VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING RETURNING id`,[input.id,id,mine.id,recipient.id,uid,recipient.userId,JSON.stringify(terms)]);
   if(!created.rows.length)fail('Identificativo della richiesta già utilizzato.',409);
-  return {id:input.id};
+  const notice=await queueTradeNotice(c,{id:input.id,revision:1,league:state.league,uid:recipient.userId,now,endsAt:window.endsAt});
+  return {id:input.id,notice,update:{league:id,change:'trade-proposal',recipients:[recipient.userId]}};
  }
 
  const row=(await c.query('SELECT * FROM fanta.trades WHERE id=$1 AND league_id=$2 AND recipient_team_id=$3 AND recipient_uid=$4',[input.id,id,mine.id,uid])).rows[0];
@@ -117,6 +143,8 @@ export async function tradeAction(c,state,uid,kind,input,{persistRoster,now}){
   }
   await c.query(`UPDATE fanta.trades SET sender_team_id=recipient_team_id,recipient_team_id=sender_team_id,
    sender_uid=recipient_uid,recipient_uid=sender_uid,revision=revision+1,terms=$2,updated_at=now() WHERE id=$1`,[row.id,JSON.stringify(terms)]);
+  const notice=await queueTradeNotice(c,{id:row.id,revision:row.revision+1,league:state.league,uid:sender.userId,now,endsAt:window.endsAt});
+  return {id:row.id,notice,update:{league:id,change:'trade-counter',recipients:[sender.userId]}};
  }else{
   const {offer,want,credits}=row.terms;
   const {teams}=settleTrade(state,sender,mine,{offer:offer.map(p=>p.id),want:want.map(p=>p.id),credits});
@@ -134,5 +162,6 @@ export async function tradeAction(c,state,uid,kind,input,{persistRoster,now}){
        OR (moved."from"=t.recipient_team_id AND EXISTS (SELECT 1 FROM jsonb_array_elements(t.terms->'want') p WHERE p->>'id'=moved.id))
    )`,[id,JSON.stringify(moves)]);
  }
- return {id:row.id};
+ const recipients=kind==='accept'?state.teams.map(t=>t.userId).filter(Boolean):[sender.userId];
+ return {id:row.id,update:{league:id,change:kind==='accept'?'trade-accepted':'trade-rejected',recipients}};
 }

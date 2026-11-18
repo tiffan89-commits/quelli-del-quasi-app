@@ -22,6 +22,9 @@ export function trackAuctionBadges(user,leagues,doc=globalThis.document){
   current.on('chat:update',data=>{
    if(socket===current)doc.dispatchEvent(new doc.defaultView.CustomEvent('quasi:chat-update',{detail:data}));
   });
+  current.on('league:update',data=>{
+   if(socket===current)doc.dispatchEvent(new doc.defaultView.CustomEvent('quasi:league-update',{detail:data}));
+  });
   current.io?.on('reconnect',()=>{if(socket===current)doc.dispatchEvent(new doc.defaultView.Event('quasi:chat-reconnect'));});
   current.on('auction:index',ids=>{
    if(socket!==current||!Array.isArray(ids))return;

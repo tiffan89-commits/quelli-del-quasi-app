@@ -6,7 +6,7 @@ import {connection} from '../lib/db.mjs';
 import {recipientAllowed,blockedDelivery} from '../lib/release-env.mjs';
 import {queueMail,sendMail,mailReady} from '../lib/mail.mjs';
 export function fantaNotificationUrl(league,kind,target={}){
- const page=kind==='lineupReminder'?'squadra':kind==='auction'?'asta':target.round?'giornata':'oggi';
+ const page=kind==='lineupReminder'?'squadra':kind==='auction'?'asta':kind==='trade'?'scambi':target.round?'giornata':'oggi';
  const section=kind==='lineupReminder'?'studio':null;
  return '/?'+new URLSearchParams({mode:'fanta',fantaLeague:league})+appRoute({mode:'fanta',page,section,league,round:target.round,competition:target.competition});
 }
@@ -26,6 +26,15 @@ export async function queueAuctionNotice(c,s,auction,{now=Date.now()}={}){
  return idFor([s.league.id,key]);
 }
 export const queueAuctionOpened=queueAuctionNotice;
+export async function queueTradeNotice(c,{id,revision,league,uid,now,endsAt}){
+ const key=idFor([uid,'trade',id,revision]);
+ const title=(revision===1?'Nuova proposta di scambio':'Nuova controproposta')+' · '+league.name;
+ const expires=new Date(Math.min(now+24*3600000,Date.parse(endsAt)||Infinity)).toISOString();
+ await c.query(`INSERT INTO fanta.notifications(id,user_id,kind,data,expires_at)
+  VALUES($1,$2,'trade',$3,$4) ON CONFLICT DO NOTHING`,[key,uid,
+  JSON.stringify({title,body:'Apri Scambi per vedere la proposta.',kind:'fanta',league:league.id,url:fantaNotificationUrl(league.id,'trade'),tradeId:id,revision}),expires]);
+ return key;
+}
 export async function queueFantaNotifications({connect=connection,now=Date.now}={}){
  const c=await connect();try{
   const rounds=(await c.query(`SELECT r.competition_id,r.number,r.deadline,r.league_id,r.official,t.id AS team_id,t.user_id,EXISTS(SELECT 1 FROM fanta.lineups x WHERE x.competition_id=r.competition_id AND x.round=r.number AND x.team_id=t.id) AS has_lineup FROM fanta.rounds r JOIN fanta.leagues l ON l.id=r.league_id JOIN fanta.teams t ON t.league_id=l.id AND t.user_id IS NOT NULL WHERE l.rules->>'disabledAt' IS NULL AND (r.deadline BETWEEN $1 AND $2 OR (r.official AND EXISTS(SELECT 1 FROM fanta.results z JOIN fanta.matchups m ON m.id=z.matchup_id WHERE m.competition_id=r.competition_id AND m.round=r.number AND z.official AND NOT z.historical AND z.updated_at>=$3)))`,[new Date(now()-2*3600000).toISOString(),new Date(now()+2*3600000).toISOString(),new Date(now()-24*3600000).toISOString()])).rows;
@@ -54,13 +63,14 @@ export async function queueFantaNotifications({connect=connection,now=Date.now}=
  }finally{c.release();}
 }
 export const DELIVERY_SQL=`SELECT u AS user,(SELECT coalesce(jsonb_agg(d),'[]'::jsonb) FROM jsonb_array_elements(coalesce(payload->'chatSubscriptions','[]'::jsonb)) d WHERE d->>'uid'=$1) AS devices,payload->'chatPushKeys' AS keys FROM ${barStorageRoot()} CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u WHERE u->>'id'=$1`;
-export async function deliverFantaNotifications({connect=connection,env=process.env,now=Date.now,sendPush=(...args)=>webpush.sendNotification(...args),deliverMail=sendMail}={}){
+export async function deliverFantaNotifications({connect=connection,env=process.env,now=Date.now,notificationId=null,sendPush=(...args)=>webpush.sendNotification(...args),deliverMail=sendMail}={}){
  const c=await connect(),lease=new Date(now()+90000).toISOString();let jobs;
- try{await c.query('BEGIN');jobs=(await c.query(`SELECT n.*,s.data AS settings FROM fanta.notifications n LEFT JOIN fanta.notification_settings s ON s.user_id=n.user_id WHERE NOT EXISTS(SELECT 1 FROM fanta.leagues k WHERE k.id=n.data->>'league' AND k.rules->>'disabledAt' IS NOT NULL) AND n.delivered_at IS NULL AND n.attempts<4 AND n.expires_at>$1 AND (n.lease_until IS NULL OR n.lease_until<$1) ORDER BY n.id LIMIT 5 FOR UPDATE OF n SKIP LOCKED`,[new Date(now()).toISOString()])).rows;if(jobs.length)await c.query('UPDATE fanta.notifications SET lease_until=$2,attempts=attempts+1 WHERE id=ANY($1::text[])',[jobs.map(j=>j.id),lease]);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
+ try{await c.query('BEGIN');jobs=(await c.query(`SELECT n.*,s.data AS settings FROM fanta.notifications n LEFT JOIN fanta.notification_settings s ON s.user_id=n.user_id WHERE NOT EXISTS(SELECT 1 FROM fanta.leagues k WHERE k.id=n.data->>'league' AND k.rules->>'disabledAt' IS NOT NULL) AND ($2::text IS NULL OR n.id=$2) AND n.delivered_at IS NULL AND n.attempts<4 AND n.expires_at>$1 AND (n.lease_until IS NULL OR n.lease_until<$1) ORDER BY n.id LIMIT 5 FOR UPDATE OF n SKIP LOCKED`,[new Date(now()).toISOString(),notificationId])).rows;if(jobs.length)await c.query('UPDATE fanta.notifications SET lease_until=$2,attempts=attempts+1 WHERE id=ANY($1::text[])',[jobs.map(j=>j.id),lease]);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
  let delivered=0;
  for(const j of jobs){const c=await connect();let target,mailLineup=false;
   try{
    target=(await c.query(DELIVERY_SQL,[j.user_id])).rows[0];
+   if(j.kind==='trade'&&!(await c.query("SELECT 1 FROM fanta.trades WHERE id=$1 AND recipient_uid=$2 AND revision=$3 AND status='pending'",[j.data.tradeId,j.user_id,j.data.revision])).rows.length)target=null;
    const lineup=j.kind==='lineupReminder'&&j.data.lineup;
    if(env.FANTA_EMAIL_ENABLED==='true'&&target?.user.emailVerified&&target.user.emailRemindersEnabled&&lineup&&Date.parse(lineup.deadline)>now()&&recipientAllowed(target.user.email,env)&&mailReady(env)){
     const saved=await c.query('SELECT 1 FROM fanta.lineups WHERE competition_id=$1 AND round=$2 AND team_id=$3',[lineup.competition,lineup.round,lineup.team]);

@@ -110,7 +110,7 @@ export function renderLega(l, ui = {}, now = Date.now()) {
       !pilot?hubTile('competition','Competizioni','Campionati e coppe',{html:renderCompetitions(l,{...ui,adminTools:l.isAdmin})}):'',
       !pilot&&(l.isAdmin||['running','scheduled'].includes(l.auction.status))?hubTile('auction','Asta',l.auction.status==='running'?'In corso':l.auction.status==='scheduled'?'Programmata':l.isAdmin?'Gestisci le aste':'Apri la sala',{arrow:true,action:l.isAdmin?'data-auction-manage="1"':'data-go="asta"'}):'',
       l.isAdmin&&ui.directInvite?hubTile('invite','Invita per nickname o email','Invito diretto',{action:`data-league-direct-invite="${esc(ui.directInvite)}"`}):'',
-      ui.invite?.code?hubTile('invite','Invita nella tua lega','Condividi l’invito',{action:'data-lega-invite="share"',whatsapp:whatsappInvite(ui.invite,esc,{iconOnly:true})}):'',
+      ui.invite?.code?whatsappInvite(ui.invite,esc,{className:'lega-tile whatsapp-invite'}):'',
       ui.hasTrades?hubTile('trade','Scambi','Proposte tra squadre',{action:'data-go="scambi"',arrow:true}):'',
       ui.hasChat?hubTile('chat','Chiacchiere da bar','Apri la chat della lega',{action:'data-fanta-chat aria-controls="league-chat-widget"'}):'',
     ];
@@ -135,8 +135,8 @@ export function fantaPresidentTasks(l,invite,{hasTrades=false,directInvite=null}
  if(l.league.kind!=='pilot')tasks.push({action:'Gestisci asta',auction:true,button:true});
  if(hasTrades)tasks.push({action:'Gestisci scambi',trades:true,button:true});
  if(directInvite)tasks.push({action:'Invita per nickname o email',directInvite,button:true});
- if(free>0&&invite?.code)tasks.push({action:'Invita',button:true,share:true,whatsapp:whatsappInvite(invite,esc,{iconOnly:true})});
- tasks.push({group:'persone',action:'Partecipanti ›'});
+ if(free>0&&invite?.code)tasks.push({whatsapp:whatsappInvite(invite,esc)});
+ tasks.push({group:'persone',action:'Partecipanti ›',button:true});
  if(l.competition?.status==='draft')tasks.push({text:'Competizione da avviare',group:'competizioni',action:'Verifica'});
  return tasks;
 }
@@ -145,6 +145,7 @@ export function renderFantaPresident(l,ui={},now=Date.now()){
  if(!l.isAdmin)return renderLega(l,{...ui,group:'lega'});
  const bar=ui.bar;
  return presidentPanel({mode:'fanta',title:'Pannello del presidente',back:'data-go="lega"',open:ui.presidentGroup,tasks:fantaPresidentTasks(l,ui.invite,{hasTrades:ui.hasTrades,directInvite:!ui.demo&&bar?.id}),groups:{
+ persone:{summary:`${l.members.length} squadre`,html:members(l,{...ui,adminTools:true,invite:null})},
  regole:{summary:l.rules.budget+' crediti · bonus, malus e formazione',html:rules(l)},
  ...(l.isAdmin?{
  identita:{summary:bar?'Colori e simbolo condivisi con il Bar':'Identità della lega',html:bar?'<p>Il simbolo, il colore e il motto sono comuni a Bar e Fanta.</p><button type="button" class="secondary" data-mode="bar" data-bar-page="admin">Modifica identità nel Bar</button>':'<p>Lo stemma della tua squadra si modifica dalla pagina Oggi.</p>'}

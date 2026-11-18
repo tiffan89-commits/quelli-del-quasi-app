@@ -53,6 +53,8 @@ import {rewardsView} from '../public/src/progression-ui.mjs';
 import {roomSvg} from '../public/src/locker-rooms.mjs';
 import {fantaQuasiTeaser,fantaQuasiPage} from '../public/src/fanta-quasi.mjs';
 import {REWARD_SLOTS} from '../public/src/reward-catalog.mjs';
+import {isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding} from '../public/src/league-onboarding.mjs';
+import {bindLeagueCreation} from '../public/src/league-create-form.mjs';
 test("live results render inside the slip, calendar remains clickable, standings are nested and movements live in league settings", async () => {
   const s = emptyState(),
     u = {
@@ -116,6 +118,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,renderFantaNotificationSettings,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
+    isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding,bindLeagueCreation,refreshFantaMembership(){},
     ...v2Tabs, leagueActions,barHomeInvite,settingsFooter,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
@@ -320,7 +323,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /id="fantasy-connect"/);
   vm.runInContext("page='admin';render()",ctx);
   assert.doesNotMatch(html, /id="fantasy-connect"/);
-  assert.doesNotMatch(html,/aria-label="Invita con WhatsApp"/);
+  assert.match(html,/aria-label="Invita con WhatsApp"/);
   vm.runInContext("page='barleague';render()",ctx);
   assert.match(html,/aria-label="Invita con WhatsApp"/);
   assert.doesNotMatch(html,/quasi-roster-grid/);
@@ -338,7 +341,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html,/data-home-league-invite/);assert.doesNotMatch(html,/id="copy"/);
   assert.doesNotMatch(html,/data-page="admin"/);
   vm.runInContext("page='admin';render()",ctx);
-  assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita nella tua lega/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);
+  assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita con WhatsApp/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);
   vm.runInContext("page='profilo';render()",ctx);
   assert.ok(html.indexOf('id="support-form"')<html.indexOf('profile-logout'));
   assert.ok(html.indexOf('data-president-section="assistenza"')>html.indexOf('data-president-section="avvisi"'));

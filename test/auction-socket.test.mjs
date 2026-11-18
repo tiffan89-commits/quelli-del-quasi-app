@@ -28,6 +28,11 @@ test('Socket.IO pushes committed snapshots, isolates rooms, acknowledges all pee
   hub.chatUpdate({league:'private-bar',changed:true,recipients:[{uid:'u2',unread:7}]});
   hub.chatUpdate({league:'own-bar',changed:true,recipients:[{uid:'u1',unread:1}]});
   await waitFor(()=>inbox.length===1);assert.deepEqual(inbox,[{league:'own-bar',unread:1,changed:true}]);assert.deepEqual(initialIndex,[]);assert.equal(statuses[0].status,'none');
+  const updates=[];index.on('league:update',msg=>updates.push(msg));
+  hub.leagueUpdate({league:'fanta-lucas-a',change:'trade-proposal',recipients:['u2']});
+  hub.leagueUpdate({league:'own-bar',change:'members',recipients:['u1','u2','u1']});
+  await waitFor(()=>updates.length===1);
+  assert.deepEqual(updates,[{league:'own-bar',change:'members'}]);
   a.emit('auction:room',true);b.emit('auction:room',true);await waitFor(()=>peers.every(s=>s.present?.length===2));assert.deepEqual(a.present,['t1','t2']);
   const denied=connect('invalid');await new Promise(r=>denied.once('connect_error',r));assert.equal(denied.connected,false);
   const wrong=connect('token2','another-league');await new Promise(r=>wrong.once('connect_error',r));assert.equal(wrong.connected,false);

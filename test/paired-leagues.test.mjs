@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import {randomUUID} from 'node:crypto';import {parseHTML} from 'linkedom';
-import {fixtureDb} from './fanta/helpers.mjs';import {membershipTransaction} from '../lib/db.mjs';import {createApi} from '../netlify/functions/api.mjs';import {createFantaApi} from '../fanta/api.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {runRandomCreation} from '../fanta/random-leagues.mjs';import {bindLeagueSwitcher,renderLeagueSheet} from '../public/src/v2/league-switcher.mjs';import {renderLeagueOnboarding} from '../public/src/league-onboarding.mjs';
-import {leagueCreationFields} from '../public/src/league-create-form.mjs';import {randomLeagueControls} from '../public/src/random-leagues.mjs';
+import {fixtureDb} from './fanta/helpers.mjs';import {membershipTransaction} from '../lib/db.mjs';import {createApi} from '../netlify/functions/api.mjs';import {createFantaApi} from '../fanta/api.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {runRandomCreation} from '../fanta/random-leagues.mjs';import {renderLeagueSheet} from '../public/src/v2/league-switcher.mjs';import {renderLeagueOnboarding,renderLeagueEntry} from '../public/src/league-onboarding.mjs';
+import {leagueCreationFields,bindLeagueCreation} from '../public/src/league-create-form.mjs';import {randomLeagueControls} from '../public/src/random-leagues.mjs';
 async function setup(){const f=await fixtureDb();for(const n of ['012_random_leagues','016_league_creation_mode'])await f.db.exec(await fs.readFile(new URL('../netlify/database/migrations/'+n+'.sql',import.meta.url),'utf8'));const api=createApi({membershipTransact:fn=>membershipTransaction(fn,{connect:f.connect}),env:{}});return {...f,call:(route,input,token='token1')=>api(new Request('https://example.test/api/'+route,{method:'POST',headers:{cookie:'sid='+token},body:JSON.stringify(input)}))};}
 test('new and existing users create both leagues atomically; duplicate submits reuse them and joining assigns an empty team',async()=>{
  const f=await setup();try{
@@ -23,19 +23,25 @@ test('random creation reserves both leagues immediately and populates balanced r
  const bar=(await f.db.query('SELECT payload FROM fanta_state')).rows[0].payload.leagues.find(l=>l.id===created.league);assert.equal(bar.fantaCreation.status,'ready');assert.deepEqual(bar.nativeFantaLink.coachIds,['u1']);
  }finally{await f.close();}
 });
-test('onboarding and switcher share both roster choices; random creation is absent from old standalone controls',()=>{
- const {document}=parseHTML('<html><body>'+renderLeagueSheet([],null,'u1',String)+'</body></html>');const f=document.querySelector('#v2-form-create');assert.ok(f.querySelector('[name=size]'));assert.equal(f.querySelectorAll('[name=rosterMode]').length,2);assert.match(leagueCreationFields(),/Una lega\. Due modi di avere ragione\./);
- const wizard=parseHTML('<html><body>'+renderLeagueOnboarding({verified:true})+'</body></html>').document;
- assert.deepEqual([...wizard.querySelectorAll('[data-league-step=""] button')].map(b=>b.textContent),['Entra in una lega','Crea una lega']);
- assert.ok(wizard.querySelector('#join').hidden&&wizard.querySelector('#create').hidden);
- assert.ok(wizard.querySelector('#join [data-league-directory]'));
- assert.equal(wizard.querySelectorAll('#create [name=rosterMode]').length,2);assert.equal(randomLeagueControls(null,{id:'u1'}),'');assert.equal(randomLeagueControls({id:'bar',admin:'u1',members:[]},{id:'u1'}),'');
+test('onboarding offers two dedicated screens and a customizable Quasi banner',()=>{
+ const sheet=parseHTML(renderLeagueSheet([],null,'u1',String)).document;
+ const wizard=parseHTML(renderLeagueOnboarding({user:{name:'Oronzo <Canà>'}})).document;
+ const join=parseHTML(renderLeagueEntry({page:'join-league',verified:true})).document;
+ const create=parseHTML(renderLeagueEntry({page:'create-league',verified:true})).document;
+ assert.deepEqual([...wizard.querySelectorAll('[data-bar-page]')].map(b=>b.textContent),['Entra in una lega','Crea una lega']);
+ assert.equal(wizard.querySelector('h1').textContent,'Benvenuto, Oronzo <Canà>');
+ assert.ok(wizard.querySelector('[data-open-quasi-studio] .quasi-welcome-edit svg'));
+ assert.equal(sheet.querySelector('form,[data-league-directory]'),null);
+ assert.ok(join.querySelector('[data-league-directory]'));
+ assert.equal(create.querySelectorAll('#create [name=rosterMode]').length,2);
+ assert.match(leagueCreationFields(),/Una lega\. Due modi di avere ragione\./);
+ assert.equal(randomLeagueControls(null,{id:'u1'}),'');
 });
 
-test('switcher blocks duplicate clicks and keeps the request identifier for a retry',async()=>{
- const {document,window}=parseHTML('<html><body><button id="v2-open-leagues"></button><div id="v2-sheet-root" hidden></div></body></html>'),keys=['document','FormData','addEventListener','removeEventListener'],saved=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));let calls=0,finish,ids=[];
+test('dedicated creation blocks duplicate clicks and keeps the request identifier for a retry',async()=>{
+ const {document}=parseHTML(renderLeagueEntry({page:'create-league',verified:true})),keys=['document','FormData','addEventListener','removeEventListener'],saved=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));let calls=0,finish,ids=[];
  Object.defineProperties(globalThis,{document:{value:document,configurable:true},FormData:{value:class{constructor(form){this.data=new Map([...form.querySelectorAll('input[name]')].filter(e=>e.type!=='radio'||e.hasAttribute('checked')).map(e=>[e.name,e.value]));}[Symbol.iterator](){return this.data[Symbol.iterator]();}},configurable:true},addEventListener:{value:()=>{},configurable:true},removeEventListener:{value:()=>{},configurable:true}});
- try{bindLeagueSwitcher({leagues:[],activeId:null,uid:'u1',esc:String,onSubmit:async(k,p)=>{calls++;ids.push(p.requestId);return new Promise(resolve=>finish=resolve);}});document.getElementById('v2-open-leagues').click();const f=document.querySelector('#v2-form-create');f.querySelector('[name=name]').value='Una sola lega';const e=()=>({preventDefault(){}}),a=f.onsubmit(e()),b=f.onsubmit(e());assert.equal(calls,1);assert.equal(f.dataset.busy,'true');finish(false);await Promise.all([a,b]);const retry=f.onsubmit(e());assert.equal(calls,2);assert.equal(ids[0],ids[1]);finish(true);await retry;assert.equal(document.getElementById('v2-sheet-root').hidden,true);}finally{for(const [k,d]of saved)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
+ try{const f=document.querySelector('#create');bindLeagueCreation(f,async p=>{calls++;ids.push(p.requestId);return new Promise(resolve=>finish=resolve);});f.querySelector('[name=name]').value='Una sola lega';const e=()=>({preventDefault(){}}),a=f.onsubmit(e()),b=f.onsubmit(e());assert.equal(calls,1);assert.equal(f.dataset.submitting,'true');finish(false);await Promise.all([a,b]);const retry=f.onsubmit(e());assert.equal(calls,2);assert.equal(ids[0],ids[1]);finish(true);await retry;assert.equal(f.dataset.submitting,'false');}finally{for(const [k,d]of saved)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
 test('adding Fanta to an existing Bar preserves its identity and assigns one empty team to each existing member',async()=>{
  const f=await setup();try{

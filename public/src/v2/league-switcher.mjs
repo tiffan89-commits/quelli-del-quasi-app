@@ -1,10 +1,8 @@
 import {presidentEntry} from '../president-panel.mjs';
 import {leagueActions} from '../league-actions.mjs';
 import {leagueEmblem} from '../league-theme.mjs';
-import {leagueCreationFields,leagueCreationPayload} from '../league-create-form.mjs';
 // Selettore lega v2: chip in alto con ruolo e crediti, bottom sheet con tutte le leghe.
 import { sourceOf, isClosed } from '../slip-state.mjs';
-import {bindLeagueDirectory} from '../league-directory.mjs';
 import {paintAuctionBadges} from '../auction-index.mjs';
 
 export const isLeagueAdmin = (league, uid) =>
@@ -44,14 +42,10 @@ export function renderLeagueSheet(leagues, activeId, uid, esc) {
         ((l.members?.length || 0) === 1 ? '1 membro' : (l.members?.length || 0) + ' membri') + ' · ' + esc(a.text) + '</small></span>' +
         '<span class="v2-role' + (admin ? ' is-admin' : '') + '">' + (admin ? 'ADMIN' : 'MEMBRO') + '</span></button>';
     }).join('') +
-    leagueActions({sheet:true}) +
-    (leagues.some(l=>l.id===activeId&&isLeagueAdmin(l,uid)&&!l.nativeFantaLink)?'<button type="button" hidden class="secondary" data-v2-action="create" data-existing-bar="'+esc(leagues.find(l=>l.id===activeId).name)+'" data-existing-size="'+Math.max(2,leagues.find(l=>l.id===activeId).members?.length||2)+'">Attiva il Fanta di questa lega</button>':'') +
-    '<section class="v2-sheet-form" id="v2-form-join" data-kind="join" hidden><div data-league-directory></div></section>' +
-    '<form class="v2-sheet-form" id="v2-form-create" data-kind="create" hidden>' + leagueCreationFields() + '<button type="submit" class="primary">Crea Bar e Fanta</button><p data-create-error role="alert"></p></form></div>';
+    leagueActions()+'</div>';
 }
 
-// onSelect(leagueId), onSubmit('join'|'create', payload) -> Promise<boolean>. Il sheet vive in un contenitore #v2-sheet-root.
-export function bindLeagueSwitcher({ leagues, activeId, uid, esc, onSelect, onSubmit, api, onSupport }) {
+export function bindLeagueSwitcher({ leagues, activeId, uid, esc, onSelect }) {
   const root = document.getElementById('v2-sheet-root');
   const close = () => { root.innerHTML = ''; root.hidden = true; };
   const openSheet = () => {
@@ -60,23 +54,7 @@ export function bindLeagueSwitcher({ leagues, activeId, uid, esc, onSelect, onSu
     paintAuctionBadges(root);
     root.querySelector('#v2-sheet-close').onclick = close;
     root.querySelectorAll('[data-v2-league]').forEach(b => b.onclick = () => { close(); onSelect(b.dataset.v2League); });
-    const forms = [...root.querySelectorAll('.v2-sheet-form')];
-    const loadDirectory=api?bindLeagueDirectory(root.querySelector('[data-league-directory]'),{api,onJoined:id=>{close();onSelect(id);},onSupport:()=>{close();onSupport?.();}}):null;
-    root.querySelectorAll('[data-v2-action]').forEach(b => b.onclick = () => {
-      const kind = b.dataset.v2Action, wasOpen = !b.dataset.existingBar&&!root.querySelector('#v2-form-' + kind).hidden;
-      forms.forEach(f => { f.hidden = wasOpen || f.dataset.kind !== kind; });
-      root.querySelectorAll('[data-v2-action]').forEach(x => x.setAttribute('aria-expanded', String(!wasOpen && x === b)));
-      const createForm=root.querySelector('#v2-form-create'),nameField=createForm.querySelector('[name=name]'),sizeField=createForm.querySelector('[name=size]');
-      if(b.dataset.existingBar){createForm.dataset.attachMode='true';nameField.value=b.dataset.existingBar;nameField.readOnly=true;sizeField.value=b.dataset.existingSize;sizeField.readOnly=true;}else if(createForm.dataset.attachMode){delete createForm.dataset.attachMode;nameField.value='';nameField.readOnly=false;sizeField.value='8';sizeField.readOnly=false;}
-      if(!wasOpen&&kind==='join')void loadDirectory?.();
-      if(!wasOpen&&kind==='create')nameField.focus();
-    });
-    forms.filter(f=>f.tagName==='FORM').forEach(f => f.onsubmit = async e => {
-      e.preventDefault();
-      if (f.dataset.busy === 'true') return;
-      f.dataset.busy = 'true'; f.querySelectorAll('button').forEach(x => x.disabled = true);
-      try{const payload=f.dataset.kind==='create'?leagueCreationPayload(f):Object.fromEntries(new FormData(f));const ok=await onSubmit?.(f.dataset.kind,payload);if(ok)close();}catch(err){const error=f.querySelector('[data-create-error]');if(error)error.textContent=err.message;}finally{f.dataset.busy='false';f.querySelectorAll('button').forEach(x=>x.disabled=false);}
-    });
+    root.querySelectorAll('[data-bar-page]').forEach(button=>button.onclick=close);
     addEventListener('keydown', function esc_(e) { if (e.key === 'Escape') { close(); removeEventListener('keydown', esc_); } });
   };
   document.querySelectorAll('#v2-open-leagues,[data-open-leagues]').forEach(button=>button.onclick=openSheet);

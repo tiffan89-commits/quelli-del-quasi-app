@@ -83,7 +83,11 @@ body details.rankrow{display:block;padding:0;border-bottom:1px solid var(--line)
 .home-league-invite-main{display:flex;align-items:center;gap:6px;flex:1;min-width:0;min-height:42px;padding:0 4px;border:0;background:none;color:var(--white);text-align:left;white-space:nowrap}
 .home-league-invite-main b{font-size:clamp(12px,3.2vw,15px);overflow:hidden;text-overflow:ellipsis}
 .home-league-invite-main small{color:var(--muted);font-size:11px}
-.home-league-invite-main>span{margin-left:auto;color:var(--lime)}
+.home-league-invite-main>span{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.home-league-invite-main svg,.lega-tile.whatsapp-invite svg{color:#80d294;flex:none}
+.lega-tile.whatsapp-invite{justify-content:center;text-decoration:none}
+.lega-tile.whatsapp-invite>span{line-height:1.15}
+.president-todos a.whatsapp-invite{min-height:42px;text-decoration:none}
 .settings-app-invite{break-inside:avoid}
 .settings-app-invite .app-invite-status:empty{display:none}
 .home-league-invite .whatsapp-invite{flex:none;min-width:42px;min-height:42px;padding:7px;justify-content:center}

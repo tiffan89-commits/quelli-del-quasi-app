@@ -30,7 +30,7 @@ async function pulse(){
  if(now-lastHealth>10000){lastHealth=now;await atomicJson(path.join(stateRoot(),'worker-health.json'),{at:new Date().toISOString(),lastDispatch,scheduler:process.env.SELFHOST_SCHEDULER_ENABLED==='true'});}
 }
 const isLive=job=>job.name==='operational-worker-background'&&String(job.payload?.id||'').startsWith('live:');
-const isInstant=job=>job.name==='fanta-worker-background'&&String(job.payload?.kind||'').startsWith('auction-notify:');
+const isInstant=job=>job.name==='fanta-worker-background'&&/^(auction|trade)-notify:/.test(job.payload?.kind||'');
 async function consume(accept){while(!stopping){let result;try{result=await processOne(executeJob,{accept});if(result)console.info('LOCAL_JOB',JSON.stringify(result));}catch(e){console.error('LOCAL_QUEUE_FAILED',e.code||e.name);}
  if(!result)await new Promise(r=>setTimeout(r,1000));
 }}

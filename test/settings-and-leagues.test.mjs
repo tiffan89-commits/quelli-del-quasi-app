@@ -18,17 +18,17 @@ test('both products expose one settings gear and a plus inside the league select
  for(const html of [renderLeagueSheet([league],'l','member',String),leagueSheet([league],'l')]){const {document}=parseHTML(html);assert.equal([...document.querySelectorAll('.league-actions button')].map(b=>b.textContent).join('|'),'Entra in una lega|Crea lega · Bar + Fanta');}
 });
 
-test('plus opens the existing join/create sheet and switches forms without requesting data',()=>{
+test('plus shows dedicated join and create destinations without mounting forms in the selector',()=>{
  const oldDocument=globalThis.document,oldAdd=globalThis.addEventListener;
  const {document}=parseHTML('<body>'+renderLeagueChip({name:'Bar',members:[]},'member',String,String)+'<div id="v2-sheet-root" hidden></div></body>');
  globalThis.document=document;globalThis.addEventListener=()=>{};
- try{bindLeagueSwitcher({leagues:[],uid:'member',esc:String});document.querySelector('.league-add').closest('button').onclick();assert.equal(document.getElementById('v2-sheet-root').hidden,false);document.querySelector('[data-v2-action="join"]').onclick();assert.equal(document.getElementById('v2-form-join').hidden,false);assert.equal(document.getElementById('v2-form-create').hidden,true);document.querySelector('[data-v2-action="create"]').onclick();assert.equal(document.getElementById('v2-form-join').hidden,true);assert.equal(document.getElementById('v2-form-create').hidden,false);}finally{globalThis.document=oldDocument;globalThis.addEventListener=oldAdd;}
+ try{bindLeagueSwitcher({leagues:[],uid:'member',esc:String});document.querySelector('.league-add').closest('button').onclick();assert.equal(document.getElementById('v2-sheet-root').hidden,false);const sheet=document.getElementById('v2-sheet-root');assert.equal(sheet.querySelectorAll('form,[data-league-directory]').length,0);assert.ok(sheet.querySelector('[data-bar-page="join-league"]'));sheet.querySelector('[data-bar-page="create-league"]').onclick();assert.equal(sheet.hidden,true);}finally{globalThis.document=oldDocument;globalThis.addEventListener=oldAdd;}
 });
 
 test('a Fanta member who opens the president route returns to the league without management controls',async()=>{
  const data=await createDemoFantaApi({delay:0}).league('lega-quasi');data.isAdmin=false;data.league.role='member';
  const html=renderFantaPresident(data,{invite:{code:'TEST',name:'Bar test'}}),{document}=parseHTML(html);
- assert.ok(document.querySelector('.lega-hub'));assert.match(html,/Invita nella tua lega/);
+ assert.ok(document.querySelector('.lega-hub'));assert.match(html,/Invita con WhatsApp/);
  assert.doesNotMatch(html,/Pannello del presidente|data-league-size-form|data-competition-create-form|data-team-link-form|data-president-section/);
 });
 
@@ -40,7 +40,7 @@ test('Quasi rewards open as a paginated collection without the catalogue or guid
 
 test('Bar home invite is shared by president and members, excludes computers and hides when full',()=>{
  const league={code:'TEST',name:'Bar test',admin:'a',members:[{uid:'a'},{uid:'b'}],nativeFantaLink:{maxMembers:4,coachIds:['a']}};
- for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 iscritti/);assert.match(html,/wa.me/);assert.match(html,/data-share-league/);}
+ for(const id of ['a','b']){const html=barHomeInvite(league,{id},String);assert.match(html,/2\/4 iscritti/);assert.match(html,/wa.me/);assert.match(html,/Invita con WhatsApp/);assert.doesNotMatch(html,/<button|data-share-league/);}
  assert.equal(barHomeInvite(league,{id:'outsider'},String),'');
  league.nativeFantaLink.coachIds=['a','c','d'];assert.equal(barHomeInvite(league,{id:'a'},String),'');
  league.nativeFantaLink.maxMembers=2;assert.equal(barHomeInvite(league,{id:'a'},String),'');
