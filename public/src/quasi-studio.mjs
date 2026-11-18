@@ -14,6 +14,7 @@ export function applyStudioChoice(draft,choice){const next={...draft,[choice.key
 export function openQuasiStudio({user,api,onSaved,initialReward}){
  if(document.querySelector('.quasi-studio'))return;
  const owned=[...new Set((user.rewards||[]).flatMap(a=>a.ids))];let draft=normalizeAvatar(user.avatar,owned),original=JSON.stringify(draft),tab='outfit',limit=24,saving=false;
+ let nickname=user.name,nicknameEditing=false;
  const reward=owned.includes(initialReward)?rewardById(initialReward):null;
  if(reward){draft[REWARD_SLOTS[reward.type]]=reward.id;tab=Object.keys(rewardType).find(k=>rewardType[k]===reward.type)||tab;}
  const dialog=document.createElement('dialog');dialog.className='quasi-studio';dialog.setAttribute('aria-label','Modifica il tuo Quasi');
@@ -21,8 +22,21 @@ export function openQuasiStudio({user,api,onSaved,initialReward}){
  document.body.append(dialog);document.documentElement.classList.add('studio-active');
  const status=dialog.querySelector('.studio-status'),options=dialog.querySelector('.studio-options');
  const close=()=>{if(saving)return;dialog.close();dialog.remove();document.documentElement.classList.remove('studio-active');document.querySelector('[data-quasi-edit]')?.focus({preventScroll:true});};
- const attemptClose=()=>{if(saving)return;if(JSON.stringify(draft)===original){close();return;}status.innerHTML='Modifiche non salvate. <button type="button" data-continue>Resta qui</button><button type="button" data-discard>Esci senza salvare</button>';status.querySelector('[data-discard]').onclick=close;status.querySelector('[data-continue]').onclick=()=>status.textContent='';};
- const preview=()=>{dialog.querySelector('.studio-preview').innerHTML=quasiScene(draft,user.name,{eager:true});};
+ const attemptClose=()=>{if(saving)return;if(JSON.stringify(draft)===original&&nickname===user.name){close();return;}status.innerHTML='Modifiche non salvate. <button type="button" data-continue>Resta qui</button><button type="button" data-discard>Esci senza salvare</button>';status.querySelector('[data-discard]').onclick=close;status.querySelector('[data-continue]').onclick=()=>status.textContent='';};
+ const preview=({focus=false}={})=>{
+  const region=dialog.querySelector('.studio-preview');
+  region.innerHTML=quasiScene(draft,nickname,{eager:true});
+  const caption=region.querySelector('.quasi-scene-caption span');
+  caption.innerHTML=nicknameEditing?'<input maxlength="60" autocomplete="off" aria-label="Nickname">':'<button type="button" class="studio-nickname" aria-label="Modifica nickname"></button>';
+  const button=caption.querySelector('button'),input=caption.querySelector('input');
+  if(button){button.textContent=nickname+' ✎';button.onclick=()=>{if(!saving){nicknameEditing=true;preview({focus:true});}};}
+  if(input){
+   input.value=nickname;
+   input.oninput=()=>{nickname=input.value;status.textContent='';};
+   input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();dialog.querySelector('.studio-save').click();}};
+   if(focus){input.focus();input.select();}
+  }
+ };
  const selected=c=>draft[c.key]===c.value&&(!slotFor[c.key]||draft[slotFor[c.key]]==='none');
  const art=c=>{if(tab==='room')return `<img data-deferred-src="${roomAsset(c.value)}" alt="" loading="lazy" decoding="async">`;if(tab==='color')return `<span class="studio-swatch" style="background:${c.reward?.color||c.value}"></span>`;if(tab==='title')return '<span class="studio-title-choice">'+esc(c.label)+'</span>';const config=applyStudioChoice(draft,c);let svg=avatarSvg(config);if(['character','skin','hair','beard','headwear'].includes(tab))svg=svg.replace('viewBox="0 0 280 350"','viewBox="72 0 136 166"');return '<span class="studio-choice-art" aria-hidden="true">'+svg+'</span>';};
  const renderOptions=(preserve=false)=>{
@@ -36,8 +50,8 @@ export function openQuasiStudio({user,api,onSaved,initialReward}){
  const renderCategory=()=>{dialog.querySelectorAll('[data-studio-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.studioTab===tab)));const hint=dialog.querySelector('.studio-hint');if(hint){const type=rewardType[tab];hint.textContent=type?'Premi '+(owned.map(rewardById).filter(r=>r?.type===type).length)+' / '+REWARD_CATALOG.filter(r=>r.type===type).length+' · nuovi a ogni giornata giocata':'Scorri le anteprime ↔';}const sub=dialog.querySelector('.studio-suboptions');sub.innerHTML=tab==='hair'?AVATAR_OPTIONS.hairColor.values.map(([color,label])=>`<button type="button" class="studio-hair-color" aria-label="Capelli ${label}" aria-pressed="${draft.hairColor===color}" data-hair-color="${color}" style="--swatch:${color}"></button>`).join(''):'';sub.hidden=tab!=='hair';sub.querySelectorAll('[data-hair-color]').forEach(b=>b.onclick=()=>{draft.hairColor=b.dataset.hairColor;preview();renderCategory();});renderOptions();};
  dialog.querySelectorAll('[data-studio-tab]').forEach(b=>b.onclick=()=>{if(saving)return;tab=b.dataset.studioTab;limit=24;renderCategory();b.scrollIntoView({block:'nearest',inline:'nearest'});});
  dialog.querySelector('.studio-back').onclick=attemptClose;dialog.addEventListener('cancel',e=>{e.preventDefault();attemptClose();});
- dialog.querySelector('.studio-reset').onclick=()=>{if(saving)return;draft=normalizeAvatar(JSON.parse(original),owned);status.textContent='Modifiche annullate.';preview();renderCategory();};
- dialog.querySelector('.studio-save').onclick=async()=>{if(saving)return;saving=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);status.textContent='Prepariamo il tuo ingresso al bar…';try{const result=await api('profile-avatar',{avatar:draft});user.avatar=result.avatar;await onSaved?.(result.avatar);saving=false;close();}catch(error){saving=false;status.textContent=error.message;dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}};
+ dialog.querySelector('.studio-reset').onclick=()=>{if(saving)return;draft=normalizeAvatar(JSON.parse(original),owned);nickname=user.name;nicknameEditing=false;status.textContent='Modifiche annullate.';preview();renderCategory();};
+ dialog.querySelector('.studio-save').onclick=async()=>{if(saving)return;saving=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);status.textContent='Prepariamo il tuo ingresso al bar…';try{const result=await api('profile-avatar',{avatar:draft,name:nickname.trim()});user.avatar=result.avatar;if(user.name!==result.name)delete user.nicknameSuggested;user.name=result.name??nickname.trim();await onSaved?.(result.avatar,user.name);saving=false;close();}catch(error){saving=false;status.textContent=error.message;dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}};
  preview();renderCategory();dialog.showModal();dialog.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'nearest'});
 }
 

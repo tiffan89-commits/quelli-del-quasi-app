@@ -13,6 +13,7 @@ import {sqlFantaStore} from './store.mjs';
 import {fail,validateLineup} from './rules.mjs';
 import {currentRound,homeView,teamView,roundView,matchupView,leagueView} from './views.mjs';
 import {auctionAction,auctionView,auctionTickDue} from './auction.mjs';
+import {LAMPO} from '../public/src/auction-formats.mjs';
 import {saveTeamIdentity} from './team-logo.mjs';
 import {competitionAction} from './competitions.mjs';
 import {teamChoices} from './team-choices.mjs';
@@ -21,6 +22,7 @@ export const betaUser=(u,env=process.env)=>!!u&&u.verified&&!u.demo&&!u.admin_on
 const betaLeagues=env=>String(env.FANTA_BETA_LEAGUES||'fanta-lucas-a').split(',').map(x=>x.trim());
 export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.now,presenceCache=databaseReadCache()}={}){
  return async request=>{
+  const receivedAt=now();
   const reply=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
   try{
    const url=new URL(request.url),route=url.pathname.replace(/^\/(?:\.netlify\/functions\/)?fanta-api\/?/,'');
@@ -95,7 +97,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
      if(kind==='players')return s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id))).sort((a,b)=>(b.value||1)-(a.value||1));
      if(!isWrite)return auctionView(s,u.id,now());
      if(s.rules.tradesOpen===true&&['schedule','start','start-now'].includes(kind))fail('Chiudi gli scambi prima di aprire un’asta.',409);
-     const next=auctionAction(s,kind==='tick'?'read':kind,p,u.id,{admin:s.league.adminUid===u.id,now:now()});
+     const next=auctionAction(s,kind==='tick'?'read':kind,p,u.id,{admin:s.league.adminUid===u.id,now:now(),receivedAt,latencyGrace:LAMPO.httpGrace});
      if(kind==='schedule'&&next.auction.version!==s.auction.version){
       next.auction.scheduleNotificationKey=s.league.id+':schedule:'+next.auction.version+':'+next.auction.startsAt;
       auctionNotice=await queueAuctionNotice(c,next,next.auction,{now:now()});

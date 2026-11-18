@@ -3,10 +3,11 @@ import {computerActionAt,computerDecision} from '../fanta/auction-computer.mjs';
 import {Server} from 'socket.io';
 import {connection} from '../lib/db.mjs';
 import {sqlFantaStore} from '../fanta/store.mjs';
-import {auctionView,auctionAction,auctionTickDue,auctionTickNeedsCatalog} from '../fanta/auction.mjs';
+import {auctionView,auctionAction,auctionTickDue,auctionTickNeedsCatalog,lotDeadline} from '../fanta/auction.mjs';
 import {queueAuctionOpened} from '../fanta/notifications.mjs';
 import {dispatchFanta} from '../fanta/jobs.mjs';
 import {sportsIdentities} from './sports-socket.mjs';
+import {LAMPO} from '../public/src/auction-formats.mjs';
 
 export function socketAuctionView(state,uid,stamp){
  const data=auctionView(state,uid,stamp),player=p=>p?Object.fromEntries(['id','name','role','club','price','value','fm','played','ownerTeam'].filter(k=>p[k]!==undefined).map(k=>[k,p[k]])):p;
@@ -148,9 +149,9 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  }
  function schedule(room){
   clearTimeout(room.timer);const a=room.state?.auction;if(!a)return;
-  const deadline=a.status==='scheduled'?a.startsAt:a.status==='running'&&a.mode==='live'&&a.phase!=='releases'?(a.lobbyEndsAt||a.pausedUntil||a.lot?.endsAt||a.callDeadline):null;
+  const deadline=a.status==='scheduled'?Date.parse(a.startsAt):a.status==='running'&&a.mode==='live'&&a.phase!=='releases'?(lotDeadline(a)??Date.parse(a.lobbyEndsAt||a.pausedUntil||a.callDeadline)):null;
   const botDeadline=computerActionAt(room.state);
-  const nextDeadline=Math.min(deadline?Date.parse(deadline):Infinity,botDeadline!==room.attemptedComputerTurn?botDeadline??Infinity:Infinity);
+  const nextDeadline=Math.min(Number.isFinite(deadline)?deadline:Infinity,botDeadline!==room.attemptedComputerTurn?botDeadline??Infinity:Infinity);
   if(Number.isFinite(nextDeadline)){const delay=Math.max(20,Math.min(86400000,Math.max(nextDeadline+10,room.retryAt)-now()));room.timer=setTimeout(()=>void tick(room),delay);}
  }
  async function refresh(room){
@@ -178,13 +179,43 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  }
  io.on('connection',socket=>{
   const room=roomFor(socket.data.league,socket.data.user.id);room.sockets.add(socket);socket.join('auction:'+room.league);
-  let lastClock=0;
+  let lastClock=0,bidding=false;
+  let samples=[];
+  const probe=()=>{
+   const started=performance.now();
+   socket.timeout(2500).emit('auction:probe',(error)=>{
+    if(!error)samples=[...samples,{at:now(),rtt:performance.now()-started}].slice(-6);
+   });
+  };
+  const grace=received=>{
+   const recent=samples.filter(x=>received-x.at<30000);
+   return recent.length?Math.min(LAMPO.maxGrace,Math.ceil(Math.min(...recent.map(x=>x.rtt))/2)+60):LAMPO.httpGrace;
+  };
+  socket.on('auction:bid',async(input,ack)=>{
+   const receivedAt=now();
+   if(typeof ack!=='function')return;
+   if(bidding||!socket.data.inAuction||typeof input?.lotId!=='string'||input.lotId.length>100||!Number.isSafeInteger(input.amount)){
+    ack({error:'Offerta non valida',status:400});return;
+   }
+   bidding=true;
+   try{
+    const user=await authorize(socket.data.token,room.league);
+    const data=await store.league(user.id,room.league,async(s,c)=>{
+     if(s.auction.type!=='lampo')throw Object.assign(Error('L’asta lampo non è attiva'),{status:409});
+     const stamp=now(),next=auctionAction(s,'bid',input,user.id,{now:stamp,receivedAt,latencyGrace:grace(receivedAt)});
+     await store.persistAuction(c,s,next,user.id,'bid',input);
+     return socketAuctionView(next,user.id,stamp);
+    },{write:true,auction:true,catalog:false});
+    ack({data});void refresh(room);
+   }catch(error){ack({error:error.status?error.message:'Offerta non confermata. Controlla l’asta.',status:error.status||503});}
+   finally{bidding=false;}
+  });
   socket.on('auction:room',value=>{
    if(typeof value!=='boolean'||socket.data.inAuction===value)return;
-   socket.data.inAuction=value;pushPresence(room);
+   socket.data.inAuction=value;if(value)probe();pushPresence(room);
    if(socket.data.passive&&room.state)send(socket,room,now());
   });
-  socket.on('auction:clock',ack=>{if(typeof ack==='function'&&now()-lastClock>=1000){lastClock=now();ack({serverTime:new Date(now()).toISOString()});}});
+  socket.on('auction:clock',ack=>{if(typeof ack==='function'&&now()-lastClock>=1000){lastClock=now();ack({serverTime:new Date(now()).toISOString()});if(socket.data.inAuction)probe();}});
   socket.on('disconnect',()=>{room.sockets.delete(socket);if(socket.data.inAuction)pushPresence(room);if(!room.sockets.size&&!['scheduled','running'].includes(room.state?.auction.status)){clearTimeout(room.timer);rooms.delete(room.league);}});
   if(room.state){send(socket,room,now());pushPresence(room);}else void refresh(room);
  });

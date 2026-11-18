@@ -28,7 +28,7 @@ test('onboarding and switcher share both roster choices; random creation is abse
  const wizard=parseHTML('<html><body>'+renderLeagueOnboarding({verified:true})+'</body></html>').document;
  assert.deepEqual([...wizard.querySelectorAll('[data-league-step=""] button')].map(b=>b.textContent),['Entra in una lega','Crea una lega']);
  assert.ok(wizard.querySelector('#join').hidden&&wizard.querySelector('#create').hidden);
- assert.equal(wizard.querySelector('#join h3').textContent,'Gli amici ti hanno tenuto il posto');
+ assert.ok(wizard.querySelector('#join [data-league-directory]'));
  assert.equal(wizard.querySelectorAll('#create [name=rosterMode]').length,2);assert.equal(randomLeagueControls(null,{id:'u1'}),'');assert.equal(randomLeagueControls({id:'bar',admin:'u1',members:[]},{id:'u1'}),'');
 });
 

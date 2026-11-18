@@ -27,7 +27,7 @@ export async function createLeaguePair(c,s,user,input,{season=2026,now=Date.now(
  await c.query(`INSERT INTO fanta.creation_jobs(id,bar_id,owner_uid,size,name,status,league_id,roster_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[requestId,bar.id,user.id,size,bar.name,status,id,mode]);
  if(s.leagues.length>count)welcomeLeagueChat(s,bar,now);
  bar.nativeFantaLink={leagueId:id,competitionId:id+':main',coachIds:initialMembers};bar.fantaSlipsEnabled=true;bar.fantaCreation={jobId:requestId,status,rosterMode:mode,size};
- return {ok:true,league:bar.id,fantaLeague:id,reused:s.leagues.length===count,creationStatus:status,...(status==='queued'?{jobId:requestId}:{}),message:mode==='random'?'Bar e Fanta creati. Le rose equilibrate saranno disponibili tra qualche minuto.':'Bar e Fanta creati. Squadre vuote pronte per l’asta iniziale.'};
+ return {ok:true,league:bar.id,fantaLeague:id,reused:s.leagues.length===count,creationStatus:status,...(status==='queued'?{jobId:requestId}:{}),message:mode==='random'?'Bar e Fanta creati. Le rose equilibrate saranno disponibili tra qualche minuto.':'Bar e Fanta creati. Squadre vuote pronte per l’asta a chiamata.'};
 }
 export async function joinLinkedTeam(c,bar,user){
  const link=(await c.query(`SELECT l.id,l.max_members,b.competition_id FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id WHERE b.bar_league_id=$1 AND b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL FOR UPDATE OF l`,[bar.id])).rows[0];

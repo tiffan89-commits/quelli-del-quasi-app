@@ -31,7 +31,7 @@ export async function enableLeagueNotifications({ league, user, api, config, not
     throw Error("Autorizza le notifiche per questo dispositivo.");
   const current =
     config ||
-    (await api("chat-config?" + new URLSearchParams({ league: league.id })));
+    (await api(league?.id?'chat-config?'+new URLSearchParams({league:league.id}):'chat-config'));
   const registration = await navigator.serviceWorker.ready;
   const key = Uint8Array.from(
     atob(current.publicKey.replace(/-/g, "+").replace(/_/g, "/")),
@@ -44,11 +44,11 @@ export async function enableLeagueNotifications({ league, user, api, config, not
       applicationServerKey: key,
     }));
   await api("chat-subscribe", {
-    league: league.id,
+    ...(league?.id?{league:league.id}:{}),
     subscription: subscription.toJSON(),
     ...(!notifyChat?{notifyChat:false}:{}),
   });
-  if (user)
+  if (user&&league)
     try {
       localStorage.removeItem(inviteKey(user, league));
     } catch {}

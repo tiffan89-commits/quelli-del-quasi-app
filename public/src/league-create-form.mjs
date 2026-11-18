@@ -12,9 +12,4 @@ export function leagueCreationFields({name=''}={}){
  </fieldset>`;
 }
 
-export function leagueJoinFields(){
- return `<h3 class="league-form-title">Gli amici ti hanno tenuto il posto</h3>
- <label class="field">Codice lega<input name="code" required placeholder="ABC123" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>`;
-}
-
 export function leagueCreationPayload(form){form.dataset.requestId||=crypto.randomUUID();const data=Object.fromEntries(new FormData(form));return {...data,size:Number(data.size),requestId:form.dataset.requestId};}

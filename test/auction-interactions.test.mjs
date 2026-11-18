@@ -28,8 +28,8 @@ test('release dialog survives refund clicks, live refresh and failed submission;
 test('wizard choices control the draw and order, and the compact room shows only active bidders',()=>{
  const state={league:{adminUid:'u1'},rules:{...DEFAULT_RULES,roster:{P:1,D:1,C:1,A:1}},teams:['t1','t2'].map((id,i)=>({id,name:id,userId:'u'+(i+1),roster:[]})),players:[{id:'striker',name:'Punta',role:'A'},{id:'keeper',name:'Portiere',role:'P'}],auction:{status:'none',version:1,log:[],order:[]}};
  const opts={admin:true,now:1000,rng:()=>0,id:()=> 'lot'};
- const start=(nomination,playerOrder,teamOrder)=>{
-  const lobby=auctionAction(state,'start-now',{mode:'live',type:'iniziale',config:{budget:650,nomination,playerOrder,teamOrder}},'u1',opts);
+ const start=(nomination,playerOrder,teamOrder,type='iniziale')=>{
+  const lobby=auctionAction(state,'start-now',{mode:'live',type,config:{budget:650,nomination,playerOrder,teamOrder}},'u1',opts);
   assert.equal(lobby.auction.phase,'lobby');assert.equal(lobby.auction.caller,null);
   assert.throws(()=>auctionAction(lobby,'lobby-start',{},'u2',{...opts,admin:false}),/presidente/);
   const countdown=auctionAction(lobby,'lobby-start',{},'u1',opts);
@@ -41,8 +41,8 @@ test('wizard choices control the draw and order, and the compact room shows only
  const personal=start('personal','roles',['t2','t1']);assert.equal(personal.auction.caller,'t2');assert.equal(personal.auction.currentRole,'P');
  assert.throws(()=>auctionAction(personal,'nominate',{playerId:'striker'},'u2',opts),/ruolo/);
  assert.throws(()=>start('personal','roles',['t1','t1']),/ordine/);
- const random=start('random','mixed',null);assert.equal(random.auction.lot.player.id,'striker');assert.equal(random.auction.lot.leader,null);assert.equal(random.auction.lot.bid,0);assert.equal(teamBudget(random.teams[0],random.rules).credits,650);
- let next=start('random','roles',null);assert.equal(next.auction.lot.player.id,'keeper');
+ const random=start('random','mixed',null,'lampo');assert.equal(random.auction.lot.player.id,'keeper');assert.equal(random.auction.lot.leader,null);assert.equal(random.auction.lot.bid,0);assert.equal(teamBudget(random.teams[0],random.rules).credits,650);
+ let next=start('random','roles',null,'lampo');assert.equal(next.auction.lot.player.id,'keeper');
  for(let i=1;i<=7;i++)next=auctionAction(next,'bid',{lotId:'lot',amount:i},i%2?'u1':'u2',{...opts,now:11000+i});
  assert.equal(next.auction.lot.history.length,7);const view=auctionView(next,'u1');assert.deepEqual(view.lot.history.map(h=>h.amount),[3,4,5,6,7]);
  const rivalView=auctionView(next,'u2'),{document}=parseHTML(renderAsta(rivalView));

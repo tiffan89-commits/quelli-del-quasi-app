@@ -42,7 +42,7 @@ const store = {
   get(key) { try { return localStorage.getItem(key); } catch { return null; } },
   set(key, value) { try { localStorage.setItem(key, value); } catch {} },
 };
-const auctionTitles={iniziale:'Asta iniziale',riparazione:'Asta di riparazione',lampo:'Asta lampo'};
+import {AUCTION_TYPES as auctionTitles} from '../auction-formats.mjs';
 
 // demo: true = dati di prova (chi non ha accesso al Fanta vero, o chi prova dalla landing): banner fisso,
 // spiegazione al primo ingresso e avvisi quando "salva" qualcosa, perché niente resta salvato davvero.
@@ -121,7 +121,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (ui.tab === 'giornata') return renderGiornata({round:ui.round,matchup:ui.matchup,matchupId:ui.matchupId,side:ui.side,flips:ui.liveFlips,error:ui.liveError});
     if (ui.tab === 'squadra') return renderSquadra(ui.squadra);
     if (ui.tab === 'asta') return ui.asta.wizard?renderAuctionWizard(ui.asta.wizard):renderAsta(ui.asta.data,{...ui.asta,members:barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id)?.members},ui.asta.players);
-    if (ui.tab === 'lega'||ui.tab==='classifica') return renderLega(ui.lega.data,{...ui.lega,invite:linkedInvite(ui.lega.data?.league,barLeagues),group:ui.tab,hasTrades:!!api.trades,hasChat:barLeagues.some(b=>b.nativeFantaLink?.leagueId===league()?.id),slipsHtml:slips.ranking(slipContext(),ui.lega.metric||'points')});
+    if (ui.tab === 'lega'||ui.tab==='classifica') return renderLega(ui.lega.data,{...ui.lega,invite:linkedInvite(ui.lega.data?.league,barLeagues),group:ui.tab,hasTrades:!!api.trades,directInvite:!demo&&barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id)?.id,hasChat:barLeagues.some(b=>b.nativeFantaLink?.leagueId===league()?.id),slipsHtml:slips.ranking(slipContext(),ui.lega.metric||'points')});
     if (ui.tab === 'io') return renderIo(ui.me, ui.leagues, league()?.id, {...ui.io,pilot:league()?.kind==='pilot'}, kind==='public');
     return '';
   }
@@ -433,7 +433,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(ui.tab==='impostazioni')slipServices?.account?.bind?.(()=>render(),barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id));
     renderSheet();
     bindStyledSelects(root);
-    if (ui.tab === 'asta') {tickAuction(root, ui.asta.offset,auctionSound.alert);showAuctionConnection();}
+    if (ui.tab === 'asta') {tickAuction(root, auctionStream?.offset()??ui.asta.offset,auctionSound.alert);showAuctionConnection();}
   }
 
   function showAuctionPanel(index,{scroll=true}={}){
@@ -452,7 +452,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     void auctionStream?.check();
     if(auctionStream?.ready(league()?.id)){const latest=auctionStream.last();ui.asta.data=null;applyAuction(latest,{clockOffset:auctionStream.offset()});}else pollAuction();
     astaTimer = setInterval(pollAuction, 1000);
-    astaTicker = setInterval(() => tickAuction(document, ui.asta.offset,auctionSound.alert), 200);
+    astaTicker = setInterval(() => tickAuction(document, auctionStream?.offset()??ui.asta.offset,auctionSound.alert), 200);
   }
   function stopAuction() { clearInterval(astaTimer); clearInterval(astaTicker); astaTimer = astaTicker = null; }
 
@@ -518,9 +518,11 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(!st.can||kind==='bid'&&(!Number.isInteger(amount)||amount<st.min||amount>st.max))return;
     s.bidPending=kind;s.error=null;render();
     try{
-      const next=await (kind==='bid'?api.bid(id,lot.id,amount):api.pass(id,lot.id));
+      const requestStartedAt=Date.now();
+      const socketBid=kind==='bid'&&s.data.type==='lampo'?auctionStream?.bid(id,lot.id,amount):null;
+      const next=await (socketBid||(kind==='bid'?api.bid(id,lot.id,amount):api.pass(id,lot.id)));
       if(destroyed||league()?.id!==id)return;
-      s.amount=null;applyAuction(next);
+      s.amount=null;if(next)applyAuction(next,{requestStartedAt,clockOffset:socketBid?auctionStream.offset():null});
       if(kind==='bid')demoNote('auction','In demo giochi contro squadre finte: niente resta salvato.');
     }catch(error){
       if(!destroyed&&league()?.id===id&&s.data?.lot?.id===lot.id)s.error=error.message;
@@ -817,11 +819,13 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       else{w.step++;ui.asta.keepWizardScroll=false;}
       render();return;
     }
-    const id=league()?.id,config={budget:Number(w.budget),nomination:w.nomination,playerOrder:w.playerOrder,teamOrder:w.nomination==='personal'&&w.turns==='custom'?w.teamOrder:null};
-    const settings={type:w.type,config},computerTeams=w.mode==='live'?!!w.computerTeams:undefined;
+    const id=league()?.id,mode=w.type==='lampo'?'live':w.mode;
+    const nomination=w.type==='lampo'?'random':w.type==='iniziale'?'personal':w.nomination;
+    const config={budget:Number(w.budget),nomination,playerOrder:w.type==='riparazione'?w.playerOrder:'roles',teamOrder:nomination==='personal'&&w.turns==='custom'?w.teamOrder:null};
+    const settings={type:w.type,config},computerTeams=mode==='live'?!!w.computerTeams:undefined;
     w.busy=true;render();
     try{
-      const a=await (w.timing==='now'?api.auctionStartNow(id,w.mode,computerTeams,settings):api.auctionSchedule(id,{...settings,mode:w.mode,computerTeams,startsAt:new Date(w.startsAt).toISOString()}));
+      const a=await (w.timing==='now'?api.auctionStartNow(id,mode,computerTeams,settings):api.auctionSchedule(id,{...settings,mode,computerTeams,startsAt:new Date(w.startsAt).toISOString()}));
       if(destroyed||suspended||league()?.id!==id||ui.asta.wizard!==w)return;
       ui.asta.wizard=null;applyAuction(a);render();
       if(a.status==='scheduled')toast('Asta programmata.');
@@ -1074,7 +1078,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       const {name,value,checked}=e.target;
       if(name==='computerTeams')w.computerTeams=checked;
       if(['type','mode','timing','startsAt','budget','nomination','playerOrder','turns'].includes(name))w[name]=value;
-      if(['mode','timing','nomination','turns'].includes(name))render();
+      if(['type','mode','timing','nomination','turns'].includes(name))render();
       return;
     }
     const key = e.target.dataset?.notify;
