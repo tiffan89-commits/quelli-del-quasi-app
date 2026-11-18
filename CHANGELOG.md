@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.36.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.36.0...v0.36.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* ripristina salvataggio identità e cancellazione della lega ([d7014d6](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/d7014d64e31320f82374412870cd4d4e707c980e))
+* ripristina salvataggio identità e cancellazione della lega ([c18e94c](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c18e94c1fc4eb4f458ccb89c5b1d3f1a7a8cb1ee))
+
 ## [0.36.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.7...v0.36.0) (2026-11-18)
 
 
