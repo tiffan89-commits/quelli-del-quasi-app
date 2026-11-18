@@ -15,6 +15,7 @@ export function createAuctionSocket({context,onData,onStatus=()=>{},onPresence=(
   try{
    const io=await factory();if(closed||!context().active||context().league!==c.league)return;
    league=c.league;socket=io({path:'/socket.io',transports:['websocket'],withCredentials:true,auth:{league,passive:true},reconnection:true,reconnectionDelay:500,reconnectionDelayMax:5000,timeout:5000});
+   socket.on('auction:probe',ack=>ack?.());
    socket.on('connect',()=>{healthy=false;roomSent=null;onConnection(false);updateRoom();clock();});
    socket.on('auction:status',message=>{if(!closed&&context().league===league&&message.league===league)onStatus(message.data);});
    socket.on('auction:presence',ids=>{if(Array.isArray(ids)&&context().league===league)onPresence(ids);});
@@ -31,5 +32,12 @@ export function createAuctionSocket({context,onData,onStatus=()=>{},onPresence=(
   }catch{retryAt=Date.now()+15000;onConnection(false);}finally{opening=false;}
  }
  const timer=setTimer(check,1000),clockTimer=setTimer(clock,5000);void check();
- return {check,ready:id=>healthy&&league===id&&!!socket?.connected,last:()=>last,offset:()=>offset,async stop(){closed=true;clearTimer(timer);clearTimer(clockTimer);disconnect();}};
+ function bid(id,lotId,amount){
+  if(!healthy||league!==id||!socket?.connected||!context().inRoom)return null;
+  return new Promise((resolve,reject)=>socket.timeout(5000).emit('auction:bid',{lotId,amount},(error,reply)=>{
+   if(error||!reply?.data)reject(Object.assign(Error(reply?.error||'Offerta non confermata. Controlla l’asta.'),{status:reply?.status||503}));
+   else resolve(reply.data);
+  }));
+ }
+ return {check,bid,ready:id=>healthy&&league===id&&!!socket?.connected,last:()=>last,offset:()=>offset,async stop(){closed=true;clearTimer(timer);clearTimer(clockTimer);disconnect();}};
 }

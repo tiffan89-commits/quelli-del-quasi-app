@@ -1,5 +1,6 @@
 // Dati finti per l'anteprima. Stessa forma che dovrà restituire /fanta-api (vedi docs/FANTA-FRONTEND.md).
 // Gli orari sono relativi ad "adesso", così il conto alla rovescia ha sempre senso.
+import {AUCTION_TYPES} from '../auction-formats.mjs';
 import { TEAMS, MY_TEAM, team } from './squadre-finte.mjs';
 import { matchupFor, CURRENT_ROUND } from './dati-finti-giornata.mjs';
 import { savedLineupOf } from './dati-finti-squadra.mjs';
@@ -73,7 +74,7 @@ export function homeFor(leagueId,state='da-schierare',now=Date.now(),auction=auc
     // Solo anteprima: l'asta è sempre aperta per poterla provare.
     auction: (() => {
       const a = auction(leagueId, now), me = a.teams.find(t => t.team.id === a.me);
-      return { status: a.status, mode: a.mode, startsAt: a.startsAt, title: { iniziale: 'Asta iniziale', riparazione: 'Asta di riparazione', lampo: 'Asta lampo' }[a.type], slotsLeft: me.slotsLeft, credits: me.credits };
+      return { status: a.status, mode: a.mode, startsAt: a.startsAt, title: AUCTION_TYPES[a.type], slotsLeft: me.slotsLeft, credits: me.credits };
     })(),
   };
   return home;

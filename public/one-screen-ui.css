@@ -501,6 +501,11 @@ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-code{disp
 [data-league-chat],[data-fanta-chat]{position:relative}
 .lega-tile>.chat-tile-unread{position:absolute;top:10px;right:10px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#c54447;color:white;font:800 11px/1 'DM Sans',sans-serif;pointer-events:none}
 .league-unread[hidden],.chat-tile-unread[hidden]{display:none}
+.league-unread.trade-tab-badge,.chat-tile-unread.trade-tile-badge{height:16px;min-width:16px;width:auto;padding:0 4px;display:grid;place-items:center;color:#fff;font:700 10px/1 'DM Sans',sans-serif;border-radius:999px;background:#bd3942}
+.trade-tab-badge{left:calc(50% + 12px);top:0}
+.v2-tab:has(.trade-tab-badge:not([hidden])) [data-chat-badge]{left:calc(50% - 16px)}
+.chat-tile-unread.trade-tile-badge{right:30px;top:8px}
+.trade-tab-badge[hidden],.trade-tile-badge[hidden]{display:none}
 html.os-on main.os-root .fanta-home-compact .fanta-hero{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);column-gap:10px;align-items:center;background:linear-gradient(135deg,#2a5541,var(--fanta-pitch) 72%,#19382b)}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-identity{display:contents}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-crest{grid-column:2;grid-row:1/span 4;width:100%!important;max-width:130px;justify-self:center}

@@ -63,7 +63,7 @@ self.addEventListener("push", (event) => {
         icon: "/assets/icons/icon-192.png",
         badge: "/assets/icons/icon-192.png",
         tag: typeof data.tag === "string" ? data.tag : "quasi-chat",
-        data: { league: typeof data.league === "string" ? data.league : null,kind:data.kind==='fanta'?'fanta':data.kind==='slip-reminder'?'slip-reminder':'chat',url:typeof data.url==='string'&&(data.url.startsWith('/?slip=')||data.url.startsWith('/?mode=fanta'))?data.url:null },
+        data: { league: typeof data.league === "string" ? data.league : null,kind:data.kind==='fanta'?'fanta':data.kind==='slip-reminder'?'slip-reminder':data.kind==='league-access'?'league-access':'chat',url:typeof data.url==='string'&&(data.url.startsWith('/?slip=')||data.url.startsWith('/?mode=fanta'))?data.url:null },
       },
     ),
   );
@@ -73,8 +73,9 @@ self.addEventListener("notificationclick", (event) => {
   const league = event.notification.data?.league;
   const reminder=event.notification.data?.kind==='slip-reminder';
   const fanta=event.notification.data?.kind==='fanta';
+  const access=event.notification.data?.kind==='league-access';
   const url = new URL(
-    (reminder||fanta)&&event.notification.data?.url?event.notification.data.url:"/" + (league ? "?chat=" + encodeURIComponent(league) : ""),
+    access?'/?accesso-lega=1':(reminder||fanta)&&event.notification.data?.url?event.notification.data.url:"/" + (league ? "?chat=" + encodeURIComponent(league) : ""),
     self.location.origin,
   ).href;
   event.waitUntil(
@@ -92,7 +93,7 @@ self.addEventListener("notificationclick", (event) => {
             if(opened){await opened.focus();return;}
           }
           await client.focus();
-          client.postMessage({ type: fanta?'open-fanta':reminder?'open-slip':"open-chat", league,url:fanta?url:null,round:reminder?new URL(url).searchParams.get('round'):null });
+          client.postMessage({ type: access?'open-league-access':fanta?'open-fanta':reminder?'open-slip':"open-chat", league,url:fanta?url:null,round:reminder?new URL(url).searchParams.get('round'):null });
           return;
         }
       }

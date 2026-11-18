@@ -24,7 +24,7 @@ export function createBarDemo({admin=false}={}){
   if(name==='features')return {barDemo:true};
   if(name==='slip')return saveDemoSlip(state,body);
   if(name==='profile'){if(body.name){state.user.name=body.name.trim().slice(0,60);for(const l of state.leagues){const m=l.members.find(m=>m.uid===state.user.id);if(m)m.name=state.user.name;}}return {ok:true};}
-  if(name==='profile-avatar'){state.user.avatar=structuredClone(body.avatar);for(const l of state.leagues){const m=l.members.find(m=>m.uid===state.user.id);if(m)m.avatar=structuredClone(body.avatar);}return {avatar:structuredClone(body.avatar)};}
+  if(name==='profile-avatar'){state.user.avatar=structuredClone(body.avatar);if(typeof body.name==='string'&&body.name.trim())state.user.name=body.name.trim();for(const l of state.leagues){const m=l.members.find(m=>m.uid===state.user.id);if(m){m.avatar=structuredClone(body.avatar);m.name=state.user.name;}}return {avatar:structuredClone(body.avatar),name:state.user.name};}
   if(name==='profile-reminders'){state.user.remindersEnabled=!!body.enabled;return {ok:true};}
   if(name==='live')return {league:l.id,members:structuredClone(l.members),rounds:[]};
   if(name==='chat-config')return {configured:false,demo:true,notify:false,preference:'muted'};

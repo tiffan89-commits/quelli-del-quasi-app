@@ -1,5 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import {randomUUID} from 'node:crypto';import {parseHTML} from 'linkedom';
-import {fixtureDb} from './fanta/helpers.mjs';import {membershipTransaction} from '../lib/db.mjs';import {createApi} from '../netlify/functions/api.mjs';import {createFantaApi} from '../fanta/api.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {runRandomCreation} from '../fanta/random-leagues.mjs';import {bindLeagueSwitcher,renderLeagueSheet} from '../public/src/v2/league-switcher.mjs';import {leagueCreationFields} from '../public/src/league-create-form.mjs';import {randomLeagueControls} from '../public/src/random-leagues.mjs';
+import {fixtureDb} from './fanta/helpers.mjs';import {membershipTransaction} from '../lib/db.mjs';import {createApi} from '../netlify/functions/api.mjs';import {createFantaApi} from '../fanta/api.mjs';import {sqlFantaStore} from '../fanta/store.mjs';import {runRandomCreation} from '../fanta/random-leagues.mjs';import {bindLeagueSwitcher,renderLeagueSheet} from '../public/src/v2/league-switcher.mjs';import {renderLeagueOnboarding} from '../public/src/league-onboarding.mjs';
+import {leagueCreationFields} from '../public/src/league-create-form.mjs';import {randomLeagueControls} from '../public/src/random-leagues.mjs';
 async function setup(){const f=await fixtureDb();for(const n of ['012_random_leagues','016_league_creation_mode'])await f.db.exec(await fs.readFile(new URL('../netlify/database/migrations/'+n+'.sql',import.meta.url),'utf8'));const api=createApi({membershipTransact:fn=>membershipTransaction(fn,{connect:f.connect}),env:{}});return {...f,call:(route,input,token='token1')=>api(new Request('https://example.test/api/'+route,{method:'POST',headers:{cookie:'sid='+token},body:JSON.stringify(input)}))};}
 test('new and existing users create both leagues atomically; duplicate submits reuse them and joining assigns an empty team',async()=>{
  const f=await setup();try{
@@ -23,7 +24,12 @@ test('random creation reserves both leagues immediately and populates balanced r
  }finally{await f.close();}
 });
 test('onboarding and switcher share both roster choices; random creation is absent from old standalone controls',()=>{
- const {document}=parseHTML('<html><body>'+renderLeagueSheet([],null,'u1',String)+'</body></html>');const f=document.querySelector('#v2-form-create');assert.ok(f.querySelector('[name=size]'));assert.equal(f.querySelectorAll('[name=rosterMode]').length,2);assert.match(leagueCreationFields(),/Bar|BAR/);assert.equal(randomLeagueControls(null,{id:'u1'}),'');assert.equal(randomLeagueControls({id:'bar',admin:'u1',members:[]},{id:'u1'}),'');
+ const {document}=parseHTML('<html><body>'+renderLeagueSheet([],null,'u1',String)+'</body></html>');const f=document.querySelector('#v2-form-create');assert.ok(f.querySelector('[name=size]'));assert.equal(f.querySelectorAll('[name=rosterMode]').length,2);assert.match(leagueCreationFields(),/Una lega\. Due modi di avere ragione\./);
+ const wizard=parseHTML('<html><body>'+renderLeagueOnboarding({verified:true})+'</body></html>').document;
+ assert.deepEqual([...wizard.querySelectorAll('[data-league-step=""] button')].map(b=>b.textContent),['Entra in una lega','Crea una lega']);
+ assert.ok(wizard.querySelector('#join').hidden&&wizard.querySelector('#create').hidden);
+ assert.ok(wizard.querySelector('#join [data-league-directory]'));
+ assert.equal(wizard.querySelectorAll('#create [name=rosterMode]').length,2);assert.equal(randomLeagueControls(null,{id:'u1'}),'');assert.equal(randomLeagueControls({id:'bar',admin:'u1',members:[]},{id:'u1'}),'');
 });
 
 test('switcher blocks duplicate clicks and keeps the request identifier for a retry',async()=>{

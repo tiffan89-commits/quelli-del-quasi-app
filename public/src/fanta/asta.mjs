@@ -6,6 +6,7 @@ import { shirt } from './maglie.mjs';
 import {auctionWhen} from './auction-wizard.mjs';
 import {renderReleases} from './mercato.mjs';
 import {avatarSvg} from '../avatar.mjs';
+import {LAMPO,lampoShownSeconds} from '../auction-formats.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const RING = 2 * Math.PI * 26;
@@ -51,8 +52,8 @@ function myBar(a) {
 }
 const adminControls=a=>a.isAdmin?`<div class="fanta-a-admin-controls">${a.lot||a.table?'<button type="button" class="secondary" data-asta-cancel="1">Annulla giocatore sul tavolo</button>':''}<button type="button" class="secondary" data-asta-close="1">Chiudi asta</button></div>`:'';
 
-function ring(endsAt,total,label,rules,{compact=false,main=false}={}) {
-  return `<div class="fanta-a-timer${compact?' auction-compact-clock':''}" role="timer" aria-label="Tempo residuo" ${main?'data-auction-main-clock':''} data-ends="${esc(endsAt)}" data-total="${total}" data-final="${rules.finalSeconds}" data-stretch="${rules.finalStretch}">
+function ring(endsAt,total,label,rules,{compact=false,main=false,lampo=false}={}) {
+  return `<div class="fanta-a-timer${compact?' auction-compact-clock':''}" role="timer" aria-label="Tempo residuo" ${main?'data-auction-main-clock':''} data-ends="${esc(endsAt)}" data-total="${total}" ${lampo?'data-lampo-clock':''} data-final="${rules.finalSeconds}" data-stretch="${rules.finalStretch}">
     <svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="26" class="track"/><circle cx="30" cy="30" r="26" class="bar" stroke-dasharray="${RING}" stroke-dashoffset="0"/></svg>
     <b data-seconds>–</b><small>${label}</small>
   </div>`;
@@ -308,7 +309,7 @@ export function renderAsta(a, ui = {}, players = null) {
   const lobby=a?.phase==='lobby'&&a.status==='running';
   const online=a?.status==='running'&&a.mode==='live'&&!phase;
   const compact=online&&!lobby,deadline=compact&&(a.lot?.endsAt||a.callDeadline);
-  const compactClock=(main=false)=>deadline?ring(deadline,a.lot?.timerSeconds||a.rules.callSeconds,'sec',a.rules,{compact:true,main}):'';
+  const compactClock=(main=false)=>deadline?ring(deadline,a.lot?.timerSeconds||a.rules.callSeconds,'sec',a.rules,{compact:true,main,lampo:a.type==='lampo'&&!!a.lot}):'';
   const timer=lobby?(a.lobbyEndsAt?ring(a.lobbyEndsAt,10,'sec',{finalSeconds:3,finalStretch:3},{main:true}):'<span class="auction-clock-label">In attesa</span>'):a?.status==='scheduled'?`<span class="auction-clock-label" data-countdown="${esc(a.startsAt)}">In attesa</span>`:a?.status==='running'?`<span class="auction-clock-label">${phase?'Svincoli':'Dal vivo'}</span>`:'';
   const label=a?.status==='scheduled'?'Asta programmata':a?.status==='ended'?'Asta chiusa':phase?'Svincoli':a?.mode==='manual'?'Asta dal vivo':'Sala d’asta';
   let center;
@@ -380,14 +381,15 @@ export function tickAuction(root, offset = 0, onFinal) {
   let overlaySeconds=null;
   for (const el of root.querySelectorAll('[data-ends]')) {
     const lobby=overlay?.classList.contains('is-start'),total=Number(el.dataset.total),left=Math.max(0,Date.parse(el.dataset.ends)-now);
-    const shown=lobby||total<=5?left/1000:shownSeconds(left,5,3,total);
-    const inFinal=left>0&&left<=3000;
+    const lampo=el.hasAttribute('data-lampo-clock');
+    const shown=lampo?lampoShownSeconds(left):lobby||total<=5?left/1000:shownSeconds(left,5,3,total);
+    const inFinal=left>0&&left<=(lampo?LAMPO.stretch*1000:3000);
     el.querySelector('[data-seconds]').textContent = Math.ceil(shown);
     el.querySelector('.bar')?.setAttribute('stroke-dashoffset', String(RING * (1 - Math.min(1, shown / total))));
     el.classList.toggle('is-final', inFinal);
     el.closest('.fanta-a-lot')?.classList.toggle('is-final', inFinal);
     if(left>0&&el.hasAttribute('data-auction-main-clock')&&(lobby||inFinal))overlaySeconds=Math.ceil(shown);
-    if(inFinal)onFinal?.(el.dataset.ends,Math.ceil(left/1000));
+    if(inFinal)onFinal?.(el.dataset.ends,Math.ceil(lampo?shown:left/1000));
     // Una volta sola per timer, e solo dopo che l'utente ha toccato la pagina (il browser lo richiede).
     if (inFinal && vibratedFor !== el.dataset.ends) { vibratedFor = el.dataset.ends; if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.([40, 60, 40]); }
   }

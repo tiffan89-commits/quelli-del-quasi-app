@@ -1,7 +1,8 @@
 import {objectiveReceipt} from '../../lib/day-objectives.mjs';
 import {enrichStoredMatch} from '../../lib/lineup-presence.mjs';
 import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
-import {createLeaguePair,joinLinkedTeam} from '../../fanta/league-creation.mjs';
+import {createLeaguePair} from '../../fanta/league-creation.mjs';
+import {addLeagueMember,leagueAccessAction,leagueAccessInbox,leagueDirectory,updateNickname} from '../../lib/league-access.mjs';
 import {detachBarCoach} from '../../fanta/linked-membership.mjs';
 import {dispatchFanta} from '../../fanta/jobs.mjs';
 import {inviteInfo} from '../../lib/public-area.mjs';
@@ -155,7 +156,8 @@ export function createApi({
         .filter(Boolean)
         .at(-1);
     const authRoute=activityRoute.startsWith('social-')||['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email','change-password'].includes(activityRoute);
-    const membershipRoute=['create','join','member-remove','member-restore','league-prizes'].includes(activityRoute);
+    const accessMutation=['league-access-request','league-access-invite','league-access-respond'].includes(activityRoute);
+    const membershipRoute=accessMutation||['create','join','member-remove','member-restore','league-prizes'].includes(activityRoute);
     const profileRoute=['profile','profile-avatar','profile-reminders','profile-email-reminders','support','fantacalcio-waitlist'].includes(activityRoute);
     const deliverAccount=async jobId=>deliverMail!==deliverPendingMail?deliverMail({jobId,transactionFn:authTransact,env}):dispatchMail(jobId,{env});
     let accountRequest=null;
@@ -209,7 +211,7 @@ export function createApi({
         if(typeof p.requestId!=='string'||!/^[A-Za-z0-9_-]{16,80}$/.test(p.requestId))fail('Identificativo richiesta non valido');
         accountRequest={id:p.requestId,digest:sha(JSON.stringify({route,p,actor:sha(sid||'')}))};
       }
-      chatLeague=String(req.method==='GET'?url.searchParams.get('league')||'':p.league||'');
+      chatLeague=String(req.method==='GET'?url.searchParams.get('league')||'':p.league||'')||null;
       const token = (req.headers.get("cookie") || "")
         .split(";")
         .map((x) => x.trim())
@@ -386,6 +388,13 @@ export function createApi({
             "X-Content-Type-Options": "nosniff",
           },
         });
+      }
+      if(req.method==='GET'&&['league-directory','league-access-inbox'].includes(route)){
+        return reply(await read(s=>{
+          const u=userFor(s,token);
+          if(!u||!u.emailVerified||u.demo||u.adminOnly)fail('Accedi e conferma la tua email per continuare.',403);
+          return route==='league-directory'?leagueDirectory(s,u):leagueAccessInbox(s,u);
+        },{kind:route,tokenHash:sha(token||'')}));
       }
       if(req.method==='GET')return reply({error:'Rotta non disponibile'},404);
       const out = await transact(async (s, c) => {
@@ -592,14 +601,16 @@ export function createApi({
           if (!p.avatar || typeof p.avatar !== 'object' || Array.isArray(p.avatar)) fail('Personaggio non valido');
           const owned=ownedRewardIds(s,u.id);
           if(Object.values(REWARD_SLOTS).some(key=>p.avatar[key]&&p.avatar[key]!=='none'&&!owned.includes(rewardById(p.avatar[key])?.id||p.avatar[key])))fail('Questo premio è ancora da conquistare',403);
+          if(Object.hasOwn(p,'name')&&p.name!==u.name){
+            const name=updateNickname(u,p.name);
+            if(c&&!u.demo)await c.query('UPDATE fanta.teams SET manager=$2 WHERE user_id=$1 AND manager IS DISTINCT FROM $2',[u.id,name]);
+          }
           u.avatar = normalizeAvatar(p.avatar,owned);
-          return { data: { ok: true, avatar: u.avatar } };
+          return { data: { ok: true, avatar: u.avatar, name:u.name } };
         }
         if (route === "profile") {
-          const name = String(p.name || "").trim();
-          if (!name || name.length > 60) fail("Soprannome non valido");
-          if(u.name!==name)delete u.nicknameSuggested;
-          u.name = name;
+          const name=updateNickname(u,p.name);
+          if(c&&!u.demo)await c.query('UPDATE fanta.teams SET manager=$2 WHERE user_id=$1 AND manager IS DISTINCT FROM $2',[u.id,name]);
           return { data: { ok: true } };
         }
         if (!u.demo && u.emailVerified !== true)
@@ -607,6 +618,7 @@ export function createApi({
             "Inserisci e conferma la tua email dal profilo per continuare",
             403,
           );
+        if(accessMutation)return leagueAccessAction(c,s,u,route.slice('league-access-'.length),p);
         if (route === "create") {
           if(u.demo){const l=newLeague(s,u,p.name,true);return {data:{ok:true,league:l.id}};}
           return {data:await createLeaguePair(c,s,u,p,{season:Number(env.FANTA_SEASON||2026)})};
@@ -616,20 +628,7 @@ export function createApi({
             (x) => x.code === String(p.code).trim().toUpperCase(),
           );
           if (!l || l.demo) fail("Codice lega non valido");
-          if (l.removedMembers?.some((m) => m.uid === u.id))
-            fail(
-              "Il presidente deve riattivare la tua partecipazione alla lega",
-              403,
-            );
-          const team = c ? await joinLinkedTeam(c,l,u) : undefined;
-          if (!l.members.some((x) => x.uid === u.id))
-            l.members.push({
-              uid: u.id,
-              initial: l.rules.initial,
-              credits: l.rules.initial,
-              points: 0,
-              joinedAt: new Date().toISOString(),
-            });
+          const team=await addLeagueMember(c,s,l,u);
           return { data: { ok: true,league:l.id,...(team?{team}: {}) } };
         }
         const l = s.leagues.find(
@@ -666,6 +665,7 @@ export function createApi({
         }
         return { data: { ok: true } };
       });
+      if(out.accessNotice){try{await dispatchFanta('league-access-notify:'+out.accessNotice,env);}catch{/* The worker retries the queued notification. */}}
       if(route==='create'&&out.data?.jobId){try{await dispatchFanta('random:'+out.data.jobId,env);}catch{out.data.dispatchPending=true;}}
       if (out.mailId) {
         try {

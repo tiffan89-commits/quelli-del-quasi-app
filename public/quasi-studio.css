@@ -13,3 +13,6 @@ html.studio-active,html.studio-active body{overflow:hidden!important;overscroll-
 
 /* The full-body Quasi needs space above captions in small cards. */
 .dashboard-character .quasi-scene-person{bottom:24%}
+
+.studio-nickname{border:0;background:transparent;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:0 4px}
+.quasi-studio .quasi-scene-caption input{width:min(100%,230px);min-width:0;margin:auto;padding:4px 8px;text-align:center;color:var(--white);background:var(--bg,#0d1916);border:1px solid var(--lime);border-radius:6px;font:inherit}

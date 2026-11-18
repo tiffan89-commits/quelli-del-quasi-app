@@ -9,6 +9,8 @@
 // - gli ultimi 3 secondi hanno durata reale, identica per tutti;
 // - si può passare: chi passa non può più rientrare su quel giocatore; passo automatico se il ruolo è già
 //   completo o se i crediti non bastano; se passano tutti tranne chi è in testa, il giocatore è suo subito.
+import {AUCTION_TYPES,LAMPO,lampoDuration} from '../auction-formats.mjs';
+export {AUCTION_TYPES};
 import { TEAMS, MY_TEAM, team } from './squadre-finte.mjs';
 import { rosterOf, seasonOf } from './dati-finti-giornata.mjs';
 import {demoMarketPlayers} from './demo-football.mjs';
@@ -27,7 +29,6 @@ export const realMs = (s, r = AUCTION_RULES) => (s - r.finalSeconds + r.finalStr
 const PREBOUGHT = { P: 1, D: 3, C: 3, A: 2 }; // l'asta è già a metà: ogni squadra ha 9 giocatori
 const SLOTS = Object.values(AUCTION_RULES.roster).reduce((a, b) => a + b, 0);
 
-export const AUCTION_TYPES = { iniziale: 'Asta iniziale', riparazione: 'Asta di riparazione', lampo: 'Asta lampo' };
 export function createDemoAuctionEngine({fullRosters=false}={}){
 let A=null;const rooms=new Map();
 function select(id,now=Date.now()){A=rooms.get(id)||null;if(!A){init(now);rooms.set(id,A);}}
@@ -109,7 +110,7 @@ function openLot(caller, playerId, amount, now) {
   const p = A.players.find(x => x.id === playerId);
   // Quanto vuole spendere ogni squadra finta per questo giocatore (metà circa non è interessata).
   const wills = Object.fromEntries(A.order.filter(t => t !== MY_TEAM).map(t => [t, rand() < 0.5 ? 0 : Math.round(p.value * (0.7 + rand() * 0.7))]));
-  A.lot = { id: 'lot-' + A.version, playerId, bid: amount, leader: caller, endsAt: now + realMs(AUCTION_RULES.openSeconds), history: caller?[{ team: caller, amount, at: now, call: true }]:[], wills, passed: {} };
+  A.lot = { id: 'lot-' + A.version, playerId, bid: amount, leader: caller, endsAt: now + (A.type==='lampo'?lampoDuration(LAMPO.open):realMs(AUCTION_RULES.openSeconds)), timerSeconds:A.type==='lampo'?LAMPO.open:AUCTION_RULES.openSeconds, history: caller?[{ team: caller, amount, at: now, call: true }]:[], wills, passed: {} };
   A.callSince = null; A.skipped = null;
   changed();
   checkAllPassed(now);
@@ -117,7 +118,12 @@ function openLot(caller, playerId, amount, now) {
 
 function bid(t, amount, now) {
   const { lot } = A;
-  lot.bid = amount; lot.leader = t; lot.endsAt = now + realMs(AUCTION_RULES.raiseSeconds); lot.closing = false;
+  lot.bid=amount;lot.leader=t;lot.closing=false;
+  const lampo=A.type==='lampo';
+  if(!lampo||lot.endsAt-now<lampoDuration(LAMPO.raise)){
+   lot.timerSeconds=lampo?LAMPO.raise:AUCTION_RULES.raiseSeconds;
+   lot.endsAt=now+(lampo?lampoDuration(lot.timerSeconds):realMs(lot.timerSeconds));
+  }
   lot.history.unshift({ team: t, amount, at: now });
   changed();
   checkAllPassed(now);
@@ -194,7 +200,7 @@ function auctionFor(leagueId, now = Date.now()) {
   const caller = A.order[A.callerIdx], finished = A.order.every(t => slotsLeft(t) === 0), L = A.lot;
   const lot = L && {
     id: L.id, player: playerView(A.players.find(p => p.id === L.playerId)), bid: L.bid, leader: L.leader,
-    endsAt: new Date(L.endsAt).toISOString(), timerSeconds: L.history.length > 1 && L.history.some(h => !h.call && !h.pass) ? AUCTION_RULES.raiseSeconds : AUCTION_RULES.openSeconds,
+    endsAt: new Date(L.endsAt).toISOString(), timerSeconds: L.timerSeconds||AUCTION_RULES.openSeconds,
     closing: !!L.closing,
     passed: Object.keys(L.passed),
     autoPassed: Object.fromEntries(A.order.map(t => [t, t === L.leader ? null : autoPassReason(t, L)]).filter(([, r]) => r)),
@@ -338,6 +344,8 @@ function scheduleFake(leagueId, { type, mode, startsAt, config, computerTeams },
 }
 
 function startRoom(now){
+  if(A.type==='lampo'){A.mode='live';A.config={...A.config,nomination:'random',playerOrder:'roles',teamOrder:null};}
+  if(A.type==='iniziale'&&A.config)A.config={...A.config,nomination:'personal',playerOrder:'roles'};
   if(A.config?.teamOrder)A.order=[...A.config.teamOrder];
   A.budget=A.config?.budget??A.budget;
   const lobby=A.mode==='live'&&!!A.config&&!A.releasePhase;

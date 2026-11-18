@@ -223,5 +223,57 @@
 }
 
 /* Shared creation flow: onboarding and the league switcher. */
-.league-create-intro{padding:5px 0 16px}.league-create-intro h3{font-size:clamp(21px,4vw,28px);line-height:1.15;margin:12px 0 8px}.league-create-intro p,.league-create-note{color:var(--muted);font-size:13px;line-height:1.6}.league-create-badge{display:inline-block;background:var(--lime);color:#14231e;padding:5px 9px;border-radius:6px;font-size:10px;font-weight:900;letter-spacing:.09em}.league-create-grid{display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:14px}.league-roster-choice{border:0;padding:0;margin:8px 0 18px;display:grid;gap:10px}.league-roster-choice legend{font-size:13px;font-weight:800;margin-bottom:12px}.league-roster-choice label{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--border,#405247);border-radius:12px;padding:15px;cursor:pointer}.league-roster-choice label:has(input:checked){border-color:var(--lime);background:color-mix(in srgb,var(--lime) 9%,transparent)}.league-roster-choice input{width:19px;height:19px;flex:none;margin:3px 0;accent-color:var(--lime)}.league-roster-choice span{display:grid;gap:5px}.league-roster-choice b{font-size:15px}.league-roster-choice small{color:var(--muted);font-size:12px;line-height:1.55}.league-create-note{margin:8px 0 18px}.v2-sheet-form:has(.league-create-intro){padding-top:18px}.v2-sheet-form:has(.league-create-intro)>button,.league-create-card>button{width:100%}.league-create-card{min-width:0}.league-create-onboarding{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,1fr);gap:20px;margin-top:24px;align-items:start}@media(max-width:680px){.league-create-onboarding{grid-template-columns:1fr}.league-create-grid{grid-template-columns:1fr}.league-roster-choice label{padding:13px}.v2-sheet:has(.league-create-intro){max-height:88dvh;overflow:auto;padding-bottom:calc(24px + env(safe-area-inset-bottom))}}
+.league-onboarding-top { justify-content: flex-end; }
+.league-onboarding { max-width: 520px; margin: 12px auto; }
+body:has(.league-onboarding) #pwa-install-card { display: none !important; }
+.league-onboarding-card.card { display: grid; gap: 12px; min-height: 0; margin: 0; padding: 16px; }
+.league-onboarding-card[hidden] { display: none; }
+.league-onboarding-option { display: grid; gap: 6px; }
+.league-onboarding-option + .league-onboarding-option { padding-top: 12px; border-top: 1px solid var(--line); }
+.league-onboarding-option p, .league-onboarding .notice { margin: 0; }
+.league-wizard-quasi { margin-bottom: 10px; }
+.league-wizard-quasi .dash-scene { width: 100%; height: clamp(130px, 23vh, 200px); min-height: 0; }
+.league-wizard-back { justify-self: start; min-height: 36px; padding: 2px 0; }
+.league-form-title { font-size: clamp(21px, 4vw, 28px); line-height: 1.15; margin: 0; }
+.league-create-grid { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 10px; }
+.league-onboarding-card .field, .v2-sheet-form .field { margin: 0; }
+.league-create-grid > .field, .league-create-grid > .field input { min-width: 0; width: 100%; }
+.league-roster-choice { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.league-roster-choice legend { font-size: 13px; font-weight: 800; margin-bottom: 6px; }
+.league-roster-choice label { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+.league-roster-choice label:has(input:checked) { border-color: var(--lime); background: color-mix(in srgb, var(--lime) 9%, transparent); }
+.league-roster-choice input { width: 18px; height: 18px; flex: none; margin: 0; accent-color: var(--lime); }
+.league-roster-choice span { display: grid; gap: 2px; }
+.league-roster-choice b { font-size: 14px; }
+.league-roster-choice small { color: var(--muted); font-size: 12px; }
+.v2-sheet-form:has(.league-form-title):not([hidden]) { display: grid; gap: 10px; }
+.v2-sheet-form:has(.league-form-title) > button { width: 100%; }
+.v2-sheet:has(.league-form-title) { max-height: 88dvh; overflow: auto; }
+[data-create-error]:empty { display: none; }
+[data-league-directory] { display: grid; gap: 10px; min-width: 0; }
+[data-league-directory] :is(h3,h4,p,ul) { margin: 0; }
+.league-directory-list { padding: 0; list-style: none; display: grid; gap: 6px; }
+.league-directory-list button { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; text-align: left; gap: 2px 8px; min-height: 46px; }
+.league-directory-list strong { overflow-wrap: anywhere; }
+.league-directory-list small { grid-row: 2; color: var(--muted); }
+.league-directory-list button > span { grid-column: 2; grid-row: 1 / 3; }
+.league-directory-members { padding: 0; list-style: none; }
+.league-directory-members li { padding: 7px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.league-access-sheet { position: fixed; inset: auto 0 0; margin: 0 auto; width: min(100%, 540px); max-width: 100%; max-height: 85dvh; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); border: 1px solid var(--line); border-radius: 18px 18px 0 0; overflow-y: auto; background: var(--panel,#14231e); color: var(--white,#f6f3e7); }
+.league-access-sheet::backdrop { background: #050c0bd0; }
+.league-access-sheet h2 { margin: 0 0 12px; }
+.league-access-sheet p { margin: 9px 0; }
+.league-access-sheet p:empty { display: none; }
+.league-access-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.league-access-actions[hidden] { display: none; }
+.league-access-actions button { flex: 1 1 auto; }
+.league-access-player { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.league-access-player > div { display: grid; gap: 3px; overflow-wrap: anywhere; }
+.league-access-player > div span { color: var(--muted); }
+.league-access-portrait { flex: 0 0 66px; padding: 2px; border-radius: 8px; background: color-mix(in srgb, var(--lime) 14%, var(--panel)); }
+.league-access-portrait svg { display: block; width: 100%; height: 80px; }
+.league-access-invite .field { margin: 0 0 12px; }
+@media (max-width: 385px) {
+ .league-create-grid { grid-template-columns: 1fr; }
+}
 .league-delete-action:not(:disabled){color:#ffb0a8;border-color:#ff817a}

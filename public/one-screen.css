@@ -13,6 +13,7 @@ html.os-on body #app>main.os-split [data-os-content]{
 html.os-on body #app>main.os-split{height:auto;min-height:0;overflow:visible;margin-bottom:0;padding:6px 0 0!important}
 html.os-on body #app>main.os-split [data-os-content]{width:100%;max-width:100%;padding-top:2px!important}
 html.os-on body #app>main.os-split [data-os-header]{margin-inline:14px}
+html.os-on body #app>main.os-root:not(.os-split)[data-os-flow]{columns:auto;overflow-y:auto}
 html.os-on body #app>main.os-split [data-os-content][data-os-flow]{columns:auto}
 html.os-nocols.os-on body #app .os-track{columns:auto;overflow-y:auto}
 html.os-on body #app .os-track::-webkit-scrollbar{display:none}

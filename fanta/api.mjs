@@ -7,11 +7,13 @@ import {queueRandom,randomStatus,claimRandom,setSlips,ensurePilotBars} from './r
 import {dispatchFanta} from './jobs.mjs';
 import {pilotTeams,claimPilot} from './pilot.mjs';
 import {rosterAction} from './roster-market.mjs';
+import {tradeAction,tradeView} from './trades.mjs';
 import {saveCompetitionSummary} from './summaries.mjs';
 import {sqlFantaStore} from './store.mjs';
 import {fail,validateLineup} from './rules.mjs';
 import {currentRound,homeView,teamView,roundView,matchupView,leagueView} from './views.mjs';
 import {auctionAction,auctionView,auctionTickDue} from './auction.mjs';
+import {LAMPO} from '../public/src/auction-formats.mjs';
 import {saveTeamIdentity} from './team-logo.mjs';
 import {competitionAction} from './competitions.mjs';
 import {teamChoices} from './team-choices.mjs';
@@ -20,6 +22,7 @@ export const betaUser=(u,env=process.env)=>!!u&&u.verified&&!u.demo&&!u.admin_on
 const betaLeagues=env=>String(env.FANTA_BETA_LEAGUES||'fanta-lucas-a').split(',').map(x=>x.trim());
 export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.now,presenceCache=databaseReadCache()}={}){
  return async request=>{
+  const receivedAt=now();
   const reply=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
   try{
    const url=new URL(request.url),route=url.pathname.replace(/^\/(?:\.netlify\/functions\/)?fanta-api\/?/,'');
@@ -57,12 +60,19 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    }
    const isAuction=route==='auction'||route.startsWith('auction/'),kind=route==='auction'?'read':route.slice('auction/'.length);
    const isWrite=request.method==='POST';
+   if(route==='trades/status'&&!isWrite)return reply(await store.tradeStatus(id,u.id));
+   const isTrade=route==='trades'||route.startsWith('trades/');
    if(route==='lineup'&&isWrite&&store.saveLineup)return reply(await store.saveLineup(u.id,id,p,{competition:p.competition,now}));
    // Most ticks only read. A running timer is not a reason to reload the full
    // catalog under a write lock every second for every spectator.
    if(route==='auction/tick'&&isWrite){const view=await store.league(u.id,id,s=>auctionTickDue(s.auction,now())?null:auctionView(s,u.id,now()),{competition:p.competition});if(view)return reply(view);}
    let auctionNotice=null;
    const result=await store.league(u.id,id,async(s,c)=>{
+    if(isTrade){
+     if(route==='trades'&&!isWrite)return tradeView(c,s,u.id);
+     if(isWrite)return tradeAction(c,s,u.id,route.slice('trades/'.length),p,{persistRoster:store.persistRoster,now:now()});
+     fail('Operazione non disponibile',404);
+    }
     if(s.league.kind==='pilot'&&(route.startsWith('competition/')||route==='league/configure'||route==='team/link'))fail('Nella lega pilota non sono disponibili modifiche della competizione',403);
     if(s.league.kind==='random'&&isWrite&&(route.startsWith('roster/')||route==='league/configure'||route==='team/link'))fail('La Lega random cambia le rose soltanto tramite aste di riparazione',403);
     if(route==='roster/players'&&!isWrite){if(s.league.adminUid!==u.id)fail('Serve il presidente',403);return s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id)));}
@@ -86,7 +96,8 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
      if(kind==='assigned'){if(s.league.adminUid!==u.id)fail('Solo il presidente può gestire gli svincoli',403);const q=(url.searchParams.get('q')||'').toLocaleLowerCase('it');return s.teams.flatMap(t=>t.roster.map(p=>({...p,team:{id:t.id,name:t.name}}))).filter(p=>[p.name,p.club,p.team.name].join(' ').toLocaleLowerCase('it').includes(q));}
      if(kind==='players')return s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id))).sort((a,b)=>(b.value||1)-(a.value||1));
      if(!isWrite)return auctionView(s,u.id,now());
-     const next=auctionAction(s,kind==='tick'?'read':kind,p,u.id,{admin:s.league.adminUid===u.id,now:now()});
+     if(s.rules.tradesOpen===true&&['schedule','start','start-now'].includes(kind))fail('Chiudi gli scambi prima di aprire un’asta.',409);
+     const next=auctionAction(s,kind==='tick'?'read':kind,p,u.id,{admin:s.league.adminUid===u.id,now:now(),receivedAt,latencyGrace:LAMPO.httpGrace});
      if(kind==='schedule'&&next.auction.version!==s.auction.version){
       next.auction.scheduleNotificationKey=s.league.id+':schedule:'+next.auction.version+':'+next.auction.startsAt;
       auctionNotice=await queueAuctionNotice(c,next,next.auction,{now:now()});
@@ -104,7 +115,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(route==='home')return homeView(s,u.id,now());if(route==='team'){const r=lineupRound(s,now());s.probables=await readPlayProbabilities(c,r?.seriea_round,s.league.season);const target=s.teams.find(t=>url.searchParams.has('team')?t.id===url.searchParams.get('team'):t.userId===u.id);s.presenceMinutes=await readPresenceMinutes(c,(target?.roster||[]).filter(p=>probabilityFor(p,s.probables,r?.seriea_round)?.source!=='official'&&!['injured','suspended'].includes(p.status?.type)),s.league.season,{cache:presenceCache,now:now()});return teamView(s,u.id,now(),url.searchParams.get('team'));}if(route==='league')return leagueView(s,u.id,now());
     const n=Number(url.searchParams.get('number')),r=s.rounds.find(r=>r.number===n)||(!url.searchParams.has('number')?currentRound(s):null);if(!r)fail('Giornata non trovata',404);
     if(route==='round')return roundView(s,r,u.id,now());if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}fail('Pagina non trovata',404);
-   },{write:isWrite,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players')||route==='roster/players',detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
+   },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players')||route==='roster/players',detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
    if(auctionNotice)try{await dispatchFanta('auction-notify:'+auctionNotice,env);}catch{/* Durable notifications remain queued if dispatch needs a retry. */}
    return reply(route==='home'?await withFinalVerification(result,{now:now()}):result);
   }catch(e){return reply({error:e.status?e.message:'Il Fanta non è temporaneamente disponibile. Riprova tra poco.'},e.status||503);}
