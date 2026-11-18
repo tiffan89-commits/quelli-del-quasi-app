@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.37.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.36.1...v0.37.0) (2026-11-18)
+
+
+### Features
+
+* aggiunge pagine lega dedicate e scambi programmabili ([17c8783](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/17c878335cab88447c19c981ed4110b8ce64ae14))
+
 ## [0.36.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.36.0...v0.36.1) (2026-11-18)
 
 
