@@ -235,5 +235,8 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  function chatUpdate({league,changed,recipients}){
   for(const {uid,...summary} of recipients)index.to('user:'+uid).emit('chat:update',{league,changed,...summary});
  }
- return {io,changed,chatUpdate,stats:()=>[...rooms.values()].map(r=>({league:r.league,version:r.state?.auction.version,devices:r.sockets.size,acknowledged:[...r.sockets].filter(s=>(!s.data.passive||s.data.inAuction)&&s.data.acked>=r.state?.auction.version).length})),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);await stopListening?.();await new Promise(resolve=>io.close(resolve));}};
+ function leagueUpdate({recipients,...event}){
+  if(recipients.length)index.to([...new Set(recipients)].map(uid=>'user:'+uid)).emit('league:update',event);
+ }
+ return {io,changed,chatUpdate,leagueUpdate,stats:()=>[...rooms.values()].map(r=>({league:r.league,version:r.state?.auction.version,devices:r.sockets.size,acknowledged:[...r.sockets].filter(s=>(!s.data.passive||s.data.inAuction)&&s.data.acked>=r.state?.auction.version).length})),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);await stopListening?.();await new Promise(resolve=>io.close(resolve));}};
 }

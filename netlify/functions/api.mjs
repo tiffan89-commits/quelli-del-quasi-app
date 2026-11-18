@@ -393,7 +393,7 @@ export function createApi({
         return reply(await read(s=>{
           const u=userFor(s,token);
           if(!u||!u.emailVerified||u.demo||u.adminOnly)fail('Accedi e conferma la tua email per continuare.',403);
-          return route==='league-directory'?leagueDirectory(s,u):leagueAccessInbox(s,u);
+          return route==='league-directory'?leagueDirectory(s,u,{query:(url.searchParams.get('q')||'').slice(0,80),offset:Number(url.searchParams.get('offset')||0)}):leagueAccessInbox(s,u);
         },{kind:route,tokenHash:sha(token||'')}));
       }
       if(req.method==='GET')return reply({error:'Rotta non disponibile'},404);
@@ -635,7 +635,7 @@ export function createApi({
           (x) => x.id === p.league && x.members.some((m) => m.uid === u.id),
         );
         if (!l) fail("Lega non accessibile", 403);
-        if(route==='league-delete')return {data:await deleteOwnedLeague(s,c,u,l,p.phrase)};
+        if(route==='league-delete')return {data:await deleteOwnedLeague(s,c,u,l,p.phrase),leagueUpdate:{league:l.id,change:'deleted',recipients:l.members.map(m=>m.uid)}};
         const r = s.rounds.find((x) => x.id === p.round && x.league === l.id);
         if (route === "slip") {if(r?.source==='fantacalcio'){
           if(!r.nativeFanta||l.fantaSlipsEnabled===false)fail('Questa schedina Fanta non è abilitata.',403);
@@ -665,6 +665,7 @@ export function createApi({
         }
         return { data: { ok: true } };
       });
+      if(out.leagueUpdate)context.leagueUpdate?.(out.leagueUpdate);
       if(out.accessNotice){try{await dispatchFanta('league-access-notify:'+out.accessNotice,env);}catch{/* The worker retries the queued notification. */}}
       if(route==='create'&&out.data?.jobId){try{await dispatchFanta('random:'+out.data.jobId,env);}catch{out.data.dispatchPending=true;}}
       if (out.mailId) {

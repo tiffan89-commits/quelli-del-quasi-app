@@ -10,14 +10,15 @@ import {extendCalendars} from './competitions.mjs';
 import {deliverFantaNotifications,queueFantaNotifications} from './notifications.mjs';
 export const fantaEnabled=(env=process.env)=>env.FANTA_ENABLED==='true'&&!!env.FANTA_BETA_USERS;
 export const jobTicket=(kind,env=process.env,now=Date.now())=>sealSession({kind,at:now},'fanta:native-job',env);
-export function validJobTicket(ticket,env=process.env,now=Date.now()){try{const x=openSession(ticket,'fanta:native-job',env);return (['live','daily','probe','ai','rebuild'].includes(x.kind)||/^random:[a-f0-9-]{36}$/.test(x.kind)||/^(?:auction|league-access)-notify:[a-f0-9]{64}$/.test(x.kind))&&x.at<=now+10000&&now-x.at<120000?x.kind:null;}catch{return null;}}
+export function validJobTicket(ticket,env=process.env,now=Date.now()){try{const x=openSession(ticket,'fanta:native-job',env);return (['live','daily','probe','ai','rebuild'].includes(x.kind)||/^random:[a-f0-9-]{36}$/.test(x.kind)||/^(?:auction|league-access|trade)-notify:[a-f0-9]{64}$/.test(x.kind))&&x.at<=now+10000&&now-x.at<120000?x.kind:null;}catch{return null;}}
 export async function dispatchFanta(kind,env=process.env,fetcher=fetch){const base=new URL(env.DEPLOY_PRIME_URL||env.URL);if(base.protocol!=='https:')throw Error('URL Fanta non valido');const response=await fetcher(new URL('/.netlify/functions/fanta-worker-background',base),{method:'POST',headers:{'X-Quasi-Fanta':jobTicket(kind,env)},signal:AbortSignal.timeout(8000),redirect:'error'});if(!response.ok)throw Error('Avvio del lavoro Fanta rinviato');}
 export async function runFantaJob(kind,{connect=connection,provider=fantaProvider(),env=process.env,now=Date.now,ai,sleep=ms=>new Promise(r=>setTimeout(r,ms)),...options}={}){
  if(!fantaEnabled(env)&&!kind.startsWith('league-access-notify:'))return {disabled:true};const lease=randomUUID(),key='job:'+kind,c=await connect();
  try{await c.query('BEGIN');await c.query('INSERT INTO fanta.jobs(id,data) VALUES($1,$2) ON CONFLICT DO NOTHING',[key,'{}']);const prior=(await c.query('SELECT lease_until FROM fanta.jobs WHERE id=$1 FOR UPDATE',[key])).rows[0];if(prior.lease_until&&Date.parse(prior.lease_until)>now()){await c.query('COMMIT');return {busy:true};}await c.query('UPDATE fanta.jobs SET lease_until=$2,data=$3 WHERE id=$1',[key,new Date(now()+12*60000).toISOString(),JSON.stringify({lease,status:'running'})]);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
  const report={kind,status:'complete',fixtures:0,players:0,official:0,needsReview:0};
  try{
-  if(kind.startsWith('auction-notify:')||kind.startsWith('league-access-notify:')){report.notifications=0;for(let i=0;i<8;i++){const sent=await deliverFantaNotifications({connect,env,now,...options});report.notifications+=sent;if(sent<5)break;}}
+  if(kind.startsWith('trade-notify:'))report.notifications=await deliverFantaNotifications({connect,env,now,...options,notificationId:kind.slice('trade-notify:'.length)});
+  else if(kind.startsWith('auction-notify:')||kind.startsWith('league-access-notify:')){report.notifications=0;for(let i=0;i<8;i++){const sent=await deliverFantaNotifications({connect,env,now,...options});report.notifications+=sent;if(sent<5)break;}}
   else if(kind==='rebuild'){report.rebuild=await rebuildVoteModel({connect,provider,env,now});}
   else if(kind==='daily'){report.catalog=await dailyCatalog({connect,provider,env,now});}
   else if(kind==='live'){

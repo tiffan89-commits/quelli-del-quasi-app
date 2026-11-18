@@ -6,5 +6,5 @@ export function barHomeInvite(league,user,esc){
  const link=league.nativeFantaLink;
  const cachedTeams=new Set((league.rounds||[]).filter(r=>link&&r.nativeFanta?.leagueId===link.leagueId).flatMap(r=>(r.matches||[]).flatMap(m=>[m.homeId||m.home,m.awayId||m.away])).filter(Boolean));
  const capacity=leagueInviteCapacity(league,{maxMembers:league.maxMembers||cachedTeams.size});
- return capacity.full?'':compactLeagueInvite(league,esc,{...capacity,mode:'bar'});
+ return capacity.full?'':compactLeagueInvite(league,esc,capacity);
 }

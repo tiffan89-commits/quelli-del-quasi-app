@@ -8,8 +8,8 @@ test('bots do not occupy human invitation places; every member sees a working li
   const own=await store.league('u1','fanta-lucas-a',s=>leagueView(s,'u1'));
   assert.equal(own.league.humanMembers,1);assert.equal(own.league.availableTeams,1);
   const bars=[{name:'Bar sintetico',code:'CODE-TEST',nativeFantaLink:{leagueId:'fanta-lucas-a'}}],invite=linkedInvite(own.league,bars);
-  assert.equal(invite.url,'https://quellidelquasi.com/invito/CODE-TEST');assert.match(renderLeagueInvite(own.league,invite),/Invita nella lega/);assert.match(renderLeagueInvite(own.league,invite),/wa\.me/);
-  assert.equal(linkedInvite({...own.league,role:'member'},bars).code,'CODE-TEST');assert.match(renderLeagueInvite({...own.league,role:'member'},invite),/Invita nella lega/);
+  assert.equal(invite.url,'https://quellidelquasi.com/invito/CODE-TEST');assert.match(renderLeagueInvite(own.league,invite),/Invita con WhatsApp/);assert.match(renderLeagueInvite(own.league,invite),/wa\.me/);
+  assert.equal(linkedInvite({...own.league,role:'member'},bars).code,'CODE-TEST');assert.match(renderLeagueInvite({...own.league,role:'member'},invite),/Invita con WhatsApp/);
   assert.equal(renderLeagueInvite(own.league,{...invite,members:[{uid:'u1'},{uid:'u2'}]}),'');
   await f.db.query("UPDATE fanta.teams SET user_id='u2' WHERE id='t2'");const full=await store.league('u1','fanta-lucas-a',s=>leagueView(s,'u1'));assert.equal(full.league.availableTeams,0);assert.equal(linkedInvite(full.league,bars).code,'CODE-TEST');assert.equal(renderLeagueInvite(full.league,invite),'');assert.match(renderLeagueInvite(full.league,invite,{always:true}),/La lega è al completo/);assert.equal(linkedInvite(own.league,[]),null);
  }finally{await f.close();}

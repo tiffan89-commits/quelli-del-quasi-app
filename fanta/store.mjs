@@ -57,7 +57,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
   logo:(uid,league,team)=>use(async c=>(await c.query('SELECT a.data,a.mime,a.digest FROM fanta.team_logos a JOIN fanta.teams t ON t.id=a.team_id WHERE t.id=$3 AND t.league_id=$2 AND EXISTS(SELECT 1 FROM fanta.teams own WHERE own.league_id=$2 AND own.user_id=$1)',[uid,league,team])).rows[0]||null),
   leagues:uid=>use(async c=>(await c.query(`SELECT l.*,t.id AS team_id,t.name AS team_name FROM fanta.leagues l JOIN fanta.teams t ON t.league_id=l.id AND t.user_id=$1 WHERE l.rules->>'disabledAt' IS NULL ORDER BY l.id`,[uid])).rows.map(x=>({id:x.id,name:x.name,season:x.season+'/'+String(x.season+1).slice(-2),role:x.admin_uid===uid?'admin':'member',accent:x.accent,teamName:x.team_name,teamId:x.team_id,kind:x.kind,sourceKey:x.source_key,slipsEnabled:x.slips_enabled!==false}))),
   settings:(uid,next)=>use(async c=>{if(next)await c.query('INSERT INTO fanta.notification_settings VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET data=EXCLUDED.data',[uid,JSON.stringify(next)]);return (await c.query('SELECT data FROM fanta.notification_settings WHERE user_id=$1',[uid])).rows[0]?.data||{notify:{lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true}};}),
-  tradeStatus:(id,uid)=>use(c=>readTradeStatus(c,id,uid)),
+  tradeStatus:(id,uid,now)=>use(c=>readTradeStatus(c,id,uid,now)),
   async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,teamIdentity=false,calculation=false}={}){return use(async c=>{
    if(!write&&!auction&&!market){
     const load=async()=>(await c.query(READ_LEAGUE_SQL,[id,uid,number?Number(number):null,competition||null,catalog,detailedVotes])).rows[0];let l;

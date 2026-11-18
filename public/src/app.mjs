@@ -13,8 +13,9 @@ import {saveOnce,identifySlipSave} from './save-guard.mjs';
 import {readAppRoute,writeAppRoute} from './routes.mjs';
 import {placeAppFooter,restoreAppFooter} from './app-footer.mjs';
 import {startOneScreen} from './one-screen.mjs';
-import {leagueCreationPayload} from './league-create-form.mjs';
-import {bindLeagueOnboarding,renderLeagueOnboarding} from './league-onboarding.mjs';
+import {bindLeagueCreation} from './league-create-form.mjs';
+import {isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding} from './league-onboarding.mjs';
+import {bindLeagueDirectory} from './league-directory.mjs';
 import {displayCache,clearDisplayCaches} from './display-cache.mjs';
 import {randomLeagueControls,bindRandomLeagues} from './random-leagues.mjs';
 import {sportsWindowActive} from './sports-window.mjs';
@@ -22,7 +23,7 @@ import {mountPublic} from './pubblico/app.mjs';
 import {rememberEntry,entryIntent,clearEntry} from './acquisition-intent.mjs';
 import {createPublicApi} from './pubblico/api.mjs';
 import {retainAppHeader} from './mode-switch.mjs';
-import {barModeSwitch,enterFanta,leaveFanta,preferredFanta,clearFantaSessions} from './fanta-mode.mjs';
+import {barModeSwitch,enterFanta,leaveFanta,preferredFanta,clearFantaSessions,refreshFantaMembership} from './fanta-mode.mjs';
 import {createLiveChannel,requestJson,mergeLiveSnapshot,patchRegion,patchDashboard} from "./live-channel.mjs";
 import {withButtonFeedback} from './action-feedback.mjs';
 import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
@@ -53,7 +54,7 @@ import {achievementBoard} from './achievement-board.mjs';
 
 import { LEAGUE_COLORS, LEAGUE_EMBLEMS, applyLeagueTheme } from "./league-theme.mjs";
 import {hubHead,hubTile} from './league-hub.mjs';
-import {shareLeagueInvite,whatsappInvite} from './league-invite.mjs';
+import {whatsappInvite} from './league-invite.mjs';
 import {createFantaApi} from './fanta/api.mjs';
 import {renderFantaNotificationSettings} from './fanta/io.mjs';
 import {bindAppInvites} from './app-invite.mjs';
@@ -344,6 +345,42 @@ function me() {
     capital: wallet.credits + committed,
   };
 }
+const barRoutePages={oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'};
+const barPageFor=route=>isLeagueEntryPage(route?.page)?route.page:barRoutePages[route?.page]||'lega';
+const deletedLeagues=new Set();
+let leagueRefreshQueued=false;
+function resetLeagueView(id=null){
+  closeLeagueChat();leaveFanta();clearFantaSessions();
+  if(state.user?.id)displayCache('fanta:'+state.user.id).clear();
+  leagueId=id;selectedRoundId=null;presidentGroup=null;page='lega';
+  writeAppRoute({mode:'bar',page:'oggi',league:id},{replace:true});
+}
+function reconcileLeagueSelection(){
+  if(!state.user)return;
+  const route=readAppRoute();
+  if(!state.leagues.length){
+    if(leagueId||preferredFanta()||route?.mode==='fanta'||route?.league)resetLeagueView();
+    if(!isLeagueEntryPage(page)&&!['profilo','impostazioni'].includes(page))page='lega';
+    try{localStorage.removeItem('quasi-active-league:'+state.user.id);localStorage.removeItem('qdq:fantaLeague');localStorage.setItem('qdq:mode','bar');}catch{}
+  }else if(leagueId&&!state.leagues.some(l=>l.id===leagueId)){
+    resetLeagueView(state.leagues[0].id);
+  }
+}
+function removeDeletedLeague(id){
+  deletedLeagues.add(id);
+  const deleted=state.leagues.find(l=>l.id===id);
+  if(!deleted)return;
+  const active=L()?.id===id||deleted.nativeFantaLink?.leagueId&&deleted.nativeFantaLink.leagueId===readAppRoute()?.league;
+  state.leagues=state.leagues.filter(l=>l.id!==id);
+  if(active||!state.leagues.length)resetLeagueView(state.leagues[0]?.id);
+  reconcileLeagueSelection();hydrateDraft();
+  refreshFantaMembership(state.leagues,[]);
+  render();
+}
+function refreshLeagueMembers(){
+  if(refreshing){leagueRefreshQueued=true;return;}
+  void refresh();
+}
 async function refresh(reset = false) {
   if (refreshing) return false;
   refreshing = true;
@@ -354,13 +391,14 @@ async function refresh(reset = false) {
     const previousUser = state.user?.id,
       previousLeague = L()?.id,
       previousVerified = state.user?.emailVerified,
-      previousRound = R();
+      previousRound = R(),
+      previousLeagues=state.leagues;
     const wasDirty =
       previousRound &&
       slipSummary(previousRound, picks, stake, me()?.credits ?? Infinity).dirty;
     if (wasDirty && !reset) persistDraft();
     state = next;for(const league of state.leagues)for(const round of league.rounds||[])round.publicChoicesAvailable=!!round.closed&&Array.isArray(round.publicSlips);sportsFeedBlockedUntil=0;
-    if(state.user&&state.user.id!==previousUser){leagueOnboardingStep='';const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega':'lega';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
+    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?barPageFor(route):'lega';if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
     if(requestedSlip&&state.leagues.some(l=>l.id===requestedSlip)){
       leagueId=requestedSlip;const round=L().rounds.find(r=>r.id===requestedSlipRound);page='schedina';slipScope='mine';if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}
       requestedSlip=null;requestedSlipRound=null;const params=new URLSearchParams(location.search);params.delete('slip');params.delete('round');window.history.replaceState(null,'',location.pathname+(params.size?'?'+params:''));
@@ -379,6 +417,14 @@ async function refresh(reset = false) {
         );
         if (state.leagues.some((l) => l.id === saved)) leagueId = saved;
       } catch {}
+    state.leagues=state.leagues.filter(l=>!deletedLeagues.has(l.id));
+    const route=readAppRoute(),lostFanta=route?.mode==='fanta'&&previousLeagues.some(l=>l.nativeFantaLink?.leagueId===route.league&&!state.leagues.some(x=>x.id===l.id));
+    if(lostFanta)resetLeagueView(state.leagues[0]?.id);
+    reconcileLeagueSelection();
+    const leagueKeys=new Map(previousLeagues.map(l=>[l.id,l.members.map(m=>m.uid).join()]));
+    const changedMembers=state.leagues.filter(l=>l.members.map(m=>m.uid).join()!==leagueKeys.get(l.id));
+    const leagueListChanged=state.leagues.length!==previousLeagues.length||state.leagues.some(l=>!leagueKeys.has(l.id));
+    if(changedMembers.length||leagueListChanged)refreshFantaMembership(state.leagues,changedMembers.map(l=>l.nativeFantaLink?.leagueId).filter(Boolean),leagueListChanged);
     if (state.user && state.user.id !== previousUser && page !== "schedina") sourceScope = 'seriea';
     const openRequestedChat=!!requestedChat&&!!state.user?.emailVerified&&openChatNotification(requestedChat);
     if(requestedChat&&state.user?.emailVerified)clearRequestedChat();
@@ -411,6 +457,9 @@ async function refresh(reset = false) {
       !previousUser ||
       state.user?.id !== previousUser ||
       state.user?.emailVerified !== previousVerified ||
+      lostFanta ||
+      (leagueListChanged&&!preferredFanta()&&!editing&&!isLeagueEntryPage(page)) ||
+      (changedMembers.some(l=>l.id===L()?.id)&&!preferredFanta()&&!editing&&['admin','barleague','lega','quasi','classifiche'].includes(page)) ||
       (!previousLeague && !!L()) ||
       (previousLeague && !state.leagues.some((l) => l.id === previousLeague))
     )
@@ -436,6 +485,7 @@ async function refresh(reset = false) {
     return false;
   } finally {
     refreshing = false;
+    if(leagueRefreshQueued){leagueRefreshQueued=false;refreshLeagueMembers();}
     if(state.user){await loadAppStyles();const header=document.getElementById('app-header');if(header)document.documentElement.style.setProperty('--ux-header-height',header.offsetHeight+'px');}
     await initialViewReady;
     window.finishEntrySplash?.();
@@ -627,13 +677,13 @@ function slipsPage(l, r, m) {
 function fantasyEmpty(l) {
   return '<section class="card empty fantasy-empty"><div class="league-emblem">F</div><div class="eyebrow">LE SFIDE DEI TUOI AMICI</div><h1>Qui si aspettano le sfide.</h1><p class="muted">Questa lega non ha ancora una schedina Fanta. Puoi scegliere un’altra lega dal selettore in alto.</p></section>';
 }
-let leagueOnboardingStep='',leagueAccessModule,leaguePrompts;
+let leagueAccessModule,leaguePrompts;
 const loadLeagueAccess=()=>leagueAccessModule??=import('./league-access-ui.mjs');
 const leagueAccessUid=()=>state.user?.emailVerified&&!state.user.demo&&!state.user.adminOnly?state.user.id:null;
 function openLeagueAccessSupport(){openBarTarget({page:'impostazioni',group:'assistenza'});}
 async function enterAccessLeague(id){
  if(state.user?.id)displayCache('fanta:'+state.user.id).clear();
- leaveFanta();closeLeagueChat();page='lega';leagueId=id;selectedRoundId=null;leagueOnboardingStep='';
+ leaveFanta();closeLeagueChat();page='lega';leagueId=id;selectedRoundId=null;
  try{localStorage.setItem('quasi-active-league:'+state.user.id,id);}catch{}
  writeAppRoute({mode:'bar',page:'oggi',league:id},{replace:true});await refresh(true);
 }
@@ -661,7 +711,7 @@ function render() {
     return;
   }
   if(state.adminOnly){location.replace('/admin.html');return;}
-  if(!L()&&preferredFanta())leaveFanta();
+  if(!L())reconcileLeagueSelection();
   loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();
   sourceScope='seriea';
   const l = L(),
@@ -669,8 +719,9 @@ function render() {
     m = me();
   if(page==='profilo'&&(state.user.emailVerified||state.user.demo)){page='impostazioni';presidentGroup='account';}
   const content =
-    !l && page!=='profilo' && page!=='impostazioni' && (state.user.emailVerified||!pendingInvite())
-      ? renderLeagueOnboarding({verified:state.user.emailVerified||state.user.demo,step:leagueOnboardingStep,user:state.user})
+    isLeagueEntryPage(page) ? renderLeagueEntry({page,verified:state.user.emailVerified||state.user.demo,league:l})
+      : !l && page!=='profilo' && page!=='impostazioni' && (state.user.emailVerified||!pendingInvite())
+      ? renderLeagueOnboarding({user:state.user})
       : (!state.user.emailVerified && !state.user.demo)
       ? profile()
       : page === "impostazioni"
@@ -698,7 +749,7 @@ function render() {
   const palette = LEAGUE_COLORS.map(([color]) => color);
   applyLeagueTheme(L());
   $("#app").innerHTML = shell(
-    '<main'+(!l?' data-os-flow':'')+'><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
+    '<main'+(!l||isLeagueEntryPage(page)?' data-os-flow':'')+'><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
       (l&&(page==='lega'||page==='quasi')?nicknameNotice(state.user):'')+content +
       '<p id="live-channel-status" class="live-channel-status tiny muted" role="status" aria-live="polite"></p></main>',
   );
@@ -710,8 +761,8 @@ function render() {
   placeAppFooter($('#app'));
   syncChatLauncher(l);
   bind(l, r);
-  const leagueWizard=$('[data-league-onboarding]');
-  if(leagueWizard)bindLeagueOnboarding(leagueWizard,{api,onStep:step=>{leagueOnboardingStep=step;},onJoined:enterAccessLeague,onSupport:openLeagueAccessSupport});
+  const directory=$('[data-league-directory]');
+  if(directory)void bindLeagueDirectory(directory,{api,onJoined:enterAccessLeague,onSupport:openLeagueAccessSupport})();
   bindPresidentPanel($('#app'));
   const panel=document.querySelector('.president-panel:has(.league-settings-back)');
   if(panel)bindSwipeBack(panel,()=>navigatePage('barleague'),'right',()=>!panel.querySelector('.os-drill'));
@@ -726,15 +777,13 @@ function render() {
       field.disabled=button.disabled=true;button.textContent='Eliminazione…';error.textContent='';
       try{await api('league-delete',{league:l.id,phrase});}
       catch(err){error.textContent=err.message;field.disabled=button.disabled=false;button.textContent='Elimina la lega';return;}
-      closeLeagueChat();clearFantaSessions();
-      state.leagues=state.leagues.filter(item=>item.id!==l.id);leagueId=state.leagues[0]?.id;selectedRoundId=null;presidentGroup=null;page='lega';hydrateDraft();
-      writeAppRoute({mode:'bar',page:'oggi',league:leagueId});render();notify('Lega eliminata.');
-      void refresh(true);
+      removeDeletedLeague(l.id);notify('Lega eliminata.');
+      refreshLeagueMembers();
     };
   }
   document.querySelectorAll('[data-president-group]').forEach(b=>b.addEventListener('click',()=>{presidentGroup=b.dataset.presidentGroup;}));
   document.querySelector('[data-president-copy-link]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/invito/'+encodeURIComponent(l.code));notify('Link copiato.');}catch{notify('Copia il codice della lega.');}});
-  document.querySelector('[data-president-activate]')?.addEventListener('click',()=>{document.getElementById('v2-open-leagues')?.click();document.querySelector('[data-existing-bar]')?.click();});
+  document.querySelector('[data-president-activate]')?.addEventListener('click',()=>openBarTarget({page:'activate-fanta'}));
   document.querySelectorAll('[data-president-section]').forEach(section=>section.addEventListener('toggle',()=>{if(!section.open&&presidentGroup===section.dataset.presidentSection)presidentGroup=null;}));
   bindNew(l, r);
   $("#edit-suggested-nickname")?.addEventListener("click",()=>{const section=$(".profile-account");if(section)section.open=true;const field=$("#profile-name input");field?.scrollIntoView({block:"center",behavior:"smooth"});field?.focus({preventScroll:true});});
@@ -1301,7 +1350,7 @@ function barLeagueInfo(l){
   hubTile('people','Partecipanti · '+l.members.length,'Chi è al bancone',{html:admin?leagueMembers(l,true):barMembers(l)})+
   hubTile('rules','Regolamento del Bar',rules,{action:'data-bar-page="regolamento"',arrow:true})+
   (admin&&!state.user.demo?hubTile('invite','Invita per nickname o email','Invito diretto',{action:`data-league-direct-invite="${esc(l.id)}"`}):'')+
-  (l.code?hubTile('invite','Invita nella tua lega','Condividi l’invito',{action:'data-share-league',whatsapp:whatsappInvite(l,esc,{iconOnly:true})}):'')+
+  (l.code?whatsappInvite(l,esc,{className:'lega-tile whatsapp-invite'}):'')+
   hubTile('chat','Chiacchiere da bar','Apri la chat della lega',{action:'data-league-chat aria-controls="league-chat-widget"'})+
   '</div>'+leagueActions()+'</div>';
 }
@@ -1310,7 +1359,8 @@ function leagueAdmin(l){
  if(!admin)return barLeagueInfo(l);
  const color=LEAGUE_COLORS.find(([v])=>v===l.branding?.accent)?.[1]||LEAGUE_COLORS[0][1];
 
- return presidentPanel({mode:'bar',title:'Pannello del presidente',back:'data-bar-page="barleague"',open:presidentGroup,tasks:admin?barPresidentTasks(l):[],groups:{
+ return presidentPanel({mode:'bar',title:'Pannello del presidente',back:'data-bar-page="barleague"',open:presidentGroup,tasks:[{group:'persone',action:'Partecipanti ›',button:true},...barPresidentTasks(l),...(l.code?[{whatsapp:whatsappInvite(l,esc)}]:[])],groups:{
+ persone:{summary:`${l.members.length} iscritti`,html:leagueMembers(l,true)},
  regole:{summary:'Punti a quota · '+l.rules.initial+' cr iniziali',html:admin?barRulesForm(l):'<button type="button" class="secondary" data-bar-page="regolamento">Leggi il regolamento</button>'},
  ...(admin?{
  identita:{summary:'Simbolo '+(l.branding?.emblem||'Q')+' · '+color,html:brandingForm(l)}
@@ -1382,7 +1432,7 @@ function serieACalendarPage() {
   )}`;
 }
 function navigatePage(next) {
-  if(next===page)return;
+  if(next===page){if(next==='admin')render();return;}
   if(next!=='chat'&&chatOpen)closeLeagueChat();
   if(next==='schedina'){persistDraft();selectedRoundId=null;slipScope='mine';hydrateDraft();}
   sourceScope='seriea';dashboardSource='seriea';
@@ -1417,9 +1467,13 @@ function openBarTarget(target) {
     competitionScope=round?.competitionKey||null;selectedRoundId=round?.id||null;
     slipScope='mine';hydrateDraft();
   }
-  if(!L()&&['create-league','join-league'].includes(target?.page))leagueOnboardingStep=target.page==='join-league'?'join':'create';
-  if(target?.page){page=['create-league','join-league'].includes(target.page)?'lega':target.page==='invita'?'impostazioni':target.page;writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page,league:L()?.id});}
-  render();window.scrollTo(0,0);liveChannel.wake();if(['create-league','join-league'].includes(target?.page)){document.getElementById('v2-open-leagues')?.click();document.querySelector('[data-v2-action="'+(target.page==='join-league'?'join':'create')+'"]')?.click();}
+  if(isLeagueEntryPage(target?.page)){
+    persistDraft();closeLeagueChat();
+    const sheet=$('#v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}
+  }
+  if(target?.page){page=target.page==='invita'?'impostazioni':target.page;writeAppRoute({mode:'bar',page:page==='lega'?'oggi':page==='barleague'?'lega':page,league:L()?.id});}
+  render();window.scrollTo(0,0);liveChannel.wake();
+  if(isLeagueEntryPage(page))document.querySelector('.league-entry h1')?.focus({preventScroll:true});
   if(target?.page==='invita')document.querySelector('[data-app-invite]')?.scrollIntoView({block:'start'});
   if(target?.match)[...document.querySelectorAll('[data-match-card]')].find(row=>row.dataset.matchCard===target.match)?.scrollIntoView({block:'center'});
 }
@@ -1520,7 +1574,6 @@ function bindBarFantaAlerts(){
 }
 function bind(l, r) {
   bindRandomLeagues(document);
-  for(const button of document.querySelectorAll('[data-share-league]'))button.onclick=()=>void shareLeagueInvite(l,{notify});
   const chatButton=$('[data-league-chat]');if(chatButton)chatButton.onclick=()=>openLeagueChat(chatButton);
   if($('#open-native-slips'))$('#open-native-slips').onclick=()=>openNativeSlips();
   const fantaSelect=document.querySelector('[data-fanta-bar-select]');if(fantaSelect)fantaSelect.onchange=e=>{persistDraft();leagueId=e.target.value;sourceScope='fantacalcio';competitionScope=null;selectedRoundId=null;hydrateDraft();render();};
@@ -1542,9 +1595,9 @@ function bind(l, r) {
   bindTabBar((t) => v2go(routeForTab(t,L(),state.leagues)));
   if (state.user) bindLeagueSwitcher({ leagues: state.leagues, activeId: L()?.id, uid: state.user.id, esc,
     onSelect: (id) => { try { persistDraft(); } catch {} leagueId = id; sourceScope = defaultSource(L()); selectedRoundId = null; competitionScope = null; hydrateDraft(); try { localStorage.setItem("quasi-active-league:" + state.user.id, id); } catch {} render(); window.scrollTo(0, 0); liveChannel.wake(); },
-    onSubmit: submitLeague,api,onSupport:openLeagueAccessSupport });
+  });
   bindDashboard();
-  if(!l){const quasi=$('[data-open-quasi-studio]');if(quasi)quasi.onclick=()=>void openStudio();}
+  if(!l)$('[data-open-quasi-studio]')?.addEventListener('click',()=>void openStudio());
   updateObjectives();
   if (page === "quasi" && l) bindRoster(l, openStudio);
   if (page === "fantaquasi") bindFantaQuasi({ api, user: state.user, notify, onDone: () => { render(); if(page==='fantaquasi')document.querySelector('.fq-signup')?.scrollIntoView({block:'center',behavior:'smooth'}); } });
@@ -1653,17 +1706,7 @@ function bind(l, r) {
         { round: r.id, picks, stake },
         "Schedina salvata. Ora puoi iniziare a dubitare.",
       );
-  for (const k of ["create", "join"])
-    if ($("#" + k))
-      $("#" + k).onsubmit = async (e) => {
-        e.preventDefault();
-        const form=e.target;
-        if(form.dataset.submitting==='true'||(!state.user.emailVerified&&!state.user.demo))return;
-        form.dataset.submitting='true';
-        const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
-        try { await submitLeague(k,k==='create'?leagueCreationPayload(form):Object.fromEntries(new FormData(form))); }
-        finally { form.dataset.submitting='false';buttons.forEach(b=>b.disabled=false); }
-      };
+  bindLeagueCreation($('#create'),payload=>submitLeague('create',payload));
   if ($("#copy"))
     $("#copy").onclick = () =>
       navigator.clipboard
@@ -1995,7 +2038,6 @@ async function submitLeague(kind, payload) {
     leagueId = result.league||null;
     selectedRoundId = null;
     page = "lega";
-    leagueOnboardingStep='';
     if(leagueId)writeAppRoute({mode:'bar',page:'oggi',league:leagueId},{replace:true});
     await refresh(true);
     if(result.message)notify(result.message);else if(result.reused)notify('Questa lega esiste già. Ti abbiamo riportato al suo bancone.');
@@ -2425,10 +2467,11 @@ if ("serviceWorker" in navigator)
       const route=target?.origin===location.origin?readAppRoute(target.hash):null;
       const league=typeof e.data.league==="string"?e.data.league:route?.league;
       if(!league)return;
-      const page=route?.mode==='fanta'&&['asta','squadra','giornata'].includes(route.page)?route.page:'oggi';
+      const page=route?.mode==='fanta'&&['asta','squadra','giornata','scambi'].includes(route.page)?route.page:'oggi';
       const navigation={...route,mode:'fanta',page,league};
       try{localStorage.setItem('qdq:mode','fanta');localStorage.setItem('qdq:fantaLeague',league);}catch{}
       if(!state.user){pendingAppRoute=navigation;return;}
+      if(!state.leagues.length)return;
       writeAppRoute(navigation);closeLeagueChat();
       void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:league,initialTab:page,onBar:openBarTarget,force:true});
       return;
@@ -2531,6 +2574,15 @@ document.addEventListener('quasi:chat-reconnect',()=>{if(state.user&&!state.user
 document.addEventListener('quasi:fanta-team-claimed',()=>{void refresh();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkLeagueAccess();});
 window.addEventListener('focus',checkLeagueAccess);
+document.addEventListener('quasi:chat-reconnect',refreshLeagueMembers);
+document.addEventListener('quasi:league-update',e=>{
+ const {change,league}=e.detail||{};
+ if(typeof league!=='string'||!state.user)return;
+ if(change==='deleted')removeDeletedLeague(league);
+ if(change==='members'||change==='deleted')refreshLeagueMembers();
+ if(!document.hidden&&change==='trade-proposal')notify('Hai ricevuto una proposta di scambio.');
+ if(!document.hidden&&change==='trade-counter')notify('Hai ricevuto una controproposta.');
+});
 setInterval(()=>{
  if(leagueAccessUid()&&!L()&&!document.hidden)void refresh();
  else checkLeagueAccess();
@@ -2540,7 +2592,7 @@ document.addEventListener('click',e=>{
  if(button&&leagueAccessUid())void loadLeagueAccess().then(({showLeagueInvite})=>showLeagueInvite({api,league:button.dataset.leagueDirectInvite})).catch(error=>notify(error.message));
 });
 document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked){syncChatLauncher(linked);openLeagueChat(e.detail.trigger);}});
-document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&['join-league','create-league'].includes(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'impostazioni':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.settings-app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
+document.addEventListener('click',e=>{const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&isLeagueEntryPage(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','lega','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'impostazioni':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.settings-app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){if(!L())return;closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
 const liveChannel=createSportsPush({
   context:()=>!preferredFanta()&&state.user&&!state.user.demo&&state.user.emailVerified&&L()?{mode:'bar',league:L().id}:null,
@@ -2579,7 +2631,7 @@ setInterval(() => {
 
 
 window.addEventListener("pagehide", persistDraft);
-window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'})[route.page]||'lega';if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
+window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){if(!state.leagues.length){reconcileLeagueSelection();render();return;}void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=barPageFor(route);if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
 // Formations remain a stable DB snapshot. The live channel patches only scores,
 // events and small numeric regions, never formations, accordions or portraits.
 

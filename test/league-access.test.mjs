@@ -9,15 +9,16 @@ test('authenticated directory, distinct league limit, private prompts and code-f
  const f=await fixtureDb();t.after(()=>f.close());
  const players=[{id:'u3',name:'Terzo',email:'terzo@example.test'},{id:'u4',name:'Ospite',email:'utente@example.test'}].map(u=>({...u,emailVerified:true}));
  const sessions=players.map(u=>({uid:u.id,token:createHash('sha256').update('token'+u.id.slice(1)).digest('hex'),expires:Date.now()+60000}));
- const leagues=Array.from({length:4},(_,i)=>({id:'bar'+i,admin:'u1',name:'Lega '+i,code:'HIDDEN'+i,rules:{initial:500},members:[{uid:'u1'}]}));
+ const leagues=Array.from({length:10},(_,i)=>({id:'bar'+i,admin:'u1',name:'Lega '+i,code:'HIDDEN'+i,rules:{initial:500},members:[{uid:'u1'}]}));
  await f.db.query(`UPDATE fanta_state SET payload=jsonb_set(jsonb_set(jsonb_set(payload,'{users}',payload->'users'||$1::jsonb),'{sessions}',payload->'sessions'||$2::jsonb),'{leagues}',$3::jsonb)`,[JSON.stringify(players),JSON.stringify(sessions),JSON.stringify(leagues)]);
  await f.db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key,active) VALUES('bar0','fanta-lucas-a','fanta-lucas-a:main','native:test',true)");
  await f.db.query("UPDATE fanta.teams SET user_id=NULL WHERE id='t2'");
  const opts={connect:f.connect,sportsStorage:'snapshot'};
  const api=createApi({membershipTransact:fn=>membershipTransaction(fn,opts),profileTransact:fn=>profileTransaction(fn,opts),read:(fn,options)=>readSnapshot(fn,{...options,...opts}),env:{}});
+ const events=[];
  const call=async (user,route,body,expected=200)=>{
   const headers=user?{cookie:'sid=token'+user}:{};
-  const response=await api(new Request('https://example.test/api/'+route,{headers,...(body?{method:'POST',body:JSON.stringify(body)}:{})}));
+  const response=await api(new Request('https://example.test/api/'+route,{headers,...(body?{method:'POST',body:JSON.stringify(body)}:{})}),{leagueUpdate:event=>events.push(event)});
   const result=await response.json();assert.equal(response.status,expected,JSON.stringify(result));return result;
  };
  await call(null,'league-directory',null,403);
@@ -25,6 +26,9 @@ test('authenticated directory, distinct league limit, private prompts and code-f
  assert.deepEqual(directory.leagues[0].nicknames,['Presidente sintetico']);
  assert.doesNotMatch(JSON.stringify(directory),/example\.test|HIDDEN/);
  assert.equal(directory.remaining,3);
+ assert.equal(directory.leagues.length,8);assert.equal(directory.nextOffset,8);
+ assert.equal((await call(2,'league-directory?offset=8')).leagues.length,2);
+ assert.deepEqual((await call(2,'league-directory?q=LEG%C3%80+9')).leagues.map(l=>l.id),['bar9']);
  for(let i=0;i<3;i++)await call(2,'league-access-request',{league:'bar'+i});
  await call(2,'league-access-request',{league:'bar0'});
  await call(2,'league-access-request',{league:'bar3'},429);
@@ -49,6 +53,7 @@ test('authenticated directory, distinct league limit, private prompts and code-f
  assert.notEqual(newInvite.id,invite.id);
  const accepted=await call(3,'league-access-respond',{id:newInvite.id,decision:'accept'});
  assert.equal(accepted.league,'bar1');
+ assert.deepEqual(events,[{league:'bar0',change:'members',recipients:['u1','u2']},{league:'bar1',change:'members',recipients:['u1','u3']}]);
  assert.equal((await call(3,'league-directory')).leagues[1].joined,true);
  const pushes=(await f.db.query("SELECT data FROM fanta.notifications WHERE kind='leagueAccess'")).rows;
  assert.equal(pushes.length,6);

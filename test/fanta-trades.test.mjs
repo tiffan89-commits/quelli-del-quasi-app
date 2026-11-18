@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {createFantaApi} from '../fanta/api.mjs';
+import {deliverFantaNotifications} from '../fanta/notifications.mjs';
 import {DEFAULT_RULES} from '../fanta/rules.mjs';
 import {sqlFantaStore} from '../fanta/store.mjs';
 import {fixtureDb} from './fanta/helpers.mjs';
@@ -37,11 +38,12 @@ test('league trade window, private requests, counteroffers and atomic roster and
  await f.db.query(`UPDATE fanta_state SET payload=jsonb_set(jsonb_set(payload,'{users}',payload->'users'||$1::jsonb),'{sessions}',payload->'sessions'||$2::jsonb)`,
   [JSON.stringify([user]),JSON.stringify([{uid:'u3',token,expires:Date.now()+60000}])]);
  await f.db.query("INSERT INTO fanta.teams(id,league_id,user_id,name,manager) VALUES('t3',$1,'u3','Squadra 3','Allenatore 3')",[league]);
- const api=createFantaApi({store:sqlFantaStore({connect:f.connect})});
+ let now=Date.now();const events=[];
+ const api=createFantaApi({store:sqlFantaStore({connect:f.connect}),now:()=>now,env:{}});
  const call=async(actor,path,body,status=200)=>{
   const response=await api(new Request('https://example.test/fanta-api/'+path+(body?'':'?league='+league),{
    headers:{cookie:'sid=token'+actor},...(body?{method:'POST',body:JSON.stringify({league,...body})}:{}),
-  }));
+  }),{leagueUpdate:event=>events.push(event)});
   const value=await response.json();
   assert.equal(response.status,status,JSON.stringify(value));
   return value;
@@ -77,7 +79,12 @@ test('league trade window, private requests, counteroffers and atomic roster and
  await call(1,'trades/accept',{id:request.id,revision:2});
  await call(1,'trades/accept',{id:request.id,revision:2},409);
  const view=await call(1,'trades');
- assert.deepEqual(view.requests.map(r=>r.status).sort(),['accepted','expired']);
+ assert.deepEqual(view.requests.map(r=>r.status),['expired']);
+ assert.deepEqual((await call(3,'trades')).history,view.history);
+ assert.equal(view.history[0].id,request.id);
+ assert.deepEqual(events.filter(x=>x.change==='trade-proposal').map(x=>x.recipients),[['u2'],['u2']]);
+ assert.deepEqual(events.find(x=>x.change==='trade-counter').recipients,['u1']);
+ assert.deepEqual(events.find(x=>x.change==='trade-accepted').recipients,['u1','u2','u3']);
  assert.ok((await call(2,'trades/status')).latestAccepted);
  const teams=Object.fromEntries(view.teams.map(t=>[t.id,t]));
  assert.ok(teams.t1.roster.some(p=>p.id==='p2-0'));
@@ -106,4 +113,26 @@ test('league trade window, private requests, counteroffers and atomic roster and
  const history=(await call(2,'trades')).requests;
  assert.equal(history.find(r=>r.id===followup.id).status,'rejected');
  assert.equal(history.find(r=>r.id===expiring.id).status,'expired');
+ await window(1,false);
+ const starts=now+60000,ends=starts+120000;
+ const schedule={startsAt:new Date(starts).toISOString(),endsAt:new Date(ends).toISOString()};
+ await call(2,'trades/window',schedule,403);
+ await call(1,'trades/window',{...schedule,endsAt:schedule.startsAt},400);
+ await call(1,'trades/window',schedule);
+ assert.equal((await call(3,'trades/status')).window.phase,'scheduled');
+ await call(1,'trades/propose',{...followup,id:randomUUID()},409);
+ now=starts;
+ assert.equal((await call(2,'trades/status')).open,true);
+ const timed={...followup,id:randomUUID()};await call(1,'trades/propose',timed);
+ const {rows:[notice]}=await f.db.query("SELECT id,user_id,data FROM fanta.notifications WHERE data->>'tradeId'=$1",[timed.id]);
+ assert.equal(notice.user_id,'u2');assert.match(notice.data.url,/#\/fanta\/scambi/);
+ await f.db.query("UPDATE fanta_state SET payload=jsonb_set(payload,'{chatSubscriptions}',$1)",[JSON.stringify([{uid:'u2',subscription:{endpoint:'device-2'}},{uid:'u1',subscription:{endpoint:'device-1'}}])]);
+ const pushed=[];
+ await deliverFantaNotifications({connect:f.connect,env:{CONTEXT:'production',WEB_PUSH_PUBLIC_KEY:'test-public',WEB_PUSH_PRIVATE_KEY:'test-private'},now:()=>now,notificationId:notice.id,sendPush:(device,body)=>pushed.push({device,body:JSON.parse(body)})});
+ assert.deepEqual(pushed.map(x=>x.device.endpoint),['device-2']);
+ now=ends;
+ assert.equal((await call(2,'trades/status')).pending,0);
+ assert.equal((await call(2,'trades')).requests.find(r=>r.id===timed.id).status,'expired');
+ await call(2,'trades/accept',{id:timed.id,revision:1},409);
+ assert.equal((await call(3,'trades')).history.length,2);
 });

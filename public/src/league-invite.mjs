@@ -2,24 +2,11 @@ export const whatsappIcon = `<svg viewBox="0 0 24 24" width="22" height="22" fil
 function leagueShareData(league){
   const link = `https://quellidelquasi.com/invito/${encodeURIComponent(league.code)}`;
   const message = `Ti aspetto su Quelli del Quasi! ⚽\n\nEntra nella lega «${league.name}»: ${link}\n\nCrei l'account in un minuto e sei già dentro.\n(Codice lega, se serve: ${league.code})\nLe scuse le porti tu.`;
-  return {title:'Invito a '+league.name,text:message};
+  return message;
 }
-export async function shareLeagueInvite(league,{navigator=globalThis.navigator,notify=()=>{}}={}){
-  if(!league?.code)return;
-  const data=leagueShareData(league);
-  if(typeof navigator?.share==='function'){
-    try{await navigator.share(data);return;}
-    catch(error){if(error?.name==='AbortError')return;}
-  }
-  try{
-    if(typeof navigator?.clipboard?.writeText!=='function')throw Error('Clipboard unavailable');
-    await navigator.clipboard.writeText(data.text);
-    notify('Invito alla lega copiato.');
-  }catch{globalThis.prompt?.('Copia l’invito alla lega',data.text);}
-}
-export function whatsappInvite(league, esc, {iconOnly=false}={}) {
-  const {text}=leagueShareData(league);
-  return `<a class="whatsapp-invite secondary" href="${esc('https://wa.me/?text='+encodeURIComponent(text))}" target="_blank" rel="noopener noreferrer" aria-label="Invita con WhatsApp">${whatsappIcon}${iconOnly?'':'<span>Invita con WhatsApp</span>'}</a>`;
+export function whatsappInvite(league, esc, {className='whatsapp-invite secondary',hint=''}={}) {
+  const text=leagueShareData(league);
+  return `<a class="${className}" href="${esc('https://wa.me/?text='+encodeURIComponent(text))}" target="_blank" rel="noopener noreferrer" aria-label="Invita con WhatsApp">${whatsappIcon}<span><b>Invita con WhatsApp</b>${hint?`<small>${esc(hint)}</small>`:''}</span></a>`;
 }
 
 export function leagueInviteCapacity(bar, fanta){
@@ -30,6 +17,6 @@ export function leagueInviteCapacity(bar, fanta){
   return {size,count,full:size!==null?count>=size:fanta?.availableTeams===0};
 }
 
-export function compactLeagueInvite(bar, esc, {size,count,mode}){
-  return `<section class="home-league-invite" data-home-league-invite aria-label="Invita nella lega"><button type="button" class="home-league-invite-main" ${mode==='fanta'?'data-lega-invite="share"':'data-share-league'}><b>Invita nella lega</b>${size?`<small>${esc(`${count}/${size} iscritti`)}</small>`:''}<span aria-hidden="true">→</span></button>${whatsappInvite(bar,esc,{iconOnly:true})}</section>`;
+export function compactLeagueInvite(bar, esc, {size,count}){
+  return `<section class="home-league-invite" data-home-league-invite>${whatsappInvite(bar,esc,{className:'whatsapp-invite home-league-invite-main',hint:size?`${count}/${size} iscritti`:''})}</section>`;
 }

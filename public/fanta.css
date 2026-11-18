@@ -776,6 +776,9 @@ body.fanta-active.v2-on:has(.fanta-native-slips .v2-slipbar) main{padding-bottom
 .fanta-trades h2 { font-size: 21px; }
 .fanta-trades h3 { font-size: 17px; }
 .fanta-trades [data-trades-body], .trade-requests { display: grid; gap: 10px; }
+.trade-schedule { display:grid; gap:10px; }
+.trade-schedule .field { margin:0; }
+.trade-request time { font-size:.78rem; color:var(--muted); }
 .fanta-trades p { margin: 0; }
 .fanta-trades .card { margin: 0; padding: 12px; min-height: 0; }
 .trade-request, .trade-form { display: grid; gap: 10px; }
