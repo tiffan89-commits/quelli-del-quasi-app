@@ -268,6 +268,15 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.36.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.7...v0.36.0) (2026-11-18)
+
+
+### Features
+
+* aggiorna aste e accesso alle leghe ([77c2181](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/77c2181bd2a8c42a8d3336537469a7c0dce5f335))
+* aggiorna aste, scambi e ingresso nelle leghe ([3333cb0](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3333cb0ba6a669ceddebfe433990dc4817825571))
+* **fanta:** aggiunge wizard di lega e scambi ([3feff0b](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3feff0b3233fb1fd544fc6030cf8aa2157b8996e))
+
 ## [0.35.7](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.35.6...v0.35.7) (2026-11-13)
 
 
