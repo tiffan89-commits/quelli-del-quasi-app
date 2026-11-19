@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.42.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.3...v0.42.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* ripristina i solleciti e migliora storie, chat e Studio Live ([d6b72ca](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/d6b72ca44c2bc5cf951b1f87e6272dd1972dda54))
+
 ## [0.42.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.2...v0.42.3) (2026-11-19)
 
 
