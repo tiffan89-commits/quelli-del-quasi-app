@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.42.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.41.1...v0.42.0) (2026-11-19)
+
+
+### Features
+
+* aggiunge i solleciti di lega del presidente ([f0e871e](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/f0e871e3e0b1b892716314339193b59ac636ec6c))
+
 ## [0.41.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.41.0...v0.41.1) (2026-11-19)
 
 
