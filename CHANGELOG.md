@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.38.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.37.0...v0.38.0) (2026-11-19)
+
+
+### Features
+
+* unifica lega e partecipanti tra Bar e Fanta ([8fb5d6d](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/8fb5d6dcd98bfab9af5cbeb8a0602ee67955cb3b))
+
 ## [0.37.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.36.1...v0.37.0) (2026-11-18)
 
 
