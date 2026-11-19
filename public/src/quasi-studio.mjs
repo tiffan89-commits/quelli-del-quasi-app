@@ -12,13 +12,19 @@ export function studioChoices(tab,ownedIds=[]){
  const free=AVATAR_OPTIONS[tab]?.values||[['none',tab==='headwear'?'Senza copricapo':'Quasi fenomeno']];
  return [...free.map(([value,label])=>({key:tab==='headwear'?'rewardHat':tab==='title'?'rewardTitle':tab,value,label})),...ownedIds.map(rewardById).filter(r=>r?.type===rewardType[tab]).map(r=>({key:slotFor[tab],value:r.id,label:r.name,reward:r}))];
 }
-export function applyStudioChoice(draft,choice){const next={...draft,[choice.key]:choice.value};if(slotFor[choice.key])next[slotFor[choice.key]]='none';return normalizeAvatar(next);}
+export function applyStudioChoice(draft,choice){
+ const next={...draft,[choice.key]:choice.value};
+ if(slotFor[choice.key])next[slotFor[choice.key]]='none';
+ if(choice.key==='outfit'||choice.key==='rewardOutfit')next.rewardColor='none';
+ if(choice.key==='rewardCharm'&&choice.value!=='none')next.accessory='none';
+ return normalizeAvatar(next);
+}
 export function openQuasiStudio({user,api,onSaved,initialReward}){
  if(document.querySelector('.quasi-studio'))return;
  const owned=[...new Set((user.rewards||[]).flatMap(a=>a.ids))];let draft=normalizeAvatar(user.avatar,owned),original=JSON.stringify(draft),tab='outfit',limit=24,saving=false;
  let nickname=user.name,nicknameEditing=false;
  const reward=owned.includes(initialReward)?rewardById(initialReward):null;
- if(reward){draft[REWARD_SLOTS[reward.type]]=reward.id;tab=Object.keys(rewardType).find(k=>rewardType[k]===reward.type)||tab;}
+ if(reward){draft=applyStudioChoice(draft,{key:REWARD_SLOTS[reward.type],value:reward.id});tab=Object.keys(rewardType).find(k=>rewardType[k]===reward.type)||tab;}
  const dialog=document.createElement('dialog');dialog.className='quasi-studio';dialog.setAttribute('aria-label','Modifica il tuo Quasi');
  dialog.innerHTML=`<div class="studio-shell"><header class="studio-header"><button type="button" class="studio-back screen-back secondary" aria-label="Torna alla schermata precedente">${BACK_ICON}</button><h1>COMPONI IL TUO QUASI</h1><button type="button" class="studio-reset" aria-label="Annulla le modifiche">↶</button><button type="button" class="studio-save" aria-label="Salva il Quasi">✓</button></header><div class="studio-preview"></div><div class="studio-status" role="status"></div><div class="studio-dock"><nav class="studio-tabs" role="tablist" aria-label="Personalizza">${STUDIO_TABS.map(([key,label,icon])=>`<button type="button" role="tab" data-studio-tab="${key}"><b aria-hidden="true">${icon}</b><span>${label}</span></button>`).join('')}</nav><div class="studio-suboptions"></div><div class="studio-options" role="group" aria-label="Opzioni"></div><span class="studio-hint">Scorri le anteprime ↔</span></div></div>`;
  document.body.append(dialog);document.documentElement.classList.add('studio-active');
