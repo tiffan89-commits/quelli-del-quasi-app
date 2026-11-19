@@ -227,6 +227,27 @@
 .league-onboarding { max-width: 520px; margin: 12px auto; }
 body:has(.league-onboarding) #pwa-install-card { display: none !important; }
 .league-onboarding-card.card { display: grid; gap: 12px; min-height: 0; margin: 0; padding: 16px; }
+.participants-heading { display:flex; align-items:center; gap:10px; padding:2px 0 6px; }
+.participants-heading h1 { margin:0; font-size:clamp(20px,5.8vw,28px); }
+.participants-list { margin:0; padding:0; list-style:none; }
+.participant-record { display:inline-block; width:100%; vertical-align:top; break-inside:avoid; -webkit-column-break-inside:avoid; }
+.participant-row { display:grid; grid-template-columns:44px 44px minmax(0,1fr) auto; gap:4px; align-items:center; min-height:50px; padding:3px 0; border-bottom:1px solid var(--line); }
+.participant-art { display:grid; place-items:center; width:44px; min-height:44px; padding:0; background:transparent; border:0; color:inherit; }
+.participant-art :is(svg,img,.team-logo) { display:block; width:40px; height:42px; object-fit:contain; }
+.participant-avatar svg { width:34px; height:42px; }
+.participant-copy { min-width:0; line-height:1.2; }
+.participant-line { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 5px; }
+.participant-line b { font-size:.9rem; overflow-wrap:anywhere; }
+.participant-tag { flex:none; padding:1px 4px; border-radius:5px; font-size:.64rem; color:var(--muted); border:1px solid var(--line); }
+.participant-tag.is-me { color:var(--lime); }
+.participant-email,.participant-team { font-size:.75rem; color:var(--muted); overflow-wrap:anywhere; min-width:0; }
+.participant-remove.secondary { min-height:36px; padding:4px 6px; font-size:.75rem; color:#ffa6a6; }
+.participant-logo-dialog { position:fixed; inset:0; width:min(340px,92vw); padding:14px; border:1px solid var(--line); border-radius:16px; text-align:center; background:var(--panel); color:var(--white); }
+.participant-logo-dialog::backdrop { background:#0009; }
+.participant-logo-dialog button { display:block; margin-left:auto; }
+.participant-logo-dialog .team-logo { display:block; width:min(220px,65vw); height:220px; margin:auto; }
+.participant-logo-dialog :is(svg,img) { display:block; width:100%; height:100%; object-fit:contain; }
+.participant-logo-dialog h2 { margin:8px 0 1px; }
 .league-entry-heading { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
 .league-entry-heading h1 { margin:0; font-size:clamp(23px, 6vw, 32px); }
 .league-directory-search { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:8px; }

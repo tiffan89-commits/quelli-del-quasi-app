@@ -55,11 +55,12 @@ import {renderLega,renderFantaPresident} from '../public/src/fanta/lega.mjs';imp
 test('competition tools belong to the Fanta league, while auction management stays in the president panel',async()=>{
  const data=await createDemoFantaApi({delay:0}).league('lega-quasi');data.isAdmin=true;data.league.kind='native';
  const panel=renderFantaPresident(data);assert.match(panel,/data-auction-manage/);
- assert.match(panel,/class="secondary president-action"[^>]+data-president-group="persone"/);
- assert.match(panel,/data-president-section="persone"[\s\S]*data-team-roster/);
+ assert.match(panel,/class="secondary president-action"[^>]+data-go="partecipanti"/);
+ assert.match(panel,/data-president-section="associazioni"[\s\S]*data-team-link-form/);
  assert.doesNotMatch(panel,/data-president-section="competizioni"|data-competition-create-form|data-fanta-slips-form/);
- assert.match(renderLega(data,{group:'lega'}),/data-competition-create-form/);
- data.isAdmin=false;assert.doesNotMatch(renderLega(data,{group:'lega'}),/data-competition-create-form|data-team-link-form/);
+ assert.match(renderLega(data,{group:'lega'}),/data-go="competizioni"/);
+ assert.match(renderLega(data,{group:'competizioni'}),/data-competition-create-form/);
+ data.isAdmin=false;assert.doesNotMatch(renderLega(data,{group:'competizioni'}),/data-competition-create-form|data-team-link-form/);
 });
 test('unpriced future slip has disabled choices and no confirmation button',()=>{const r=round(13,{closed:true,kickoff:new Date(Date.now()+864e5).toISOString(),matches:[{id:'m',home:'Casa',away:'Ospiti',odds:{}}]});const html=renderSlipV2({round:r,esc:String,fmt:String,date:String});assert.match(html,/data-pick="m" data-value="1" disabled/);assert.ok(!html.includes('id="save-slip"'));});
 import vm from 'node:vm';import {createBarDemo} from '../public/src/bar-demo.mjs';
@@ -70,6 +71,6 @@ test('the Bar president panel keeps league rules separate from participants and 
  const text=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=text.slice(text.indexOf('let presidentGroup='),text.indexOf('function calendarStatus('));
  const {state}=createBarDemo({admin:true}),context={state,esc:String,LEAGUE_COLORS,presidentPanel,barPresidentTasks,isLeagueAdmin,brandingForm:()=>'',adminBudget:()=>'',leagueMembers:()=>'<p>Allenatore di prova</p>',whatsappInvite:()=>'',barLeagueInfo:()=>'<p>Lega</p>'};
  vm.createContext(context);vm.runInContext(body+'\nresult=leagueAdmin(state.leagues[0]);',context);
- assert.match(context.result,/Salva regole/);assert.match(context.result,/data-president-section="persone"[\s\S]*Allenatore di prova/);assert.doesNotMatch(context.result,/data-president-section="account"|profile-name/);
+ assert.match(context.result,/Salva regole/);assert.match(context.result,/data-bar-page="partecipanti"/);assert.doesNotMatch(context.result,/data-president-section="account"|profile-name/);
  state.user.id='other';vm.runInContext('barLeagueInfo=()=>"<p>Lega</p>";result=leagueAdmin(state.leagues[0]);',context);assert.equal(context.result,'<p>Lega</p>');
 });

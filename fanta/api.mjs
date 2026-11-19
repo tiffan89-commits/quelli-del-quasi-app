@@ -66,7 +66,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    // Most ticks only read. A running timer is not a reason to reload the full
    // catalog under a write lock every second for every spectator.
    if(route==='auction/tick'&&isWrite){const view=await store.league(u.id,id,s=>auctionTickDue(s.auction,now())?null:auctionView(s,u.id,now()),{competition:p.competition});if(view)return reply(view);}
-   let auctionNotice=null;
+   let auctionNotice=null,leagueUpdate=null;
    const result=await store.league(u.id,id,async(s,c)=>{
     if(isTrade){
      if(route==='trades'&&!isWrite)return tradeView(c,s,u.id,now());
@@ -75,6 +75,16 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     }
     if(s.league.kind==='pilot'&&(route.startsWith('competition/')||route==='league/configure'||route==='team/link'))fail('Nella lega pilota non sono disponibili modifiche della competizione',403);
     if(s.league.kind==='random'&&isWrite&&(route.startsWith('roster/')||route==='league/configure'||route==='team/link'))fail('La Lega random cambia le rose soltanto tramite aste di riparazione',403);
+    if(route==='league/member-remove'&&isWrite){
+     if(s.league.adminUid!==u.id)fail('Serve il presidente di lega',403);
+     if(typeof p.uid!=='string'||p.uid===u.id)fail('Partecipante non rimovibile');
+     if((await c.query('SELECT 1 FROM fanta.bar_links WHERE fanta_league_id=$1 AND active',[id])).rows.length)fail('Usa i partecipanti della lega collegata al Bar',409);
+     const detached=await c.query("UPDATE fanta.teams SET user_id=NULL,manager=coalesce(nullif(coach_name,''),'Allenatore automatico') WHERE league_id=$1 AND user_id=$2 RETURNING id",[id,p.uid]);
+     if(!detached.rows.length)fail('Partecipante non trovato',404);
+     await c.query('DELETE FROM fanta.pilot_claims WHERE league_id=$1 AND user_id=$2',[id,p.uid]);
+     leagueUpdate={league:id,change:'fanta-members',recipients:s.teams.map(t=>t.userId).filter(Boolean)};
+     return {ok:true};
+    }
     if(route==='roster/players'&&!isWrite){if(s.league.adminUid!==u.id)fail('Serve il presidente',403);return s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id)));}
     if(route==='roster/audit'&&!isWrite){if(s.league.adminUid!==u.id)fail('Serve il presidente',403);return (await c.query(`SELECT a.actor,a.kind,a.data,a.created_at,coalesce((SELECT u->>'username' FROM fanta_state CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u WHERE u->>'id'=a.actor),'Utente rimosso') AS username FROM fanta.roster_changes a WHERE a.league_id=$1 ORDER BY a.id DESC LIMIT 100`,[id])).rows;}
     if(route.startsWith('roster/')&&isWrite){const after=rosterAction(s,route.slice(7),p,u.id);await store.persistRoster(c,s,after,{actor:u.id,kind:route.slice(7),input:p,now:now()});return teamView(after,u.id,now(),p.toTeamId||p.teamId);}
@@ -116,6 +126,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     const n=Number(url.searchParams.get('number')),r=s.rounds.find(r=>r.number===n)||(!url.searchParams.has('number')?currentRound(s):null);if(!r)fail('Giornata non trovata',404);
     if(route==='round')return roundView(s,r,u.id,now());if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}fail('Pagina non trovata',404);
    },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players')||route==='roster/players',detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
+   if(leagueUpdate)context.leagueUpdate?.(leagueUpdate);
    if(isTrade&&isWrite){
     const {notice,update,...response}=result;
     if(update)context.leagueUpdate?.(update);

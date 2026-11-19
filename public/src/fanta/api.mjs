@@ -26,6 +26,7 @@ export function createFantaApi({userId}={}) {
   return {auctionSocket:globalThis.document?.documentElement?.dataset.netlifyEmergency!=='true',createRandom:options=>write('random/create',options),randomStatus:()=>read('random/status'),claimRandom:league=>write('random/claim',{league}),setSlips:(league,enabled)=>write('league/slips',{league,enabled}),pilotTeams:()=>read('pilot/teams'),pilotClaim:choice=>write('pilot/claim',choice),
     teamChoices:()=>read('team/choices'),claimTeam:(league,team)=>write('team/claim',{league,team}),
     trades:league=>getJson('trades?'+q({league})),tradeStatus:league=>getJson('trades/status?'+q({league}),5000),
+    removeMember:(league,uid)=>write('league/member-remove',{league,uid}),
     tradeAction:(league,kind,input)=>write('trades/'+kind,{...input,league}),
     rosterPlayers:league=>read('roster/players?'+q({league})),rosterChange:(league,kind,data)=>write('roster/'+kind,{league,...data}),rosterAudit:league=>read('roster/audit?'+q({league})),
     auctionAssigned:(league,query='')=>read('auction/assigned?'+q({league,q:query})),auctionRelease:(league,playerId,refund)=>write('auction/release',{league,playerId,refund}),auctionReleaseUndo:(league,playerId)=>write('auction/release-undo',{league,playerId}),auctionReleasesDone:league=>write('auction/releases-done',{league}),

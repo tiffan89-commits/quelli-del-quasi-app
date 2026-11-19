@@ -15,7 +15,7 @@ export const PAGE_TO_TAB = {
   profilo: 'io',
 };
 
-export function tabForPage(page){if(page==='impostazioni')return null;if(page==='admin')return 'legainfo';return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',quasi:'quasi',barleague:'legainfo',regolamento:'legainfo',profilo:'profilo'})[page]||'oggi';}
+export function tabForPage(page){if(page==='impostazioni')return null;if(page==='admin')return 'legainfo';return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'schedina',classifiche:'classifica',quasi:'quasi',barleague:'legainfo',partecipanti:'legainfo',regolamento:'legainfo',profilo:'profilo'})[page]||'oggi';}
 export function defaultSource(){return 'seriea';}
 export function routeForTab(tab){return {page:({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',legainfo:'barleague',profilo:'profilo'})[tab]||'lega',sourceScope:'seriea'};}
 export function renderTabBar(active, { hasFanta = true } = {}) {
