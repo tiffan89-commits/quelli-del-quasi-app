@@ -16,7 +16,7 @@ export function refreshFantaMembership(barLeagues,linkedLeagues,listChanged=fals
  if(listChanged||currentChanged)void view?.refreshMembership?.({listChanged,currentChanged});
 }
 export function preferredFanta(){return selectedMode==='fanta';}
-export function leaveFanta({keepSplash=false}={}){selectedMode='bar';if(!keepSplash)document.querySelector('.mode-splash')?.remove();operation++;if(instance){instance.suspend?.();parked.set(activeUser||'demo',instance);}instance=null;document.body.classList.remove('fanta-active');try{const url=new URL(location.href);url.searchParams.delete('mode');url.searchParams.delete('fantaLeague');history.replaceState(null,'',url.pathname+url.search+url.hash);}catch{}}
+export function leaveFanta({keepSplash=false}={}){selectedMode='bar';if(!keepSplash)document.querySelector('.mode-splash')?.remove();operation++;if(instance){instance.suspend?.();parked.set(activeUser||'demo',instance);}instance=null;document.body.classList.remove('fanta-active');try{const url=new URL(location.href);url.searchParams.delete('mode');url.searchParams.delete('fantaLeague');if(url.href!==location.href)history.replaceState(history.state,'',url.pathname+url.search+url.hash);}catch{}}
 export async function enterFanta(root,{user,onBar,barLeagues=[],leagueId=null,force=false,slipServices=null,initialTab='oggi',initialSection=null}={}){
  if(user&&!user.demo&&!barLeagues.length)return;
  const requested=readAppRoute();
