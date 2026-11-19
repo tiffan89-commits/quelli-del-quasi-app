@@ -129,7 +129,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     crypto: { randomUUID: () => "test-request-id" },
     URLSearchParams,
     Intl,
-    applyLeagueTheme(){},paintLeagueIdentity(){},leagueIdentityKey,leagueIdentityForm,bindLeagueIdentityForm(){},bindFootballStatistics(){},
+    applyLeagueTheme(){},paintLeagueIdentity(){},leagueIdentityKey,leagueIdentityForm,bindLeagueIdentityForm(){},bindPresidentReminders(){},bindFootballStatistics(){},
     clearAdminState() {},
     calendarSections,
     hubHead,hubTile,appWhatsappInvite,signupShareData,

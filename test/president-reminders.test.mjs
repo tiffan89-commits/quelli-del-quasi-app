@@ -38,7 +38,8 @@ test('Bar publishes only Campionato submission status to its president and updat
  assert.equal(Object.hasOwn(liveSnapshot(s,late,l.id),'slipReminder'),false);
  assert.equal(barReminder(bar,late.id),null);
  const reminder=barReminder(bar,admin.id),doc=parseHTML(renderPresidentReminders('bar',bar.id,reminder)).document;
- assert.equal(doc.querySelector('.reminder-players li').textContent,late.name);
+ assert.equal(doc.querySelector('.reminder-players li strong').textContent,late.name);
+ assert.deepEqual([...doc.querySelectorAll('[data-reminder-channel]')].map(b=>b.dataset.reminderChannel),['email','push']);
  assert.match(homeReminderBanner('bar',reminder),/Manca 1 schedina/);
  assert.deepEqual(share(doc),{text:'Manca poco e non hai ancora inserito la tua schedina. Cosa aspetti? Sbrigati!',route:{mode:'bar',page:'schedina',section:null,league:l.id,round:upcoming.id}});
  upcoming.slips.push({uid:late.id,picks:{m:'2'},stake:5});
@@ -77,7 +78,7 @@ test('president actions reuse the league tiles and personal settings has a cog',
  assert.ok(doc.querySelector('.lega-tile[data-president-operation="elimina"].league-delete-action'));
  const wizard=parseHTML(presidentWorkspace({tool:'identita',body:'<form></form>',back:'data-president-operation=""'})).document;
  assert.equal(wizard.querySelector('header h1'),null);
- assert.ok(wizard.querySelector('header [data-screen-back][aria-label="Torna al pannello del presidente"] svg'));
+ assert.ok(wizard.querySelector('.president-operation-body > [data-screen-back][aria-label="Torna al pannello del presidente"] svg'));
  assert.equal(fantaPresidentTool('scambi','scambi'),'scambi');
  assert.match(presidentEntry(),/aria-label="Apri impostazioni".*<svg[^>]+viewBox="0 0 24 24"/);
 });

@@ -1,5 +1,5 @@
 import {withFinalVerification} from './final-verification.mjs';
-import {queueAuctionNotice} from './notifications.mjs';
+import {DELIVERY_SQL,queueAuctionNotice} from './notifications.mjs';
 import {lineupRound} from './round-selection.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
 import {probabilityFor,readPlayProbabilities,readPresenceMinutes} from './play-probabilities.mjs';
@@ -19,9 +19,10 @@ import {competitionAction} from './competitions.mjs';
 import {teamChoices} from './team-choices.mjs';
 import {entryStatus,claimEntry} from './acquisition.mjs';
 import {nativeLeagueBranding,updateLeagueProfile} from '../lib/league-profile.mjs';
+import {sendAdminSubmissionReminder,submissionReminderMessage,validateSubmissionChannel} from '../lib/submission-reminders.mjs';
 export const betaUser=(u,env=process.env)=>!!u&&u.verified&&!u.demo&&!u.admin_only&&String(env.FANTA_BETA_USERS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(u.username?.toLowerCase());
 const betaLeagues=env=>String(env.FANTA_BETA_LEAGUES||'fanta-lucas-a').split(',').map(x=>x.trim());
-export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.now,presenceCache=databaseReadCache()}={}){
+export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.now,presenceCache=databaseReadCache(),sendSubmissionReminder=sendAdminSubmissionReminder}={}){
  return async (request,context={})=>{
   const receivedAt=now();
   const reply=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
@@ -56,6 +57,29 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(route==='league/slips'&&request.method==='POST'){if(!allowed.some(l=>l.id===p.league))fail('Lega non accessibile',403);return reply(await setSlips(u,p.league,p.enabled,{connect:store.connect}));}
    if(route==='leagues'&&request.method==='GET')return reply(allowed);
    const id=request.method==='GET'?url.searchParams.get('league'):p.league;if(!allowed.some(l=>l.id===id))fail('Lega non accessibile',403);
+   if(route==='league/reminder'&&request.method==='POST'){
+    validateSubmissionChannel(p.channel);
+    if(allowed.find(l=>l.id===id).role!=='admin')fail('Serve il presidente di lega',403);
+    if(!Number.isInteger(p.round)||typeof p.competition!=='string'||typeof p.uid!=='string'||!p.uid)fail('Scegli lega, giornata e allenatore');
+    const client=await store.connect();
+    let target,matchday;
+    try{
+     const {rows:[row]}=await client.query(`SELECT r.deadline,l.name,EXISTS(SELECT 1 FROM fanta.lineups x
+      WHERE x.competition_id=r.competition_id AND x.round=r.number AND x.team_id=t.id) AS saved
+      FROM fanta.rounds r JOIN fanta.leagues l ON l.id=r.league_id
+      JOIN fanta.competitions c ON c.id=r.competition_id AND c.status='active'
+      JOIN fanta.teams t ON t.league_id=l.id AND t.user_id=$5
+      WHERE l.id=$1 AND l.admin_uid=$2 AND r.competition_id=$3 AND r.number=$4 AND NOT r.official
+       AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.matchups m
+       WHERE m.competition_id=r.competition_id AND m.round=r.number AND t.id IN(m.home_id,m.away_id))`,[id,u.id,p.competition,p.round,p.uid]);
+     matchday=row;
+     if(!matchday||!(Date.parse(matchday.deadline)>now()))fail('Formazione non più sollecitabile',409);
+     if(matchday.saved)fail('La formazione è già stata consegnata',409);
+     const {rows:[recipient]}=await client.query(DELIVERY_SQL,[p.uid]);
+     target={...recipient,deadline:Date.parse(matchday.deadline)};
+    }finally{client.release();}
+    return reply(await sendSubmissionReminder(p.channel,submissionReminderMessage('fanta',{id,name:matchday.name},p),target,{env,now:now()}));
+   }
    if(route==='league/identity'&&request.method==='POST'){
     const league=allowed.find(l=>l.id===id);
     if(league.role!=='admin')fail('Serve il presidente di lega',403);

@@ -33,6 +33,7 @@ export function createFantaApi({userId}={}) {
     invalidateReads,setCompetition:id=>{competition=id||null;},
     saveLogo:(league,logo)=>write('team/logo',{league,...logo}),
     saveLeagueIdentity:(league,branding)=>write('league/identity',{league,branding}),
+    sendSubmissionReminder:input=>postJson('league/reminder',input),
     configureLeague:(league,size)=>write('league/configure',{league,size}),
     createCompetition:(league,options)=>write('competition/create',{league,...options}),
     startCompetition:(league,options)=>write('competition/start',{league,...options}),

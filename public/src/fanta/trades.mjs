@@ -1,5 +1,6 @@
 import {dateTimeFields,readDateTime} from '../site-datetime.mjs';
 import {backButton} from '../back-navigation.mjs';
+import {presidentWorkspace} from '../president-workspace.mjs';
 import {askConfirmation} from '../site-confirm.mjs';
 import {bindStyledSelects} from '../styled-select.mjs';
 import {esc} from './formato.mjs';
@@ -258,7 +259,10 @@ export function createTradePanel({root,api,context,signal,onRosterChange,onStatu
 
  return {render(){
   const {management,back}=context();
-  return `<section class="fanta-trades" aria-label="${management?'Gestisci gli scambi':'Scambi'}"><header class="participants-heading" data-os-header>${backButton(management?back:'data-go="lega"',management?'Torna al pannello del presidente':'Torna alla lega')}${management?'':'<h1>Scambi</h1>'}</header><div data-trades-body></div></section>`;
+  const body='<div data-trades-body></div>';
+  return `<section class="fanta-trades" aria-label="${management?'Gestisci gli scambi':'Scambi'}">${management
+   ?presidentWorkspace({tool:'scambi',body,back})
+   :`<header class="participants-heading" data-os-header>${backButton('data-go="lega"','Torna alla lega')}<h1>Scambi</h1></header>${body}`}</section>`;
  },attach(){
   switchLeague();paint();
   if(panel()&&!data)void load();

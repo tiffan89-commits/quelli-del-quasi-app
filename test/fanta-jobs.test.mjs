@@ -52,9 +52,10 @@ test('Fanta: migration keeps historical scores, imports complete lineups, report
 
 test('Fanta: reminder is idempotent, only missing lineups receive it; nonproduction delivery and preferences prevent sends',async()=>{
  const f=await fixtureDb();try{
-  const now=()=>Date.parse('2026-11-01T12:00:00Z');await f.db.query("UPDATE fanta.rounds SET deadline='2026-11-01T13:00:00Z'");
+  const now=()=>Date.parse('2026-11-01T12:00:00Z');await f.db.query("UPDATE fanta.rounds SET deadline='2026-11-01T15:00:00Z'");
+  await f.db.query("UPDATE fanta.competitions SET status='active'");
   const l=f.lineup('t1');await f.db.query('INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench) VALUES($1,1,$2,$3,$4,$5)',['fanta-lucas-a','t1',l.formation,JSON.stringify(l.starters),JSON.stringify(l.bench)]);
-  await queueFantaNotifications({connect:f.connect,now});await queueFantaNotifications({connect:f.connect,now});
+  await queueFantaNotifications({connect:f.connect,now,reminderHours:3});await queueFantaNotifications({connect:f.connect,now,reminderHours:3});
   const notes=(await f.db.query('SELECT * FROM fanta.notifications')).rows;assert.equal(notes.length,1);assert.equal(notes[0].user_id,'u2');assert.equal(notes[0].kind,'lineupReminder');
   const destination=new URL(notes[0].data.url,'https://example.test');
   assert.deepEqual(readAppRoute(destination.hash),{mode:'fanta',page:'squadra',section:'studio',league:'fanta-lucas-a',round:'1',competition:'fanta-lucas-a:main'});

@@ -33,6 +33,16 @@ test('editorial forecasts wait for the previous closure and use ten Rome time sl
  const matchday=refreshPlan(p,[{id:'next',status:'FT',finishedAt:'2026-04-08T20:30:00Z'}],{now:date('2026-04-08T20:35Z')});
  assert.equal(forecasts(matchday).some(j=>j.status==='queued'),false);
 });
+test('four submission pushes follow the first confirmed kickoff and a reschedule replaces pending times',()=>{
+ const hour=3600000,now=date(start)-26*hour;
+ const offsets=[24,12,6,3], queued=plan=>plan.jobs.filter(j=>j.kind==='reminder-push'&&j.status==='queued');
+ const plan=newPlan(calendar([{}]),{now});
+ assert.deepEqual(queued(plan).map(j=>j.leadHours),offsets);
+ assert.deepEqual(queued(plan).map(j=>date(j.at)),offsets.map(hours=>date(start)-hours*hour));
+ const kickoff=new Date(date(start)+hour).toISOString();
+ const updated=refreshPlan(plan,[{id:'m0',kickoff}],{now});
+ assert.deepEqual(queued(updated).map(j=>date(j.at)),offsets.map(hours=>date(kickoff)-hours*hour));
+});
 test('private operational tickets expire, reject tampering and do not contain credentials',()=>{const env={RESEND_API_KEY:'synthetic-only'},t=operationTicket({id:'j',nonce:'n'},env,1000);assert.equal(readOperationTicket(t,env,2000).id,'j');assert.equal(readOperationTicket(t,env,122000),null);assert.equal(readOperationTicket(t+'bad',env,2000),null);assert.ok(!t.includes(env.RESEND_API_KEY));});
 
 test('07:00 closure follows the local finishing date and moves only queued old morning jobs',()=>{

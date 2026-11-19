@@ -38,6 +38,7 @@ import { chatAction } from "../../lib/league-chat.mjs";
 import {fantasyRanking} from '../../lib/bar-fanta-rankings.mjs';
 import { accountTotals,enhanceState, updateLeagueProfile } from "../../lib/community.mjs";
 import {updateLinkedLeagueProfile} from '../../lib/league-profile.mjs';
+import {sendAdminSubmissionReminder,submissionReminderMessage,validateSubmissionChannel} from '../../lib/submission-reminders.mjs';
 import { analysisFor, analysisRoundSummary, previewRoundProfiles, describeSavedSlip } from "../../lib/player-analysis.mjs";
 import { deliverPendingMail } from "../../lib/mail-delivery.mjs";
 import {dispatchAccountMail} from '../../lib/account-mail.mjs';
@@ -53,7 +54,7 @@ import { mailReady } from "../../lib/mail.mjs";
 import { loadMatchDetails } from "../../lib/match-data.mjs";
 import { randomBytes } from "node:crypto";
 import { calendarView, updateCalendarRounds } from "../../lib/calendar.mjs";
-import { transaction,readSnapshot,chatTransaction,authTransaction,membershipTransaction,profileTransaction } from "../../lib/db.mjs";
+import { transaction,readSnapshot,chatTransaction,authTransaction,membershipTransaction,profileTransaction,reminderTransaction } from "../../lib/db.mjs";
 import {
   id,
   hash,
@@ -135,6 +136,8 @@ export function createApi({
   authTransact,
   membershipTransact,
   profileTransact,
+  reminderTransact,
+  sendSubmissionReminder=sendAdminSubmissionReminder,
   slipSaver,
   env = process.env,
   deliverMail = deliverPendingMail,
@@ -148,6 +151,7 @@ export function createApi({
   authTransact??=baseTransact===transaction?authTransaction:baseTransact;
   membershipTransact??=baseTransact===transaction?membershipTransaction:baseTransact;
   profileTransact??=baseTransact===transaction?profileTransaction:baseTransact;
+  reminderTransact??=baseTransact===transaction?reminderTransaction:baseTransact;
   slipSaver??=baseTransact===transaction?saveBarSlip:null;
   playerStore??=baseTransact===transaction?sqlPlayerStore:memoryPlayerStore();
   const portraitCache=new Map();let portraitBytes=0;
@@ -208,6 +212,23 @@ export function createApi({
       if (raw.length > 200000)
         return reply({ error: "Richiesta troppo grande" }, 413);
       const p = raw ? JSON.parse(raw) : {};
+      if(route==='league-reminder'&&req.method==='POST'){
+        validateSubmissionChannel(p.channel);
+        if([p.league,p.round,p.uid].some(value=>typeof value!=='string'||!value))fail('Scegli lega, giornata e partecipante');
+        const {target,message}=await reminderTransact(s=>{
+          const actor=userFor(s,sid),league=s.leagues.find(l=>l.id===p.league);
+          if(!actor?.emailVerified||actor.adminOnly||actor.demo||league?.admin!==actor.id)fail('Serve il presidente di lega',403);
+          if(!league.members.some(m=>m.uid===p.uid&&!m.removed))fail('Partecipante non disponibile',404);
+          const round=s.rounds.find(r=>r.id===p.round&&r.league===league.id&&r.source==='seriea'),deadline=Date.parse(round?.deadline||round?.kickoff);
+          if(!round||round.closed||round.settled||round.calculated||round.sourceConflict||!(round.matchCount??round.matches?.length)||!(deadline>Date.now()))fail('La schedina non è più aperta',409);
+          if(round.slips?.some(slip=>slip.uid===p.uid))fail('La schedina è già stata consegnata',409);
+          return {
+            target:{user:s.users.find(u=>u.id===p.uid),keys:s.chatPushKeys,devices:(s.chatSubscriptions||[]).filter(d=>d.uid===p.uid),deadline},
+            message:submissionReminderMessage('bar',league,{round:round.id}),
+          };
+        },{league:p.league});
+        return reply(await sendSubmissionReminder(p.channel,message,target,{env}));
+      }
       if(route==='slip'&&req.method==='POST'&&slipSaver){const data=await slipSaver(sid,p);recordFastActivity({route,uid:data.receipt?.uid,duration:Date.now()-started});return reply(data);}
       if(['register','forgot-password','resend-verification','activate','reset-password','set-email'].includes(route)&&p.requestId){
         if(typeof p.requestId!=='string'||!/^[A-Za-z0-9_-]{16,80}$/.test(p.requestId))fail('Identificativo richiesta non valido');

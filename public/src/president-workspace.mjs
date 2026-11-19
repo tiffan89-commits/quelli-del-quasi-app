@@ -35,9 +35,10 @@ export const presidentBack=barOwn=>barOwn?presidentBarBridge:'data-go="president
 
 export function presidentWorkspace({tool,body='',buttons='',back}){
  const title=presidentTitle(tool);
- return `<section class="president-workspace" aria-label="${esc(title)}">
-  <header class="participants-heading" data-os-header>${backButton(back,tool?'Torna al pannello del presidente':'Torna alla lega')}${tool?'':`<h1>${esc(title)}</h1>`}</header>
-  <div data-os-content data-os-flow>${tool?body:`<nav class="lega-hub president-tiles" aria-label="Operazioni del presidente">${buttons}</nav>`}</div>
+ return `<section class="president-workspace${tool?' president-operation-view':''}" aria-label="${esc(title)}">
+  ${tool?`<div class="president-operation-body" data-os-flow>${backButton(back,'Torna al pannello del presidente')}<div data-os-content data-os-flow>${body}</div></div>`:
+    `<header class="participants-heading" data-os-header>${backButton(back,'Torna alla lega')}<h1>${esc(title)}</h1></header>
+     <nav class="lega-hub president-tiles" aria-label="Operazioni del presidente" data-os-content data-os-flow>${buttons}</nav>`}
  </section>`;
 }
 

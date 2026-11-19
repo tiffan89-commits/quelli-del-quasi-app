@@ -3,7 +3,7 @@
 import { esc } from './formato.mjs';
 
 const NOTIFY = [
-  ['lineupReminder', 'Promemoria formazione', '2 ore prima della scadenza, se non hai ancora schierato'],
+  ['lineupReminder', 'Promemoria formazione', '24, 12, 6 e 3 ore prima della scadenza se manca la formazione'],
   ['roundStart', 'Inizio giornata', 'Quando si chiudono le formazioni e iniziano le partite'],
   ['liveEvents', 'Gol e cartellini dei tuoi', 'In diretta, quando un tuo titolare segna, fa assist o viene ammonito'],
   ['results', 'Risultati e voti ufficiali', 'Quando la giornata è calcolata e i voti diventano definitivi'],

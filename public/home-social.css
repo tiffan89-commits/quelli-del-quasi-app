@@ -111,7 +111,12 @@ button.screen-back.secondary,.bar-rules-page>#close-modal.screen-back {
 .president-reminders .participants-heading { margin-bottom:8px; }
 html.os-on body #app>main.os-split .president-reminder-scroll { overflow-y:auto; }
 .reminder-players { list-style:none; padding:0; margin:0 0 12px; }
-.reminder-players li { display:flex; align-items:center; min-height:44px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.reminder-players li { padding:5px 0; min-height:44px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.reminder-player-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; }
+.reminder-player-row>div { display:flex; gap:5px; }
+.reminder-player-row button { min-height:44px; padding:5px 8px; font-size:.8rem; }
+.reminder-players [data-reminder-feedback] { display:block; color:var(--muted); }
+.reminder-players [data-reminder-feedback]:empty { display:none; }
 .reminder-share {
   display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px;
   padding:8px 12px; border:1px solid var(--line); border-radius:12px; text-decoration:none;

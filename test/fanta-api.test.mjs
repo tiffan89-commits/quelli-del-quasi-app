@@ -38,6 +38,23 @@ test('standalone Fanta identity updates the shared league without allowing membe
  assert.equal(updates.length,1);
  assert.deepEqual({...updates[0],recipients:updates[0].recipients.toSorted()},{league,change:'fanta-identity',recipients:['u1','u2']});
 });
+test('manual Fanta reminder validates the intended coach and builds the lineup deep link',async t=>{
+ const f=await fixtureDb();t.after(f.close);
+ const league='fanta-lucas-a',competition=league+':main',sent=[];
+ await f.db.query("UPDATE fanta.competitions SET status='active' WHERE id=$1",[competition]);
+ const api=createFantaApi({store:sqlFantaStore(f),env,sendSubmissionReminder:(channel,message,target)=>{sent.push({channel,message,target});return {ok:true};}});
+ const call=(token,channel)=>api(new Request('https://example.test/fanta-api/league/reminder',{method:'POST',headers:{cookie:'sid='+token},
+  body:JSON.stringify({league,competition,round:1,uid:'u2',channel})}));
+ assert.equal((await call('token2','email')).status,403);
+ const pushed=await call('token1','push');
+ assert.equal(pushed.status,200,await pushed.clone().text());
+ assert.equal(sent[0].target.user.id,'u2');
+ assert.equal(sent[0].message.url,'/#/fanta/squadra/studio?lega=fanta-lucas-a&giornata=1&competizione=fanta-lucas-a%3Amain');
+ const {formation,starters,bench}=f.lineup('t2');
+ await f.db.query('INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench) VALUES($1,1,$2,$3,$4,$5)',[league,'t2',formation,JSON.stringify(starters),JSON.stringify(bench)]);
+ assert.equal((await call('token1','email')).status,409);
+ assert.equal(sent.length,1);
+});
 test('Fanta: native API satisfies delivered home, league, lineup and team contracts without modifying the Bar blob',async()=>{
  const f=await fixtureDb();try{const original=(await f.db.query('SELECT payload FROM fanta_state')).rows[0].payload;
  const api=createFantaApi({store:sqlFantaStore(f),env}),call=(route,body)=>api(new Request('https://example.test/fanta-api/'+route,{method:body?'POST':'GET',headers:{cookie:'sid=token1','content-type':'application/json'},body:body?JSON.stringify(body):undefined}));

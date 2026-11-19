@@ -8,8 +8,14 @@ const bound=new WeakSet();
 function matchesPreviousRoute(button,history){
  const previous=readAppRoute(history?.state?.qdqPreviousRoute||''),current=readAppRoute();
  if(!previous||!current||previous.league&&current.league&&previous.mode===current.mode&&previous.league!==current.league)return false;
- const {barPage,page,go,mode,presidentOperation}=button.dataset;
+ const {barPage,page,go,mode,presidentOperation,auctionExit}=button.dataset;
  const barTarget=barPage||page;
+ if(barTarget==='barleague'&&current.mode==='bar'&&current.page==='admin'&&!current.section&&previous.mode==='fanta'){
+  return previous.page==='lega'&&!previous.section;
+ }
+ if(auctionExit&&current.mode==='fanta'&&current.page==='asta'&&current.section==='asta'){
+  return !previous.section&&(previous.mode==='bar'?previous.page==='admin':previous.page==='presidente');
+ }
  const destination=presidentOperation===''?'admin':barTarget?({barleague:'lega',lega:'oggi'})[barTarget]||barTarget:go;
  return !!destination&&previous.mode===(mode||current.mode)&&previous.page===destination&&!previous.section;
 }

@@ -4,7 +4,7 @@ import {backButton,bindScreenBack} from './back-navigation.mjs';
 import {bindSiteValidation} from './site-validation.mjs';
 import {askConfirmation} from './site-confirm.mjs';
 import {presidentWorkspace,presidentOperationButtons} from './president-workspace.mjs';
-import {barReminder,renderPresidentReminders} from './president-reminders.mjs';
+import {barReminder,bindPresidentReminders,renderPresidentReminders} from './president-reminders.mjs';
 import {settingsFooter,presidentEntry,presidentPanel,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
 import {paintAuctionBadges,trackAuctionBadges} from './auction-index.mjs';
@@ -821,6 +821,7 @@ function render() {
   document.querySelector('[data-president-copy-link]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/invito/'+encodeURIComponent(l.code));notify('Link copiato.');}catch{notify('Copia il codice della lega.');}});
   document.querySelectorAll('[data-president-section]').forEach(section=>section.addEventListener('toggle',()=>{if(!section.open&&presidentGroup===section.dataset.presidentSection)presidentGroup=null;}));
   bindNew(l, r);
+  bindPresidentReminders($('.president-reminders'),data=>api('league-reminder',data));
   $("#edit-suggested-nickname")?.addEventListener("click",()=>{const section=$(".profile-account");if(section)section.open=true;const field=$("#profile-name input");field?.scrollIntoView({block:"center",behavior:"smooth"});field?.focus({preventScroll:true});});
   if(liveStatus)showLiveStatus(liveStatus);
   updateChatWidget();
@@ -1298,7 +1299,7 @@ function profile({embedded=false}={}) {
 function accountGroups(settings){
  const u=state.user;
  const toggle=(id,label,checked=false,attrs='')=>`<label class="account-toggle" ${attrs}><span>${label}</span><input type="checkbox" role="switch" class="fanta-switch" id="${id}" ${checked?'checked':''}></label>`;
- const bar=`<section class="account-alerts"><h2>Il bar ti chiama</h2>${toggle('chat-notify-preference','Messaggi di Chiacchiere da bar',false,'data-chat-preference-row hidden')}${toggle('reminder-preference','Promemoria schedina - due ore prima',u.remindersEnabled!==false)}${toggle('email-reminder-preference','Promemoria mail schedina o formazione - due ore prima',u.emailRemindersEnabled)}<button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button></section>`;
+ const bar=`<section class="account-alerts"><h2>Il bar ti chiama</h2>${toggle('chat-notify-preference','Messaggi di Chiacchiere da bar',false,'data-chat-preference-row hidden')}${toggle('reminder-preference','Promemoria schedina · 24, 12, 6 e 3 ore prima',u.remindersEnabled!==false)}${toggle('email-reminder-preference','Promemoria mail schedina o formazione - due ore prima',u.emailRemindersEnabled)}<button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button></section>`;
  return {account:{summary:'Soprannome e accesso',html:profile({embedded:true})},avvisi:{summary:'Bar e Fanta',html:bar+renderFantaNotificationSettings(settings,{disabled:!settings,compact:true})},...(u.emailVerified&&!u.demo?{assistenza:{summary:'Segnalazioni e suggerimenti',html:supportSection()}}:{})};
 }
 function updateDashboard() {
@@ -2021,11 +2022,13 @@ async function openMatch(id, quiet = false, trigger) {
   let dialog = $("#match-page-root");
   if (quiet && (!dialog?.open || dialog.dataset.match !== id)) return;
   if (!quiet) {
-    dialog = openMatchPage({kind:'lineup',trigger,onClose:()=>{activeMatchId=null;}});
+    dialog = openMatchPage({trigger,onClose:()=>{activeMatchId=null;}});
+    dialog.innerHTML='<button type="button" class="match-nav-button match-close" aria-label="Chiudi partita">×</button><p role="status">Caricamento…</p>';
+    dialog.querySelector('button').onclick=()=>dialog.close();
     dialog.dataset.match = id;
     activeMatchId = id;
   }
-  const content=dialog.querySelector('[data-match-sheet-content]');
+  const content=dialog;
   try {
     const scroll = dialog.scrollTop,
       baseData = structuredClone(
@@ -2037,7 +2040,10 @@ async function openMatch(id, quiet = false, trigger) {
             .find((m) => m.id === id),
       );
     if (!baseData) throw Error("Partita non presente nel calendario salvato.");
-    const data=await matchSnapshot(baseData);
+    const data=await matchSnapshot(baseData).catch(error=>{
+      if(error.status===404)return baseData;
+      throw error;
+    });
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
@@ -2046,7 +2052,7 @@ async function openMatch(id, quiet = false, trigger) {
     const hasDetails=scheduled||!!(events.length||availability);
     const details=`<div class="match-details-body">
       <h3>Dettagli della partita</h3>
-      ${scheduled?`<p class="match-sheet-kickoff"><time datetime="${new Date(kickoff).toISOString()}">${esc(new Intl.DateTimeFormat('it-IT',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Rome'}).format(kickoff))}</time></p>`:''}
+      ${scheduled?`<p class="match-detail-kickoff"><time datetime="${new Date(kickoff).toISOString()}">${esc(new Intl.DateTimeFormat('it-IT',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Rome'}).format(kickoff))}</time></p>`:''}
       <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
       <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
       <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>

@@ -228,6 +228,9 @@
 body:has(.league-onboarding) #pwa-install-card { display: none !important; }
 .league-onboarding-card.card { display: grid; gap: 12px; min-height: 0; margin: 0; padding: 16px; }
 .president-workspace .participants-heading { margin-bottom:8px; }
+.president-operation-body { display:grid; grid-template-columns:44px minmax(0,1fr); align-items:start; gap:6px; }
+.president-operation-body > [data-os-content] { min-width:0; }
+.president-operation-body .screen-back { margin:0; }
 html.os-on body #app>main.os-split .president-workspace > [data-os-content] { overflow-y:auto; }
 .president-operation-list { display:block; }
 .president-operation.secondary,.president-launch.secondary {
