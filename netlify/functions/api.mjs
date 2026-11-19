@@ -3,6 +3,7 @@ import {enrichStoredMatch} from '../../lib/lineup-presence.mjs';
 import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
 import {createLeaguePair} from '../../fanta/league-creation.mjs';
 import {addLeagueMember,leagueAccessAction,leagueAccessInbox,leagueDirectory,updateNickname} from '../../lib/league-access.mjs';
+import {readLeagueParticipants} from '../../lib/league-participants.mjs';
 import {detachBarCoach} from '../../fanta/linked-membership.mjs';
 import {dispatchFanta} from '../../fanta/jobs.mjs';
 import {inviteInfo} from '../../lib/public-area.mjs';
@@ -30,7 +31,6 @@ import {adminLeagues,forceAllFantasy,planPlatformWipe,executePlatformWipe,runAdm
 import {
   removeLeagueMember,
   restoreLeagueMember,
-  setPrizeWinners,
 } from "../../lib/league-management.mjs";
 import { submitSupport } from "../../lib/support.mjs";
 import { submitFantasyWaitlist } from "../../lib/fanta-interest.mjs";
@@ -140,6 +140,7 @@ export function createApi({
   dispatchMail = dispatchAccountMail,
   playerStore,
   insightService,
+  participantsReader=readLeagueParticipants,
 } = {}) {
   baseRead??=baseTransact===transaction?readSnapshot:baseTransact;
   chatTransact??=baseTransact===transaction?chatTransaction:baseTransact;
@@ -157,7 +158,7 @@ export function createApi({
         .at(-1);
     const authRoute=activityRoute.startsWith('social-')||['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email','change-password'].includes(activityRoute);
     const accessMutation=['league-access-request','league-access-invite','league-access-respond'].includes(activityRoute);
-    const membershipRoute=accessMutation||['create','join','member-remove','member-restore','league-prizes'].includes(activityRoute);
+    const membershipRoute=accessMutation||['create','join','member-remove','member-restore'].includes(activityRoute);
     const profileRoute=['profile','profile-avatar','profile-reminders','profile-email-reminders','support','fantacalcio-waitlist'].includes(activityRoute);
     const deliverAccount=async jobId=>deliverMail!==deliverPendingMail?deliverMail({jobId,transactionFn:authTransact,env}):dispatchMail(jobId,{env});
     let accountRequest=null;
@@ -388,6 +389,13 @@ export function createApi({
             "X-Content-Type-Options": "nosniff",
           },
         });
+      }
+      if(req.method==='GET'&&['league-participants','logo'].includes(route)&&url.pathname.startsWith('/api/league-participants')){
+        const params=url.searchParams,logo=route==='logo'?params.get('team'):null;
+        if(route==='logo'&&!logo)fail('Logo non disponibile',404);
+        const data=await participantsReader(token,params.get('league'),params.get('mode'),{logo});
+        if(logo)return new Response(data.data,{headers:{'Content-Type':data.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+        return reply(data);
       }
       if(req.method==='GET'&&['league-directory','league-access-inbox'].includes(route)){
         return reply(await read(s=>{
@@ -646,11 +654,26 @@ export function createApi({
         }
         else {
           if (l.admin !== u.id) fail("Serve il presidente di lega", 403);
-          if (route === "member-remove") {removeLeagueMember(l, p.uid, u.id);if(c)await detachBarCoach(c,l,p.uid);}
+          if (route === "member-remove") {
+            const recipients=new Set([...l.members.map(m=>m.uid),p.uid]);
+            if(typeof p.uid!=='string'||p.uid===l.admin)fail('Partecipante non rimovibile',400);
+            const barMember=l.members.some(m=>m.uid===p.uid);
+            if(barMember)removeLeagueMember(l,p.uid,u.id);
+            const detached=c?await detachBarCoach(c,l,p.uid):[];
+            if(!barMember){
+              if(!detached.length)fail('Partecipante non trovato',404);
+              l.removedMembers??=[];
+              if(!l.removedMembers.some(m=>m.uid===p.uid))l.removedMembers.push({uid:p.uid,initial:l.rules.initial,credits:l.rules.initial,points:0,removedAt:new Date().toISOString(),removedBy:u.id});
+            }
+            const fantaLeague=detached[0]?.league_id||l.nativeFantaLink?.leagueId;
+            if(c&&fantaLeague){
+              const {rows}=await c.query('SELECT user_id FROM fanta.teams WHERE league_id=$1 AND user_id IS NOT NULL',[fantaLeague]);
+              for(const row of rows)recipients.add(row.user_id);
+            }
+            return {data:{ok:true},leagueUpdate:{league:l.id,fantaLeague,change:'members',recipients:[...recipients]}};
+          }
           else if (route === "member-restore")
             restoreLeagueMember(l, p.uid, u.id);
-          else if (route === "league-prizes")
-            setPrizeWinners(l, p.winners, u.id);
           else if (route === "rules") l.rules = validateRules(p.rules);
           else if (route === "league-profile")
             updateLeagueProfile(l, p.branding || {});

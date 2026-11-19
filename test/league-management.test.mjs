@@ -12,7 +12,6 @@ import { ensureFantasyWallet } from "../lib/bar-fanta-wallet.mjs";
 import {
   removeLeagueMember,
   restoreLeagueMember,
-  setPrizeWinners,
 } from "../lib/league-management.mjs";
 import { createApi } from "../netlify/functions/api.mjs";
 function fixture() {
@@ -73,7 +72,7 @@ test("separate fantasy leagues cannot spend each other’s credits", () => {
 test("president removes access without destroying past slips and can restore the same balances and points", () => {
   const { l, u, v } = fixture();
   l.members[1].points = 7;
-  setPrizeWinners(l, [v.id], u.id);
+  l.prizeWinners = [v.id];
   assert.throws(() => removeLeagueMember(l, u.id, u.id));
   assert.throws(
     () => removeLeagueMember(l, v.id, v.id),

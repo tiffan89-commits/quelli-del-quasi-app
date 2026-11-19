@@ -55,6 +55,7 @@ import {fantaQuasiTeaser,fantaQuasiPage} from '../public/src/fanta-quasi.mjs';
 import {REWARD_SLOTS} from '../public/src/reward-catalog.mjs';
 import {isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding} from '../public/src/league-onboarding.mjs';
 import {bindLeagueCreation} from '../public/src/league-create-form.mjs';
+import {leagueWorkspace,barLeagueFallback,bindLeagueWorkspace} from '../public/src/league-workspace.mjs';
 test("live results render inside the slip, calendar remains clickable, standings are nested and movements live in league settings", async () => {
   const s = emptyState(),
     u = {
@@ -118,7 +119,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,renderFantaNotificationSettings,
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
-    isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding,bindLeagueCreation,refreshFantaMembership(){},
+    isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding,bindLeagueCreation,leagueWorkspace,barLeagueFallback,bindLeagueWorkspace,refreshFantaMembership(){},
     ...v2Tabs, leagueActions,barHomeInvite,settingsFooter,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},

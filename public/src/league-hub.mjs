@@ -6,7 +6,7 @@ export function hubHead(name,subtitle){
  return `<section class="hero lega-hub-head" data-os-header><span class="eyebrow">LA TUA LEGA</span><h1>${esc(name)}</h1><p>${esc(subtitle)}</p></section>`;
 }
 export function hubTile(icon,title,subtitle,{action='',html='',admin=false,arrow=false}={}){
- const label=`${hubIcon(icon)}<b>${esc(title)}</b><small>${esc(subtitle)}</small>`;
+ const label=`${hubIcon(icon)}<b>${esc(title)}</b>${subtitle?`<small>${esc(subtitle)}</small>`:''}`;
  return html?`<details class="lega-tile lega-tile-detail"><summary>${label}</summary>${html}</details>`
  :`<button type="button" class="lega-tile${admin?' is-admin':''}" ${action}>${label}${icon==='chat'?'<b class="chat-tile-unread" data-chat-tile-badge hidden></b>':icon==='trade'?'<b class="chat-tile-unread trade-tile-badge" data-trade-badge hidden></b>':''}${arrow?'<span class="lega-tile-next" aria-hidden="true">›</span>':''}</button>`;
 }
