@@ -15,7 +15,7 @@ export default async (request) => {
     return;
   }
   try{await seedPlayerMedia();}catch{console.warn('PLAYER_MEDIA_SEED_RETRY');}
-  let report;try{report=await runMatchCache();}catch{console.error('MATCH_CACHE_FAILED_MANUAL_RETRY_REQUIRED');return;}
+  let report;try{report=await runMatchCache({includeProbables:false});}catch{console.error('MATCH_CACHE_FAILED_MANUAL_RETRY_REQUIRED');return;}
   let portraits;try{portraits=await runPlayerMediaBatch();}catch{portraits={error:'Aggiornamento immagini rinviato'};}
 
   console.info("MATCH_CACHE_COMPLETE", JSON.stringify(report));

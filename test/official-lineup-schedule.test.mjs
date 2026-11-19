@@ -17,6 +17,14 @@ test('a late install catches up once, transport errors retry, postponed games ca
  p=completeWork(claim.plan,job,{ok:false,error:'temporarily unavailable'},{now:kickoff-10*minute});assert.equal(p.jobs.filter(j=>j.kind==='official-lineups'&&j.status==='queued').length,1);
  p=refreshPlan(p,[{id:'m',status:'PST'}],{now:kickoff-8*minute});assert.equal(p.jobs.filter(j=>j.kind==='official-lineups'&&j.status==='queued').length,0);
 });
+test('after a missed window or expired lease, officials are requeued within the match window',()=>{
+ const p=newPlan(calendar,{now:kickoff-3600000});
+ const missed=claimWork(p,{now:kickoff-9*minute,nonce:'missed'}).plan.jobs.find(j=>j.retryOf?.startsWith('official-lineups'));
+ assert.equal(Date.parse(missed.at),kickoff-4*minute);
+ const claimed=claimWork(p,{now:kickoff-30*minute,nonce:'stalled'}).plan;
+ const expired=claimWork(claimed,{now:kickoff-21*minute,nonce:'recovered'}).plan.jobs.find(j=>j.retryOf?.startsWith('official-lineups'));
+ assert.equal(Date.parse(expired.at),kickoff-16*minute);
+});
 test('partial API data keeps predictions, complete XI is cached in both stores and is never downloaded again',async()=>{
  const db=new PGlite(),connect=async()=>({query:(q,p)=>q.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[]}):db.query(q,p),release(){}});
  try{await db.exec('CREATE TABLE fanta_state(id int,payload jsonb);CREATE SCHEMA fanta;CREATE TABLE fanta.fixtures(api_id int,data jsonb)');

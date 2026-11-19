@@ -123,10 +123,16 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   assert.deepEqual(await rewards(),awards);
   const newKickoff='2026-11-08T20:00:00.000Z';
   const future={fixture:{id:1550189,date:newKickoff,status:{short:'NS'}}};
+  await db.exec("CREATE TABLE fanta.fixtures(api_id int, kickoff timestamptz, status text, frozen_at timestamptz, data jsonb)");
+  await db.query("INSERT INTO fanta.fixtures(api_id,kickoff,status,data) VALUES(1550189,$1,'NS',$2::jsonb)",[kickoff,JSON.stringify({fixture:{date:kickoff},metadata:'keep'})]);
   const refresh=await refreshFutureCalendar({get:async()=>({response:[future]})},oddsOptions);
   assert.equal(refresh[0].id,fixtureId);
   assert.equal((await snapshot('match','rows')).football.calendar.rounds[0].matches[0].kickoff,newKickoff);
   assert.equal((await state()).rounds[0].matches[0].kickoff,kickoff);
+  const native=(await db.query('SELECT kickoff,data FROM fanta.fixtures WHERE api_id=1550189')).rows[0];
+  assert.equal(new Date(native.kickoff).toISOString(),newKickoff);
+  assert.equal(native.data.fixture.date,newKickoff);
+  assert.equal(native.data.metadata,'keep');
   assert.deepEqual((await db.query('SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload,original);
   for(const name of ['022_live_storage_cutover','023_live_storage_membership_view']){
    await db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
@@ -164,6 +170,7 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   assert.equal(restored.football.matchCacheReport.processed,1);
   delete restored.football.matchCacheReport;
   delete restored.football.forecastSourceCache;
+  delete restored.football.editorialLineupCache;
   original.leagues[0].name='New name';
   assert.deepEqual(restored,original);
  }finally{await db.close();}
