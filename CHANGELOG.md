@@ -268,6 +268,14 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.42.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.2...v0.42.3) (2026-11-19)
+
+
+### Bug Fixes
+
+* aggiorna identità, solleciti e navigazione della lega ([78202f1](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/78202f13cd41f3a8b0c926b3e8a70312533836f0))
+* riassegna la squadra e blocca la navigazione durante la riammissione ([f8d09d7](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/f8d09d78359f572e951a8db663c5fd36699a5f32))
+
 ## [0.42.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.1...v0.42.2) (2026-11-19)
 
 
