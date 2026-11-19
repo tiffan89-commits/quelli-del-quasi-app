@@ -150,6 +150,7 @@ export function patchDashboard(root,html) {
 
 export function mergeLiveSnapshot(state,data) {
   const league=state.leagues.find(l=>l.id===data.league);if(!league)return;
+  if(Object.hasOwn(data,'slipReminder'))league.slipReminder=data.slipReminder;
   for(const incoming of data.members||[]){const m=league.members.find(m=>m.uid===incoming.uid);if(m)Object.assign(m,incoming);}
   if(data.fantasyRanking)league.fantasyRanking=data.fantasyRanking;
   for(const group of data.fantasyRanking?.groups||[])for(const total of group.members||[]){const member=league.members.find(m=>m.uid===total.uid);if(member){member.fantasyWallets??={};member.fantasyWallets[group.key]={initial:total.initial,credits:total.credits};}}

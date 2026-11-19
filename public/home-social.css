@@ -45,7 +45,35 @@ html.os-on body[data-game-mode] .os-dots .os-dot::before { width:4px; height:4px
 html.os-on body[data-game-mode] .os-dots .os-dot.is-on::before { width:10px; }
 .league-section-title { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:4px 0 8px; }
 .league-section-title h1 { font:700 26px/1 'Barlow Condensed',sans-serif; margin:0; }
-.league-section-title .settings-entry { min-width:44px; min-height:44px; }
+.league-section-title .settings-entry {
+  display:grid; place-items:center; flex:none; width:44px; height:44px; padding:0;
+  min-width:44px; min-height:44px; border-radius:50%; color:var(--mode-accent);
+  background:var(--panel);
+}
+.settings-entry>svg {
+  display:block; width:22px; height:22px;
+  fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
+}
+.lega-hub.president-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.president-tiles .lega-tile { justify-content:flex-start; }
+.president-tiles .league-delete-action { color:#ffab91; }
+.president-tiles .league-delete-action :is(svg,.lega-tile-next) { stroke:currentColor; color:inherit; }
+
+.home-reminder {
+  display:grid; grid-template-columns:32px minmax(0,1fr) auto; align-items:center; gap:10px;
+  min-height:48px; width:100%; padding:7px 14px; border-radius:var(--social-radius);
+  background:var(--panel); color:var(--white); font-size:14px; text-align:left;
+}
+.home-reminder>span:last-child { color:var(--mode-accent); font-size:20px; line-height:1; }
+.president-reminders .participants-heading { margin-bottom:8px; }
+html.os-on body #app>main.os-split .president-reminder-scroll { overflow-y:auto; }
+.reminder-players { list-style:none; padding:0; margin:0 0 12px; }
+.reminder-players li { display:flex; align-items:center; min-height:44px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.reminder-share {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px;
+  padding:8px 12px; border:1px solid var(--line); border-radius:12px; text-decoration:none;
+}
+.reminder-share svg { flex:none; color:#80d294; }
 .settings-legal { margin-block:16px; color:var(--muted); font-size:12px; }
 .settings-legal p { margin-bottom:4px; }
 .settings-legal .analytics-footer { display:flex; position:static; margin:0; text-align:left; justify-content:flex-start; gap:4px 14px; }
