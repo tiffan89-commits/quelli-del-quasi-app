@@ -91,7 +91,6 @@ body[data-game-mode]:has(.bar-home-social,.fanta-home) #pwa-install-card { displ
   display:grid; grid-template-columns:minmax(0,1fr); gap:12px;
   width:min(100%,580px); margin:0 auto; padding:5px 0 12px;
 }
-html.os-on body[data-game-mode="bar"] main.os-root:has(.bar-home-social) { padding-inline:14px!important; }
 .bar-home-stories { display:flex; gap:12px; overflow-x:auto; scrollbar-width:none; padding:3px 2px; }
 .bar-home-stories[hidden] { display:none; }
 .bar-home-story-slot { flex:none; }
@@ -183,4 +182,49 @@ body[data-game-mode="bar"] #app .bar-home-cta:disabled { background:var(--panel)
  .bar-story-progress .is-now i { transform:scaleX(.6); }
  .bar-home-cta { transition:none; }
  .bar-home-cta:not(:disabled):active { transform:none; }
+}
+
+@property --mode-accent {
+ syntax:"<color>";
+ inherits:true;
+ initial-value:#ffcf83;
+}
+body[data-game-mode] { transition:--mode-accent 200ms ease; }
+body[data-game-mode] .shell-compact .fanta-mode-btn { flex:0 0 55px; width:55px; padding:0; transition:color 200ms,background-color 200ms; }
+body[data-game-mode] .v2-tabbar .v2-tab { transition:color 200ms; }
+body[data-game-mode] .v2-tabbar :is([data-tab="oggi"],[data-v2-tab="oggi"]) svg { width:25px; height:25px; }
+body[data-game-mode] .v2-tabbar :is([data-tab="oggi"],[data-v2-tab="oggi"]) span { font-size:12px; font-weight:700; }
+body[data-game-mode] #app .bar-home-cta { transition:transform 130ms ease-out,background-color 200ms; }
+html.os-on body[data-game-mode] #app main:has(.bar-home-social) { padding-inline:14px!important; }
+.bar-home-hero:has(.bar-home-room)::after {
+  content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit;
+  background:linear-gradient(90deg,#0c1815f7,#0c1815d4 51%,#0c181530);
+}
+.bar-home-room { position:absolute; inset:0; z-index:-2; width:100%; height:100%; object-fit:cover; object-position:center 45%; border-radius:inherit; }
+.home-edit-mark { position:absolute; right:3px; bottom:12px; display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:var(--mode-accent); color:var(--mode-ink); font:700 17px/1 sans-serif; box-shadow:0 1px 4px #0008; }
+.fanta-social-home .bar-home-hero { background:radial-gradient(ellipse at 94% 85%,#235745,var(--panel) 75%); }
+.fanta-social-home .bar-home-hero h2 { overflow-wrap:anywhere; }
+.home-team-crest { display:grid; place-items:end; padding:0 8px 0 0; }
+.home-team-crest :is(.team-logo,svg,img) { width:100%; max-height:175px; height:auto; object-fit:contain; }
+.home-team-crest .team-logo { display:grid; place-items:end; }
+.bar-home-balances>span { display:grid; place-items:center; min-height:31px; border-radius:999px; background:var(--bg); color:var(--white); padding:3px 8px; font-size:12px; }
+.bar-home-last-top b { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-home-last-top strong { flex:none; }
+.bar-home-segments i.is-draw { background:#ffd966; }
+.home-last-footer { display:flex; gap:5px; align-items:baseline; justify-content:space-between; font-size:11px; color:var(--muted); }
+.home-last-footer span:last-child { text-align:right; }
+.home-cta-warning { display:inline-block; width:7px; height:7px; margin-right:7px; border-radius:50%; background:currentColor; vertical-align:middle; }
+.bar-home-cta>span:first-child { min-width:0; }
+.bar-story-trigger.story-top { --story-accent:#ffcf83; }
+.bar-story-trigger.story-opponent { --story-accent:#8bd3ff; }
+.bar-story-trigger.story-market { --story-accent:#ffab91; }
+.fanta-social-home .bar-home-stories { gap:clamp(8px,3vw,15px); }
+.fanta-social-home .bar-story-trigger { min-width:58px; }
+.home-story-score b { display:block; font:700 36px/1 'Barlow Condensed',sans-serif; }
+.home-story-players li { display:flex; justify-content:space-between; text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); gap:10px; }
+.bar-story-copy:has(.home-story-players) { overscroll-behavior:contain; }
+html.os-on body #app>main.os-split :is(.bar-quasi-page,.serie-standings,.bar-rankings)[data-os-content] { columns:auto; overflow-y:auto; padding-inline:14px!important; }
+body[data-game-mode="bar"] #app main .ranking-metric { width:min(100% - 28px,410px); margin:0 auto 8px!important; }
+@media(prefers-reduced-motion:reduce){
+ body[data-game-mode],body[data-game-mode] .shell-compact .fanta-mode-btn,body[data-game-mode] .v2-tabbar .v2-tab,body[data-game-mode] #app .bar-home-cta { transition:none; }
 }

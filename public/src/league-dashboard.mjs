@@ -1,4 +1,5 @@
-import {quasiMascot} from './quasi-scene.mjs';
+import {quasiHomeBackdrop,quasiMascot} from './quasi-scene.mjs';
+import {socialHome} from './home-social.mjs';
 import {stableHash} from './reward-catalog.mjs';
 import {BAR_HOME_QUOTES} from './bar-home-quotes.mjs';
 import {matchSegments,renderBarStories} from './bar-home-stories.mjs';
@@ -31,13 +32,6 @@ export function countdownLabel(deadline,now=Date.now()) {
 }
 const shortRound=round=>round?.number?'G'+round.number:'';
 const sign=(value,fmt)=>(value>0?'+':'')+fmt(value);
-export function homeCountdown(deadline,now=Date.now()){
- const minutes=Math.ceil((Date.parse(deadline)-now)/60000);
- if(minutes<=0||!Number.isFinite(minutes))return '';
- const days=Math.floor(minutes/1440),hours=Math.floor(minutes%1440/60);
- return days?days+'g '+hours+'h':hours?hours+'h '+minutes%60+'m':minutes+'m';
-}
-
 function quote(user,league,last,upcoming,now){
  const change=last?.positionChange||0,rate=last?.played&&last.total?last.correct/last.total:null;
  const key=upcoming&&!upcoming.slip&&Date.parse(deadlineOf(upcoming))-now<86400000?'late':
@@ -59,16 +53,11 @@ export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,comp
   open?{round:open,label:(open.slip?'Rivedi schedina':'Schedina')+(shortRound(open)?' '+shortRound(open):''),deadline:deadlineOf(open)}:
   {label:upcoming?'Prossima giornata':'Schedine in arrivo',deadline:upcoming&&deadlineOf(upcoming),disabled:true};
  const segments=round?matchSegments(round):[];
- return `<section class="bar-home-social" aria-label="Home del Bar">
-  ${renderBarStories({league,user,round,history:last,short:shortRound(round),esc,fmt})}
-  <section class="bar-home-hero">
-   <div class="bar-home-hero-copy"><h2>Il tuo Quasi dice</h2><p>“${esc(quote(user,league,last,open,now))}”</p>
-   <div class="bar-home-balances"><button type="button" data-dashboard-rank="points" aria-label="Punti, apri la classifica del Bar">${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</button><button type="button" data-dashboard-rank="credits" aria-label="Crediti, apri la classifica del Bar">${fmt(model.credits)} cr</button></div></div>
-   ${quasiMascot(user.avatar,user.name)}
-  </section>
-  ${round?`<button type="button" class="bar-home-last" data-dashboard-slip="${esc(round.id)}"><span class="bar-home-last-top"><b>${esc(round.title)}</b>${last?`<strong class="${last.points<0?'loss':last.points>0?'gain':''}">${sign(last.points,fmt)} pt</strong>`:''}</span>
-  <span class="bar-home-segments" style="--segments:${segments.length}" aria-label="Esiti">${segments.map(item=>`<i class="is-${item.state}" role="img" aria-label="${esc(item.label)}"></i>`).join('')}</span></button>`:''}
-  <button type="button" class="bar-home-cta primary" ${cta.disabled?'disabled':`data-dashboard-slip="${esc(cta.round.id)}"`}><span>${cta.label}</span>
-  <span>${cta.deadline?`<span data-dashboard-countdown data-deadline="${esc(cta.deadline)}">${cta.disabled?'tra ':''}${homeCountdown(cta.deadline,now)}</span>`:''}${cta.disabled?'':' <span aria-hidden="true">→</span>'}</span></button>
- </section>`;
+ return socialHome({mode:'bar',now,
+  stories:renderBarStories({league,user,round,history:last,short:shortRound(round),esc,fmt}),
+  hero:{title:'Il tuo Quasi dice',quote:quote(user,league,last,open,now),background:quasiHomeBackdrop(user.avatar),art:quasiMascot(user.avatar,user.name),
+   chips:`<button type="button" data-dashboard-rank="points" aria-label="Punti, apri la classifica del Bar">${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</button><button type="button" data-dashboard-rank="credits" aria-label="Crediti, apri la classifica del Bar">${fmt(model.credits)} cr</button>`},
+  last:round?{title:round.title,action:`data-dashboard-slip="${esc(round.id)}"`,segments,value:last?sign(last.points,fmt)+' pt':null,valueClass:last?.points<0?'loss':last?.points>0?'gain':''}:null,
+  cta:{...cta,waiting:cta.disabled,action:cta.round?`data-dashboard-slip="${esc(cta.round.id)}"`:null}
+ });
 }

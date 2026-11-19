@@ -259,8 +259,11 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='regolamento';render()", ctx);
   assert.match(html, /IL REGOLAMENTO/);
   vm.runInContext("page='quasi';render()", ctx);
-  assert.match(html, /league-quasi-card/);
   assert.match(html, /id="day-objectives"/);
+  assert.doesNotMatch(html, /league-quasi-card/);
+  vm.runInContext("setQuasiPane('league')",ctx);
+  assert.match(html, /league-quasi-card/);
+  assert.doesNotMatch(html, /id="day-objectives"/);
   assert.match(html, /data-v2-tab="quasi"/);
   vm.runInContext("page='fantaquasi';render()", ctx);
   assert.match(html, /Il fantacalcio che si gioca al bar/);

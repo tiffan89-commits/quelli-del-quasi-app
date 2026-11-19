@@ -16,7 +16,7 @@ function fixture({loadMatchup}={}){
  return {root,snapshot,storage,data,controller,redraw,get saves(){return saves;},resolve:()=>pending(),setNow:n=>{clock=n;controller.tick(context);},switch:c=>{context=c;redraw();}};
 }
 test('dedicated navigation keeps five tabs; competition selector appears only for multiple competitions',()=>{
- assert.deepEqual(FANTA_TABS.map(t=>t[0]),['oggi','schedine','classifica','squadra','lega']);assert.equal(competitionSwitcher([{id:'one',name:'Campionato'}],'one'),'');assert.match(competitionSwitcher([{id:'one',name:'Campionato'},{id:'two',name:'Coppa'}],'one'),/data-competition-switch/);
+ assert.deepEqual(FANTA_TABS.map(t=>t[0]),['schedine','classifica','oggi','squadra','lega']);assert.equal(competitionSwitcher([{id:'one',name:'Campionato'}],'one'),'');assert.match(competitionSwitcher([{id:'one',name:'Campionato'},{id:'two',name:'Coppa'}],'one'),/data-competition-switch/);
 });
 test('native slip inherits active league and competition; credits and drafts stay isolated without a local league picker',()=>{
  const f=fixture();assert.match(f.root.ownerDocument.body.textContent,/480/);assert.doesNotMatch(f.root.textContent,/Casa a-coppa|Casa b-camp/);assert.equal(f.root.querySelector('[data-fanta-bar-select]'),null);
@@ -74,14 +74,14 @@ test('native app opens dedicated slips, keeps slip picks away from lineup handle
   click(f.root.querySelector('[data-pick][data-value="1"]'));assert.equal(f.root.querySelector('[data-pick][data-value="1"]').getAttribute('aria-pressed'),'true');
   assert.equal(f.root.querySelectorAll('nav [data-tab]').length,5);
   click(f.root.querySelector('[data-tab="oggi"]'));assert.equal(f.root.querySelector('.fanta-today-tabs'),null);assert.ok(f.root.querySelector('[data-tab="schedine"]'));
-  const tile=f.root.querySelector('.fanta-match-link');assert.ok(tile);assert.equal(Number(tile.dataset.round),h.round.number);assert.equal(tile.querySelector('button'),null);
+  const tile=f.root.querySelector('.bar-home-cta');assert.ok(tile);assert.equal(Number(tile.dataset.round),h.round.number);assert.equal(tile.querySelector('button'),null);
   click(tile);await new Promise(resolve=>setTimeout(resolve,10));
   const studio=f.root.querySelector('.fanta-live-studio');
   assert.ok(studio);assert.match(studio.querySelector('h1').textContent,new RegExp('Giornata '+h.round.number));
   assert.equal(studio.querySelector('.fanta-view,.fanta-sb'),null);
   assert.ok(studio.querySelector('.pitch-slides'));
   click(studio.querySelector('[data-action="close-live-studio"]'));
-  assert.equal(f.root.querySelector('.fanta-live-studio'),null);assert.ok(f.root.querySelector('.fanta-match-link'));
+  assert.equal(f.root.querySelector('.fanta-live-studio'),null);assert.ok(f.root.querySelector('.bar-home-cta'));
  }finally{app?.destroy();for(const [k,v]of saved){if(v)Object.defineProperty(globalThis,k,v);else delete globalThis[k];}}
 });
 test('the existing local clock locks a native slip at kickoff without a request',()=>{

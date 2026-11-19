@@ -13,7 +13,7 @@ const ICONS = {
   classifica:'<path d="M4 21V10h5v11M10 21V4h5v17M16 21v-6h5v6"/>',
   io: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
 };
-export const FANTA_TABS=[['oggi','Oggi'],['schedine','Schedina'],['classifica','Classifica'],['squadra','Squadra'],['lega','Lega']];
+export const FANTA_TABS=[['schedine','Schedina'],['classifica','Classifica'],['oggi','Oggi'],['squadra','Squadra'],['lega','Lega']];
 
 export function topBar({mode,league}){
  return `<header class="v2-top fanta-top shell-compact">${leagueChip(league,'id="v2-open-fanta-leagues" data-action="leagues"',esc)}${modeSwitch(mode)}</header>`;

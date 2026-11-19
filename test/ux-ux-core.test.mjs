@@ -29,9 +29,9 @@ test('weighted lineup respects probability, injury and unique roles; old bench c
  const draft=draftFrom(null,roster),best=bestLineup(draft,roster,7),ids=lineupOf(best);assert.equal(ids.starters.length,11);assert.equal(ids.bench.length,roster.length-11);assert.equal(new Set([...ids.starters,...ids.bench]).size,roster.length);assert.ok(!ids.starters.some(id=>id.endsWith('0')||id.endsWith('1')));assert.ok(byExpected({stats:{avgFanta:6}},{stats:{avgFanta:5},play:{pct:100}})>0);
  const first=best.slots.D0,second=best.slots.D1,next=studioTap(best,roster,second,'D0',7);assert.equal(next.slots.D0,second);assert.equal(next.slots.D1,first);assert.equal(studioTap(best,roster,'A8','D0',7),best);assert.match(playBadge({status:{type:'injured'}}),/Infortunato/);
 });
-test('A2 actual ratings count replacements once; complete Serie A removes LIVE and the direct CTA',()=>{
+test('actual ratings count replacements once and the home live CTA uses the latest own fantapoints',()=>{
  const side={starters:[{id:'1',vote:6},{id:'2',vote:null,replacedBy:'Sub'},{id:'3',vote:6.5}],bench:[{id:'4',vote:7,enteredFor:'Two'},{id:'5',vote:8}]};assert.equal(effectiveVoteCount(side),3);
- const h=homeFor('lega-quasi','in-corso');h.round.matchesDone=10;h.match.live.home.played=0;const next=withHomeVotes(h,{home:{...side,team:h.match.home},away:{starters:[],team:h.match.away}});assert.equal(next.match.live.home.withVote,3);const html=renderHome(next);assert.match(html,/>Live</);assert.ok(html.includes('3/11 a voto'));assert.ok(!html.includes('Segui in diretta'));assert.ok(!html.includes('Voti provvisori'));
+ const h=homeFor('lega-quasi','in-corso');h.round.matchesDone=10;h.match.live.home.played=0;const next=withHomeVotes(h,{home:{...side,team:h.match.home},away:{starters:[],team:h.match.away}});assert.equal(next.match.live.home.withVote,3);const html=renderHome(next);assert.match(html,/G\d+ live/);assert.match(html,/fp parziali/);assert.doesNotMatch(html,/Voti provvisori/);
 });
 test('hash routes preserve league, screen, subsection and round through encoding',()=>{
  const route={mode:'fanta',page:'classifica',section:'calendario',league:'lega a/1',round:11};assert.deepEqual(readAppRoute(appRoute(route)),{...route,round:'11'});assert.equal(readAppRoute('#registrati'),null);assert.throws(()=>appRoute({mode:'other',page:'x'}));
