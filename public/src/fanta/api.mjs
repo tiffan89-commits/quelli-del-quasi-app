@@ -39,7 +39,9 @@ export function createFantaApi({userId}={}) {
     me: () => read('me'),
     saveSettings: settings => write('settings', settings),
     leagues: () => read('leagues'),
-    home: leagueId => read('home?' + q({ league: leagueId })),
+    home: (leagueId,{fresh=false}={}) => fresh
+      ? getJson('home?' + q({league:leagueId,...(competition?{competition}:{})}))
+      : read('home?' + q({league:leagueId})),
     round: (leagueId, number) => read('round?' + q(number == null ? { league: leagueId } : { league: leagueId, number })),
     matchup: (leagueId, number, id) => read('matchup?' + q({ league: leagueId, number, id })),
     team: (leagueId,team) => read('team?' + q({ league: leagueId,...(team?{team}:{}) })),

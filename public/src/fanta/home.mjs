@@ -1,5 +1,6 @@
 import {esc,pts,countdown,OUTCOME} from './formato.mjs';
 import {socialHome} from '../home-social.mjs';
+import {homeReminderBanner} from '../president-reminders.mjs';
 import {renderHomeStories} from '../home-stories.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {FANTA_HOME_QUOTES} from './home-quotes.mjs';
@@ -71,7 +72,7 @@ export function renderHome(h,now=Date.now()){
   live?{label:'G'+round.number+' live'+(number(liveOwn?.points)?' · '+fp(liveOwn.points)+' parziali':''),action:roundAction(round.number,h.match?.id||h.match?.matchupId||h.storyData?.liveMatchup)}:
   open?{label:(hasLineup?'✓ Formazione':'Schiera la formazione')+' G'+next.round,warning:!hasLineup,deadline:next.deadline,action:'data-go="formazione"'}:
   {label:'Prossima giornata',disabled:true,waiting:true,deadline:[h.nextLineup?.deadline,round.firstKickoff].find(time=>Date.parse(time)>now)};
- return socialHome({mode:'fanta',now,stories:renderFantaStories(h),hero:{
+ return socialHome({mode:'fanta',now,reminder:homeReminderBanner('fanta',h.reminder),stories:renderFantaStories(h),hero:{
   title:h.me.teamName+(h.league.season?' · '+h.league.season:''),quote,
   chips:`<span>${esc(h.me.position)}° · ${pts(h.me.points)} pt</span><span>${pts(h.me.fantapoints)} fp</span>`,
   art:`<button type="button" class="bar-home-mascot home-team-crest" data-action="edit-logo" aria-label="Modifica lo stemma di ${esc(team.name)}">${teamLogo(team,{eager:true})}<span class="home-edit-mark" aria-hidden="true">✎</span></button>`

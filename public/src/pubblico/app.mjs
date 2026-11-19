@@ -8,6 +8,7 @@ import {passwordStrength,PASSWORD_MIN} from './convalida.mjs';
 import {checkEmail,checkUsername} from './convalida.mjs';
 import {socialButtons} from './social.mjs';
 import {rememberEntry,entryIntent,clearEntry} from '../acquisition-intent.mjs';
+import {readAppRoute,isSubmissionRoute} from '../routes.mjs';
 
 const ROUTES = { '#accedi': 'login', '#registrati': 'register', '#recupera': 'forgot', '#conferma': 'resend', '#accesso': 'login', '#reinvia': 'resend' };
 const HASH_OF = { login: '#accedi', register: '#registrati', forgot: '#recupera', resend: '#conferma' };
@@ -33,6 +34,7 @@ export function mountPublic(root, { api, onDemo = () => {}, onLoggedIn = () => {
     }
     if (h === '#demo') { s.sheet = 'demo'; show('landing');window.scrollTo({top:0,behavior:'smooth'});return; }
     if (ROUTES[h]) return show('auth', ROUTES[h]);
+    if(isSubmissionRoute(readAppRoute(h)))return show('auth','login');
     show('landing');
   }
 

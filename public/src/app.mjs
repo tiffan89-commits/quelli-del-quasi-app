@@ -3,6 +3,7 @@ import {bindSwipeBack,openMatchPage} from './match-page.mjs';
 import {bindSiteValidation} from './site-validation.mjs';
 import {askConfirmation} from './site-confirm.mjs';
 import {presidentWorkspace,presidentOperationButtons} from './president-workspace.mjs';
+import {barReminder,renderPresidentReminders} from './president-reminders.mjs';
 import {settingsFooter,presidentEntry,presidentPanel,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
 import {paintAuctionBadges,trackAuctionBadges} from './auction-index.mjs';
@@ -11,7 +12,7 @@ import {slipCreditReserve,slipStakeLimit} from "../slip-events.mjs";
 import {applySlipReceipt} from './slip-receipt.mjs';
 import {loadAppStyles} from './app-styles.mjs';
 import {saveOnce,identifySlipSave} from './save-guard.mjs';
-import {readAppRoute,writeAppRoute} from './routes.mjs';
+import {readAppRoute,writeAppRoute,isSubmissionRoute} from './routes.mjs';
 import {placeAppFooter,restoreAppFooter} from './app-footer.mjs';
 import {startOneScreen} from './one-screen.mjs';
 import {bindLeagueCreation,leagueCreationFields} from './league-create-form.mjs';
@@ -39,7 +40,16 @@ import { renderTabBar, bindTabBar, tabForPage, routeForTab, defaultSource } from
 import { renderLeagueChip, bindLeagueSwitcher, fantaHomeStatus } from "./v2/league-switcher.mjs";
 import { showLanding, hideLanding, markSession, pendingInvite, clearPendingInvite } from "./v2/landing.mjs";
 const PUBLIC_AUTH_HASHES={login:'accesso',register:'registrati',forgot:'recupera',resend:'reinvia',demo:'demo'};
+const submissionRouteKey='qdq:pending-submission-route';
 let pendingAppRoute=readAppRoute(),inviteAttempt=null;
+try{
+ if(isSubmissionRoute(pendingAppRoute))sessionStorage.setItem(submissionRouteKey,JSON.stringify({hash:location.hash,at:Date.now()}));
+ else if(location.hash==='#social'||location.hash.startsWith('#social-error=')){
+  const saved=JSON.parse(sessionStorage.getItem(submissionRouteKey)||'null');
+  const route=saved&&readAppRoute(saved.hash);
+  if(isSubmissionRoute(route)&&Date.now()-saved.at<30*60000)pendingAppRoute=route;
+ }
+}catch{/* The link still works with the in-page login. */}
 const initialPublicMode=Object.keys(PUBLIC_AUTH_HASHES).find(k=>PUBLIC_AUTH_HASHES[k]===location.hash.slice(1));
 let v2Invite = pendingInvite(), landingDismissed = !!v2Invite||!!initialPublicMode, forceDemo = initialPublicMode==='demo';
 let initialDemoRequested=initialPublicMode==='demo';
@@ -346,7 +356,7 @@ function me() {
     capital: wallet.credits + committed,
   };
 }
-const barRoutePages={seriea:'seriea',partecipanti:'partecipanti',oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'};
+const barRoutePages={solleciti:'solleciti',seriea:'seriea',partecipanti:'partecipanti',oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'};
 const barPageFor=route=>isLeagueEntryPage(route?.page)?route.page:barRoutePages[route?.page]||'lega';
 const deletedLeagues=new Set();
 let leagueRefreshQueued=false,leagueWorkspaceView=null,presidentOperation=null,presidentNative=null;
@@ -401,7 +411,7 @@ async function refresh(reset = false) {
       slipSummary(previousRound, picks, stake, me()?.credits ?? Infinity).dirty;
     if (wasDirty && !reset) persistDraft();
     state = next;for(const league of state.leagues)for(const round of league.rounds||[])round.publicChoicesAvailable=!!round.closed&&Array.isArray(round.publicSlips);sportsFeedBlockedUntil=0;
-    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;page=route?.mode==='bar'?barPageFor(route):'lega';presidentOperation=page==='admin'?route?.section:null;if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
+    if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;try{sessionStorage.removeItem(submissionRouteKey);}catch{}page=route?.mode==='bar'?barPageFor(route):'lega';presidentOperation=page==='admin'?route?.section:null;if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
     if(requestedSlip&&state.leagues.some(l=>l.id===requestedSlip)){
       leagueId=requestedSlip;const round=L().rounds.find(r=>r.id===requestedSlipRound);page='schedina';slipScope='mine';if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}
       requestedSlip=null;requestedSlipRound=null;const params=new URLSearchParams(location.search);params.delete('slip');params.delete('round');window.history.replaceState(null,'',location.pathname+(params.size?'?'+params:''));
@@ -729,7 +739,7 @@ function render() {
       : (!state.user.emailVerified && !state.user.demo)
       ? profile()
       : page === "impostazioni"
-        ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,footer:settingsFooter(),groups:accountGroups()})
+        ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,back:'data-bar-page="barleague"',footer:settingsFooter(),groups:accountGroups()})
         : page === "seriea"
         ? classificationTabs('seriea')+serieATable()
         : page === "altri"
@@ -744,6 +754,8 @@ function render() {
                   ? classificationTabs('classifiche')+ranking(l)
                   : page === "admin"
                       ? leagueAdmin(l)
+                    : page === "solleciti" && l.admin===state.user.id
+                      ? barReminderPage(l)
                     : page === "lega"
                       ? settings(l, r)
                       : page === "calendario"
@@ -753,7 +765,7 @@ function render() {
   const palette = LEAGUE_COLORS.map(([color]) => color);
   applyLeagueTheme(L());
   $("#app").innerHTML = shell(
-    '<main'+(!l||isLeagueEntryPage(page)||['admin','lega','impostazioni','seriea','classifiche','quasi'].includes(page)?' data-os-flow':'')+'><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
+    '<main'+(!l||isLeagueEntryPage(page)||['admin','lega','impostazioni','seriea','classifiche','quasi','solleciti'].includes(page)?' data-os-flow':'')+'><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
       content +
       '<p id="live-channel-status" class="live-channel-status tiny muted" role="status" aria-live="polite"></p></main>',
   );
@@ -844,10 +856,10 @@ function renderAuth(){
   else{publicUi?.destroy();publicUi=null;await openBarDemo();}
  },onLoggedIn:async result=>{
   if(result.requireAdminCode){sessionStorage.setItem('quasi-admin-challenge',JSON.stringify(result));location.assign('/admin.html');return;}
-  if(entryIntent(localStorage)&&!result.invite&&!pendingInvite()){location.assign('/entra-fanta.html'+location.search);return;}
+  if(entryIntent(localStorage)&&!result.invite&&!pendingInvite()&&!isSubmissionRoute(pendingAppRoute)){location.assign('/entra-fanta.html'+location.search);return;}
   leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}
   const code=result.invite||pendingInvite();if(code){try{const joined=await joinInvite(code,{join:code=>api('join',{code}),clear:()=>{clearPendingInvite();v2Invite=null;clearEntry(localStorage);}});leagueId=joined.league;selectedRoundId=null;pendingAppRoute={mode:'bar',page:'oggi',league:joined.league};}catch(error){notify(error.message);}}
-  if(pendingAppRoute){writeAppRoute(pendingAppRoute,{replace:true});pendingAppRoute=null;}
+  if(pendingAppRoute){writeAppRoute(pendingAppRoute,{replace:true});pendingAppRoute=null;try{sessionStorage.removeItem(submissionRouteKey);}catch{}}
   await loadAppStyles();
   accountAction=null;if(!await refresh(true)||!state.user)throw Error('L’accesso è riuscito, ma il bar non si è ancora caricato. Premi di nuovo Accedi tra pochi secondi.');if(!readAppRoute())writeAppRoute({mode:'bar',page:'oggi'},{replace:true});
  }});
@@ -1283,8 +1295,10 @@ function accountGroups(settings){
  return {account:{summary:'Soprannome e accesso',html:profile({embedded:true})},avvisi:{summary:'Bar e Fanta',html:bar+renderFantaNotificationSettings(settings,{disabled:!settings,compact:true})},...(u.emailVerified&&!u.demo?{assistenza:{summary:'Segnalazioni e suggerimenti',html:supportSection()}}:{})};
 }
 function updateDashboard() {
+  if(!L())return;
+  if(page==='solleciti'){patchRegion($('.president-reminders'),barReminderPage(L()));return;}
   const region = $('#league-dashboard');
-  if (!region || !L()) return;
+  if(!region)return;
   patchRegion(region.firstElementChild,leagueDashboard(L(),state.user,'seriea',false,esc,fmt,null));
   bindDashboard();
   updateObjectives();
@@ -1350,6 +1364,9 @@ function maybeRevealRewards(){
 }
 function settings(l,r){
  return '<div id="league-dashboard">'+leagueDashboard(l,state.user,'seriea',false,esc,fmt,null)+'</div>';
+}
+function barReminderPage(league){
+ return renderPresidentReminders('bar',league.id,barReminder(league,state.user.id));
 }
 let presidentGroup=null;
 function barRulesForm(l){
@@ -1479,6 +1496,7 @@ function serieACalendarPage() {
   )}`;
 }
 function navigatePage(next) {
+  if(next==='solleciti'&&L()?.admin!==state.user?.id)return;
   if(next==='admin'){if(page!=='admin')presidentNative=null;openPresidentOperation(null);return;}
   if(next===page)return;
   if(next==='quasi')quasiPane='mine';
@@ -2530,6 +2548,7 @@ function applyLive(data){
   const matches=[...(L().rounds||[]),...(state.calendar?.rounds||[])].flatMap(r=>r.matches);
   const credit=$('.v2-credits b');if(credit){const value=fmt(me()?.credits||0);if(credit.textContent!==value)credit.textContent=value;}
   const dashboard=$('#league-dashboard');if(dashboard){patchRegion(dashboard.firstElementChild,leagueDashboard(L(),state.user,'seriea',false,esc,fmt,null));bindDashboard();}
+  if(page==='solleciti')patchRegion($('.president-reminders'),barReminderPage(L()));
   if(page==='classifiche'){
     const template=document.createElement('template');template.innerHTML=ranking(L());
     const current=$('main .card'),fresh=template.content.querySelector('.card');if(current&&fresh)patchRegion(current,fresh.outerHTML);
@@ -2605,7 +2624,7 @@ setInterval(()=>{
  else checkLeagueAccess();
 },30000);
 document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked){syncChatLauncher(linked);openLeagueChat(e.detail.trigger);}});
-document.addEventListener('click',e=>{const operation=e.target.closest('[data-president-operation]');if(operation){openPresidentOperation(operation.dataset.presidentOperation||null);return;}const jump=e.target.closest('[data-league-fanta]');if(jump&&L()){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:jump.dataset.nativeLeague,initialTab:jump.dataset.leagueFanta,initialSection:jump.dataset.leagueSection,onBar:openBarTarget});return;}const chat=e.target.closest('[data-league-chat]');if(chat){openLeagueChat(chat);return;}const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&isLeagueEntryPage(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','partecipanti','lega','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'impostazioni':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.settings-app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){if(!L())return;closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,initialTab:'oggi',onBar:openBarTarget});}else if(preferredFanta()){leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}openBarTarget({page:'lega'});}});
+document.addEventListener('click',e=>{const operation=e.target.closest('[data-president-operation]');if(operation){openPresidentOperation(operation.dataset.presidentOperation||null);return;}const jump=e.target.closest('[data-league-fanta]');if(jump&&L()){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:jump.dataset.nativeLeague,initialTab:jump.dataset.leagueFanta,initialSection:jump.dataset.leagueSection,onBar:openBarTarget});return;}const chat=e.target.closest('[data-league-chat]');if(chat){openLeagueChat(chat);return;}const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&isLeagueEntryPage(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','partecipanti','lega','invita','solleciti'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'impostazioni':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.settings-app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){if(!L())return;closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,initialTab:'oggi',onBar:openBarTarget});}else if(preferredFanta()){leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}openBarTarget({page:'lega'});}});
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
 const liveChannel=createSportsPush({
   context:()=>!preferredFanta()&&state.user&&!state.user.demo&&state.user.emailVerified&&L()?{mode:'bar',league:L().id}:null,
@@ -2644,7 +2663,7 @@ setInterval(() => {
 
 
 window.addEventListener("pagehide", persistDraft);
-window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){if(!state.leagues.length){reconcileLeagueSelection();render();return;}void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:false});return;}leaveFanta();page=barPageFor(route);presidentOperation=page==='admin'?route.section:null;if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
+window.addEventListener('popstate',()=>{const route=readAppRoute();if(!route||!state.user)return;if(route.mode==='fanta'){if(!state.leagues.length){reconcileLeagueSelection();render();return;}void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),onBar:openBarTarget,initialTab:route.page,leagueId:route.league,force:route.section==='studio'});return;}leaveFanta();page=barPageFor(route);presidentOperation=page==='admin'?route.section:null;if(state.leagues.some(l=>l.id===route.league))leagueId=route.league;sourceScope='seriea';if(route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;hydrateDraft();render();});
 // Formations remain a stable DB snapshot. The live channel patches only scores,
 // events and small numeric regions, never formations, accordions or portraits.
 

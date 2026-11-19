@@ -1,5 +1,6 @@
 import {quasiHomeBackdrop,quasiMascot} from './quasi-scene.mjs';
 import {socialHome} from './home-social.mjs';
+import {barReminder,homeReminderBanner} from './president-reminders.mjs';
 import {stableHash} from './reward-catalog.mjs';
 import {BAR_HOME_QUOTES} from './bar-home-quotes.mjs';
 import {matchSegments,renderBarStories} from './bar-home-stories.mjs';
@@ -53,7 +54,7 @@ export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,comp
   open?{round:open,label:(open.slip?'Rivedi schedina':'Schedina')+(shortRound(open)?' '+shortRound(open):''),deadline:deadlineOf(open)}:
   {label:upcoming?'Prossima giornata':'Schedine in arrivo',deadline:upcoming&&deadlineOf(upcoming),disabled:true};
  const segments=round?matchSegments(round):[];
- return socialHome({mode:'bar',now,
+ return socialHome({mode:'bar',now,reminder:homeReminderBanner('bar',barReminder(league,user.id,now)),
   stories:renderBarStories({league,user,round,history:last,short:shortRound(round),esc,fmt}),
   hero:{title:'Il tuo Quasi dice',quote:quote(user,league,last,open,now),background:quasiHomeBackdrop(user.avatar),art:quasiMascot(user.avatar,user.name),
    chips:`<button type="button" data-dashboard-rank="points" aria-label="Punti, apri la classifica del Bar">${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</button><button type="button" data-dashboard-rank="credits" aria-label="Crediti, apri la classifica del Bar">${fmt(model.credits)} cr</button>`},
