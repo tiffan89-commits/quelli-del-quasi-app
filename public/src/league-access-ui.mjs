@@ -1,3 +1,4 @@
+import {askConfirmation} from './site-confirm.mjs';
 import {avatarSvg} from './avatar.mjs';
 import {esc} from './fanta/formato.mjs';
 
@@ -11,39 +12,16 @@ function sheet(label,html){
  return dialog;
 }
 
-export function showLeagueInvite({api,league}){
- if(document.querySelector('.league-access-sheet[open]'))return;
- const dialog=sheet('Invita un giocatore',`<h2>Invita un giocatore</h2>
-  <form class="league-access-invite">
-   <label class="field">Nickname o email<input name="identity" required maxlength="254" autocomplete="off" autocapitalize="none"></label>
-   <div class="league-access-actions"><button class="primary">Invia invito</button><button type="button" class="secondary" data-close-invite>Chiudi</button></div>
-   <p role="status"></p>
-  </form>`);
- const form=dialog.querySelector('form'),button=form.querySelector('button'),status=form.querySelector('[role=status]');
- dialog.querySelector('[data-close-invite]').onclick=()=>dialog.close();
- form.onsubmit=async event=>{
-  event.preventDefault();
-  if(button.disabled)return;
-  button.disabled=true;status.textContent='';
-  try{await api('league-access-invite',{league,identity:form.elements.identity.value});form.reset();status.textContent='Invito inviato.';}
-  catch(error){status.textContent=error.message;}
-  finally{button.disabled=false;}
- };
- dialog.showModal();
-}
-
-export function createLeagueAccessPrompts({api,userId,onJoined}){
+export function createLeagueAccessPrompts({api,userId,onJoined,onRequests=()=>{}}){
  let dialog=null,checking=null,current=null;
  function close(){const prior=dialog;dialog=null;if(prior?.open)prior.close();}
  function show(entry,uid){
-  const request=entry.kind==='request';
-  dialog=sheet(request?'Richiesta di ingresso':'Invito a una lega',`
-   <h2>${request?'Richiesta di ingresso':'Invito a una lega'}</h2>
-   ${request?`<div class="league-access-player"><span class="league-access-portrait" aria-hidden="true">${avatarSvg(entry.player.avatar)}</span><div><b>${esc(entry.player.nickname)}</b><span>${esc(entry.player.email)}</span></div></div>`:''}
-   <p>${request?'Vuole entrare in ':'Vuoi entrare in '}<strong>${esc(entry.league)}</strong>?</p>
+  dialog=sheet('Invito a una lega',`
+   <h2>Invito a una lega</h2>
+   <p>Vuoi entrare in <strong>${esc(entry.league)}</strong>?</p>
    <p role="alert" data-access-error></p>
-   <div data-access-choice class="league-access-actions"><button type="button" class="primary" data-access-decision="accept">${request?'Approva':'Accetta'}</button><button type="button" class="secondary" data-access-reject>Rifiuta</button></div>
-   <div data-access-confirm hidden><p>${request?'Il giocatore dovrà ricevere un nuovo invito.':'Dovrai chiedere all’admin un nuovo invito per entrare.'}</p>
+   <div data-access-choice class="league-access-actions"><button type="button" class="primary" data-access-decision="accept">Accetta</button><button type="button" class="secondary" data-access-reject>Rifiuta</button></div>
+   <div data-access-confirm hidden><p>Dovrai chiedere all’admin un nuovo invito per entrare.</p>
     <div class="league-access-actions"><button type="button" class="secondary" data-access-cancel>Torna indietro</button><button type="button" class="primary" data-access-decision="reject">Conferma rifiuto</button></div>
    </div>`);
   const shown=dialog;
@@ -78,10 +56,47 @@ export function createLeagueAccessPrompts({api,userId,onJoined}){
   if(!uid||document.hidden||navigator.onLine===false||dialog||document.querySelector('dialog[open]'))return;
   if(checking?.uid===uid)return checking.job;
   const job=api('league-access-inbox').then(entries=>{
-   if(uid===current&&uid===userId()&&!dialog&&!document.hidden&&!document.querySelector('dialog[open]')&&entries?.[0])show(entries[0],uid);
+   if(uid!==current||uid!==userId()||dialog||document.hidden||document.querySelector('dialog[open]'))return;
+   const invite=entries?.find(entry=>entry.kind==='invite'),request=entries?.find(entry=>entry.kind==='request');
+   if(request)onRequests(request);
+   if(invite)show(invite,uid);
   }).catch(()=>{}).finally(()=>{if(checking?.job===job)checking=null;});
   checking={uid,job};
   return job;
  }
  return {check,close};
+}
+
+export function bindPresidentRequests(root,{api,league,onChanged}){
+ let busy=false,items=[];
+ async function load(){
+  try{
+   items=(await api('league-access-inbox')).filter(item=>item.kind==='request'&&item.leagueId===league);
+   if(!root.isConnected)return;
+   root.innerHTML=items.length?items.map(item=>`<article class="card president-access-request" data-request="${esc(item.id)}">
+    <div class="league-access-player"><span class="league-access-portrait" aria-hidden="true">${avatarSvg(item.player.avatar)}</span><div><b>${esc(item.player.nickname)}</b><span>${esc(item.player.email)}</span></div></div>
+    <div class="league-access-actions"><button type="button" class="primary" data-request-decision="accept">Approva</button><button type="button" class="secondary" data-request-decision="reject">Rifiuta</button></div>
+    <p role="alert"></p></article>`).join(''):'<p>Nessuna richiesta in attesa.</p>';
+  }catch(error){
+   if(!root.isConnected)return;
+   root.innerHTML='<p role="alert"></p><button type="button" class="secondary" data-retry-requests>Riprova</button>';
+   root.querySelector('p').textContent=error.message;
+   root.querySelector('button').onclick=load;
+  }
+ }
+ root.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-request-decision]'),card=button?.closest('[data-request]');
+  const item=card&&items.find(request=>request.id===card.dataset.request);
+  if(!item||busy)return;
+  busy=true;
+  const decision=button.dataset.requestDecision;
+  try{
+   if(decision==='reject'&&!await askConfirmation({title:'Rifiuta richiesta',message:'Il giocatore avrà bisogno di un nuovo invito per entrare.',confirmLabel:'Rifiuta',danger:true}))return;
+   if(!root.isConnected)return;
+   await api('league-access-respond',{id:item.id,decision});
+   await load();onChanged?.();
+  }catch(error){card.querySelector('[role=alert]').textContent=error.message;}
+  finally{busy=false;}
+ });
+ void load();
 }

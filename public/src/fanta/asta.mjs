@@ -322,7 +322,7 @@ export function renderAsta(a, ui = {}, players = null) {
   else center=`<section class="fanta-a-lot is-idle"><h2>${a.status==='scheduled'?esc(auctionWhen(a.startsAt)):a.status==='ended'?'L’asta è finita':'Nessuna asta in programma'}</h2>
     ${a.status==='scheduled'?'<p>La sala si apre automaticamente all’orario programmato.</p>':''}
     ${a.status==='ended'&&(a.competition?.status==='active'||a.competitionActivation?.status==='active')?'<p>La competizione è avviata.</p><button type="button" class="primary" data-go="formazione">Schiera la formazione →</button>':''}
-    ${a.isAdmin?'<button type="button" class="primary" data-auction-manage="1">Gestisci asta →</button>':''}</section>`;
+    ${a.isAdmin?`<button type="button" class="primary" data-auction-manage="1">${a.status==='scheduled'?'Modifica programmazione':'Configura asta'}</button>${a.status==='scheduled'?'<button type="button" class="secondary" data-asta-close="1">Annulla asta programmata</button>':''}`:''}</section>`;
   const panes=[center,a?teamsList(a,ui,compactClock())+logList(a):'',a?myRoster(a,compactClock()):''];
   const panel=ui.panel||0;
   return `<section class="fanta-asta auction-room${compact?' is-compact':''}" aria-label="Sala d’asta">

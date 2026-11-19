@@ -227,6 +227,36 @@
 .league-onboarding { max-width: 520px; margin: 12px auto; }
 body:has(.league-onboarding) #pwa-install-card { display: none !important; }
 .league-onboarding-card.card { display: grid; gap: 12px; min-height: 0; margin: 0; padding: 16px; }
+.president-workspace .participants-heading { margin-bottom:8px; }
+html.os-on body #app>main.os-split .president-workspace > [data-os-content] { overflow-y:auto; }
+.president-operation-list { display:block; }
+.president-operation.secondary,.president-launch.secondary {
+ display:inline-flex; width:100%; align-items:center; justify-content:space-between; gap:10px;
+ padding:10px 14px; min-height:46px; margin:0 0 7px; text-align:left; font-weight:700;
+ break-inside:avoid; -webkit-column-break-inside:avoid;
+}
+.president-operation span,.president-launch span { color:var(--lime); font-size:1.25em; }
+.president-operation.league-delete-action { color:#ffa6a6; }
+.fanta-home .president-launch { grid-column:1/-1; }
+.president-workspace .card { margin:0 0 8px; }
+.president-workspace .field { margin:0 0 10px; }
+.president-workspace .league-administration-form { display:grid; gap:10px; }
+.site-field-error { margin:5px 0 0; font-size:.85rem; color:#ffb0b0; }
+.site-datetime { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:8px; border:0; margin:0 0 10px; padding:0; min-width:0; }
+.site-datetime legend { font-weight:700; margin-bottom:5px; }
+.site-datetime label { min-width:0; font-size:.85rem; }
+.site-datetime input { width:100%; }
+.site-confirm {
+ position:fixed; inset:0; width:min(420px,calc(100% - 32px)); max-height:calc(100dvh - 32px);
+ border:1px solid var(--line); border-radius:16px; padding:18px; color:var(--white); background:var(--panel);
+ box-shadow:0 14px 50px #0008;
+}
+.site-confirm::backdrop { background:#000a; }
+.site-confirm h2 { margin:0 0 8px; }
+.site-confirm p { margin:0 0 14px; }
+.site-confirm form { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+.site-confirm button { min-height:44px; }
+.site-confirm .site-confirm-danger { color:#190907; background:#ffa6a6; }
 .participants-heading { display:flex; align-items:center; gap:10px; padding:2px 0 6px; }
 .participants-heading h1 { margin:0; font-size:clamp(20px,5.8vw,28px); }
 .participants-list { margin:0; padding:0; list-style:none; }

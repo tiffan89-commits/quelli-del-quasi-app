@@ -1,3 +1,4 @@
+import {dateTimeFields} from '../site-datetime.mjs';
 import { esc } from './formato.mjs';
 
 import {AUCTION_TYPES,AUCTION_DESCRIPTIONS} from '../auction-formats.mjs';
@@ -24,7 +25,7 @@ export function renderAuctionWizard(w){
   const first=`<fieldset><legend>Tipo di asta</legend>${options('type',w.type,w.allowedTypes.map(key=>[key,AUCTION_TYPES[key],AUCTION_DESCRIPTIONS[key]]))}</fieldset>
     ${w.type!=='lampo'?`<fieldset><legend>Modalità</legend>${options('mode',w.mode,[['live','Online','Offerte in app con timer'],['manual','Dal vivo','Offerte a voce, registra il banditore']])}</fieldset>`:''}
     <fieldset><legend>Quando</legend>${options('timing',w.timing,[['now','Apri subito'],['scheduled','Programma per dopo']])}</fieldset>
-    ${w.timing==='scheduled'?`<label class="auction-field">Data e ora<input type="datetime-local" name="startsAt" value="${esc(w.startsAt)}" required></label>`:''}
+    ${w.timing==='scheduled'?dateTimeFields('startsAt','Data e ora',w.startsAt):''}
     ${(w.type==='lampo'||w.mode==='live')&&w.hasComputers?`<label class="auction-bots"><input name="computerTeams" type="checkbox" ${w.computerTeams?'checked':''}> Squadre del computer <small>Chiamano e rilanciano per le squadre senza allenatore.</small></label>`:''}`;
   const second=`<label class="auction-field">Crediti per squadra<input type="number" name="budget" min="${w.minBudget}" max="100000" required inputmode="numeric" value="${esc(w.budget)}"></label>
     <p class="auction-help">È il budget totale. In un’asta di riparazione il costo delle rose e i rimborsi già registrati concorrono al saldo disponibile.</p>`;

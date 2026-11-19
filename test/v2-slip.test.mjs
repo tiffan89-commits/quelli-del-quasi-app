@@ -45,6 +45,27 @@ test('passo 9: ogni gara espone gli agganci per aggiornare solo il risultato',()
  assert.match(row.querySelector('[data-inline-result]').textContent,/LIVE.*1 – 0/);
  assert.ok(choice.classList.contains('pick-winning'));
 });
+test('Bar final scores replace kickoff and mark both regular and extra selections',()=>{
+ const r={...round(),closed:true,kickoff:'2026-11-08T14:00:00Z'},picks={1:'1',2:'X2'};
+ for(const m of r.matches)m.kickoff=r.kickoff;
+ Object.assign(r.matches[0],{status:'FT',score:[2,1]});
+ Object.assign(r.matches[1],{status:'LIVE',liveScore:[1,0]});
+ const {document}=parseHTML(renderSlipV2({round:r,barTicket:true,picks,esc,fmt:String,date:String}));
+ const first=document.querySelector('[data-match-card="1"]'),second=document.querySelector('[data-match-card="2"]');
+ assert.equal(first.querySelector('time').hidden,true);
+ assert.equal(first.querySelector('[data-inline-result]').textContent,'2 – 1');
+ assert.equal(first.querySelector('.inline-score').classList.contains('is-final'),true);
+ assert.equal(second.querySelector('time').hidden,false);
+ patchSlipResults(document,r,picks,true);
+ assert.equal(first.querySelector('[data-value="1"].pick-winning .ticket-outcome').textContent,'✓');
+ assert.equal(second.querySelector('.v2-more.pick-losing .ticket-outcome').textContent,'×');
+ Object.assign(r.matches[1],{status:'FT',score:[1,1]});
+ patchSlipResults(document,r,picks,true);
+ assert.equal(second.querySelector('time').hidden,true);
+ assert.equal(second.querySelector('[data-inline-result]').textContent,'1 – 1');
+ assert.equal(second.querySelector('.v2-more.pick-winning .ticket-outcome').textContent,'✓');
+ assert.equal(document.querySelector('[data-match-card="3"] time').hidden,false);
+});
 test('passo 9: mercati aggiuntivi e callback mantengono gli identificatori',()=>{
  const {document}=parseHTML('<html><body>'+renderSlipV2({round:round(),openMatch:'1',esc,fmt:String,date:String})+'</body></html>');
  const calls=[];bindSlipV2(document,{onPick:(...a)=>calls.push(['pick',...a]),onToggle:id=>calls.push(['toggle',id]),onStake:v=>calls.push(['stake',v]),onSave:()=>calls.push(['save'])});

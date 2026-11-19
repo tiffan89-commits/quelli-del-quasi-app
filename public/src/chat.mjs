@@ -1,3 +1,4 @@
+import {askConfirmation} from './site-confirm.mjs';
 import {pushSupported,enableLeagueNotifications} from './notifications.mjs';
 const esc = (s) =>
   String(s ?? "").replace(
@@ -97,7 +98,7 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
     log.querySelectorAll("[data-chat-delete]").forEach(
       (b) =>
         (b.onclick = async () => {
-          if (!confirm("Eliminare questo messaggio per tutta la lega?")) return;
+          if(!await askConfirmation({title:'Elimina messaggio',message:'Il messaggio verrà eliminato per tutta la lega.',confirmLabel:'Elimina',danger:true}))return;
           b.disabled = true;
           try {
             await api("chat-delete", {

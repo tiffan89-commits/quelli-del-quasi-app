@@ -6,7 +6,7 @@ import {pointTerms,QUOTA_SCORING,roundPointRules,slipPointTerms} from '../../sco
 // Usa lo stesso modello dati di app.mjs: picks[match.id] = valore (es. "1", "X2", "Over 2.5").
 import {eventDeadline,eventCountdown} from '../../slip-events.mjs';
 import { slipSummary, editingClosed,editingEventLocked,sourceOf,roundAvailability } from '../slip-state.mjs';
-import { barKickoff,inlineResultView,slipNotice } from '../slip-results.mjs';
+import { barKickoff,hasFinalScore,inlineResultView,slipNotice } from '../slip-results.mjs';
 import {orderSlipMatches} from '../../match-layout.mjs';
 import {teamCode,pickCode} from '../bar-slips.mjs';
 
@@ -67,9 +67,9 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
     const kickoff=m.officialKickoff||m.kickoff;
     const barTime=fanta?null:barKickoff(m);
     const at=fanta&&partial&&!locked?eventDeadline(round,m):NaN;
-    const timing=barTime?`<time class="slip-match-kickoff${barTicket?' ticket-time':''}" datetime="${esc(barTime.kickoff)}"${barTime.label?'':' hidden'}>${esc(barTicket?barTime.timeLabel:barTime.label)}</time>`:
+    const timing=barTime?`<time class="slip-match-kickoff${barTicket?' ticket-time':''}" datetime="${esc(barTime.kickoff)}"${barTime.label&&!hasFinalScore(m)?'':' hidden'}>${esc(barTicket?barTime.timeLabel:barTime.label)}</time>`:
       Number.isFinite(at)?`<small class="slip-event-clock" data-slip-event-at="${at}" title="Tempo per giocare">${eventCountdown(at)}</small>`:'';
-    const live=m.status==='LIVE',status=fanta?(live?'In corso':m.score?'Risultato finale':fantasyMeta?.(m)||(kickoff?date(kickoff):'')):'';
+    const live=m.status==='LIVE',status=fanta?(live?'In corso':hasFinalScore(m)?'':fantasyMeta?.(m)||(kickoff?date(kickoff):'')):'';
     if(barTicket){
       const pick=picks[m.id],price=extraOn?optionPrice(m,pick,locked||!ready,round).odd:null;
       const teams=teamLabel(m.home,{home:true,vs:m.away})+teamLabel(m.away,{home:false,vs:m.home});

@@ -1,3 +1,5 @@
+import {presidentBarBridge} from './president-workspace.mjs';
+import {askConfirmation} from './site-confirm.mjs';
 import {esc} from './fanta/formato.mjs';
 import {teamLogo} from './fanta/team-logo.mjs';
 import {avatarSvg} from './avatar.mjs';
@@ -7,22 +9,21 @@ import {leagueActions} from './league-actions.mjs';
 import {whatsappInvite} from './league-invite.mjs';
 
 const personCount=members=>members.filter(m=>m.uid).length;
+const workspaceData=(data,view)=>view==='manage'&&data?{...data,members:data.members.filter(m=>m.uid)}:data;
 export function renderLeagueHub({bar,fanta,isAdmin,members},mode){
  const barMode=mode==='bar',id=bar?.id;
  const fantaAction=tab=>barMode?`data-league-fanta="${tab}" data-native-league="${esc(fanta.id)}"`:`data-go="${tab}"`;
  const hasTools=fanta?.isCoach&&fanta.kind!=='pilot';
- const nativeAdmin=hasTools&&fanta.isAdmin;
- const auctionStatus=fanta?.auction==='running'?'In corso':fanta?.auction==='scheduled'?'Programmata':'Gestisci le aste';
+ const auctionStatus=fanta?.auction==='running'?'In corso':fanta?.auction==='scheduled'?'Programmata':'Conclusa';
  const tiles=[
-  isAdmin?hubTile('gear','Pannello del presidente','',{action:id?`${barMode?'':'data-mode="bar" '}data-bar-page="admin"`:'data-go="presidente"',admin:true,arrow:true}):'',
+  (isAdmin||fanta?.isAdmin)?hubTile('gear','Pannello del presidente','',{action:id&&isAdmin?(barMode?'data-bar-page="admin"':presidentBarBridge):fantaAction('presidente'),admin:true,arrow:true}):'',
   hubTile('people',`Partecipanti · ${personCount(members)}`,'',{action:barMode?'data-bar-page="partecipanti"':'data-go="partecipanti"',arrow:true}),
   id?hubTile('rules','Regolamento del Bar','',{action:`${barMode?'':'data-mode="bar" '}data-bar-page="regolamento"`,arrow:true}):'',
   fanta?.isCoach?hubTile('rules','Regolamento del Fanta','',{action:fantaAction('regolamento'),arrow:true}):'',
   hasTools?hubTile('competition','Competizioni','',{action:fantaAction('competizioni'),arrow:true}):'',
-  hasTools&&(nativeAdmin||['scheduled','running'].includes(fanta.auction))?hubTile('auction','Asta',auctionStatus,{action:!barMode&&nativeAdmin?'data-auction-manage="1"':fantaAction('asta'),arrow:true}):'',
+  hasTools&&['scheduled','running','ended'].includes(fanta.auction)?hubTile('auction','Asta',auctionStatus,{action:fantaAction('asta'),arrow:true}):'',
   fanta?.isCoach?hubTile('trade','Scambi','',{action:fantaAction('scambi'),arrow:true}):'',
   id?hubTile('chat','Chat della lega','',{action:(barMode?'data-league-chat':'data-fanta-chat')+' aria-controls="league-chat-widget"'}):'',
-  isAdmin&&id&&!bar.demo?hubTile('invite','Invita per nickname o email','',{action:`data-league-direct-invite="${esc(id)}"`}):'',
   bar?.code?whatsappInvite(bar,esc,{className:'lega-tile whatsapp-invite'}):'',
  ];
  return `<div class="lega-hub">${tiles.join('')}</div>${leagueActions({bridge:!barMode})}`;
@@ -45,10 +46,10 @@ export function renderParticipantRows({members,isAdmin}){
 }
 
 export function leagueWorkspace({id,mode,view='hub',back='',fallback}){
- const participants=view==='participants';
+ const participants=view==='participants',management=view==='manage';
  return `${participants?`<header class="participants-heading" data-os-header><button type="button" class="secondary league-settings-back" ${back}>‹ Indietro</button><h1>Partecipanti</h1></header>`:''}
- <div data-os-content data-league-workspace data-league-id="${esc(id)}" data-league-mode="${mode}" data-league-view="${view}">
-  ${fallback?(participants?renderParticipantRows(fallback):renderLeagueHub(fallback,mode)):'<p role="status">Caricamento…</p>'}
+ <div ${management?'':'data-os-content'} data-league-workspace data-league-id="${esc(id)}" data-league-mode="${mode}" data-league-view="${view}">
+  ${fallback?((participants||management)?renderParticipantRows({...workspaceData(fallback,view),isAdmin:management&&fallback.isAdmin}):renderLeagueHub(fallback,mode)):'<p role="status">Caricamento…</p>'}
  </div>`;
 }
 
@@ -68,10 +69,10 @@ export function bindLeagueWorkspace(node,{load,remove,initial,onRemoved=()=>{},o
  if(!node||node.dataset.bound)return null;
  node.dataset.bound='true';
  const {leagueId:id,leagueMode:mode,leagueView:view}=node.dataset;
- let data=initial,revision=0,activeRemoval=false;
+ let data=workspaceData(initial,view),revision=0,activeRemoval=false;
  function paint(next){
-  data=next;
-  node.innerHTML=view==='participants'?renderParticipantRows(next):renderLeagueHub(next,mode);
+  data=workspaceData(next,view);
+  node.innerHTML=view==='hub'?renderLeagueHub(data,mode):renderParticipantRows({...data,isAdmin:view==='manage'&&data.isAdmin});
   onPaint();
  }
  async function refresh(){
@@ -97,12 +98,13 @@ export function bindLeagueWorkspace(node,{load,remove,initial,onRemoved=()=>{},o
   if(zoom==='quasi'){showQuasi(member);return;}
   if(zoom==='logo'){zoomLogo(member.team);return;}
   const button=event.target.closest('[data-participant-remove]');
-  if(!button||activeRemoval||!member.uid||!data.isAdmin||member.isMe||member.isAdmin)return;
-  if(!confirm('Rimuovere '+member.name+' dalla lega?'))return;
+  if(view!=='manage'||!button||activeRemoval||!member.uid||!data.isAdmin||member.isMe||member.isAdmin)return;
   const bar=data.bar;
-  activeRemoval=button.disabled=true;
+  activeRemoval=true;
   node.querySelector('[data-participants-error]')?.remove();
   try{
+   if(!await askConfirmation({title:'Rimuovi partecipante',message:'Vuoi rimuovere '+member.name+' dalla lega?',confirmLabel:'Rimuovi',danger:true})||!node.isConnected)return;
+   button.disabled=true;
    await remove({id,bar,mode,uid:member.uid});
    if(node.isConnected&&data)paint({...data,members:data.members.filter(m=>m.uid!==member.uid)});
    if(load)await refresh();
