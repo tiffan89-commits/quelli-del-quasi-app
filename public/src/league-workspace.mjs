@@ -21,7 +21,7 @@ export function renderLeagueHub({bar,fanta,isAdmin,members},mode){
   hasTools?hubTile('competition','Competizioni','',{action:fantaAction('competizioni'),arrow:true}):'',
   hasTools&&(nativeAdmin||['scheduled','running'].includes(fanta.auction))?hubTile('auction','Asta',auctionStatus,{action:!barMode&&nativeAdmin?'data-auction-manage="1"':fantaAction('asta'),arrow:true}):'',
   fanta?.isCoach?hubTile('trade','Scambi','',{action:fantaAction('scambi'),arrow:true}):'',
-  id?hubTile('chat','Chat della lega','',{action:barMode?'data-league-chat':'data-fanta-chat'}):'',
+  id?hubTile('chat','Chat della lega','',{action:(barMode?'data-league-chat':'data-fanta-chat')+' aria-controls="league-chat-widget"'}):'',
   isAdmin&&id&&!bar.demo?hubTile('invite','Invita per nickname o email','',{action:`data-league-direct-invite="${esc(id)}"`}):'',
   bar?.code?whatsappInvite(bar,esc,{className:'lega-tile whatsapp-invite'}):'',
  ];

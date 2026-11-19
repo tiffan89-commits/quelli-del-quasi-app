@@ -763,7 +763,7 @@ function render() {
   syncChatLauncher(l);
   bind(l, r);
   const workspace=$('[data-league-workspace]');
-  leagueWorkspaceView=workspace&&l?bindLeagueWorkspace(workspace,{load:state.user.demo?()=>Promise.resolve(barLeagueFallback(barDemo?.state.leagues.find(item=>item.id===l.id)||l,state.user.id)):loadLeagueWorkspace,remove:removeLeagueParticipant,initial:barLeagueFallback(l,state.user.id),onRemoved:refreshLeagueMembers}):null;
+  leagueWorkspaceView=workspace&&l?bindLeagueWorkspace(workspace,{load:state.user.demo?()=>Promise.resolve(barLeagueFallback(barDemo?.state.leagues.find(item=>item.id===l.id)||l,state.user.id)):loadLeagueWorkspace,remove:removeLeagueParticipant,initial:barLeagueFallback(l,state.user.id),onRemoved:refreshLeagueMembers,onPaint:chatBadge}):null;
   const directory=$('[data-league-directory]');
   if(directory)void bindLeagueDirectory(directory,{api,onJoined:enterAccessLeague,onSupport:openLeagueAccessSupport})();
   bindPresidentPanel($('#app'));

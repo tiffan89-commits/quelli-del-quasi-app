@@ -8,7 +8,8 @@ const html = fs.readFileSync(
 );
 const source = fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8');
 test("chat entry is a league tile and the floating launcher is absent",()=>{
- assert.match(source,/hubTile\('chat','Chiacchiere da bar'/);
+ const shared=fs.readFileSync(new URL('../public/src/league-workspace.mjs',import.meta.url),'utf8');
+ assert.match(shared,/hubTile\('chat'.*data-league-chat.*data-fanta-chat.*aria-controls/);
  assert.doesNotMatch(source,/chatLauncherView|bindSupportDrag/);
 });
 
