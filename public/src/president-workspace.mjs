@@ -27,7 +27,7 @@ const fantaOperations=[
 ];
 const operations=new Map([...barOperations,...fantaOperations].map(entry=>[entry[0],entry]));
 export const presidentTitle=key=>operations.get(key)?.[1]||'Pannello del presidente';
-export const fantaPresidentTool=(tab,key)=>operations.get(key)?.[4]===tab?key:tab==='presidente'&&key==='rimuovi'?key:null;
+export const fantaPresidentTool=(tab,key)=>operations.get(key)?.[4]===tab?key:tab==='presidente'&&['rimuovi','identita'].includes(key)?key:null;
 
 export const presidentLaunch=(attributes)=>`<button class="secondary president-launch" type="button" ${attributes}>Pannello del presidente <span aria-hidden="true">›</span></button>`;
 export const presidentBarBridge='data-mode="bar" data-bar-page="admin"';
@@ -41,8 +41,8 @@ export function presidentWorkspace({tool,body='',buttons='',back}){
  </section>`;
 }
 
-export function presidentOperationButtons({bar=null,fanta=null,mode='bar',demo=false,hasTrades=false}={}){
- const available=bar?new Set(['identita','regole','rimuovi','riammetti',...(bar.code?['whatsapp']:[]),...(!demo?['invita','richieste','elimina']:[]),...(bar.fantaCreation?.status&&bar.fantaCreation.status!=='ready'?['preparazione']:!bar.nativeFantaLink&&!fanta?['attiva']:[])]):new Set(['rimuovi']);
+export function presidentOperationButtons({bar=null,fanta=null,mode='bar',demo=false,hasTrades=false,hasIdentity=false}={}){
+ const available=bar?new Set(['identita','regole','rimuovi','riammetti',...(bar.code?['whatsapp']:[]),...(!demo?['invita','richieste','elimina']:[]),...(bar.fantaCreation?.status&&bar.fantaCreation.status!=='ready'?['preparazione']:!bar.nativeFantaLink&&!fanta?['attiva']:[])]):new Set(hasIdentity?['identita','rimuovi']:['rimuovi']);
  const barButtons=barOperations.filter(([key])=>available.has(key)).map(([key])=>
   [key,mode==='bar'?`data-president-operation="${key}"`:`data-go="presidente" data-president-tool="${key}"`]);
  const nativeButtons=fanta?fantaOperations.filter(([key])=>{

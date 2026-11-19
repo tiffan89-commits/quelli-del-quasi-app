@@ -18,6 +18,7 @@ import {saveTeamIdentity} from './team-logo.mjs';
 import {competitionAction} from './competitions.mjs';
 import {teamChoices} from './team-choices.mjs';
 import {entryStatus,claimEntry} from './acquisition.mjs';
+import {nativeLeagueBranding,updateLeagueProfile} from '../lib/league-profile.mjs';
 export const betaUser=(u,env=process.env)=>!!u&&u.verified&&!u.demo&&!u.admin_only&&String(env.FANTA_BETA_USERS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(u.username?.toLowerCase());
 const betaLeagues=env=>String(env.FANTA_BETA_LEAGUES||'fanta-lucas-a').split(',').map(x=>x.trim());
 export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.now,presenceCache=databaseReadCache()}={}){
@@ -55,6 +56,17 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(route==='league/slips'&&request.method==='POST'){if(!allowed.some(l=>l.id===p.league))fail('Lega non accessibile',403);return reply(await setSlips(u,p.league,p.enabled,{connect:store.connect}));}
    if(route==='leagues'&&request.method==='GET')return reply(allowed);
    const id=request.method==='GET'?url.searchParams.get('league'):p.league;if(!allowed.some(l=>l.id===id))fail('Lega non accessibile',403);
+   if(route==='league/identity'&&request.method==='POST'){
+    const league=allowed.find(l=>l.id===id);
+    if(league.role!=='admin')fail('Serve il presidente di lega',403);
+    if(!store.saveLeagueIdentity||league.linked)fail('Modifica l’identità dal pannello della lega collegata',409);
+    const profile={name:league.name,branding:{...league.branding,accent:league.accent}};
+    updateLeagueProfile(profile,p.branding||{});
+    const identity={name:profile.name,accent:profile.branding.accent,branding:nativeLeagueBranding(profile)};
+    const recipients=await store.saveLeagueIdentity(u.id,id,identity);
+    context.leagueUpdate?.({league:id,change:'fanta-identity',recipients});
+    return reply(identity);
+   }
    if(route==='team/logo/image'&&request.method==='GET'){
     const image=await store.logo(u.id,id,url.searchParams.get('team'));if(!image)fail('Logo non trovato',404);const etag='"'+image.digest+'"';return new Response(request.headers.get('if-none-match')===etag?null:image.data,{status:request.headers.get('if-none-match')===etag?304:200,headers:{'Content-Type':image.mime,'Cache-Control':'private, max-age=86400','ETag':etag,'X-Content-Type-Options':'nosniff'}});
    }

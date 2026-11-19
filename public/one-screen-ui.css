@@ -14,7 +14,7 @@ html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs)>button,
  background:transparent!important;color:var(--muted)!important;font:600 12px/1.1 'DM Sans',sans-serif!important;white-space:nowrap;box-shadow:none!important
 }
 html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs)>button:is(.on,[aria-pressed="true"],[aria-selected="true"]),
-#app>main:has(>.bar-ticket)>.slip-section-buttons>button[aria-pressed="true"]{background:var(--white,#f6f3e7)!important;color:#10200f!important}
+#app>main:has(>.bar-ticket)>.slip-section-buttons>button[aria-pressed="true"]{background:var(--lime)!important;color:#10200f!important}
 html.os-on main.os-root .slip-section-buttons>button[data-short] .seg-long{display:none}
 html.os-on main.os-root .slip-section-buttons>button[data-short]::after{content:attr(data-short)}
 
@@ -96,7 +96,7 @@ html.os-on main.os-root:has(.ranking-metric)>.round-heading{display:none}
 html.os-on main.os-root .ranking-rows{padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
 html.os-on main.os-root .ranking-metric{display:flex!important;gap:3px!important;margin:0 0 6px!important;padding:3px!important;border:1px solid var(--line);border-radius:999px;background:#0f1c18}
 html.os-on main.os-root .ranking-metric>button{flex:1;min-height:32px!important;padding:5px 8px!important;border:0!important;border-radius:999px!important;background:transparent!important;color:var(--muted)!important;font:600 12px 'DM Sans',sans-serif!important;box-shadow:none!important}
-html.os-on main.os-root .ranking-metric>button[aria-pressed="true"]{background:var(--white,#f6f3e7)!important;color:#10200f!important}
+html.os-on main.os-root .ranking-metric>button[aria-pressed="true"]{background:var(--lime)!important;color:#10200f!important}
 html.os-on main.os-root .rankrow>summary{min-height:40px!important;padding:0 4px!important;gap:10px!important;font-size:14px}
 html.os-on main.os-root .rankrow.is-me>summary,html.os-on .os-pin{background:#1b2f23}
 html.os-on main.os-root .rankrow.is-me>summary{border-radius:10px}
@@ -108,7 +108,7 @@ html.os-on #app>.v2-lega-nav{margin:8px 14px 0!important;padding:0!important}
 html.os-on :is(#app>.v2-lega-nav,main.os-root) .v2-chips{display:flex!important;flex-wrap:nowrap!important;gap:3px!important;margin:0!important;padding:3px!important;border:1px solid var(--line);border-radius:999px;background:#0f1c18;overflow-x:auto;scrollbar-width:none;justify-content:stretch!important}
 html.os-on main.os-root .v2-chips{margin:0 0 10px!important}
 html.os-on :is(#app>.v2-lega-nav,main.os-root) .v2-chips>.v2-chip{flex:1 1 auto!important;min-height:32px!important;padding:5px 10px!important;border:0!important;border-radius:999px!important;background:transparent!important;color:var(--muted)!important;font:600 12px/1.1 'DM Sans',sans-serif!important;white-space:nowrap;box-shadow:none!important}
-html.os-on :is(#app>.v2-lega-nav,main.os-root) .v2-chips>.v2-chip:is(.is-active,[aria-selected="true"]){background:var(--white,#f6f3e7)!important;color:#10200f!important}
+html.os-on :is(#app>.v2-lega-nav,main.os-root) .v2-chips>.v2-chip:is(.is-active,[aria-selected="true"]){background:var(--lime)!important;color:#10200f!important}
 
 /* ---------- Lega del Bar: riquadri (markup nuovo, vale sempre) ---------- */
 .lega-hub-head{padding:14px 16px!important;min-height:0!important;margin:0 0 10px!important}

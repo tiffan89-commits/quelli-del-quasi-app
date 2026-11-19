@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import{emptyState,transaction}from'../lib/db.mjs';import{hash,session,userFor,sha,newLeague}from'../lib/game.mjs';
+import{emptyState,transaction,membershipTransaction}from'../lib/db.mjs';import{hash,session,userFor,sha,newLeague}from'../lib/game.mjs';
 import{readFile}from'node:fs/promises';
 import{fixtureDb}from'./fanta/helpers.mjs';
 import{changeBarStorage}from'../runtime/bar-storage.mjs';
@@ -84,8 +84,9 @@ for(const sportsStorage of ['snapshot','rows'])test(`the verified president can 
   for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views','020_live_storage_round_cache','021_live_storage_league_order','022_live_storage_cutover','023_live_storage_membership_view'])await migrate(name);
   await changeBarStorage('enable',{connect});
  }
- const api=createApi({transact:fn=>transaction(fn,{connect,sportsStorage}),env});
- const call=(route,token,body)=>api(new Request('https://example.test/api/'+route,{method:'POST',headers:{cookie:'sid='+token,'content-type':'application/json'},body:JSON.stringify({league:l.id,...body})}));
+ const updates=[];
+ const api=createApi({transact:fn=>transaction(fn,{connect,sportsStorage}),membershipTransact:fn=>membershipTransaction(fn,{connect,sportsStorage}),env});
+ const call=(route,token,body)=>api(new Request('https://example.test/api/'+route,{method:'POST',headers:{cookie:'sid='+token,'content-type':'application/json'},body:JSON.stringify({league:l.id,...body})}),{leagueUpdate:event=>updates.push(event)});
  const state=async()=> (await db.query(sportsStorage==='rows'
   ?'SELECT fanta.bar_restore_document(payload,storage_shape) AS payload FROM fanta_state WHERE id=1'
   :'SELECT payload FROM fanta_state WHERE id=1')).rows[0].payload;
@@ -94,6 +95,17 @@ for(const sportsStorage of ['snapshot','rows'])test(`the verified president can 
  const save=await call('league-profile',presidentToken,{branding});
  assert.equal(save.status,200,await save.clone().text());
  assert.deepEqual((await state()).leagues.find(x=>x.id===l.id).branding,branding);
+ assert.equal(updates[0].change,'identity');
+ assert.deepEqual(new Set(updates[0].recipients),new Set([p.id,member.id,'u1','u2']));
+ const renamed={...branding,name:'Il Bar degli amici 🍻',accent:'#ffb13d',fantaAccent:'#49e891'};
+ const rename=await call('league-profile',presidentToken,{branding:renamed});
+ assert.equal(rename.status,200,await rename.clone().text());
+ const saved=(await state()).leagues.find(x=>x.id===l.id);
+ assert.equal(saved.name,renamed.name);
+ assert.equal(saved.branding.accent,renamed.accent);
+ assert.equal(saved.branding.fantaAccent,renamed.fantaAccent);
+ const {rows:[fantaIdentity]}=await db.query(`SELECT name,accent,rules->'leagueIdentity' AS branding FROM fanta.leagues WHERE id=$1`,[fanta]);
+ assert.deepEqual(fantaIdentity,{name:renamed.name,accent:renamed.fantaAccent,branding:{emblem:renamed.emblem,motto:renamed.motto}});
 
  const remove=(token,confirmation)=>call('league-delete',token,{phrase:confirmation});
  assert.equal((await remove(memberToken,phrase)).status,403);

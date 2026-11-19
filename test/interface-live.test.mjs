@@ -21,7 +21,8 @@ import {renderLeagueChip,isLeagueAdmin} from '../public/src/v2/league-switcher.m
 import {renderSlipV2,patchSlipV2,patchSlipBar} from '../public/src/v2/slip-v2.mjs';
 import {barModeSwitch} from '../public/src/fanta-mode.mjs';
 import {inlineResultView,patchSlipResults} from '../public/src/slip-results.mjs';
-import { LEAGUE_COLORS, LEAGUE_EMBLEMS } from "../public/src/league-theme.mjs";
+import {leagueIdentityKey} from '../public/src/league-theme.mjs';
+import {leagueIdentityForm} from '../public/src/league-identity-form.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
@@ -128,9 +129,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     crypto: { randomUUID: () => "test-request-id" },
     URLSearchParams,
     Intl,
-    applyLeagueTheme(){},bindFootballStatistics(){},
-    LEAGUE_COLORS,
-    LEAGUE_EMBLEMS,
+    applyLeagueTheme(){},paintLeagueIdentity(){},leagueIdentityKey,leagueIdentityForm,bindLeagueIdentityForm(){},bindFootballStatistics(){},
     clearAdminState() {},
     calendarSections,
     hubHead,hubTile,appWhatsappInvite,signupShareData,

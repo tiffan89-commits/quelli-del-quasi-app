@@ -37,6 +37,7 @@ import { submitFantasyWaitlist } from "../../lib/fanta-interest.mjs";
 import { chatAction } from "../../lib/league-chat.mjs";
 import {fantasyRanking} from '../../lib/bar-fanta-rankings.mjs';
 import { accountTotals,enhanceState, updateLeagueProfile } from "../../lib/community.mjs";
+import {updateLinkedLeagueProfile} from '../../lib/league-profile.mjs';
 import { analysisFor, analysisRoundSummary, previewRoundProfiles, describeSavedSlip } from "../../lib/player-analysis.mjs";
 import { deliverPendingMail } from "../../lib/mail-delivery.mjs";
 import {dispatchAccountMail} from '../../lib/account-mail.mjs';
@@ -158,7 +159,7 @@ export function createApi({
         .at(-1);
     const authRoute=activityRoute.startsWith('social-')||['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email','change-password'].includes(activityRoute);
     const accessMutation=['league-access-request','league-access-invite','league-access-respond'].includes(activityRoute);
-    const membershipRoute=accessMutation||['create','join','member-remove','member-restore'].includes(activityRoute);
+    const membershipRoute=accessMutation||['create','join','member-remove','member-restore','league-profile'].includes(activityRoute);
     const profileRoute=['profile','profile-avatar','profile-reminders','profile-email-reminders','support','fantacalcio-waitlist'].includes(activityRoute);
     const deliverAccount=async jobId=>deliverMail!==deliverPendingMail?deliverMail({jobId,transactionFn:authTransact,env}):dispatchMail(jobId,{env});
     let accountRequest=null;
@@ -675,8 +676,14 @@ export function createApi({
           else if (route === "member-restore")
             restoreLeagueMember(l, p.uid, u.id);
           else if (route === "rules") l.rules = validateRules(p.rules);
-          else if (route === "league-profile")
-            updateLeagueProfile(l, p.branding || {});
+          else if (route === "league-profile") {
+            const branding=updateLeagueProfile(l,p.branding||{});
+            const linked=await updateLinkedLeagueProfile(c,l);
+            return {data:{ok:true,name:l.name,branding},leagueUpdate:{
+              league:l.id,fantaLeague:linked?.id,change:'identity',
+              recipients:[...new Set([l.admin,...l.members.map(m=>m.uid),...(linked?.coaches||[])])]
+            }};
+          }
           else if (route === "calendar-create")
             fail("Il calendario ufficiale è gestito automaticamente");
           else if (route === "results" || route === "demo-close")

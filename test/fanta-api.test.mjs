@@ -21,6 +21,23 @@ test('Fanta: real SQL schema enforces membership cap; all routes enforce server 
  await assert.rejects(f.db.query("INSERT INTO fanta.teams(id,league_id,name,manager) VALUES('t13','fanta-lucas-a','13','13')"),/completo/);
  }finally{await f.close();}
 });
+test('standalone Fanta identity updates the shared league without allowing members to edit',async t=>{
+ const f=await fixtureDb();t.after(f.close);
+ const updates=[],api=createFantaApi({store:sqlFantaStore(f),env}),league='fanta-lucas-a';
+ const call=(path,token,body)=>api(new Request('https://example.test/fanta-api/'+path,{
+  method:body?'POST':'GET',headers:{cookie:'sid='+token},body:body?JSON.stringify(body):undefined,
+ }),{leagueUpdate:event=>updates.push(event)});
+ const branding={name:'Coppa degli amici 🏆',accent:'#b699ff',emblem:'CA',motto:'Ogni punto conta'};
+ assert.equal((await call('league/identity','token2',{league,branding})).status,403);
+ const saved=await call('league/identity','token1',{league,branding});
+ assert.equal(saved.status,200,await saved.clone().text());
+ const [view]=await (await call('leagues','token2')).json();
+ assert.equal(view.name,branding.name);
+ assert.equal(view.accent,branding.accent);
+ assert.deepEqual(view.branding,{emblem:branding.emblem,motto:branding.motto});
+ assert.equal(updates.length,1);
+ assert.deepEqual({...updates[0],recipients:updates[0].recipients.toSorted()},{league,change:'fanta-identity',recipients:['u1','u2']});
+});
 test('Fanta: native API satisfies delivered home, league, lineup and team contracts without modifying the Bar blob',async()=>{
  const f=await fixtureDb();try{const original=(await f.db.query('SELECT payload FROM fanta_state')).rows[0].payload;
  const api=createFantaApi({store:sqlFantaStore(f),env}),call=(route,body)=>api(new Request('https://example.test/fanta-api/'+route,{method:body?'POST':'GET',headers:{cookie:'sid=token1','content-type':'application/json'},body:body?JSON.stringify(body):undefined}));

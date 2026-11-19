@@ -1,6 +1,8 @@
 import {fantaLeagueFallback,leagueWorkspace} from '../league-workspace.mjs';
 import {presidentOperationButtons,presidentWorkspace} from '../president-workspace.mjs';
 import {backButton} from '../back-navigation.mjs';
+import {leagueIdentityForm} from '../league-identity-form.mjs';
+import {leagueName} from '../league-theme.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
 import { esc, pts, dayTime, OUTCOME, extremeClass } from './formato.mjs';
@@ -101,7 +103,7 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   const tabs=SUBS.filter(([k])=>LEGA_GROUPS[group].includes(k)&&(!pilot||k!=='competizioni')),sub=tabs.some(([k])=>k===ui.sub)?ui.sub:tabs[0][0];
   const body = { classifica: standings, calendario: calendar, asta: auctionSection, regole: rules, competizioni:renderCompetitions,schedine:()=>ui.slipsHtml||'<p>Classifica schedine in arrivo.</p>' }[sub](l, ui, now);
   return `<div class="fanta-lega">
-    <header class="fanta-sq-head" data-os-header><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1>${esc(l.league.name.replace(/^Random League/i,'Lega pilota'))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
+    <header class="fanta-sq-head" data-os-header><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1 data-league-heading>${esc(leagueName(ui.identity||l.league))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
     <div class="v2-chips fanta-lg-tabs" data-os-header role="tablist">${tabs.map(([k, label]) => `<button type="button" role="tab" class="v2-chip${sub === k ? ' is-active' : ''}" data-lega-sub="${k}" aria-selected="${sub === k}">${label}${k === 'asta' && l.auction.status === 'running' ? ' <i class="fanta-lg-live"></i>' : ''}</button>`).join('')}</div>
     <div data-os-content${sub==='calendario'?' data-os-flow class="fanta-calendar-scroll"':''}>
     ${body}
@@ -115,12 +117,13 @@ export function renderFantaPresident(l,ui={}){
  if(!l.isAdmin)return renderLega(l,{...ui,group:'lega'});
  const tool=ui.adminTool;
  const bodies={
+  ...(ui.identity?{identita:()=>leagueIdentityForm(ui.identity,{standalone:true})}:{}),
   associa:()=>teamAssociations(l,ui),
   rose:()=>'<nav class="president-operation-list" aria-label="Squadre">'+l.members.map(m=>'<button type="button" class="secondary president-operation" data-team-roster="'+esc(m.team.id)+'">'+esc(m.team.name)+'<span aria-hidden="true">›</span></button>').join('')+'</nav>',
   importazione:()=>l.importReview?.length?'<ul class="fanta-rule-list">'+l.importReview.map(p=>'<li><span>'+esc(p.team)+(p.name?' · '+esc(p.name):'')+'</span><small>'+esc(p.issue)+'</small></li>').join('')+'</ul>':'<p>Nessuna rosa importata da controllare.</p>',
   rimuovi:()=>leagueWorkspace({id:l.league.id,mode:'fanta',view:'manage'}),
  };
  const selected=Object.hasOwn(bodies,tool)?tool:null;
- return presidentWorkspace({tool:selected,body:selected?bodies[selected]():'',buttons:presidentOperationButtons({mode:'fanta',fanta:l.league,hasTrades:ui.hasTrades}),
+ return presidentWorkspace({tool:selected,body:selected?bodies[selected]():'',buttons:presidentOperationButtons({mode:'fanta',fanta:l.league,hasTrades:ui.hasTrades,hasIdentity:!!ui.identity}),
   back:selected?ui.adminBack:'data-go="lega"'});
 }
