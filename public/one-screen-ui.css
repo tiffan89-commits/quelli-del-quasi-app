@@ -401,7 +401,6 @@ body.match-page-active main.match-page.verdict-page{
  width:min(100%,550px);height:var(--postcard-height,calc(100dvh - var(--ux-header-height,64px) - var(--app-tabbar-height,84px)));
  overflow:auto;overscroll-behavior:contain;padding:4px 12px!important
 }
-.match-page.bar-rules-page .rule-close{position:sticky;top:var(--ux-header-height,64px);z-index:2}
 .verdict-page-toolbar{display:flex;justify-content:flex-start;margin-bottom:4px}
 .verdict-page-toolbar .secondary{min-height:34px;padding:4px 9px}
 .verdict-page .verdict-postcard{padding:8px 12px;text-align:center}
@@ -554,8 +553,7 @@ body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11
 
 .lega-hub .lega-tile-detail>summary::after,.lega-hub .lega-tile-next{right:11px!important;top:50%!important;transform:translateY(-50%)!important}
 .lega-hub .lega-tile:has(.lega-tile-next){position:relative;padding-inline-end:26px}
-.president-heading:has(.league-settings-back){display:flex;gap:8px;align-items:center}
-.president-panel:has(.league-settings-back),.fanta-squadra,.auction-wizard{touch-action:pan-y pinch-zoom}
+.president-panel:has(.screen-back),.fanta-squadra,.auction-wizard{touch-action:pan-y pinch-zoom}
 .support-fields{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,2fr);gap:8px}
 #support-form .field{gap:3px;margin:4px 0;font-size:12px}
 #support-form :is(input,textarea,.quasi-select-button){min-width:0;min-height:38px;padding:5px 8px}

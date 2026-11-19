@@ -1,5 +1,6 @@
 import {esc} from './fanta/formato.mjs';
 import {hubTile} from './league-hub.mjs';
+import {backButton} from './back-navigation.mjs';
 
 const barOperations=[
  ['identita','Modifica identità della lega','shield','Stemma, colore e motto'],
@@ -34,8 +35,8 @@ export const presidentBack=barOwn=>barOwn?presidentBarBridge:'data-go="president
 
 export function presidentWorkspace({tool,body='',buttons='',back}){
  const title=presidentTitle(tool);
- return `<section class="president-workspace">
-  <header class="participants-heading" data-os-header><button type="button" class="secondary league-settings-back" ${back}>‹ Indietro</button><h1>${esc(title)}</h1></header>
+ return `<section class="president-workspace" aria-label="${esc(title)}">
+  <header class="participants-heading" data-os-header>${backButton(back,tool?'Torna al pannello del presidente':'Torna alla lega')}${tool?'':`<h1>${esc(title)}</h1>`}</header>
   <div data-os-content data-os-flow>${tool?body:`<nav class="lega-hub president-tiles" aria-label="Operazioni del presidente">${buttons}</nav>`}</div>
  </section>`;
 }

@@ -4,7 +4,7 @@ import {PGlite} from '@electric-sql/pglite';
 import {runProbableLineups} from '../lib/operations/probable-lineups.mjs';
 import {editorialFor} from '../lib/editorial-lineups.mjs';
 
-const now=Date.parse('2026-11-19T08:00:00Z'),kickoff='2026-11-21T14:00:00.000Z';
+const now=Date.parse('2026-11-11T08:00:00Z'),kickoff='2026-11-21T14:00:00.000Z';
 const lineupRow=(side)=>`<tr data-panel-${side}="true">${Array.from({length:11},(_,i)=>
  `<span class="ftbl__match-formation-player--jerseyNum">${i+1}</span><a class="ftbl__match-formation-player--name" href="/">Giocatore ${i+1}</a>`).join('')}</tr>`;
 const skyPage=`<title>Probabili formazioni</title><span class="ftbl__team__name">Como</span><span class="ftbl__team__name">Cagliari</span>

@@ -75,6 +75,9 @@ test('president actions reuse the league tiles and personal settings has a cog',
  for(const tile of tiles)assert.ok(tile.querySelector('.lega-tile-icon svg path')&&tile.querySelector('small').textContent);
  assert.ok(doc.querySelector('.lega-tile[data-league-section="scambi"]'));
  assert.ok(doc.querySelector('.lega-tile[data-president-operation="elimina"].league-delete-action'));
+ const wizard=parseHTML(presidentWorkspace({tool:'identita',body:'<form></form>',back:'data-president-operation=""'})).document;
+ assert.equal(wizard.querySelector('header h1'),null);
+ assert.ok(wizard.querySelector('header [data-screen-back][aria-label="Torna al pannello del presidente"] svg'));
  assert.equal(fantaPresidentTool('scambi','scambi'),'scambi');
  assert.match(presidentEntry(),/aria-label="Apri impostazioni".*<svg[^>]+viewBox="0 0 24 24"/);
 });

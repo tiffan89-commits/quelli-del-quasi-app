@@ -127,7 +127,7 @@ export function bindLineupPitch(root,{onPage,autoHeight=true}={}){
  if(!teams.length)return;
  const flipped=paged?(root._pitchFlips??=new Set()):null;
  const size=()=>{const team=teams[Math.min(current,teams.length-1)];if(autoHeight&&team)slides.style.height=Math.ceil(team.getBoundingClientRect().height)+'px';};
- const fit=()=>{const page=root.closest?.('#match-page-root');if(!page||!slides.clientWidth||!Number.isFinite(globalThis.window?.innerHeight))return;const pitch=slides.querySelector('.football-pitch');if(!pitch&&!paged)return;
+ const fit=()=>{const page=root.closest?.('#match-page-root');if(!page||page.classList.contains('match-sheet')||!slides.clientWidth||!Number.isFinite(globalThis.window?.innerHeight))return;const pitch=slides.querySelector('.football-pitch');if(!pitch&&!paged)return;
   if(paged){
    const nav=page.ownerDocument.querySelector('nav.v2-tabbar'),navRect=nav?.getBoundingClientRect();
    const bottom=navRect?.top>window.innerHeight/2?navRect.top:window.innerHeight;

@@ -1,6 +1,8 @@
 import {askConfirmation} from './site-confirm.mjs';
 import {avatarSvg} from './avatar.mjs';
 import {esc} from './fanta/formato.mjs';
+import {backButton} from './back-navigation.mjs';
+import {bindSwipeBack} from './match-page.mjs';
 
 function sheet(label,html){
  const dialog=document.createElement('dialog');
@@ -22,13 +24,15 @@ export function createLeagueAccessPrompts({api,userId,onJoined,onRequests=()=>{}
    <p role="alert" data-access-error></p>
    <div data-access-choice class="league-access-actions"><button type="button" class="primary" data-access-decision="accept">Accetta</button><button type="button" class="secondary" data-access-reject>Rifiuta</button></div>
    <div data-access-confirm hidden><p>Dovrai chiedere all’admin un nuovo invito per entrare.</p>
-    <div class="league-access-actions"><button type="button" class="secondary" data-access-cancel>Torna indietro</button><button type="button" class="primary" data-access-decision="reject">Conferma rifiuto</button></div>
+    <div class="league-access-actions">${backButton('data-access-cancel','Torna all’invito')}<button type="button" class="primary" data-access-decision="reject">Conferma rifiuto</button></div>
    </div>`);
   const shown=dialog;
-  shown.addEventListener('cancel',e=>e.preventDefault());
   const choice=shown.querySelector('[data-access-choice]'),confirm=shown.querySelector('[data-access-confirm]'),error=shown.querySelector('[data-access-error]');
+  const back=shown.querySelector('[data-access-cancel]');
+  shown.addEventListener('cancel',e=>{e.preventDefault();if(!confirm.hidden)back.click();});
+  bindSwipeBack(confirm,()=>back.click(),'both');
   shown.querySelector('[data-access-reject]').onclick=()=>{choice.hidden=true;confirm.hidden=false;confirm.querySelector('button').focus();};
-  shown.querySelector('[data-access-cancel]').onclick=()=>{confirm.hidden=true;choice.hidden=false;shown.querySelector('[data-access-reject]').focus();};
+  back.onclick=()=>{confirm.hidden=true;choice.hidden=false;shown.querySelector('[data-access-reject]').focus();};
   for(const control of shown.querySelectorAll('[data-access-decision]'))control.onclick=async()=>{
    if(control.disabled||userId()!==uid)return;
    for(const b of shown.querySelectorAll('button'))b.disabled=true;

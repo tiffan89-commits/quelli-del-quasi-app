@@ -1,4 +1,5 @@
 import {dateTimeFields,readDateTime} from '../site-datetime.mjs';
+import {backButton} from '../back-navigation.mjs';
 import {askConfirmation} from '../site-confirm.mjs';
 import {bindStyledSelects} from '../styled-select.mjs';
 import {esc} from './formato.mjs';
@@ -257,7 +258,7 @@ export function createTradePanel({root,api,context,signal,onRosterChange,onStatu
 
  return {render(){
   const {management,back}=context();
-  return `<section class="fanta-trades"><header class="participants-heading"><button type="button" class="secondary league-settings-back" ${management?back:'data-go="lega"'}>‹ Indietro</button><h1>${management?'Gestisci gli scambi':'Scambi'}</h1></header><div data-trades-body></div></section>`;
+  return `<section class="fanta-trades" aria-label="${management?'Gestisci gli scambi':'Scambi'}"><header class="participants-heading" data-os-header>${backButton(management?back:'data-go="lega"',management?'Torna al pannello del presidente':'Torna alla lega')}${management?'':'<h1>Scambi</h1>'}</header><div data-trades-body></div></section>`;
  },attach(){
   switchLeague();paint();
   if(panel()&&!data)void load();

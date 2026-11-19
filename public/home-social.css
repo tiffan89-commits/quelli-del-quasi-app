@@ -55,7 +55,24 @@ html.os-on body[data-game-mode] .os-dots .os-dot.is-on::before { width:10px; }
   fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
 }
 .lega-hub.president-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
-.president-tiles .lega-tile { justify-content:flex-start; }
+.president-tiles .lega-tile:has(.lega-tile-next) {
+  display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto 1fr;
+  align-items:start; align-content:start; gap:5px 8px; min-width:0; padding:11px 12px;
+  white-space:normal; overflow-wrap:anywhere;
+}
+.president-tiles .lega-tile :is(b,small) { grid-column:1/-1; min-width:0; white-space:normal; }
+.lega-hub.president-tiles .lega-tile-next {
+  position:static; transform:none!important; grid-column:2; grid-row:1; align-self:center;
+}
+button.screen-back.secondary,.bar-rules-page>#close-modal.screen-back {
+  display:inline-grid; place-items:center; flex:none; width:44px; min-width:44px; min-height:44px;
+  box-sizing:border-box; margin:0; padding:0; border:1px solid var(--line); border-radius:50%;
+  background:var(--panel); color:var(--white); touch-action:pan-y pinch-zoom;
+}
+.screen-back svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.screen-back:focus-visible { outline:2px solid var(--lime); outline-offset:2px; }
+.president-panel .president-heading:has(.screen-back) { display:flex; align-items:center; gap:8px; }
+.bar-rules-page>.screen-back { position:sticky; top:var(--ux-header-height,64px); z-index:2; }
 .president-tiles .league-delete-action { color:#ffab91; }
 .president-tiles .league-delete-action :is(svg,.lega-tile-next) { stroke:currentColor; color:inherit; }
 

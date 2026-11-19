@@ -8,6 +8,7 @@ import {hubTile} from './league-hub.mjs';
 import {leagueActions} from './league-actions.mjs';
 import {barHomeInvite} from './bar-home-invite.mjs';
 import {presidentEntry} from './president-panel.mjs';
+import {backButton} from './back-navigation.mjs';
 
 const personCount=members=>members.filter(m=>m.uid).length;
 const workspaceData=(data,view)=>view==='manage'&&data?{...data,members:data.members.filter(m=>m.uid)}:data;
@@ -48,7 +49,7 @@ export function renderParticipantRows({members,isAdmin}){
 
 export function leagueWorkspace({id,mode,view='hub',back='',fallback}){
  const participants=view==='participants',management=view==='manage';
- return `${participants?`<header class="participants-heading" data-os-header><button type="button" class="secondary league-settings-back" ${back}>‹ Indietro</button><h1>Partecipanti</h1></header>`:''}
+ return `${participants?`<header class="participants-heading" data-os-header>${backButton(back,'Torna alla lega')}<h1>Partecipanti</h1></header>`:''}
  <div ${management?'':'data-os-content'} data-league-workspace data-league-id="${esc(id)}" data-league-mode="${mode}" data-league-view="${view}">
   ${fallback?((participants||management)?renderParticipantRows({...workspaceData(fallback,view),isAdmin:management&&fallback.isAdmin}):renderLeagueHub(fallback,mode)):'<p role="status">Caricamento…</p>'}
  </div>`;

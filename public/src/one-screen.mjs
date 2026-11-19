@@ -1,4 +1,5 @@
 import {bindSwipeBack} from './match-page.mjs';
+import {backButton} from './back-navigation.mjs';
 
 // Una sezione = una schermata.
 // Il contenuto di `#app > main` scorre in colonne CSS alte quanto lo spazio
@@ -98,10 +99,11 @@ export function startOneScreen(doc = globalThis.document) {
   }
   if(!drillNav){
    drillNav=doc.createElement('div');drillNav.className='os-drill-nav';
-   const back=doc.createElement('button');back.type='button';back.textContent='← Indietro';
+   drillNav.innerHTML=backButton('','Torna alla schermata precedente');
+   const back=drillNav.firstElementChild;
    back.addEventListener('click',backDetail);
-   drillNav.append(back,doc.createElement('strong'));
-   bindSwipeBack(drillNav,backDetail);
+   drillNav.append(doc.createElement('strong'));
+   bindSwipeBack(drillNav,backDetail,'both');
   }
   drillNav.lastElementChild.textContent=drill.at(-1).title;
   drillNav.style.width=Math.max(0,main.clientWidth-28)+'px';
@@ -112,6 +114,8 @@ export function startOneScreen(doc = globalThis.document) {
   if(!drill.length)saved.set(key,metrics.page);
   const summary=detail.querySelector(':scope>summary');
   drill.push({el:detail,index:[...main.querySelectorAll('details')].indexOf(detail),title:detailTitle(summary),scroll:main.scrollTop});
+  const hash=win.location.hash;
+  if(win.history&&hash)win.history.pushState({...win.history.state,qdqDrill:drill.length,qdqDrillHash:hash},'',win.location.href);
   detail.open=true;
   update();
   main.scrollLeft=0;
@@ -120,6 +124,10 @@ export function startOneScreen(doc = globalThis.document) {
   drillNav?.firstElementChild.focus({preventScroll:true});
  }
  function backDetail(){
+  if(win.history?.state?.qdqDrill===drill.length&&win.history.state.qdqDrillHash===win.location.hash){win.history.back();return;}
+  closeDetail();
+ }
+ function closeDetail(){
   const entry=drill.pop();
   if(!entry)return;
   entry.el.open=false;
@@ -408,7 +416,7 @@ export function startOneScreen(doc = globalThis.document) {
   const end = e => {
    if(drillGesture){
     const g=drillGesture,t=e.changedTouches?.[0];drillGesture=null;
-    if(e.type==='touchend'&&t&&t.clientX-g.x>55&&t.clientX-g.x>Math.abs(t.clientY-g.y)*1.4){e.stopPropagation();dragging=null;backDetail();return;}
+    if(e.type==='touchend'&&t&&Math.abs(t.clientX-g.x)>55&&Math.abs(t.clientX-g.x)>Math.abs(t.clientY-g.y)*1.4){e.stopImmediatePropagation();dragging=null;backDetail();return;}
    }
    if (!dragging || el !== main) return;
    const d = dragging; dragging = null;
@@ -448,6 +456,13 @@ export function startOneScreen(doc = globalThis.document) {
  win.addEventListener('orientationchange', () => { height = 0; schedule(); });
  win.addEventListener('hashchange', schedule);
  win.addEventListener('quasi:navigation', schedule);
+ win.addEventListener('popstate',e=>{
+  if(!drill.length||!key.startsWith(win.location.hash+'|')||doc.body.classList.contains('match-sheet-active'))return;
+  const depth=e.state?.qdqDrill||0;
+  if(depth>=drill.length)return;
+  e.stopImmediatePropagation();
+  while(drill.length>depth)closeDetail();
+ },{capture:true});
  if (win.ResizeObserver) new win.ResizeObserver(schedule).observe(doc.body);
  watch(); schedule();
 }

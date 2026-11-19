@@ -5,4 +5,10 @@ export function readAppRoute(hash=globalThis.location?.hash||''){
 }
 export const isSubmissionRoute=route=>!!(route?.league&&route.round&&(route.mode==='bar'?route.page==='schedina':route.mode==='fanta'&&route.page==='squadra'&&route.section==='studio'));
 export function appRoute({mode,page,section,league,round,competition}){if(!modes.has(mode))throw Error('Invalid app mode');const q=new URLSearchParams();if(league)q.set('lega',league);if(round)q.set('giornata',round);if(competition)q.set('competizione',competition);return '#/'+mode+'/'+page+(section?'/'+section:'')+(q.size?'?'+q:'');}
-export function writeAppRoute(route,{replace=false}={}){const hash=appRoute(route);if(!globalThis.location||!globalThis.history||location.hash===hash)return;history[replace?'replaceState':'pushState']({qdqRoute:true},'',location.pathname+location.search+hash);globalThis.window?.dispatchEvent?.(new Event('quasi:navigation'));}
+export function writeAppRoute(route,{replace=false}={}){
+ const hash=appRoute(route);
+ if(!globalThis.location||!globalThis.history||location.hash===hash)return;
+ const previous=replace?history.state?.qdqPreviousRoute:readAppRoute()?location.hash:null;
+ history[replace?'replaceState':'pushState']({qdqRoute:true,qdqPreviousRoute:previous},'',location.pathname+location.search+hash);
+ globalThis.window?.dispatchEvent?.(new Event('quasi:navigation'));
+}

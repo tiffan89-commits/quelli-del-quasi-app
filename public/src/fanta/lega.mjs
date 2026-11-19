@@ -1,5 +1,6 @@
 import {fantaLeagueFallback,leagueWorkspace} from '../league-workspace.mjs';
 import {presidentOperationButtons,presidentWorkspace} from '../president-workspace.mjs';
+import {backButton} from '../back-navigation.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
 import { esc, pts, dayTime, OUTCOME, extremeClass } from './formato.mjs';
@@ -94,7 +95,7 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   if(group==='competizioni'&&ui.adminTool&&l.isAdmin)return presidentWorkspace({tool:ui.adminTool,body:renderCompetitionManagement(l,ui.adminTool),back:ui.adminBack});
   if(group==='regolamento'||group==='competizioni'){
    const title=group==='regolamento'?'Regolamento del Fanta':'Competizioni';
-   return `<header class="participants-heading" data-os-header><button type="button" class="secondary league-settings-back" data-go="lega">‹ Indietro</button><h1>${title}</h1></header>
+   return `<header class="participants-heading" data-os-header>${backButton('data-go="lega"','Torna alla lega')}<h1>${title}</h1></header>
    <div data-os-content>${group==='regolamento'?rules(l):renderCompetitions(l)}</div>`;
   }
   const tabs=SUBS.filter(([k])=>LEGA_GROUPS[group].includes(k)&&(!pilot||k!=='competizioni')),sub=tabs.some(([k])=>k===ui.sub)?ui.sub:tabs[0][0];
