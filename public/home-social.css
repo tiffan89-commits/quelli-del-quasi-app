@@ -6,12 +6,15 @@ body[data-game-mode] {
 }
 body[data-game-mode="fanta"] { --mode-accent:#78e0ba; }
 body[data-game-mode] #app-header>.shell-compact {
-  display:flex; align-items:center; justify-content:space-between;
-  gap:8px; min-height:58px; padding:6px max(14px,env(safe-area-inset-left)) 6px max(14px,env(safe-area-inset-right));
+  display:grid!important; grid-template-columns:minmax(0,1fr) max-content!important; align-items:center;
+  width:100%; min-width:0; box-sizing:border-box;
+  padding-left:max(14px,env(safe-area-inset-left))!important;
+  padding-right:max(14px,env(safe-area-inset-right))!important;
 }
-body[data-game-mode] .shell-compact .v2-league-chip {
-  display:flex; align-items:center; text-align:start; min-width:0; min-height:44px; flex:0 1 auto;
-  gap:8px; border:0; background:none; padding:0; max-width:none; border-radius:12px;
+body[data-game-mode] #app-header>.shell-compact>.v2-league-chip {
+  display:flex; align-items:center; grid-column:1; grid-row:1;
+  text-align:start; min-width:0; width:auto!important; max-width:100%!important;
+  gap:6px; border:0; background:none; padding-inline:0!important; border-radius:12px;
   height:auto!important; min-height:44px!important;
 }
 body[data-game-mode] #app-header .shell-compact .v2-league-chip .league-emblem { flex:0 0 36px; width:36px; height:36px; border-radius:11px; font-size:12px; }
@@ -19,7 +22,10 @@ body[data-game-mode] #app-header .shell-compact .v2-league-chip .league-emblem {
 .shell-league-copy small { font-size:11px; color:var(--muted); font-weight:500; }
 body[data-game-mode] .shell-compact .v2-league-name { max-width:none; font-size:14px; color:var(--white); }
 .shell-chevron { color:var(--muted); flex:none; line-height:1; }
-body[data-game-mode] .shell-compact .fanta-mode { display:flex; flex:none; border:0; padding:2px; background:var(--panel); border-radius:999px; }
+body[data-game-mode] #app-header>.shell-compact>.fanta-mode {
+  display:grid; grid-template-columns:repeat(2,55px); grid-column:2; grid-row:1;
+  margin:0; border:0; padding:2px; background:var(--panel); border-radius:999px;
+}
 body[data-game-mode] .shell-compact .fanta-mode-btn { min-height:44px!important; height:auto!important; padding:0 12px; border:0; background:transparent; color:var(--muted); border-radius:999px; }
 body[data-game-mode] .shell-compact .fanta-mode-btn.is-active { background:var(--mode-accent); color:var(--mode-ink); }
 body[data-game-mode] .v2-tabbar .v2-tab.is-active { color:var(--mode-accent)!important; }
@@ -190,7 +196,7 @@ body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); colo
  initial-value:#ffcf83;
 }
 body[data-game-mode] { transition:--mode-accent 200ms ease; }
-body[data-game-mode] .shell-compact .fanta-mode-btn { flex:0 0 55px; width:55px; padding:0; transition:color 200ms,background-color 200ms; }
+body[data-game-mode] .shell-compact .fanta-mode-btn { width:100%; min-width:0; padding:0; transition:color 200ms,background-color 200ms; }
 body[data-game-mode] .v2-tabbar .v2-tab { transition:color 200ms; }
 body[data-game-mode] .v2-tabbar :is([data-tab="oggi"],[data-v2-tab="oggi"]) svg { width:25px; height:25px; }
 body[data-game-mode] .v2-tabbar :is([data-tab="oggi"],[data-v2-tab="oggi"]) span { font-size:12px; font-weight:700; }
@@ -223,6 +229,11 @@ html.os-on body[data-game-mode] #app main:has(.bar-home-social) { padding-inline
 .home-story-score b { display:block; font:700 36px/1 'Barlow Condensed',sans-serif; }
 .home-story-players li { display:flex; justify-content:space-between; text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); gap:10px; }
 .bar-story-copy:has(.home-story-players) { overscroll-behavior:contain; }
+.home-story-votes { margin:8px 0 12px; }
+.home-story-votes h3 { margin:0 0 4px; }
+.home-story-votes ul { margin:0; }
+.home-story-votes li { padding-block:3px; }
+.home-story-players li>b { white-space:nowrap; }
 html.os-on body #app>main.os-split :is(.bar-quasi-page,.serie-standings,.bar-rankings)[data-os-content] { columns:auto; overflow-y:auto; padding-inline:14px!important; }
 body[data-game-mode="bar"] #app main .ranking-metric { width:min(100% - 28px,410px); margin:0 auto 8px!important; }
 @media(prefers-reduced-motion:reduce){

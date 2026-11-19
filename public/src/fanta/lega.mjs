@@ -2,7 +2,7 @@ import {fantaLeagueFallback,leagueWorkspace} from '../league-workspace.mjs';
 import {presidentOperationButtons,presidentWorkspace} from '../president-workspace.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
-import { esc, pts, dayTime, OUTCOME, extremeClass, resultsFirst } from './formato.mjs';
+import { esc, pts, dayTime, OUTCOME, extremeClass } from './formato.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderCompetitionManagement,renderCompetitions} from './competitions-ui.mjs';
 import {auctionWhen} from './auction-wizard.mjs';
@@ -33,13 +33,15 @@ function standings(l) {
 }
 
 function calendar(l, ui) {
-  const rounds=resultsFirst(l.calendar.rounds,l.calendar.current),open=ui.openRound??rounds[0]?.number;
+  const {current}=l.calendar;
+  const rounds=[...l.calendar.rounds].sort((a,b)=>a.number-b.number);
+  const open=ui.openRound??rounds.find(round=>round.number===current&&round.state!=='calcolata')?.number;
   return `<section class="fanta-block is-first">
     <p class="fanta-note">Giornata ${l.calendar.current} di ${l.calendar.last}. Tocca una sfida per vedere formazioni e voti.</p>
     <div class="fanta-cal">${rounds.map(r => {
       const label = { calcolata: 'Calcolata', 'in-corso': 'In corso', 'schierata': 'Si gioca', 'da-schierare': 'Si gioca', futura: 'Da giocare' }[r.state];
       const isOpen = r.number === open;
-      return `<div class="fanta-cal-round${isOpen ? ' is-open' : ''}${r.number === l.calendar.current ? ' is-current' : ''}">
+      return `<div class="fanta-cal-round${isOpen ? ' is-open' : ''}${r.number === current ? ' is-current' : ''}">
         <button type="button" class="fanta-cal-head" data-lega-round="${r.number}" aria-expanded="${isOpen}">
           <b>${esc(r.label||'Giornata '+r.number)}</b><span class="fanta-cal-state is-${r.state}">${label}</span><i aria-hidden="true">${isOpen ? '▴' : '▾'}</i></button>
         ${isOpen ? `<ul>${r.matchups.map(m => {
@@ -100,7 +102,7 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   return `<div class="fanta-lega">
     <header class="fanta-sq-head" data-os-header><span class="eyebrow">${esc(l.league.season)} · Lega da ${l.league.maxMembers} partecipanti</span><h1>${esc(l.league.name.replace(/^Random League/i,'Lega pilota'))}</h1>${l.competition&&l.competition.name!==l.league.name?`<p>${esc(l.competition.name)}</p>`:''}</header>
     <div class="v2-chips fanta-lg-tabs" data-os-header role="tablist">${tabs.map(([k, label]) => `<button type="button" role="tab" class="v2-chip${sub === k ? ' is-active' : ''}" data-lega-sub="${k}" aria-selected="${sub === k}">${label}${k === 'asta' && l.auction.status === 'running' ? ' <i class="fanta-lg-live"></i>' : ''}</button>`).join('')}</div>
-    <div data-os-content>
+    <div data-os-content${sub==='calendario'?' data-os-flow class="fanta-calendar-scroll"':''}>
     ${body}
 
     </div>
