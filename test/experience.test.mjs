@@ -22,6 +22,14 @@ test('saved, changed, closed and liquidated states differ and stale fixture IDs 
 });
 test('a stale device cannot overwrite the latest saved slip or debit credits',()=>{const {s,u,l,r}=fixture();placeSlip(s,l,r,u,{picks:{m:'1'},stake:10,baseSavedAt:null});const before=l.members[0].credits;assert.throws(()=>placeSlip(s,l,r,u,{picks:{m:'2'},stake:20,baseSavedAt:null}),e=>e.status===409);assert.equal(l.members[0].credits,before);assert.equal(r.slips[0].picks.m,'1');});
 test('capital includes pending stakes without changing the credits ranking, community excludes open rounds and secrets',()=>{const {s,u,l,r}=fixture();placeSlip(s,l,r,u,{picks:{m:'1'},stake:10});s.fantasyConnections=[{id:'c',owner:u.id,leagues:[l.id],session:'encrypted-secret',alias:'bar',competitionId:1}];const view=enhanceState(s,u,stateFor(s,u)),member=view.leagues[0].members[0];assert.equal(member.credits,490);assert.equal(member.committedCredits,10);assert.equal(member.capital,500);assert.equal(communityFor(s,l).recap,null);assert.equal(JSON.stringify(view).includes('encrypted-secret'),false);assert.equal(JSON.stringify(view).includes('password'),false);});
-test('league branding accepts a readable palette and plain short emblems only',()=>{const {l}=fixture();updateLeagueProfile(l,{accent:'#9de4d0',emblem:'BQ',motto:'Il bar'});assert.equal(l.branding.emblem,'BQ');assert.throws(()=>updateLeagueProfile(l,{accent:'red;url(evil)',emblem:'BQ'}));assert.throws(()=>updateLeagueProfile(l,{accent:'#9de4d0',emblem:'<img>'}));});
+test('league branding accepts custom RGB colors and validates both accents',()=>{
+ const {l}=fixture(),branding={accent:'#000000',fantaAccent:'#FFAA12',emblem:'BQ',motto:'Il bar'};
+ updateLeagueProfile(l,branding);
+ assert.deepEqual(l.branding,branding);
+ assert.throws(()=>updateLeagueProfile(l,{...branding,accent:'red;url(evil)'}));
+ assert.throws(()=>updateLeagueProfile(l,{...branding,fantaAccent:'#abcd'}));
+ assert.throws(()=>updateLeagueProfile(l,{...branding,emblem:'<img>'}));
+ assert.deepEqual(l.branding,branding);
+});
 test('session encryption is authenticated and cannot be reused for another owner',()=>{const encrypted=sealSession({token:'sensitive-token',tokenAuth:'refresh'},'c:u',env);assert.equal(encrypted.includes('sensitive-token'),false);assert.equal(openSession(encrypted,'c:u',env).token,'sensitive-token');assert.throws(()=>openSession(encrypted,'c:other',env));});
 test('uncertain fantasy deadlines and changed fixtures block submissions on the server',()=>{const {r}=fixture();r.pointsOnly=true;r.kickoff=null;assert.equal(roundClosed(r),true);r.kickoff=new Date(Date.now()+100000).toISOString();r.sourceConflict=true;assert.equal(roundClosed(r),true);});
