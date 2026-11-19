@@ -3,6 +3,7 @@ import {socialHome} from '../home-social.mjs';
 import {homeReminderBanner} from '../president-reminders.mjs';
 import {renderHomeStories} from '../home-stories.mjs';
 import {teamLogo} from './team-logo.mjs';
+import {fitTeamName} from './team-name.mjs';
 import {FANTA_HOME_QUOTES} from './home-quotes.mjs';
 
 export function homeTeam(h){
@@ -33,9 +34,9 @@ function storyItems(h){
   const sheet=[data?.home,data?.away].find(side=>side?.team?.id===ownTeam);
   const starters=sheet?.starters||[];
   const scorers=[...starters.filter(p=>!p.replacedBy),...(sheet?.bench||[]).filter(p=>p.enteredFor)].filter(p=>p.events?.goals>0);
-  const info=`<p class="home-story-score">${esc(last.home.name)} <b>${last.home.goals}–${last.away.goals}</b> ${esc(last.away.name)}</p>${number(own?.points)?`<p>${fp(own.points)}</p>`:''}`;
+  const info=`<p class="home-story-score">${fitTeamName(last.home.name)}<b>${last.home.goals}–${last.away.goals}</b>${fitTeamName(last.away.name)}</p>${number(own?.points)?`<p>${fp(own.points)}</p>`:''}`;
   const details=(scorers.length?`<h3>Marcatori</h3>${playersList(scorers,p=>p.events.goals)}`:'' )+(starters.length?`<section class="home-story-votes"><h3>Voti dei titolari</h3>${playersList(starters,p=>number(p.vote)?pts(p.vote):'s.v.')}</section>`:'');
-  items.push({id:'results',version:last.matchupId||last.round,label:'G'+last.round,title:'Giornata '+last.round,body:info+details+storyButton('giornata','Apri il tabellino',last.round,last.matchupId)});
+  items.push({id:'results',version:last.matchupId||last.round,label:'Giornata '+last.round,title:'Giornata '+last.round,body:info+details+storyButton('giornata','Apri il tabellino',last.round,last.matchupId)});
   const voted=[...starters.filter(p=>!p.replacedBy),...(sheet?.bench||[]).filter(p=>p.enteredFor)].filter(p=>number(p.fantavote)).sort((a,b)=>b.fantavote-a.fantavote);
   if(voted.length>=4)items.push({id:'top',version:last.matchupId||last.round,label:'Top e flop',title:'Top e flop',body:'<h3>Top</h3>'+playersList(voted.slice(0,2),p=>pts(p.fantavote))+'<h3>Flop</h3>'+playersList(voted.slice(-2).reverse(),p=>pts(p.fantavote))});
  }
@@ -69,15 +70,15 @@ export function renderHome(h,now=Date.now()){
  const balances=[number(h.balances?.slip)?credits.format(h.balances.slip)+' cr schedina':'',number(h.balances?.auction)?credits.format(h.balances.auction)+' cr asta':''].filter(Boolean);
  const cta=h.openingLineup?{label:'Apertura formazione…',disabled:true,busy:true}:
   h.competition?.status==='draft'?{label:'Vedi la competizione',action:'data-go="competizioni"'}:
-  live?{label:'G'+round.number+' live'+(number(liveOwn?.points)?' · '+fp(liveOwn.points)+' parziali':''),action:roundAction(round.number,h.match?.id||h.match?.matchupId||h.storyData?.liveMatchup)}:
-  open?{label:(hasLineup?'✓ Formazione':'Schiera la formazione')+' G'+next.round,warning:!hasLineup,deadline:next.deadline,action:'data-go="formazione"'}:
+  live?{label:'Giornata '+round.number+' live'+(number(liveOwn?.points)?' · '+fp(liveOwn.points)+' parziali':''),action:roundAction(round.number,h.match?.id||h.match?.matchupId||h.storyData?.liveMatchup)}:
+  open?{label:(hasLineup?'✓ Formazione':'Schiera la formazione')+' · Giornata '+next.round,warning:!hasLineup,deadline:next.deadline,action:'data-go="formazione"'}:
   {label:'Prossima giornata',disabled:true,waiting:true,deadline:[h.nextLineup?.deadline,round.firstKickoff].find(time=>Date.parse(time)>now)};
  return socialHome({mode:'fanta',now,reminder:homeReminderBanner('fanta',h.reminder),stories:renderFantaStories(h),hero:{
   title:h.me.teamName+(h.league.season?' · '+h.league.season:''),quote,
   chips:`<span>${esc(h.me.position)}° · ${pts(h.me.points)} pt</span><span>${pts(h.me.fantapoints)} fp</span>`,
   art:`<button type="button" class="bar-home-mascot home-team-crest" data-action="edit-logo" aria-label="Modifica lo stemma di ${esc(team.name)}">${teamLogo(team,{eager:true})}<span class="home-edit-mark" aria-hidden="true">✎</span></button>`
  },last:last||balances.length?{
-  title:last?'G'+last.round+' · vs '+(rival?.name||last.away?.name||'Avversario'):'Ultime cinque',
+  title:last?'Giornata '+last.round:'Ultime cinque',opponent:last?(rival?.name||last.away?.name):null,
   value:number(ownGoals)&&number(rivalGoals)?ownGoals+'–'+rivalGoals:null,
   action:last?roundAction(last.round,last.matchupId):'data-go="squadra"',
   segments,segmentLabel:'Ultime cinque',

@@ -7,6 +7,7 @@ import {leagueName} from '../league-theme.mjs';
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
 import { esc, pts, dayTime, OUTCOME, extremeClass } from './formato.mjs';
 import {teamLogo} from './team-logo.mjs';
+import {fitTeamName} from './team-name.mjs';
 import {renderCompetitionManagement,renderCompetitions} from './competitions-ui.mjs';
 import {auctionWhen} from './auction-wizard.mjs';
 
@@ -26,7 +27,7 @@ function standings(l) {
       <thead><tr><th scope="col">#</th><th scope="col">Squadra</th><th scope="col" title="Partite giocate">PG</th><th scope="col" title="Vittorie">V</th><th scope="col" title="Pareggi">N</th><th scope="col" title="Sconfitte">S</th><th scope="col" title="Gol fatti">GF</th><th scope="col" title="Gol subiti">GS</th><th scope="col">Pt</th><th scope="col" title="Fantapunti totali">FP</th></tr></thead>
       <tbody>${l.standings.map(s => `<tr${s.team.id === l.members.find(m => m.isMe)?.team.id ? ' class="is-me"' : ''}>
         <td>${s.position}</td>
-        <td><div class="fanta-team-identity">${teamLogo(s.team)}<div class="fanta-team-copy"><button type="button" class="fanta-team-name" data-team-roster="${esc(s.team.id)}">${esc(s.team.name)}</button><small>${esc(s.team.manager)} · ${formDots(s.form)}</small></div></div></td>
+        <td><div class="fanta-team-identity">${teamLogo(s.team)}<div class="fanta-team-copy"><button type="button" class="fanta-team-name" data-team-roster="${esc(s.team.id)}">${fitTeamName(s.team.name)}</button><small>${esc(s.team.manager)} · ${formDots(s.form)}</small></div></div></td>
         <td>${s.played??0}</td><td>${s.won}</td><td>${s.drawn}</td><td>${s.lost}</td><td>${s.goalsFor??0}</td><td>${s.goalsAgainst??0}</td>
         <td><strong >${s.points}</strong></td><td><strong class="score-cell ${extremeClass(l.standings,'fantapoints',s.fantapoints)}">${pts(s.fantapoints)}</strong></td>
       </tr>`).join('')}</tbody>
@@ -49,9 +50,9 @@ function calendar(l, ui) {
           <b>${esc(r.label||'Giornata '+r.number)}</b><span class="fanta-cal-state is-${r.state}">${label}</span><i aria-hidden="true">${isOpen ? '▴' : '▾'}</i></button>
         ${isOpen ? `<ul>${r.matchups.map(m => {
           const played = m.home.goals != null;
-          const row = `<span class="fanta-cal-team${m.home.team.id === l.members.find(x => x.isMe)?.team.id ? ' is-me' : ''}">${teamLogo(m.home.team)}${esc(m.home.team.name)}</span>
+          const row = `<span class="fanta-cal-team${m.home.team.id === l.members.find(x => x.isMe)?.team.id ? ' is-me' : ''}">${teamLogo(m.home.team)}${fitTeamName(m.home.team.name)}</span>
             <span class="fanta-cal-score">${played ? `<strong>${m.home.goals}–${m.away.goals}</strong><small>${pts(m.home.points)} · ${pts(m.away.points)}</small>` : '<small>vs</small>'}</span>
-            <span class="fanta-cal-team is-away${m.away.team.id === l.members.find(x => x.isMe)?.team.id ? ' is-me' : ''}">${esc(m.away.team.name)}${teamLogo(m.away.team)}</span>`;
+            <span class="fanta-cal-team is-away${m.away.team.id === l.members.find(x => x.isMe)?.team.id ? ' is-me' : ''}">${fitTeamName(m.away.team.name)}${teamLogo(m.away.team)}</span>`;
           return r.state === 'futura'
             ? `<li class="fanta-cal-match${m.isMine ? ' is-mine' : ''}">${row}</li>`
             : `<li><button type="button" class="fanta-cal-match${m.isMine ? ' is-mine' : ''}" data-go="giornata" data-round="${r.number}" data-mu="${esc(m.id)}">${row}</button></li>`;

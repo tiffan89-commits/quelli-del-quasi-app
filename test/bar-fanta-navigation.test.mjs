@@ -30,7 +30,7 @@ test('home banner resolves own league, competition, round and matchup without fe
  assert.equal(findBarSlip(h,[{id:'bar',rounds:[round]}]).saved,false);
  const bar=findBarSlip(h,[{id:'bar',rounds:[{...round,slip:{savedAt:'2026-10-31T12:00Z'}}]}]);assert.equal(bar.saved,true);assert.equal(bar.league,'bar');assert.equal(bar.round,'r');assert.equal(bar.match,'m');assert.equal(bar.closed,true);
  const home={...h,bar,me:{teamId:'a',teamName:'Casa',position:1,points:12,fantapoints:200,form:[]},lineup:{},standings:[],round:{number:8,state:'in-corso'},match:{home:{id:'a',name:'Casa'},away:{id:'b',name:'Ospiti'},live:{home:{points:70},away:{points:60}}}};
- const {document}=parseHTML(renderHome(home)),cta=document.querySelector('.bar-home-cta');assert.equal(cta.dataset.round,'8');assert.match(cta.textContent,/G8 live.*70.*fp parziali/);
+ const {document}=parseHTML(renderHome(home)),cta=document.querySelector('.bar-home-cta');assert.equal(cta.dataset.round,'8');assert.match(cta.textContent,/Giornata 8 live.*70.*fp parziali/);
  const ordered=renderHome({...home,lastResult:{round:7,matchupId:'last',home:{id:'a',name:'Casa',goals:2},away:{id:'b',name:'Ospiti',goals:1}}});
  assert.match(ordered,/class="bar-home-last" data-go="giornata" data-round="7" data-mu="last"/);
  const own={id:'a',name:'La mia squadra',branding:{type:'design',design:{text:'MIA',shape:'shield'}}},away={...home,match:{...home.match,home:{id:'other',name:'Altri'},away:own}};
@@ -52,12 +52,12 @@ test('social Fanta home shows personal match stories, form, credits and a single
  assert.equal(votes[0].querySelector('b').textContent,'5,0');
  assert.equal(votes[10].querySelector('b').textContent,'s.v.');
  assert.ok(doc.querySelector('#fanta-story-top'));assert.ok(doc.querySelector('#fanta-story-opponent'));assert.ok(doc.querySelector('#fanta-story-market'));
- assert.equal(doc.querySelectorAll('.primary').length,1);assert.match(doc.querySelector('.bar-home-cta').textContent,/Schiera la formazione G5/);
+ assert.equal(doc.querySelectorAll('.primary').length,1);assert.match(doc.querySelector('.bar-home-cta').textContent,/Schiera la formazione · Giornata 5/);
  assert.match(doc.querySelector('.bar-home-last-top').textContent,/2–1/);
  assert.equal(doc.querySelectorAll('.bar-home-segments i').length,5);assert.equal(doc.querySelectorAll('.bar-home-segments .is-pending').length,2);
  assert.match(doc.querySelector('.home-last-footer').textContent,/480 cr schedina · 47 cr asta/);
  const saved=view({...home,lineup:{savedAt:'2026-11-19T08:00Z'},storyData:{}});
- assert.match(saved.querySelector('.bar-home-cta').textContent,/✓ Formazione G5/);
+ assert.match(saved.querySelector('.bar-home-cta').textContent,/✓ Formazione · Giornata 5/);
  assert.equal(saved.querySelector('#fanta-story-market,#fanta-story-top'),null);
 });
 test('Fanta calendar renders in ascending order and opens the current round in the vertical track',()=>{

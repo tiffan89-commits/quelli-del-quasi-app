@@ -32,8 +32,8 @@ test('Bar home shows saved results in the story, ten segments and the play actio
  assert.equal(document.querySelectorAll('.bar-home-segments i').length,10);
  for(const type of ['yes','no','pending'])assert.ok(document.querySelector('.bar-home-segments .is-'+type));
  assert.ok(document.querySelector('.story-rewards'));
- assert.match(document.querySelector('.bar-home-cta').textContent,/Schedina G12/);
- next.slip={picks:{f:'1'}};document=render();assert.match(document.querySelector('.bar-home-cta').textContent,/Rivedi schedina G12/);
+ assert.match(document.querySelector('.bar-home-cta').textContent,/Schedina · Giornata 12/);
+ next.slip={picks:{f:'1'}};document=render();assert.match(document.querySelector('.bar-home-cta').textContent,/Rivedi schedina · Giornata 12/);
 });
 
 test('avatar is a small validated configuration: arbitrary markup, URLs and fields cannot enter its SVG',()=>{

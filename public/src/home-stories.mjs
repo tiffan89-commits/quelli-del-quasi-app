@@ -16,68 +16,101 @@ function markSeen(uid,mode,key){
  try {const seen=readSeen(uid,mode);seen.delete(key);seen.add(key);localStorage.setItem('qdq:'+mode+'-stories:'+uid,JSON.stringify([...seen].slice(-128)));}catch{}
 }
 
+const iconFor=id=>`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[id]||''}</svg>`;
+
 export function renderHomeStories({mode,uid,scope,stories}){
  const seen=readSeen(uid,mode);
  return `<div class="bar-home-stories"${stories.length?'':' hidden'} aria-label="Storie ${mode==='bar'?'del Bar':'Fanta'}">${stories.map(({id,label,title,body,version})=>{
   const key=scope+(version?':'+version:'')+':'+id;
-  return `<article class="bar-home-story-slot"><button type="button" class="bar-story-trigger story-${id}" id="${mode}-story-${id}" data-bar-story="${esc(key)}" aria-haspopup="dialog" aria-label="${esc(title)}${seen.has(key)?', già vista':''}"${seen.has(key)?' data-seen':''}><span><svg viewBox="0 0 24 24" aria-hidden="true">${icons[id]}</svg></span><small>${esc(label)}</small></button>
-  <template data-story-card><h2>${esc(title)}</h2>${body}</template></article>`;
+  return `<article class="bar-home-story-slot"><button type="button" class="bar-story-trigger story-${id}" id="${mode}-story-${id}" data-bar-story="${esc(key)}" aria-haspopup="dialog" aria-label="${esc(title)}${seen.has(key)?', già vista':''}"${seen.has(key)?' data-seen':''}><span class="bar-story-ring"><span class="bar-story-art">${iconFor(id)}</span></span><small>${esc(label)}</small></button>
+  <template data-story-card data-story-kind="${id}"><h2>${esc(title)}</h2>${body}</template></article>`;
  }).join('')}</div>`;
 }
 
 export function openHomeStory(trigger,{uid,mode,onAction}){
  const stories=[...trigger.closest('.bar-home-stories').querySelectorAll('[data-bar-story]')];
- const document=trigger.ownerDocument;
+ const document=trigger.ownerDocument,win=document.defaultView;
  const dialog=document.createElement('dialog');
  dialog.className='bar-story-dialog';
  dialog.setAttribute('aria-label',mode==='bar'?'Storie del Bar':'Storie Fanta');
  dialog.innerHTML=`<section class="bar-story-frame"><div class="bar-story-progress" aria-hidden="true"></div>
-  <div class="bar-story-controls"><button type="button" data-story-pause aria-pressed="false">Pausa</button><button type="button" data-story-close aria-label="Chiudi storia" autofocus>×</button></div>
+  <header class="bar-story-top"><div class="bar-story-heading"><span class="bar-story-art"></span><strong></strong></div>
+  <div class="bar-story-controls"><button type="button" data-story-pause aria-pressed="false">Pausa</button><button type="button" data-story-close aria-label="Chiudi storia" autofocus>×</button></div></header>
   <div class="bar-story-pages"><button type="button" data-story-back aria-label="Storia precedente">‹</button><article class="bar-story-copy" data-overlay-scroll></article><button type="button" data-story-next aria-label="Storia successiva">›</button></div></section>`;
  const close=openSiteOverlay(dialog,trigger),progress=dialog.querySelector('.bar-story-progress');
  const content=dialog.querySelector('.bar-story-copy'),pause=dialog.querySelector('[data-story-pause]');
- const duration=11000;
- let index=stories.indexOf(trigger),remaining=duration,started=0,timer=null,paused=false;
+ const heading=dialog.querySelector('.bar-story-heading'),back=dialog.querySelector('[data-story-back]');
+ const controls=new AbortController(),{signal}=controls;
+ let index=stories.indexOf(trigger),remaining=0,started=0,timer=null,manual=false,heldAt=null,suppressClick=false;
  const stop=()=>{clearTimeout(timer);timer=null;};
  const advance=()=>index+1<stories.length?show(index+1):close();
- function play(){
+ function syncPlayback(){
   const fill=progress.children[index]?.firstElementChild;
-  if(!fill||paused)return;
-  started=performance.now();
-  fill.style.animationDuration=remaining+'ms';fill.style.animationPlayState='running';
+  if(!fill)return;
+  if(manual||heldAt!==null||document.hidden){
+   if(timer!==null)remaining=Math.max(0,remaining-(performance.now()-started));
+   stop();fill.style.animationPlayState='paused';return;
+  }
+  if(timer!==null)return;
+  started=performance.now();fill.style.animationPlayState='running';
   timer=setTimeout(advance,remaining);
  }
  function show(next){
-  stop();index=next;remaining=duration;
-  const button=stories[index],key=button.dataset.barStory;
+  stop();index=next;
+  const button=stories[index],key=button.dataset.barStory,template=button.parentElement.querySelector('template');
   markSeen(uid,mode,key);
   button.setAttribute('data-seen','');
   if(!button.getAttribute('aria-label').endsWith(', già vista'))button.setAttribute('aria-label',button.getAttribute('aria-label')+', già vista');
-  content.replaceChildren(button.parentElement.querySelector('template').content.cloneNode(true));
+  dialog.dataset.storyKind=template.dataset.storyKind;
+  heading.firstElementChild.innerHTML=iconFor(template.dataset.storyKind);
+  heading.lastElementChild.textContent=button.querySelector('small').textContent;
+  content.replaceChildren(template.content.cloneNode(true));
   content.scrollTop=0;
-  const scrollable=content.scrollHeight>content.clientHeight;
-  if(scrollable)content.tabIndex=0;else content.removeAttribute('tabindex');
+  if(content.scrollHeight>content.clientHeight)content.tabIndex=0;else content.removeAttribute('tabindex');
+  remaining=content.querySelector('.home-story-votes')?24000:14000;
   progress.innerHTML=stories.map((_,i)=>`<span class="${i<index?'is-done':i===index?'is-now':''}"><i></i></span>`).join('');
-  dialog.querySelector('[data-story-back]').disabled=index===0;
-  play();
-  if(scrollable&&content.querySelector('.home-story-votes')&&!paused)pause.click();
+  progress.children[index].firstElementChild.style.animationDuration=remaining+'ms';
+  back.disabled=index===0;
+  syncPlayback();
  }
+ function hold(event){
+  if(heldAt!==null||event.target.closest('.bar-story-controls'))return;
+  suppressClick=false;heldAt=performance.now();syncPlayback();
+ }
+ function release(){
+  if(heldAt===null)return;
+  suppressClick=performance.now()-heldAt>=250;
+  heldAt=null;syncPlayback();
+ }
+ // Touch events keep the hold active through native scrolling, which can
+ // cancel pointer events before the user's finger leaves the screen.
+ dialog.addEventListener('touchstart',event=>{if(event.touches.length===1)hold(event);},{passive:true,signal});
+ dialog.addEventListener('touchend',event=>{if(!event.touches.length)release();},{passive:true,signal});
+ dialog.addEventListener('touchcancel',release,{passive:true,signal});
+ dialog.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch'&&event.button===0)hold(event);},{signal});
+ win?.addEventListener('pointerup',event=>{if(event.pointerType!=='touch')release();},{signal});
+ win?.addEventListener('pointercancel',event=>{if(event.pointerType!=='touch')release();},{signal});
+ win?.addEventListener('blur',release,{signal});
+ document.addEventListener('visibilitychange',syncPlayback,{signal});
+ dialog.addEventListener('contextmenu',event=>event.preventDefault(),{signal});
+ dialog.addEventListener('click',event=>{
+  if(event.detail!==0&&suppressClick&&!event.target.closest('.bar-story-controls')){
+   event.preventDefault();event.stopImmediatePropagation();suppressClick=false;
+  }
+ },{capture:true,signal});
  pause.onclick=()=>{
-  paused=!paused;
-  pause.textContent=paused?'Riprendi':'Pausa';pause.setAttribute('aria-pressed',String(paused));
-  const fill=progress.children[index].firstElementChild;
-  if(paused){remaining=Math.max(0,remaining-(performance.now()-started));stop();fill.style.animationPlayState='paused';}
-  else{started=performance.now();fill.style.animationPlayState='running';timer=setTimeout(advance,remaining);}
+  manual=!manual;
+  pause.textContent=manual?'Riprendi':'Pausa';pause.setAttribute('aria-pressed',String(manual));
+  syncPlayback();
  };
- content.addEventListener('focusin',()=>{if(!paused)pause.click();});
  dialog.querySelector('[data-story-close]').onclick=close;
- dialog.querySelector('[data-story-back]').onclick=()=>{if(index>0)show(index-1);};
+ back.onclick=()=>{if(index>0)show(index-1);};
  dialog.querySelector('[data-story-next]').onclick=advance;
- dialog.addEventListener('click',event=>{const button=event.target.closest('[data-story-slip],[data-home-action]');if(button){close();onAction(button.dataset);}});
+ dialog.addEventListener('click',event=>{const button=event.target.closest('[data-story-slip],[data-home-action]');if(button){close();onAction(button.dataset);}},{signal});
  dialog.addEventListener('keydown',event=>{
   if(event.key==='ArrowRight'){event.preventDefault();advance();}
   if(event.key==='ArrowLeft'&&index>0){event.preventDefault();show(index-1);}
- });
- dialog.addEventListener('close',stop,{once:true});
+ },{signal});
+ dialog.addEventListener('close',()=>{stop();controls.abort();},{once:true});
  show(index);
 }

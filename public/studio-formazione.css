@@ -37,6 +37,11 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
  flex:1;min-height:0;align-content:start;overflow:auto;overscroll-behavior-y:contain
 }
 .live-studio-reserves .fanta-token{width:100%;gap:1px;padding:1px 2px 3px;border-radius:6px;background:linear-gradient(transparent 53%,#352316 53%,#634328 60%,#412c1e 70%)}
+.live-studio-reserves .fanta-token.is-entered {
+ background:linear-gradient(#67e5a42b,#162e25 72%); box-shadow:inset 0 0 0 1px #75e0b7;
+}
+.live-studio-bench-status { border-radius:5px; margin:2px 0; padding:1px 2px; color:#f3e7cf; background:#ffffff14; font-size:clamp(8px,2.35vw,10px); font-weight:700; line-height:1.25; white-space:nowrap; }
+.is-entered>.live-studio-bench-status { color:#13281f; background:#83edb8; width:100%; }
 .live-studio-reserves .fanta-token-shirt{width:min(calc(100% - 6px),66px);height:auto;aspect-ratio:1}
 .live-studio-reserves .fanta-token-shirt .fanta-role{right:-2px;width:14px;height:14px;font-size:8px}
 .live-studio-reserve-name{font-size:10px;font-weight:700;line-height:1.15;color:#fff0ce;overflow-wrap:anywhere}

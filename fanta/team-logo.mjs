@@ -3,6 +3,7 @@ import {normalizeLogo} from '../public/src/fanta/team-logo.mjs';
 import {imageDimensions,optimizeImage} from '../lib/image-optimize.mjs';
 import {fail} from './rules.mjs';
 import {teamNameKey} from './team-names.mjs';
+import {TEAM_NAME_MAX} from '../public/src/fanta/team-name.mjs';
 export const MAX_LOGO_BYTES=250*1024;
 export const canRenameTeam=(deadline,now)=>deadline==null||Date.parse(deadline)>now;
 
@@ -15,7 +16,7 @@ export async function saveTeamIdentity(c,state,team,input,uid,now){
   const proposed=input.name.trim().replace(/\s+/g,' '),key=teamNameKey(proposed);
   if(proposed!==name){
    if(!canRenameTeam(state.teamNameDeadline,now()))fail('La prima partita è iniziata. Il nome della squadra è bloccato.',409);
-   if(proposed.length<2||proposed.length>50||!key||/[\p{Cc}\p{Cf}]/u.test(proposed))fail('Il nome deve avere da 2 a 50 caratteri validi');
+   if(proposed.length<2||proposed.length>TEAM_NAME_MAX||!key||/[\p{Cc}\p{Cf}]/u.test(proposed))fail('Il nome deve avere da 2 a '+TEAM_NAME_MAX+' caratteri validi');
    if(state.teams.some(other=>other.id!==team.id&&teamNameKey(other.name)===key))fail('Questo nome è già usato da una squadra della lega',409);
    await c.query('UPDATE fanta.teams SET name=$2 WHERE id=$1',[team.id,proposed]);
    name=proposed;

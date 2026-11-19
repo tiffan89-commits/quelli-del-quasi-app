@@ -150,7 +150,8 @@ test("push requires opt in, targets only current league members, includes the me
   });
   assert.equal(sent.length, 1);
   const payload=JSON.parse(sent[0].body);
-  assert.equal(payload.title,l.name);
+  assert.equal(payload.title,'1 messaggio non letto · '+l.name);
+  assert.equal(payload.unread,1);
   assert.equal(payload.body,s.users.find(u=>u.id==="a").name+": Segreto della chat");
   assert.equal(payload.kind,"chat");
   assert.equal(payload.league,l.id);

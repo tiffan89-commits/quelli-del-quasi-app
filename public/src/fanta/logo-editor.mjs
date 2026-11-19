@@ -1,5 +1,6 @@
 import {LOGO_SHAPES,LOGO_PATTERNS,LOGO_SYMBOLS,LOGO_COLORS,normalizeLogo,logoSvg,teamLogo} from './team-logo.mjs';
 import {esc} from './formato.mjs';
+import {TEAM_NAME_MAX} from './team-name.mjs';
 const LIMIT=250*1024;
 export async function readLogoFile(file){
  if(!file||file.size>LIMIT)throw Error('Scegli un’immagine fino a 250 KB.');
@@ -26,7 +27,7 @@ export function openLogoEditor({team,teamNameDeadline,onSave}){
  const tile=(key,value,label)=>`<button type="button" class="logo-option ${design[key]===value?'is-active':''}" data-logo-key="${key}" data-logo-value="${value}" aria-pressed="${design[key]===value}">${logoSvg({...design,[key]:value},label)}<span>${label}</span></button>`;
  const showOptions=()=>{
   dialog.querySelectorAll('[data-logo-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.logoTab===section)));
-  if(section==='name')options.innerHTML=`<div class="logo-text-fields"><label style="grid-column:1/-1">Nome della squadra<input data-logo-team-name maxlength="50" value="${esc(name)}" ${canRename()?'':'readonly'} aria-describedby="logo-team-name-rule"></label></div><p id="logo-team-name-rule" class="fanta-note">${canRename()?'Puoi cambiarlo fino al primo calcio d’inizio.':'Il nome è bloccato dopo il calcio d’inizio della prima partita della stagione di Fanta.'}</p>`;
+  if(section==='name')options.innerHTML=`<div class="logo-text-fields"><label style="grid-column:1/-1">Nome della squadra<input data-logo-team-name maxlength="${TEAM_NAME_MAX}" value="${esc(name)}" ${canRename()?'':'readonly'} aria-describedby="logo-team-name-rule"></label></div><p id="logo-team-name-rule" class="fanta-note">${canRename()?'Massimo ${TEAM_NAME_MAX} caratteri. Puoi cambiarlo fino al primo calcio d’inizio.':'Il nome è bloccato dopo il calcio d’inizio della prima partita della stagione di Fanta.'}</p>`;
   if(section==='shape')options.innerHTML=`<div class="logo-option-grid">${LOGO_SHAPES.map(([v,n])=>tile('shape',v,n)).join('')}</div>`;
   if(section==='pattern')options.innerHTML=`<div class="logo-option-grid">${LOGO_PATTERNS.map(([v,n])=>tile('pattern',v,n)).join('')}</div><div class="logo-border-options">${['simple','double'].map((v,i)=>`<button type="button" data-logo-key="border" data-logo-value="${v}" aria-pressed="${design.border===v}">${i?'Doppio bordo':'Bordo semplice'}</button>`).join('')}</div>`;
   if(section==='symbol')options.innerHTML=`<div class="logo-option-grid">${LOGO_SYMBOLS.map(([v,n])=>tile('symbol',v,n)).join('')}</div>`;

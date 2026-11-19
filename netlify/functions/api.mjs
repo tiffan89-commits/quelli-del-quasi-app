@@ -4,6 +4,7 @@ import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
 import {createLeaguePair} from '../../fanta/league-creation.mjs';
 import {addLeagueMember,leagueAccessAction,leagueAccessInbox,leagueDirectory,updateNickname} from '../../lib/league-access.mjs';
 import {readLeagueParticipants} from '../../lib/league-participants.mjs';
+import {acceptsBarSlipReminder} from '../../lib/bar-slip-reminder.mjs';
 import {detachBarCoach,reattachBarCoach} from '../../fanta/linked-membership.mjs';
 import {dispatchFanta} from '../../fanta/jobs.mjs';
 import {inviteInfo} from '../../lib/public-area.mjs';
@@ -219,8 +220,9 @@ export function createApi({
           const actor=userFor(s,sid),league=s.leagues.find(l=>l.id===p.league);
           if(!actor?.emailVerified||actor.adminOnly||actor.demo||league?.admin!==actor.id)fail('Serve il presidente di lega',403);
           if(!league.members.some(m=>m.uid===p.uid&&!m.removed))fail('Partecipante non disponibile',404);
-          const round=s.rounds.find(r=>r.id===p.round&&r.league===league.id&&r.source==='seriea'),deadline=Date.parse(round?.deadline||round?.kickoff);
-          if(!round||round.closed||round.settled||round.calculated||round.sourceConflict||!(round.matchCount??round.matches?.length)||!(deadline>Date.now()))fail('La schedina non è più aperta',409);
+          const round=s.rounds.find(r=>r.id===p.round&&r.league===league.id);
+          if(!acceptsBarSlipReminder(round))fail('La schedina non è più aperta',409);
+          const deadline=Date.parse(round.deadline||round.kickoff);
           if(round.slips?.some(slip=>slip.uid===p.uid))fail('La schedina è già stata consegnata',409);
           return {
             target:{user:s.users.find(u=>u.id===p.uid),keys:s.chatPushKeys,devices:(s.chatSubscriptions||[]).filter(d=>d.uid===p.uid),deadline},

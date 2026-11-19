@@ -5,6 +5,7 @@ import {DEFAULT_RULES} from './rules.mjs';
 import {availableTeamNames} from './team-names.mjs';
 import {leagueAccent} from '../public/src/league-theme.mjs';
 import {nativeLeagueBranding} from '../lib/league-profile.mjs';
+import {shortenTeamName,TEAM_NAME_MAX} from '../public/src/fanta/team-name.mjs';
 export async function createLeaguePair(c,s,user,input,{season=2026,now=Date.now()}={}){
  const mode=input.rosterMode||'empty',requestedSize=Number(input.size??8),requestId=input.requestId||randomUUID();
  if(!['empty','random'].includes(mode)||!Number.isInteger(requestedSize)||requestedSize<2||requestedSize>12)fail('Scegli rose vuote o random e da 2 a 12 squadre');
@@ -22,7 +23,7 @@ export async function createLeaguePair(c,s,user,input,{season=2026,now=Date.now(
  await c.query(`INSERT INTO fanta.leagues(id,name,season,admin_uid,invite_code,rules,max_members,kind,auto_lineups_from,accent) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,[id,bar.name,season,user.id,'L-'+requestId,JSON.stringify({...DEFAULT_RULES,rosterMode:mode,creationPending:mode==='random',...(bar.branding?{leagueIdentity:nativeLeagueBranding(bar)}:{})}),size,mode==='random'?'random':'standard',mode==='random'?at:null,leagueAccent(bar,'fanta')]);
  const initialMembers=[user.id,...bar.members.map(m=>m.uid).filter(uid=>uid!==user.id)].slice(0,size);
  const generatedNames=mode==='random'?await availableTeamNames(c,size,requestId):null;
- const teams=Array.from({length:size},(_,i)=>{const uid=initialMembers[i]||null,coach=uid?s.users.find(u=>u.id===uid):null;return {id:id+':'+i,league_id:id,name:generatedNames?generatedNames[i]:uid?'La squadra di '+(coach?.name||coach?.username||user.name||user.username):'Squadra '+(i+1),manager:uid?(coach?.name||coach?.username||user.name||user.username):'Allenatore da assegnare',user_id:uid,color:['#b64b5a','#d4aa45','#608ca8','#78a67b','#9a72b2','#df8952'][i%6]};});
+ const teams=Array.from({length:size},(_,i)=>{const uid=initialMembers[i]||null,coach=uid?s.users.find(u=>u.id===uid):null;return {id:id+':'+i,league_id:id,name:generatedNames?generatedNames[i]:uid?shortenTeamName('Squadra '+(coach?.name||coach?.username||user.name||user.username),TEAM_NAME_MAX):'Squadra '+(i+1),manager:uid?(coach?.name||coach?.username||user.name||user.username):'Allenatore da assegnare',user_id:uid,color:['#b64b5a','#d4aa45','#608ca8','#78a67b','#9a72b2','#df8952'][i%6]};});
  await c.query(`INSERT INTO fanta.teams(id,league_id,name,manager,user_id,color) SELECT id,league_id,name,manager,user_id,color FROM jsonb_to_recordset($1::jsonb) x(id text,league_id text,name text,manager text,user_id text,color text)`,[JSON.stringify(teams)]);
  await c.query(`INSERT INTO fanta.competitions(id,league_id,name,kind,status) VALUES($1,$2,'Campionato','league','draft')`,[id+':main',id]);
  await c.query(`INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key,active) VALUES($1,$2,$2||':main',$3,true) ON CONFLICT(bar_league_id) DO UPDATE SET fanta_league_id=EXCLUDED.fanta_league_id,competition_id=EXCLUDED.competition_id,competition_key=EXCLUDED.competition_key,active=true WHERE NOT fanta.bar_links.active`,[bar.id,id,'native:'+id]);

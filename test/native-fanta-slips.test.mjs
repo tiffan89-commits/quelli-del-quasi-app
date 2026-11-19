@@ -59,6 +59,8 @@ test('Studio Live keeps the saved starters on the pitch and marks only the actua
  assert.equal(pitch.querySelector('[data-player=olivera]'),null);
  const olivera=document.querySelector('.live-studio-reserves [data-player=olivera]');
  assert.ok(olivera.classList.contains('is-entered'));
+ assert.match(olivera.querySelector('.live-studio-bench-status').textContent,/Subentrato/);
+ assert.ok([...document.querySelectorAll('.live-studio-reserves .fanta-token:not(.is-entered) .live-studio-bench-status')].every(badge=>badge.textContent==='Riserva'));
  assert.equal(olivera.querySelector('[data-fantasy-grade]').textContent,'6');
 });
 test('native app opens dedicated slips, keeps slip picks away from lineup handlers, and moves results under Oggi',async()=>{

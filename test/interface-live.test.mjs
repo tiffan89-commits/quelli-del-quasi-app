@@ -6,6 +6,7 @@ import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
 import {slipCreditReserve,slipStakeLimit} from '../public/slip-events.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
+import {mergeChatSummary,paintChatBadges} from '../public/src/chat-badges.mjs';
 import {settingsFooter,presidentEntry,presidentPanel,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {presidentLaunch,presidentWorkspace,presidentOperationButtons} from '../public/src/president-workspace.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
@@ -117,7 +118,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   const ctx = {
     mountPublic(root){root.innerHTML='<main>PUBLIC-AREA</main>';return {destroy(){},route(){}};},createPublicApi(){return {};},
     readAppRoute,writeAppRoute,saveOnce,applySlipReceipt,loadAppStyles(){},displayCache,clearDisplayCaches,retainAppHeader(){},barModeSwitch,preferredFanta:()=>false,leaveFanta(){},clearFantaSessions(){},enterFanta(){fantaEntries++;},
-    createSportsPush(){return {start(){},wake(){},stop(){}};},trackAuctionBadges(){},paintAuctionBadges(){},
+    createSportsPush(){return {start(){},wake(){},stop(){}};},trackAuctionBadges(){},paintAuctionBadges(){},mergeChatSummary,paintChatBadges,
     createLiveChannel(){return {start(){},wake(){},stop(){}};},requestJson:async()=>{requestCount++;if(blockRequests)return new Promise(resolve=>pendingRequests.push(resolve));return state;},
     barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,renderFantaNotificationSettings,
     randomLeagueControls,bindRandomLeagues,

@@ -21,7 +21,7 @@ export function chatView(l, u) {
   try {
     draft = localStorage.getItem(draftKey(l, u)) || "";
   } catch {}
-  return `<section class="chat-room"><div class="round-heading"><div><div class="eyebrow">IL TAVOLO È SEMPRE APERTO</div><h1>Chiacchiere da bar</h1><p>${esc(l.name)} · solo i membri di questa lega</p></div><span class="chat-sign" aria-hidden="true">“</span></div><details class="chat-notifications card"><summary>Il bar ti chiama. <span class="tiny muted">Gestisci notifiche</span></summary><div class="chat-push-content"><div><p class="tiny muted" id="chat-push-note">Le notifiche sono facoltative. I messaggi restano qui anche quando sei assente.</p></div><div><button class="secondary" id="chat-push" disabled>Caricamento…</button><button type="button" class="text-button" id="chat-push-test" hidden>Invia una notifica di prova a questo dispositivo</button></div></div></details><div id="chat-error" class="notice" role="status" hidden></div><div class="chat-panel card"><button type="button" class="text-button" id="chat-refresh">Aggiorna messaggi ↻</button><button class="text-button" id="chat-older" hidden>Carica messaggi precedenti</button><div id="chat-log" class="chat-log" role="log" aria-label="Messaggi della lega" aria-live="polite" aria-relevant="additions"><p class="muted">Apro il bar…</p></div><button class="secondary chat-new" id="chat-new" hidden>Nuovi messaggi ↓</button><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-text">Messaggio alla lega</label><textarea id="chat-text" maxlength="1200" rows="2" required>${esc(draft)}</textarea><div><span class="tiny muted" id="chat-counter">${draft.length}/1200 · bozza sul dispositivo</span><button class="primary" id="chat-send">Invia al bar ↗</button></div></form></div><p class="tiny muted">Solo testo · fino a 1200 caratteri · ultimi 3000 messaggi conservati. Puoi eliminare i tuoi messaggi; il presidente può moderare la stanza. La consegna delle notifiche può richiedere qualche minuto.</p></section>`;
+  return `<section class="chat-room"><div class="round-heading"><div><div class="eyebrow">IL TAVOLO È SEMPRE APERTO</div><h1>Chiacchiere da bar</h1><p>${esc(l.name)} · solo i membri di questa lega</p></div><span class="chat-sign" aria-hidden="true">“</span></div><details class="chat-notifications card"><summary>Il bar ti chiama. <span class="tiny muted">Gestisci notifiche</span></summary><div class="chat-push-content"><div><p class="tiny muted" id="chat-push-note">Le notifiche sono facoltative. I messaggi restano qui anche quando sei assente.</p></div><div><button class="secondary" id="chat-push" disabled>Caricamento…</button><button type="button" class="text-button" id="chat-push-test" hidden>Invia una notifica di prova a questo dispositivo</button></div></div></details><div id="chat-error" class="notice" role="status" hidden></div><div class="chat-panel card"><button class="text-button" id="chat-older" hidden>Carica messaggi precedenti</button><div class="chat-feed"><div id="chat-log" class="chat-log" tabindex="0" aria-describedby="chat-scroll-help" role="log" aria-label="Messaggi della lega" aria-live="polite" aria-relevant="additions"><p class="muted">Apro il bar…</p></div><div class="chat-refresh-meter" hidden role="status" aria-label="Aggiornamento messaggi"><i aria-hidden="true"></i></div></div><p class="sr-only" id="chat-scroll-help">Scorri oltre l’ultimo messaggio per aggiornare. Da tastiera, premi Fine quando sei in fondo.</p><button class="secondary chat-new" id="chat-new" hidden>Nuovi messaggi ↓</button><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-text">Messaggio alla lega</label><textarea id="chat-text" maxlength="1200" rows="2" required>${esc(draft)}</textarea><div><span class="tiny muted" id="chat-counter">${draft.length}/1200 · bozza sul dispositivo</span><button class="primary" id="chat-send">Invia al bar ↗</button></div></form></div><p class="tiny muted">Solo testo · fino a 1200 caratteri · ultimi 3000 messaggi conservati. Puoi eliminare i tuoi messaggi; il presidente può moderare la stanza. La consegna delle notifiche può richiedere qualche minuto.</p></section>`;
 }
 export function bindChat({ league, user, api, notify, onUnread = () => {},onNotify=()=>{},consent }) {
   stopChat();
@@ -63,16 +63,19 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
     if (!alive || document.hidden || !bottom() || reading || !latest || lastRead>=latest) return;
     reading = true;
     const through=latest;
+    let acknowledged=false;
     try {
       const r = await api("chat-read", { league: league.id, through });
-      if (alive) {
-        lastRead=Math.max(lastRead,through);
-        onUnread(r.unread);
-        jump.hidden = true;
+      onUnread(r);
+      acknowledged=true;
+      if(alive){
+        lastRead=Math.max(lastRead,through,r.read||0);
+        if(lastRead>=latest)jump.hidden=true;
       }
     } catch {
     } finally {
       reading = false;
+      if(acknowledged&&lastRead<latest)void read();
     }
   }
   function paint({ atBottom = true, prepend = false } = {}) {
@@ -243,8 +246,9 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
       messages.sort((a,b)=>a.seq-b.seq);
       if(r.message.seq===latest+1)latest=r.message.seq;
       lastRead=Math.max(lastRead,r.message.seq);
+      onUnread(r);
       if(!alive)return;
-      onUnread(0);cache();paint();
+      cache();paint();
       if(r.message.seq>latest)void load();
     }catch(e){
       message.pending=false;message.failed=true;
@@ -275,7 +279,44 @@ export function bindChat({ league, user, api, notify, onUnread = () => {},onNoti
   log.onscroll = () => {
     if (bottom()) read();
   };
-  document.querySelector('#chat-refresh').onclick = () => load();
+  const refreshMeter=log.parentElement.querySelector('.chat-refresh-meter');
+  const atEnd=()=>log.scrollHeight-log.scrollTop-log.clientHeight<3;
+  let pull=null,pulling=false;
+  function showPull(distance){
+    refreshMeter.hidden=distance<=0&&!pulling;
+    refreshMeter.classList.toggle('is-loading',pulling);
+    refreshMeter.style.setProperty('--pull',Math.min(distance/64,1));
+  }
+  async function refreshAtEnd(){
+    if(!alive||loading||pulling)return;
+    pulling=true;showPull(64);
+    try{await Promise.all([load(),new Promise(resolve=>setTimeout(resolve,250))]);}
+    finally{pulling=false;showPull(0);}
+  }
+  log.addEventListener('touchstart',event=>{
+    if(event.touches.length!==1||pulling){pull=null;return;}
+    const {clientX:x,clientY:y}=event.touches[0];
+    pull={x,y,lastY:y,distance:0};
+  },{passive:true});
+  log.addEventListener('touchmove',event=>{
+    if(!pull||event.touches.length!==1)return;
+    const {clientX:x,clientY:y}=event.touches[0],rise=pull.lastY-y;
+    pull.lastY=y;
+    if(Math.abs(x-pull.x)>Math.abs(y-pull.y)){pull=null;showPull(0);return;}
+    pull.distance=atEnd()?Math.max(0,pull.distance+rise):0;
+    showPull(pull.distance);
+  },{passive:true});
+  log.addEventListener('touchend',()=>{
+    const ready=pull?.distance>=64;pull=null;
+    if(ready)void refreshAtEnd();
+    if(!pulling)showPull(0);
+  },{passive:true});
+  log.addEventListener('touchcancel',()=>{pull=null;if(!pulling)showPull(0);},{passive:true});
+  log.addEventListener('keydown',event=>{
+    if(event.target===log&&event.key==='End'&&!event.repeat&&atEnd()){
+      event.preventDefault();void refreshAtEnd();
+    }
+  });
   if(messages.length)paint();
   load();
   stop = () => {

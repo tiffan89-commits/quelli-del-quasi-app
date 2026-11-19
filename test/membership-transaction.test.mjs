@@ -59,7 +59,7 @@ test('current live day wins over an old unverified day; homepage links carry its
  const now=Date.parse('2026-11-01T18:00Z'),rounds=[{number:1,seriea_round:3,deadline:'2026-09-01T12:00Z',official:false},{number:8,seriea_round:10,deadline:'2026-10-31T12:00Z',official:false},{number:9,seriea_round:11,deadline:'2026-11-07T12:00Z',official:false}],s={rounds,fixtures:[{round:10,status:'2H'}]};
  assert.equal(currentRound(s,now).number,8);s.fixtures[0].status='FT';assert.equal(currentRound(s,now).number,8);rounds[1].official=true;assert.equal(currentRound(s,now).number,9);assert.equal(rounds[0].official,false);
  const home={league:{name:'Lega',season:'2026/27'},me:{teamName:'Quasi',manager:'Mister',position:1,points:0,fantapoints:0,form:[]},round:{number:8,state:'in-corso',matchesDone:5,matchesTotal:10},lineup:{},standings:[],auction:{status:'ended'}};
- assert.match(renderHome(home,now),/data-go="giornata" data-round="8"[^>]*><span>G8 live/);
+ assert.match(renderHome(home,now),/data-go="giornata" data-round="8"[^>]*><span>Giornata 8 live/);
 });
 
 test('failed initial state reads return promptly without starting a full game write just to record the error',async()=>{
