@@ -9,6 +9,7 @@ import {leagueActions} from './league-actions.mjs';
 import {barHomeInvite} from './bar-home-invite.mjs';
 import {presidentEntry} from './president-panel.mjs';
 import {backButton} from './back-navigation.mjs';
+import {withMembershipProgress} from './membership-progress.mjs';
 
 const personCount=members=>members.filter(m=>m.uid).length;
 const workspaceData=(data,view)=>view==='manage'&&data?{...data,members:data.members.filter(m=>m.uid)}:data;
@@ -77,17 +78,20 @@ export function bindLeagueWorkspace(node,{load,remove,initial,onRemoved=()=>{},o
   node.innerHTML=view==='hub'?renderLeagueHub(data,mode,initial?.bar||data.bar):renderParticipantRows({...data,isAdmin:view==='manage'&&data.isAdmin});
   onPaint();
  }
- async function refresh(){
+ async function refresh({strict=false}={}){
   const version=++revision;
   try{
    const value=await load(id,mode);
    if(node.isConnected&&version===revision)paint(value);
+   return true;
   }catch(error){
    if(!node.isConnected||version!==revision)return;
    if(error.status===403||!data){
     data=null;
     node.innerHTML=`<p role="alert">${esc(error.message)}</p><button class="secondary" type="button" data-participants-retry>Riprova</button>`;
    }
+   if(strict)throw Error('Partecipante rimosso. Ricarica la lega per aggiornare i dati.');
+   return false;
   }
  }
  node.addEventListener('click',async event=>{
@@ -107,10 +111,12 @@ export function bindLeagueWorkspace(node,{load,remove,initial,onRemoved=()=>{},o
   try{
    if(!await askConfirmation({title:'Rimuovi partecipante',message:'Vuoi rimuovere '+member.name+' dalla lega?',confirmLabel:'Rimuovi',danger:true})||!node.isConnected)return;
    button.disabled=true;
-   await remove({id,bar,mode,uid:member.uid});
-   if(node.isConnected&&data)paint({...data,members:data.members.filter(m=>m.uid!==member.uid)});
-   if(load)await refresh();
-   onRemoved();
+   await withMembershipProgress(node.ownerDocument,'Rimozione del partecipante…',async()=>{
+    await remove({id,bar,mode,uid:member.uid});
+    if(node.isConnected&&data)paint({...data,members:data.members.filter(m=>m.uid!==member.uid)});
+    if(load)await refresh({strict:true});
+    await onRemoved({bar});
+   });
   }catch(error){
    if(node.isConnected){
     const message=document.createElement('p');message.dataset.participantsError='';
@@ -118,8 +124,8 @@ export function bindLeagueWorkspace(node,{load,remove,initial,onRemoved=()=>{},o
    }
   }finally{activeRemoval=button.disabled=false;}
  });
- if(load)void refresh();
- return {refresh};
+ const ready=load?refresh():Promise.resolve(true);
+ return {refresh,ready};
 }
 
 export function barLeagueFallback(bar,viewer){

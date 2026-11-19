@@ -10,6 +10,37 @@ export async function detachBarCoach(c,bar,uid){
  if(bar.nativeFantaLink)bar.nativeFantaLink.coachIds=(bar.nativeFantaLink.coachIds||[]).filter(id=>id!==uid);
  return rows;
 }
+// Older removals did not record a team ID. Recover one only when the original
+// Bar join and exactly one detached team assignment share the same timestamp.
+export function formerTeamAtJoin(teams,members,member){
+ const at=Date.parse(member?.joinedAt);
+ if(!Number.isFinite(at)||members.some(m=>m.uid!==member.uid&&Math.abs(Date.parse(m.joinedAt)-at)<=1000))return null;
+ const matches=teams.filter(t=>Math.abs(Date.parse(t.joined_at)-at)<=1000);
+ return matches.length===1&&!matches[0].user_id?matches[0].id:null;
+}
+
+export async function reattachBarCoach(c,bar,user,member,{former=member?.removedFantaTeam,legacy=true}={}){
+ const link=(await c.query(`SELECT l.id,l.kind,l.max_members,b.competition_id
+  FROM fanta.bar_links b JOIN fanta.leagues l ON l.id=b.fanta_league_id
+  WHERE b.bar_league_id=$1 AND b.active AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL FOR UPDATE OF l`,[bar.id])).rows[0];
+ if(!link)return null;
+ const teams=(await c.query('SELECT id,user_id,joined_at FROM fanta.teams WHERE league_id=$1 ORDER BY id FOR UPDATE',[link.id])).rows;
+ let team=teams.find(t=>t.user_id===user.id);
+ if(!team){
+  const preferred=former?.leagueId===link.id?former.id:!former&&legacy?formerTeamAtJoin(teams,[...bar.members,...(bar.removedMembers||[])],member):null;
+  team=teams.find(t=>t.id===preferred&&!t.user_id);
+  if(team&&link.kind==='pilot'){
+   const claim=await c.query(`INSERT INTO fanta.pilot_claims(user_id,league_id,team_id) VALUES($1,$2,$3)
+    ON CONFLICT DO NOTHING RETURNING team_id`,[user.id,link.id,team.id]);
+   if(!claim.rows.length)team=null;
+  }
+  if(team)await c.query('UPDATE fanta.teams SET user_id=$2,manager=$3 WHERE id=$1 AND user_id IS NULL',[team.id,user.id,user.name||user.username]);
+ }
+ const coaches=[...new Set([...teams.map(t=>t.user_id).filter(Boolean),...(team?[user.id]:[])])];
+ if(team)bar.nativeFantaLink={...bar.nativeFantaLink,leagueId:link.id,competitionId:link.competition_id,maxMembers:link.max_members,coachIds:coaches};
+ return {league:link.id,team:team?.id||null,coaches};
+}
+
 export async function repairRemovedCoaches({connect=connection}={}){
  const c=await connect();try{
   await c.query('BEGIN');await c.query('SELECT pg_advisory_xact_lock(826501)');

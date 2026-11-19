@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-import {fixtureDb} from './fanta/helpers.mjs';import {createApi} from '../netlify/functions/api.mjs';import {membershipTransaction} from '../lib/db.mjs';import{claimRandom,ensurePilotBars}from'../fanta/random-leagues.mjs';import{repairRemovedCoaches}from'../fanta/linked-membership.mjs';import{sqlFantaStore}from'../fanta/store.mjs';import{homeView,teamView}from'../fanta/views.mjs';
+import {fixtureDb} from './fanta/helpers.mjs';import {createApi} from '../netlify/functions/api.mjs';import {membershipTransaction} from '../lib/db.mjs';import{claimRandom,ensurePilotBars}from'../fanta/random-leagues.mjs';import{formerTeamAtJoin,repairRemovedCoaches}from'../fanta/linked-membership.mjs';import{sqlFantaStore}from'../fanta/store.mjs';import{homeView,teamView}from'../fanta/views.mjs';
 test('Bar removal atomically detaches only the linked Fanta coach, cannot be revived, and repair removes old testuser2 ownership without deleting history',async()=>{
  const f=await fixtureDb();try{
  await f.db.exec(await fs.readFile(new URL('../netlify/database/migrations/012_random_leagues.sql',import.meta.url),'utf8'));
@@ -21,6 +21,16 @@ test('Bar removal atomically detaches only the linked Fanta coach, cannot be rev
  const repair=await repairRemovedCoaches({connect:f.connect});assert.equal(repair.detached,1);assert.equal(repair.resurrectedMembersRemoved,1);assert.equal(repair.remainingRemovedAssignments,0);assert.equal(repair.testuser2Remaining,0);assert.equal((await repairRemovedCoaches({connect:f.connect})).detached,0);
  assert.deepEqual((await f.db.query('SELECT * FROM fanta.rosters ORDER BY player_id')).rows,before.rosters);assert.deepEqual((await f.db.query('SELECT * FROM fanta.lineups')).rows,before.lineups);assert.equal((await f.db.query("SELECT user_id FROM fanta.teams WHERE id='other-team'")).rows[0].user_id,'u2');
  }finally{await f.close();}
+});
+test('legacy re-admission restores a bench only when its assignment time identifies one member and team',()=>{
+ const earlier='2026-11-08T12:00:00.000Z',prior='2026-11-18T05:33:57.817Z';
+ const member={uid:'returning',joinedAt:'2026-11-18T05:33:57.862Z'};
+ const teams=[{id:'other',joined_at:earlier,user_id:'somebody'},{id:'old-team',joined_at:prior,user_id:null}];
+ const members=[{uid:'somebody',joinedAt:earlier},member];
+ assert.equal(formerTeamAtJoin(teams,members,member),'old-team');
+ assert.equal(formerTeamAtJoin([...teams,{id:'another',joined_at:prior}],members,member),null);
+ assert.equal(formerTeamAtJoin(teams,[...members,{uid:'not-sure',joinedAt:prior}],member),null);
+ assert.equal(formerTeamAtJoin([teams[0],{...teams[1],user_id:'new-manager'}],members,member),null);
 });
 test('normal Fanta reads omit the unrelated player catalogue while preserving home/team DTOs and historical lineup players',async()=>{
  const f=await fixtureDb();try{

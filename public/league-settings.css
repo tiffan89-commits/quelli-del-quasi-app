@@ -255,6 +255,10 @@ html.os-on body #app>main.os-split .president-workspace > [data-os-content] { ov
  box-shadow:0 14px 50px #0008;
 }
 .site-confirm::backdrop { background:#000a; }
+.membership-progress [role="status"] { display:flex;align-items:center;gap:12px;min-height:44px;outline:none; }
+.membership-spinner { flex:none;width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--lime);border-radius:50%;animation:membership-spin .8s linear infinite; }
+@keyframes membership-spin { to { transform:rotate(1turn); } }
+@media(prefers-reduced-motion:reduce){.membership-spinner{animation:none}}
 .site-confirm h2 { margin:0 0 8px; }
 .site-confirm p { margin:0 0 14px; }
 .site-confirm form { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
