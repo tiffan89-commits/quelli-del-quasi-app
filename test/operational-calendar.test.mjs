@@ -11,11 +11,11 @@ test('simultaneous matches produce one shared minute job, even if the dispatch i
 test('final status suspends live immediately, does not assume an end at ninety minutes, and creates a single next-morning verification',()=>{let now=date(start),p=newPlan(calendar([{},{}]),{now});p=refreshPlan(p,[{id:'m0',status:'LIVE'},{id:'m1',status:'LIVE'}],{now});assert.equal(dueWork(p,{now:now+110*60000}).live.length,2);now+=120*60000;p=refreshPlan(p,[{id:'m0',status:'FT'},{id:'m1',status:'FT'}],{now});assert.equal(dueWork(p,{now}).live.length,0);const jobs=p.jobs.filter(j=>j.kind==='morning');assert.equal(jobs.length,1);assert.equal(jobs[0].at,'2026-11-02T06:00:00.000Z');assert.equal(refreshPlan(p,[],{now}).jobs.filter(j=>j.kind==='morning').length,1);const claimed=claimWork(p,{now:date(jobs[0].at),nonce:'verify'}),job=claimed.jobs.find(j=>j.kind==='morning'),done=completeWork(claimed.plan,job,{ok:true},{now:date(job.at)});assert.equal(claimWork(done,{now:date(job.at)+60000}).jobs.length,0);});
 test('postponed games remain pending without keeping polling alive; a rescheduled recovery gets only its own verification',()=>{let now=date(start),p=newPlan(calendar([{},{}]),{now});p=refreshPlan(p,[{id:'m0',status:'FT'},{id:'m1',status:'PST'}],{now});const j=p.jobs.find(j=>j.kind==='morning'),c=claimWork(p,{now:date(j.at),nonce:'one'}),done=completeWork(c.plan,c.jobs.find(x=>x.id===j.id),{ok:true},{now:date(j.at)});assert.deepEqual(dueWork(done,{now:now+3*86400000}).live,[]);const resumed=refreshPlan(done,[{id:'m1',status:'LIVE',kickoff:'2026-11-04T17:00:00Z'}],{now:date('2026-11-04T17:00Z')}),final=refreshPlan(resumed,[{id:'m1',status:'FT'}],{now:date('2026-11-04T19:00Z')}),next=final.jobs.filter(x=>x.kind==='morning'&&x.status==='queued');assert.equal(next.length,1);assert.deepEqual(next[0].fixtureIds,['m1']);});
 test('a failed morning check has no automatic retry; stalled kickoffs and suspensions have explicit limits',()=>{let now=date(start),p=newPlan(calendar([{}]),{now});p=refreshPlan(p,[],{now:now+46*60000});assert.equal(p.fixtures[0].status,'TIMED_OUT');assert.equal(dueWork(p,{now:now+46*60000}).live.length,0);p=newPlan(calendar([{status:'FT',finishedAt:start}]),{now});const j=p.jobs.find(j=>j.kind==='morning'),claimed=claimWork(p,{now:date(j.at),nonce:'one'}),failed=completeWork(claimed.plan,claimed.jobs.find(x=>x.id===j.id),{ok:false,error:'missing-player-statistics'},{now:date(j.at)});assert.equal(dueWork(failed,{now:date(j.at)+86400000}).jobs.length,0);assert.equal(failed.jobs.find(x=>x.id===j.id).error,'missing-player-statistics');});
-test('editorial forecasts wait for the previous closure and use ten Rome time slots per day',()=>{
- const now=date('2026-03-28T05:00Z'),kickoff='2026-03-30T18:45:00.000Z';
+test('editorial forecasts wait for the previous closure and use ten Rome time slots per day even during a break',()=>{
+ const now=date('2026-03-28T05:00Z'),kickoff='2026-04-08T18:45:00.000Z';
  const plan={jobs:[{id:'close',round:10,kind:'round-close',status:'running',at:'2026-03-27T20:00:00Z',leaseUntil:'2026-03-28T06:00:00Z'}],
   fixtures:[{id:'past',round:10,kickoff:'2026-03-26T19:00:00Z',finishedAt:'2026-03-26T21:00:00Z',status:'FT'},
-   {id:'next',apiId:102,round:11,kickoff,status:'NS'},{id:'later',apiId:103,round:11,kickoff:'2026-03-30T20:45:00.000Z',status:'NS'}]};
+   {id:'next',apiId:102,round:11,kickoff,status:'NS'},{id:'later',apiId:103,round:11,kickoff:'2026-04-08T20:45:00.000Z',status:'NS'}]};
  const forecasts=p=>p.jobs.filter(j=>j.kind==='probable-lineups');
  assert.equal(forecasts(refreshPlan(plan,[],{now})).length,0);
  plan.jobs[0].status='done';
@@ -30,7 +30,7 @@ test('editorial forecasts wait for the previous closure and use ten Rome time sl
  const at=date(days[0][0].at),claimed=claimWork(p,{now:at,nonce:'one'});
  assert.equal(claimed.jobs.filter(j=>j.kind==='probable-lineups').length,1);
  assert.equal(claimWork(claimed.plan,{now:at,nonce:'two'}).jobs.filter(j=>j.kind==='probable-lineups').length,0);
- const matchday=refreshPlan(p,[{id:'next',status:'FT',finishedAt:'2026-03-30T20:30:00Z'}],{now:date('2026-03-30T20:35Z')});
+ const matchday=refreshPlan(p,[{id:'next',status:'FT',finishedAt:'2026-04-08T20:30:00Z'}],{now:date('2026-04-08T20:35Z')});
  assert.equal(forecasts(matchday).some(j=>j.status==='queued'),false);
 });
 test('private operational tickets expire, reject tampering and do not contain credentials',()=>{const env={RESEND_API_KEY:'synthetic-only'},t=operationTicket({id:'j',nonce:'n'},env,1000);assert.equal(readOperationTicket(t,env,2000).id,'j');assert.equal(readOperationTicket(t,env,122000),null);assert.equal(readOperationTicket(t+'bad',env,2000),null);assert.ok(!t.includes(env.RESEND_API_KEY));});
