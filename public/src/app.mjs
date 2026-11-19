@@ -63,8 +63,9 @@ import {rewardsView,bindRewards} from './progression-ui.mjs';
 import {bindStyledSelects,syncStyledSelects,closeStyledSelect} from './styled-select.mjs';
 
 
-import { leagueDashboard,homeCountdown } from './league-dashboard.mjs';
-import {openBarStory} from './bar-home-stories.mjs';
+import { leagueDashboard } from './league-dashboard.mjs';
+import {tickHomeCountdowns} from './home-social.mjs';
+import {openHomeStory} from './home-stories.mjs';
 let requestedSlip=new URLSearchParams(location.search).get('slip'),requestedSlipRound=new URLSearchParams(location.search).get('round');
 import { calendarSections } from "./calendar-order.mjs";
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
@@ -737,7 +738,7 @@ function render() {
             ? '<button type="button" class="secondary" data-page="barleague">← Chiudi regolamento</button>'+regulation(l, r)
             : page === "fantaquasi" ? fantaQuasiPage(l, state.user, esc)
               : page === "barleague" || page === "partecipanti" ? barLeagueInfo(l)
-              : page === "quasi" ? '<section class="hero"><div class="eyebrow">LA TUA LEGA</div><h1>I Quasi</h1><p>'+esc(l.name)+' · '+l.members.length+' al bancone.</p></section><div id="league-objectives">'+achievementBoard(l,esc,'seriea',null,{calendar:state.calendar})+'</div>'+rewardsView(state.user)+'<details class="card my-league" open><summary>La squadra dei Quasi</summary>'+rosterView(l,state.user.id)+'</details>'
+              : page === "quasi" ? quasiPage(l)
               : page === "schedina" ? slipsPage(l, r, m)
                 : page === "classifiche"
                   ? classificationTabs('classifiche')+ranking(l)
@@ -752,8 +753,8 @@ function render() {
   const palette = LEAGUE_COLORS.map(([color]) => color);
   applyLeagueTheme(L());
   $("#app").innerHTML = shell(
-    '<main'+(!l||isLeagueEntryPage(page)||['admin','lega','impostazioni','seriea'].includes(page)?' data-os-flow':'')+'><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
-      (l&&page==='quasi'?nicknameNotice(state.user):'')+content +
+    '<main'+(!l||isLeagueEntryPage(page)||['admin','lega','impostazioni','seriea','classifiche','quasi'].includes(page)?' data-os-flow':'')+'><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
+      content +
       '<p id="live-channel-status" class="live-channel-status tiny muted" role="status" aria-live="polite"></p></main>',
   );
 
@@ -1248,6 +1249,23 @@ function matchStatus(m) {
     return "Risultato in aggiornamento";
   return m.kickoff ? date(m.kickoff) : "Orario da definire";
 }
+let quasiPane='mine';
+function setQuasiPane(pane){if(pane===quasiPane)return;quasiPane=pane;render();}
+function quasiPage(league){
+ return `<div class="classification-tabs" data-os-header role="group" aria-label="Quasi">${[['mine','Obiettivi e premi'],['league','I Quasi della lega']].map(([id,name])=>`<button type="button" data-quasi-pane="${id}" aria-pressed="${id===quasiPane}">${name}</button>`).join('')}</div>
+ <div class="bar-quasi-page" data-os-content data-os-flow>${quasiPane==='mine'?nicknameNotice(state.user)+'<div id="league-objectives">'+achievementBoard(league,esc,'seriea',null,{calendar:state.calendar})+'</div>'+rewardsView(state.user):rosterView(league,state.user.id)}</div>`;
+}
+function setBarRanking(metric){
+ if(metric==='league'){if(page!=='seriea')void navigatePage('seriea');return;}
+ const changed=tab!==metric;tab=metric;
+ if(page==='seriea')void navigatePage('classifiche');else if(changed)render();
+}
+function stepBarRanking(direction){
+ const order=['points','credits','league'];
+ const active=page==='seriea'?'league':tab;
+ const target=order[order.indexOf(active)+direction];
+ if(target)setBarRanking(target);
+}
 function classificationTabs(active){return `<div class="classification-tabs" data-os-header role="group" aria-label="Classifiche">${[['classifiche','Del Bar'],['seriea','Campionato']].map(([target,title])=>`<button type="button" data-page="${target}" aria-pressed="${target===active}">${title}</button>`).join('')}</div>`;}
 function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt);}
 function adminBudget() { return ""; }
@@ -1287,7 +1305,7 @@ function bindDashboard() {
   const dashboard=$('#league-dashboard');
   if(dashboard)dashboard.onclick=e=>{
     const story=e.target.closest('[data-bar-story]');
-    if(story){openBarStory(story,{uid:state.user.id,onSlip:openDashboardSlip});return;}
+    if(story){openHomeStory(story,{uid:state.user.id,mode:'bar',onAction:action=>openDashboardSlip(action.storySlip)});return;}
     const slip=e.target.closest('[data-dashboard-slip]');
     if(slip)openDashboardSlip(slip.dataset.dashboardSlip);
   };
@@ -1463,6 +1481,7 @@ function serieACalendarPage() {
 function navigatePage(next) {
   if(next==='admin'){if(page!=='admin')presidentNative=null;openPresidentOperation(null);return;}
   if(next===page)return;
+  if(next==='quasi')quasiPane='mine';
   presidentOperation=null;
   if(next!=='chat'&&chatOpen)closeLeagueChat();
   if(next==='schedina'){persistDraft();selectedRoundId=null;slipScope='mine';hydrateDraft();}
@@ -1624,7 +1643,7 @@ function bind(l, r) {
     }
     void navigatePage(x.page);
   };
-  bindTabBar((t) => v2go(routeForTab(t,L(),state.leagues)));
+  bindTabBar(t=>{if(t!==tabForPage(page,sourceScope))v2go(routeForTab(t,L(),state.leagues));});
   if (state.user) bindLeagueSwitcher({ leagues: state.leagues, activeId: L()?.id, uid: state.user.id, esc,
     onEntry:page=>openBarTarget({page}),
     readLeagues:state.user.demo?null:()=>createFantaApi({userId:state.user.id}).leagues(),
@@ -1680,7 +1699,16 @@ function bind(l, r) {
     const group=L().fantasyRanking?.groups?.find(g=>'bet:'+g.key===rankingScope);
     sourceScope=group?'fantacalcio':'seriea';competitionScope=group?.competitionKeys[0]||null;selectedRoundId=null;hydrateDraft();render();
   };
-  document.querySelectorAll('[data-ranking-metric]').forEach(b=>b.onclick=()=>{tab=b.dataset.rankingMetric;render();});
+  document.querySelectorAll('[data-ranking-metric]').forEach(b=>b.onclick=()=>setBarRanking(b.dataset.rankingMetric));
+  if(['classifiche','seriea'].includes(page)){
+   const main=$('#app main');
+   if(main){bindSwipeBack(main,()=>stepBarRanking(1),'right');bindSwipeBack(main,()=>stepBarRanking(-1),'left');}
+  }
+  if(page==='quasi'){
+   document.querySelectorAll('[data-quasi-pane]').forEach(button=>button.onclick=()=>setQuasiPane(button.dataset.quasiPane));
+   const main=$('#app main');
+   if(main){bindSwipeBack(main,()=>setQuasiPane(quasiPane==='mine'?'league':'mine'),'left');bindSwipeBack(main,()=>setQuasiPane(quasiPane==='mine'?'league':'mine'),'right');}
+  }
   if($('#ranking-metric'))$('#ranking-metric').onchange=e=>{tab=e.target.value;render();};
   bindBarSlips();
   document
@@ -2577,7 +2605,7 @@ setInterval(()=>{
  else checkLeagueAccess();
 },30000);
 document.addEventListener('quasi:open-chat',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league);if(linked){syncChatLauncher(linked);openLeagueChat(e.detail.trigger);}});
-document.addEventListener('click',e=>{const operation=e.target.closest('[data-president-operation]');if(operation){openPresidentOperation(operation.dataset.presidentOperation||null);return;}const jump=e.target.closest('[data-league-fanta]');if(jump&&L()){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:jump.dataset.nativeLeague,initialTab:jump.dataset.leagueFanta,initialSection:jump.dataset.leagueSection,onBar:openBarTarget});return;}const chat=e.target.closest('[data-league-chat]');if(chat){openLeagueChat(chat);return;}const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&isLeagueEntryPage(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','partecipanti','lega','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'impostazioni':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.settings-app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){if(!L())return;closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,initialTab:page==='barleague'?'lega':page==='partecipanti'?'partecipanti':'oggi',onBar:openBarTarget});}else{leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}render();}});
+document.addEventListener('click',e=>{const operation=e.target.closest('[data-president-operation]');if(operation){openPresidentOperation(operation.dataset.presidentOperation||null);return;}const jump=e.target.closest('[data-league-fanta]');if(jump&&L()){closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:jump.dataset.nativeLeague,initialTab:jump.dataset.leagueFanta,initialSection:jump.dataset.leagueSection,onBar:openBarTarget});return;}const chat=e.target.closest('[data-league-chat]');if(chat){openLeagueChat(chat);return;}const target=e.target.closest('[data-bar-page]');if(target&&!target.hasAttribute('data-mode')&&isLeagueEntryPage(target.dataset.barPage)){openBarTarget({page:target.dataset.barPage});return;}if(target&&!target.hasAttribute('data-mode')&&['profilo','impostazioni','regolamento','admin','barleague','partecipanti','lega','invita'].includes(target.dataset.barPage)){const sheet=document.getElementById('v2-sheet-root');if(sheet){sheet.hidden=true;sheet.innerHTML='';}if(target.dataset.barPage==='regolamento'){openBarRules();return;}void navigatePage(target.dataset.barPage==='invita'?'impostazioni':target.dataset.barPage);if(target.dataset.barPage==='invita')document.querySelector('.settings-app-invite')?.scrollIntoView({block:'start'});return;}const mode=e.target.closest('[data-app-mode]')?.dataset.appMode;if(!mode)return;if(mode==='fanta'){if(!L())return;closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:L()?.nativeFantaLink?.leagueId,initialTab:'oggi',onBar:openBarTarget});}else if(preferredFanta()){leaveFanta();try{localStorage.setItem('qdq:mode','bar');}catch{}openBarTarget({page:'lega'});}});
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
 const liveChannel=createSportsPush({
   context:()=>!preferredFanta()&&state.user&&!state.user.demo&&state.user.emailVerified&&L()?{mode:'bar',league:L().id}:null,
@@ -2592,8 +2620,7 @@ setInterval(() => {
   if(preferredFanta())return;
   const day=slipRomeDay();if(day!==lastSlipNavigationDay){lastSlipNavigationDay=day;if(page==='schedina'){if(R()?.id!==displayedSlipRoundId)hydrateDraft();render();}}
   if(page==='schedina'&&publicSlipView()&&R()?.id!==displayedSlipRoundId){hydrateDraft();render();}
-  const countdown = document.querySelector('[data-dashboard-countdown][data-deadline]');
-  if(countdown){const left=homeCountdown(countdown.dataset.deadline);if(!left){if(!document.querySelector('.bar-story-dialog[open]'))updateDashboard();}else{const value=(countdown.closest('button').disabled?'tra ':'')+left;if(countdown.textContent!==value)countdown.textContent=value;}}
+  if(page==='lega'&&tickHomeCountdowns(document)&&!document.querySelector('.bar-story-dialog[open]'))updateDashboard();
   if(page==='schedina'&&R()?.eventBetting){
     if(!busy&&eventLockKey(R())!==displayedEventLocks){reconcileSlipDraft(R());persistDraft();render();}
     return;

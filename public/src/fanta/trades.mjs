@@ -85,7 +85,7 @@ function different(draft,original){
   ||(draft.direction!==0&&(!Number.isSafeInteger(draft.credits)||draft.credits===0));
 }
 
-export function createTradePanel({root,api,context,signal,onRosterChange}){
+export function createTradePanel({root,api,context,signal,onRosterChange,onStatus}){
  let league=null,data=null,draft=null,schedule=null,busy=false,error='',readJob=null,epoch=0,windowTimer;
  signal.addEventListener('abort',()=>clearTimeout(windowTimer),{once:true});
  const statuses=new Map();
@@ -167,7 +167,7 @@ export function createTradePanel({root,api,context,signal,onRosterChange}){
    if(!live()||id!==current()||epoch!==version)return;
    const previous=statuses.get(id);
    statuses.set(id,next);
-   watchWindow(next);paintBadges();
+   watchWindow(next);paintBadges();onStatus?.(id,next,force);
    if(!localAccept&&previous&&previous.latestAccepted!==next.latestAccepted)onRosterChange(id);
    if(refresh&&!busy&&panel()&&!schedule&&(force||!data||data.open!==next.open||!draft&&!panel().contains(document.activeElement)))await load();
   }catch{/* Keep the last badge until the next check. */}

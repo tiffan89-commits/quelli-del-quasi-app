@@ -5,8 +5,8 @@ import {renderHome} from '../public/src/fanta/home.mjs';
 import {homeFor} from '../public/src/fanta/dati-finti.mjs';
 import {rosterView} from '../public/src/quasi-roster.mjs';
 
-test('empty recent form is omitted and gallery names are separate from character artwork',()=>{
- const h=homeFor('lega-quasi','da-schierare');h.me.form=[];assert.doesNotMatch(renderHome(h),/Ultime cinque/);
+test('missing form is shown with five neutral segments and gallery names are separate from character artwork',()=>{
+ const h=homeFor('lega-quasi','da-schierare');h.me.form=[];assert.equal(parseHTML(renderHome(h)).document.querySelectorAll('.bar-home-segments .is-pending').length,5);
  const {document}=parseHTML(rosterView({members:[{uid:'a',name:'Il <Mister>',avatar:{}}]},'a'));
  assert.equal(document.querySelector('.quasi-card-name').textContent,'Il <Mister>');assert.equal(document.querySelector('.quasi-card-name').closest('.quasi-scene'),null);assert.equal(document.querySelector('.quasi-card-title'),null);
 });
