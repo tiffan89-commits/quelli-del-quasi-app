@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.41.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.40.0...v0.41.0) (2026-11-19)
+
+
+### Features
+
+* rinnova la home Fanta e la navigazione ([04c517c](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/04c517c1c256aeb3402da1a1ea3a0fad1c2f389f))
+
 ## [0.40.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.39.1...v0.40.0) (2026-11-19)
 
 
