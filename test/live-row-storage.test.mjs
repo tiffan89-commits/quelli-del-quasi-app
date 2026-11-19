@@ -170,6 +170,7 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   assert.equal(restored.football.matchCacheReport.processed,1);
   delete restored.football.matchCacheReport;
   delete restored.football.forecastSourceCache;
+  delete restored.football.editorialLineupCache;
   original.leagues[0].name='New name';
   assert.deepEqual(restored,original);
  }finally{await db.close();}
