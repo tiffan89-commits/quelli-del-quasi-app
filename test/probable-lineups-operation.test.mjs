@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {runProbableLineups} from '../lib/operations/probable-lineups.mjs';
+import {editorialFor} from '../lib/editorial-lineups.mjs';
 
 const now=Date.parse('2026-11-19T08:00:00Z'),kickoff='2026-11-21T14:00:00.000Z';
 const lineupRow=(side)=>`<tr data-panel-${side}="true">${Array.from({length:11},(_,i)=>
@@ -9,6 +10,18 @@ const lineupRow=(side)=>`<tr data-panel-${side}="true">${Array.from({length:11},
 const skyPage=`<title>Probabili formazioni</title><span class="ftbl__team__name">Como</span><span class="ftbl__team__name">Cagliari</span>
  <span class="ftbl__team-formation-number">4-4-2</span><span class="ftbl__team-formation-number">4-4-2</span>
  <h2>Titolari</h2>${lineupRow('left')}${lineupRow('right')}`;
+
+test('a shared editorial page is fetched once per interval even when the source is unavailable',async()=>{
+ const game={id:'fixture',home:'Como',away:'Cagliari'};
+ const state={football:{calendar:{season:2026,rounds:[{number:12,matches:[game]}]}}};
+ let calls=0;
+ const blocked=async()=>{calls++;return new Response(null,{status:403});};
+ assert.equal(await editorialFor(state,game,blocked,new Date(now)),null);
+ assert.equal(await editorialFor(state,game,blocked,new Date(now+60000)),null);
+ assert.equal(calls,1);
+ await editorialFor(state,game,blocked,new Date(now+3600000));
+ assert.equal(calls,2);
+});
 
 test('forecast batch saves both XIs and keeps lost races and betting state intact',async()=>{
  const db=new PGlite();
