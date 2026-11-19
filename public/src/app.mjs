@@ -79,6 +79,7 @@ import {bindStyledSelects,syncStyledSelects,closeStyledSelect} from './styled-se
 import { leagueDashboard } from './league-dashboard.mjs';
 import {tickHomeCountdowns} from './home-social.mjs';
 import {openHomeStory} from './home-stories.mjs';
+import {mergeChatSummary,paintChatBadges} from './chat-badges.mjs';
 let requestedSlip=new URLSearchParams(location.search).get('slip'),requestedSlipRound=new URLSearchParams(location.search).get('round');
 import { calendarSections } from "./calendar-order.mjs";
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
@@ -202,24 +203,19 @@ function notify(t) {
   setTimeout(() => (e.hidden = true), 4500);
 }
 let chatLeagueId=null,chatOpen=false,chatContext=null,chatReturnFocus=null;
-function chatLeague(){return state.leagues.find(l=>l.id===chatLeagueId)||L();}
+function chatLeague(){return state.leagues.find(l=>l.id===chatLeagueId);}
 function syncChatLauncher(league=L()){
  const next=league?.id||null;
  if(chatContext&&next!==chatLeagueId)closeLeagueChat();
  chatLeagueId=next;chatBadge();
 }
-function chatBadge(){
- const count=state.leagues.reduce((sum,l)=>sum+(l.chat?.unread||0),0);
- for(const badge of document.querySelectorAll('[data-chat-badge]')){
-  badge.hidden=!count;
-  badge.setAttribute('aria-label',count===1?'1 messaggio da leggere':count+' messaggi da leggere');
- }
- const unread=chatLeague()?.chat?.unread||0;
- for(const badge of document.querySelectorAll('[data-chat-tile-badge]')){
-  badge.hidden=!unread;
-  badge.textContent=unread>99?'99+':String(unread);
-  badge.setAttribute('aria-label',unread===1?'1 messaggio da leggere':unread+' messaggi da leggere');
- }
+function chatBadge(){paintChatBadges(document,state.leagues,chatLeague());}
+function applyChatSummary(id,detail){
+ const entry=state.leagues.find(l=>l.id===id);
+ if(!entry)return false;
+ const next=mergeChatSummary(entry.chat,detail);
+ if(entry.chat===next)return false;
+ entry.chat=next;chatBadge();return true;
 }
 function closeLeagueChat() {
   chatOpen = false;
@@ -269,10 +265,7 @@ function updateChatWidget() {
       notify,
       consent: chatConsent,
       onNotify:enabled=>{league.chat={...league.chat,notify:enabled};},
-      onUnread: (n) => {
-        league.chat = { ...league.chat, unread: n };
-        chatBadge();
-      },
+      onUnread: detail=>applyChatSummary(league.id,detail),
     });
     chatConsent = null;
   }
@@ -424,6 +417,8 @@ async function refresh(reset = false) {
       previousRound &&
       slipSummary(previousRound, picks, stake, me()?.credits ?? Infinity).dirty;
     if (wasDirty && !reset) persistDraft();
+    const previousChat=new Map(previousLeagues.map(l=>[l.id,l.chat]));
+    if(previousUser===next.user?.id)for(const league of next.leagues)if(previousChat.has(league.id))league.chat=mergeChatSummary(previousChat.get(league.id),league.chat);
     state = next;for(const league of state.leagues)for(const round of league.rounds||[])round.publicChoicesAvailable=!!round.closed&&Array.isArray(round.publicSlips);sportsFeedBlockedUntil=0;
     if(state.user&&state.user.id!==previousUser){const route=readAppRoute();pendingAppRoute=null;try{sessionStorage.removeItem(submissionRouteKey);}catch{}page=route?.mode==='bar'?barPageFor(route):'lega';presidentOperation=page==='admin'?route?.section:null;if(state.leagues.some(l=>l.id===route?.league))leagueId=route.league;if(route?.mode==='bar'&&route.round&&L()?.rounds.some(r=>r.id===route.round))selectedRoundId=route.round;}
     if(requestedSlip&&state.leagues.some(l=>l.id===requestedSlip)){
@@ -2496,7 +2491,11 @@ if ("serviceWorker" in navigator)
       requestedSlip=e.data.league;requestedSlipRound=e.data.round;return;
     }
     if(e.data?.type==='open-slip'&&state.leagues.some(l=>l.id===e.data.league)){
-      persistDraft();leagueId=e.data.league;const round=L().rounds.find(r=>r.id===e.data.round);if(round){sourceScope=sourceOf(round);competitionScope=round.competitionKey||null;selectedRoundId=round.id;}page='schedina';slipScope='mine';hydrateDraft();render();window.scrollTo(0,0);return;
+      persistDraft();closeLeagueChat();leaveFanta();leagueId=e.data.league;
+      const round=L().rounds.find(r=>r.id===e.data.round);
+      sourceScope=round?sourceOf(round):'seriea';competitionScope=round?.competitionKey||null;selectedRoundId=round?.id||null;
+      page='schedina';slipScope='mine';writeAppRoute({mode:'bar',page,league:leagueId,round:selectedRoundId});
+      hydrateDraft();render();window.scrollTo(0,0);return;
     }
     if(e.data?.type==='open-league-access'){if(state.user)void refresh(true);return;}
     if(e.data?.type==="open-chat"&&typeof e.data.league==="string"){
@@ -2582,15 +2581,16 @@ function applyLive(data){
 }
 document.addEventListener('quasi:chat-context',e=>{const linked=state.leagues.find(l=>l.nativeFantaLink?.leagueId===e.detail?.league||l.id===e.detail?.league);syncChatLauncher(linked||null);if(linked)updateChatWidget();});
 document.addEventListener('quasi:chat-update',e=>{
- const {league,unread,latest,revision,read,changed}=e.detail||{},entry=state.leagues.find(l=>l.id===league);
- if(!entry||!Number.isSafeInteger(unread)||latest<(entry.chat?.latest||0)||revision<(entry.chat?.revision||0)||read<(entry.chat?.read||0))return;
- entry.chat={...entry.chat,unread,latest,revision,read};chatBadge();
- if(changed&&chatOpen&&chatLeagueId===league)refreshChat();
+ const detail=e.detail||{};
+ const accepted=applyChatSummary(detail.league,detail);
+ if(accepted&&detail.changed&&chatOpen&&chatLeagueId===detail.league)refreshChat();
 });
+document.addEventListener('quasi:chat-badges',chatBadge);
 document.addEventListener('quasi:chat-reconnect',()=>{if(state.user&&!state.user.demo)void refresh();});
 document.addEventListener('quasi:fanta-team-claimed',()=>{void refresh();});
 document.addEventListener('visibilitychange',()=>{
  if(document.hidden)return;
+ if(chatOpen)refreshChat();
  checkLeagueAccess();
  if(L()&&state.user?.emailVerified&&!state.user.demo&&Date.now()-Number(lastRefresh)>30000)refreshLeagueMembers();
 });

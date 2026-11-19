@@ -9,6 +9,7 @@ import {leagueActions} from './league-actions.mjs';
 import {barHomeInvite} from './bar-home-invite.mjs';
 import {presidentEntry} from './president-panel.mjs';
 import {backButton} from './back-navigation.mjs';
+import {fitTeamName} from './fanta/team-name.mjs';
 import {withMembershipProgress} from './membership-progress.mjs';
 
 const personCount=members=>members.filter(m=>m.uid).length;
@@ -41,7 +42,7 @@ export function renderParticipantRows({members,isAdmin}){
   return `<li class="participant-record"><div class="participant-row" data-participant-row="${i}">
    ${portrait}${crest}
    <div class="participant-copy"><div class="participant-line"><b>${esc(name)}</b>${own}${admin}${m.email?`<span class="participant-email">${esc(m.email)}</span>`:''}
-    ${m.uid&&m.team?`<small class="participant-team">${esc(m.team.name)}</small>`:m.uid?'':'<small class="participant-team">Computer</small>'}</div>
+    ${m.uid&&m.team?`<small class="participant-team">${fitTeamName(m.team.name)}</small>`:m.uid?'':'<small class="participant-team">Computer</small>'}</div>
    </div>
    ${isAdmin&&m.uid&&!m.isAdmin&&!m.isMe?`<button type="button" class="secondary participant-remove" data-participant-remove aria-label="Rimuovi ${esc(name)}">Rimuovi</button>`:''}
   </div></li>`;

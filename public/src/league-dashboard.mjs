@@ -31,7 +31,7 @@ export function countdownLabel(deadline,now=Date.now()) {
   const mins=Math.ceil(diff/60000),days=Math.floor(mins/1440),hours=Math.floor(mins%1440/60),minutes=mins%60;
   return days?`${days}g ${hours}h ${minutes}m`:`${hours}h ${String(minutes).padStart(2,'0')}m`;
 }
-const shortRound=round=>round?.number?'G'+round.number:'';
+const roundLabel=round=>round?.number?'Giornata '+round.number:'';
 const sign=(value,fmt)=>(value>0?'+':'')+fmt(value);
 function quote(user,league,last,upcoming,now){
  const change=last?.positionChange||0,rate=last?.played&&last.total?last.correct/last.total:null;
@@ -40,7 +40,7 @@ function quote(user,league,last,upcoming,now){
  const options=BAR_HOME_QUOTES[key];
  const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Rome'}).format(now);
  const variation=stableHash([user.id,league.id,day,key].join(':'))%options.length;
- return options[variation]({correct:last?.correct,total:last?.total,change:Math.abs(change),next:shortRound(upcoming)});
+ return options[variation]({correct:last?.correct,total:last?.total,change:Math.abs(change),next:roundLabel(upcoming).toLowerCase()});
 }
 
 export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,competition=null,now=Date.now()){
@@ -50,12 +50,12 @@ export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,comp
   .sort((a,b)=>Date.parse(deadlineOf(a))-Date.parse(deadlineOf(b)));
  const open=candidates.find(item=>roundAvailability(item,now)==='aperta');
  const live=model.active?model.round:null, upcoming=open||candidates[0];
- const cta=live?{round:live,label:shortRound(live)+' in corso · segui live'}:
-  open?{round:open,label:(open.slip?'Rivedi schedina':'Schedina')+(shortRound(open)?' '+shortRound(open):''),deadline:deadlineOf(open)}:
+ const cta=live?{round:live,label:roundLabel(live)+' in corso · segui live'}:
+  open?{round:open,label:(open.slip?'Rivedi schedina':'Schedina')+(roundLabel(open)?' · '+roundLabel(open):''),deadline:deadlineOf(open)}:
   {label:upcoming?'Prossima giornata':'Schedine in arrivo',deadline:upcoming&&deadlineOf(upcoming),disabled:true};
  const segments=round?matchSegments(round):[];
  return socialHome({mode:'bar',now,reminder:homeReminderBanner('bar',barReminder(league,user.id,now)),
-  stories:renderBarStories({league,user,round,history:last,short:shortRound(round),esc,fmt}),
+  stories:renderBarStories({league,user,round,history:last,esc,fmt}),
   hero:{title:'Il tuo Quasi dice',quote:quote(user,league,last,open,now),background:quasiHomeBackdrop(user.avatar),art:quasiMascot(user.avatar,user.name),
    chips:`<button type="button" data-dashboard-rank="points" aria-label="Punti, apri la classifica del Bar">${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</button><button type="button" data-dashboard-rank="credits" aria-label="Crediti, apri la classifica del Bar">${fmt(model.credits)} cr</button>`},
   last:round?{title:round.title,action:`data-dashboard-slip="${esc(round.id)}"`,segments,value:last?sign(last.points,fmt)+' pt':null,valueClass:last?.points<0?'loss':last?.points>0?'gain':''}:null,

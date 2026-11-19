@@ -31,13 +31,13 @@ export function matchSegments(round){
  });
 }
 
-export function renderBarStories({league,user,round,history,short,fmt,esc}){
+export function renderBarStories({league,user,round,history,fmt,esc}){
  const stories=[];
  if(round){
   const tally=history?.played?history.correct+'/'+history.total+' prese':'';
   const change=history?.positionChange;
   const stats=history?`<dl class="bar-story-stats"><div><dt>Prese</dt><dd>${tally||'In panchina'}</dd></div><div><dt>Punti giornata</dt><dd class="${history.points<0?'loss':'gain'}">${score(history.points,fmt)}</dd></div><div><dt>Bilancio crediti</dt><dd>${score(history.profit,fmt)} cr</dd></div><div><dt>Posizione</dt><dd>${history.position}°${change?' · '+(change>0?'↑ ':'↓ ')+Math.abs(change):''}</dd></div></dl>`:'';
-  stories.push({id:'results',label:short||round.title,title:round.title,body:stats+`<button type="button" class="secondary" data-story-slip="${esc(round.id)}">Risultati e schedina <span aria-hidden="true">→</span></button>`});
+  stories.push({id:'results',label:round.title,title:round.title,body:stats+`<button type="button" class="secondary" data-story-slip="${esc(round.id)}">Risultati e schedina <span aria-hidden="true">→</span></button>`});
  }
  const rewards=(history?.awards||[]).map(rewardById).filter(Boolean);
  if(rewards.length)stories.push({id:'rewards',label:'Bottino',title:'Il bottino della giornata',body:`<ul class="bar-story-rewards">${rewards.map(reward=>`<li>${rewardMark(reward)}<b>${esc(reward.name)}</b></li>`).join('')}</ul>`});

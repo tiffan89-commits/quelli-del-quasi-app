@@ -8,6 +8,7 @@ import {playerVisual} from './player-visual.mjs';
 // Funzioni pure: ricevono le risposte di api.round() / api.matchup() e restituiscono HTML.
 import { esc, pts } from './formato.mjs';
 import {compareStat} from './stat-comparison.mjs';
+import {fitTeamName} from './team-name.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const STATE_LABEL = { 'calcolata': ['Ufficiale', 'is-official'], 'archiviata': ['Risultati non disponibili', 'is-todo'], 'in-corso': ['Live · provvisoria', 'is-live'], 'schierata': ['Da giocare', 'is-todo'], 'da-schierare': ['Da giocare', 'is-todo'] };
@@ -23,7 +24,7 @@ function matchupRail(r, matchup, activeId, side) {
       const data=score[key],entry=m[key];
       const value=data.total??data.points, label=key===side&&selected;
       return `<button type="button" class="fanta-mu-team${label?' is-side':''}" data-matchup="${esc(m.id)}" data-live-side="${key}" ${selected&&matchup?`data-pitch-tab="${i}" aria-selected="${label}" role="tab"`:`aria-pressed="${label}"`}>
-        ${teamLogo(entry.team)}<b>${esc(entry.team.name)}</b>${Number.isFinite(value)?`<small class="live-mu-points">${pts(value)} FP</small>`:''}<strong>${data.goals??(entry.lineupSaved?'✓':'–')}</strong>
+        ${teamLogo(entry.team)}<b>${fitTeamName(entry.team.name)}</b>${Number.isFinite(value)?`<small class="live-mu-points">${pts(value)} FP</small>`:''}<strong>${data.goals??(entry.lineupSaved?'✓':'–')}</strong>
       </button>`;
     };
     return `<div class="fanta-mu${selected?' is-active':''}${m.isMine?' is-mine':''}" ${selected&&matchup?'role="tablist" aria-label="Formazioni della sfida"':''}>${team('home',0)}${team('away',1)}</div>`;
@@ -44,7 +45,7 @@ export function events(e = {}) {
   return `<span class="fanta-events">${out.join('')}</span>`;
 }
 
-function token(p, showSurname = false) {
+function token(p, reserve = false) {
   const clickable = p.id!=null;
   const tag = clickable ? 'button' : 'div';
   const playing = hasPitchPerformance(p);
@@ -52,7 +53,7 @@ function token(p, showSurname = false) {
   return `<${tag}${clickable ? ' type="button"' : ''} class="fanta-token is-${p.replacedBy?'sv':p.status}${p.enteredFor ? ' is-entered' : ''}"${clickable ? ` data-player="${esc(p.id)}" aria-haspopup="dialog"` : ''}
     title="${esc(p.name+change)}">
     <span class="fanta-token-shirt">${playerVisual(p,{back:true,nameOnShirt:true})}<span class="fanta-role is-${p.role}" title="${ROLE_NAMES[p.role]}">${p.role}</span></span>
-    ${showSurname?`<span class="live-studio-reserve-name" aria-hidden="true">${esc(playerSurname(p))}</span>`:''}
+    ${reserve?`<span class="live-studio-reserve-name" aria-hidden="true">${esc(playerSurname(p))}</span><span class="live-studio-bench-status">${p.enteredFor?'<span aria-hidden="true">↑</span> Subentrato':'Riserva'}</span>`:''}
     ${p.replacedBy?`<span class="pitch-event-ring">${substitutionMark('Cambio Fanta')}<span class="live-studio-replacement">Entra ${esc(playerSurname({name:p.replacedBy}))}</span></span>`:`${playing?'':pitchFixture(p)}${pitchPerformance(p,playing)}`}
   </${tag}>`;
 }
@@ -67,7 +68,8 @@ function pitch(s) {
 function liveTeam(s,flipped){
   if(s.hidden)return `<div class="fanta-empty is-inline"><p>${esc(s.hiddenReason)}</p>${s.needsLineup?'<button type="button" class="primary" data-go="formazione">Schiera la formazione</button>':''}</div>`;
   const field=s.starters.length?pitch(s):'<p class="fanta-empty is-inline">Formazione non ancora salvata.</p>';
-  const bench=`<div class="pitch-bench-room live-studio-bench"><div class="bench-room-label"><b>Panchina</b><span>${s.bench.length} giocatori</span></div>
+  const entered=s.bench.filter(player=>player.enteredFor).length;
+  const bench=`<div class="pitch-bench-room live-studio-bench"><div class="bench-room-label"><b>Panchina</b><span>${s.bench.length} giocatori${entered?' · '+entered+(entered===1?' subentrato':' subentrati'):''}</span></div>
     ${s.bench.length?`<div class="live-studio-reserves">${s.bench.map(p=>token(p,true)).join('')}</div>`:'<p class="muted">Panchina vuota.</p>'}</div>`;
   return renderPitchFlip(field,bench,'Panchina',flipped);
 }

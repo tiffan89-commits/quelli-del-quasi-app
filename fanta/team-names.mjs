@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {TEAM_NAME_MAX} from '../public/src/fanta/team-name.mjs';
 const clubs=['Hellas','Atletico','Real','Dinamo','Virtus','Sporting','Inter','Stella','Deportivo','Borussia','Lokomotiv','Racing','Union','Olympique','Bayern','Fortitudo','Audace','Pro','Polisportiva','Olimpia','Quasi','AC','FC','AS'];
 const bar=['Madonna','Poco','Boh','Sbaglio','Spritz','Grappa','Birra','Gassosa','Frittata','Tapparella','Sgabello','Divano','Ciabatta','Scusa','Recupero','Palo','Brodo','Sonno','Dopocena','Patatrac','Sbronzi','Distratti','Scarsi','Stanchi','Panchina','Rinvio','Tramezzino','Bocciofila','Oste','Retropassaggio','Ginocchio','Caviglia','Sottobicchiere','Biscotto','Calzino','Rutto','Sugo','Supplì','Polpetta','Tovagliolo','Pressing','Nebbia','Sagra','Canotto','Birillo','Catenaccio','Fiasco','Ciuccio','Spreco','Nulla','Mai','Forse','Domani','Tardi','Beffa','Ansia','Flemma','Briciole','Sgabuzzino','Fuffa','Spigolo','Pigrizia','Sbagliati','Fritto','Fischietto','Sbadiglio','Mestolo','Tombino','Cartellino','Bancone','Rigore','Caffè','Tacco','Tritolo','Sgarro','Fischi','Tegola','Triplo','Sconto','Rimessa'];
 const signatureNames=[
@@ -18,7 +19,7 @@ export function funnyTeamNames(count,{seed='',used=[]}={}){
  if(!Number.isInteger(count)||count<1||count>20)throw Error('Numero di nomi non valido');
  const taken=new Set(used.map(teamNameKey)),result=[];
  for(const pool of [signatureNames,generatedNames]){
-  const candidates=pool.filter(name=>!taken.has(teamNameKey(name))).map(name=>({name,rank:createHash('sha256').update(`${seed}:${name}`).digest('hex')})).sort((a,b)=>a.rank.localeCompare(b.rank));
+  const candidates=pool.filter(name=>name.length<=TEAM_NAME_MAX&&!taken.has(teamNameKey(name))).map(name=>({name,rank:createHash('sha256').update(`${seed}:${name}`).digest('hex')})).sort((a,b)=>a.rank.localeCompare(b.rank));
   for(const {name} of candidates){const id=teamNameKey(name);if(taken.has(id))continue;taken.add(id);result.push(name);if(result.length===count)return result;}
  }
  throw Error('Catalogo nomi del bar esaurito');

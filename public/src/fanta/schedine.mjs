@@ -2,6 +2,7 @@ import {slipCreditReserve,slipStakeLimit} from '../../slip-events.mjs';
 import {fantasyMatchHeadline} from '../bar-fanta-match.mjs';
 import {createSportsPush} from '../sports-push.mjs';
 import {openMatchPage} from '../match-page.mjs';
+import {fitTeamName} from './team-name.mjs';
 import {patchFantasyMatch} from '../fantasy-live-detail.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderFantasyLineup,bindLineupPitch} from '../lineup-pitch.mjs';
@@ -83,7 +84,7 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   const d=draft(data),account=fantasyAccount(league.members?.find(m=>m.uid===uid),round,league);
   const closed=editingClosed(round,now());
   const feedback=message?`<p class="fanta-note" data-fanta-slip-feedback role="status">${esc(message)}</p>`:'';
-  return `<section class="fanta-native-slips"><h1 class="sr-only">Schedina del Fanta</h1>${tabs}<div data-os-header>${selector}${round.pointsOnly?'':`<p class="fanta-slip-balance">${fmt(account.credits)} crediti disponibili</p>`}${feedback}</div>${d.conflict?'<div class="notice" role="alert">La schedina è stata aggiornata da un altro dispositivo. La tua bozza è conservata.<button type="button" class="secondary" data-fanta-slip-reload>Usa la schedina salvata</button></div>':''}<div class="fanta-slip-layout">${renderSlipV2({round:{...round,closed},picks:d.picks,stake:d.stake,credits:account.credits,openMatch:expanded,esc,fmt,date,teamLabel:(name,{short})=>'<span class="slip-team-label" title="'+esc(name)+'">'+teamLogo(teamResolver?.(name)||{name})+'<span class="slip-team-name">'+esc(name)+'</span><abbr class="slip-team-code" aria-hidden="true">'+esc(short)+'</abbr></span>'})}</div></section>`;
+  return `<section class="fanta-native-slips"><h1 class="sr-only">Schedina del Fanta</h1>${tabs}<div data-os-header>${selector}${round.pointsOnly?'':`<p class="fanta-slip-balance">${fmt(account.credits)} crediti disponibili</p>`}${feedback}</div>${d.conflict?'<div class="notice" role="alert">La schedina è stata aggiornata da un altro dispositivo. La tua bozza è conservata.<button type="button" class="secondary" data-fanta-slip-reload>Usa la schedina salvata</button></div>':''}<div class="fanta-slip-layout">${renderSlipV2({round:{...round,closed},picks:d.picks,stake:d.stake,credits:account.credits,openMatch:expanded,esc,fmt,date,teamLabel:(name,{short})=>'<span class="slip-team-label" title="'+esc(name)+'">'+teamLogo(teamResolver?.(name)||{name})+'<span class="slip-team-name">'+fitTeamName(name)+'</span><abbr class="slip-team-code" aria-hidden="true">'+esc(short)+'</abbr></span>'})}</div></section>`;
  }
  function bind(root,context,{keepDetail=false}={}){
   const data=current(context),d=sub==='mine'?draft(data):null;

@@ -8,6 +8,7 @@ import {renderReleases} from './mercato.mjs';
 import {avatarSvg} from '../avatar.mjs';
 import {LAMPO,lampoShownSeconds} from '../auction-formats.mjs';
 import {backButton} from '../back-navigation.mjs';
+import {fitTeamName} from './team-name.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const RING = 2 * Math.PI * 26;
@@ -64,7 +65,7 @@ function bidderCard(row,ui,{credits=row.credits,projected=false,leading=false}={
   const member=memberOf(ui,row),name=row.computer?'Computer':member?.name||row.team.manager||row.team.name;
   return `<div class="auction-bidder auction-bidder-card${leading?' is-leading':''}">
     <span class="auction-bidder-avatar" aria-hidden="true">${row.computer?'🤖':avatarSvg(member?.avatar)}</span>
-    <span class="auction-bidder-name"><b>${esc(name)}</b><small>${esc(row.team.name)}</small></span>
+    <span class="auction-bidder-name"><b>${esc(name)}</b><small>${fitTeamName(row.team.name)}</small></span>
     <span class="auction-bidder-credits${projected?' is-projected':''}" aria-label="${credits} crediti${projected?' se si aggiudica il calciatore':' residui'}" ${projected?'title="Crediti se si aggiudica il calciatore"':''}><b>${credits}</b><small>cr</small></span>
   </div>`;
 }
@@ -189,7 +190,7 @@ function teamsList(a,ui,timer='') {
   return `<section class="fanta-block"><div class="dash-section-head auction-clock-heading"><div><h2>Partecipanti</h2><small>crediti · puntata max · posti da riempire</small></div>${timer}</div>
     <ul class="fanta-a-teams">${order.map((t, i) => `<li class="${t.team.id === a.me ? 'is-me' : ''}${t.team.id === a.caller ? ' is-caller' : ''}">
       <i class="fanta-dot" style="background:${esc(t.team.color)}"></i>
-      <span class="fanta-p-name"><b><button type="button" class="auction-team-name" data-auction-team="${esc(t.team.id)}" aria-haspopup="dialog">${a.mode === 'manual' ? '' : `${i + 1}. `}${esc(t.team.name)}</button>${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':human(t)?esc(t.team.manager)+(connected.has(t.team.id)?' · connesso':' · disconnesso'):'Senza allenatore'}</small></span>
+      <span class="fanta-p-name"><b><button type="button" class="auction-team-name" data-auction-team="${esc(t.team.id)}" aria-haspopup="dialog">${a.mode === 'manual' ? '' : `${i + 1}. `}${fitTeamName(t.team.name)}</button>${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':human(t)?esc(t.team.manager)+(connected.has(t.team.id)?' · connesso':' · disconnesso'):'Senza allenatore'}</small></span>
       <span class="fanta-a-num"><b>${t.credits}</b><small>cr</small></span>
       <span class="fanta-a-num"><b>${t.maxBid}</b><small>max</small></span>
       <span class="fanta-a-num"><b>${t.slotsLeft}</b><small>posti</small></span>

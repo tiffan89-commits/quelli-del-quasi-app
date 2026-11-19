@@ -1,4 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap");
+body[data-game-mode],body[data-game-mode] :where(*) { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+body[data-game-mode] :is(input,textarea,[contenteditable]:not([contenteditable="false"]),[contenteditable]:not([contenteditable="false"]) *) { -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
     :root {
       --bg: #0c1815;
       --panel: #14231e;

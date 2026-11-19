@@ -629,6 +629,24 @@ button.fanta-cal-match:hover{background:#ffffff08}
 .fanta-cal-match.is-mine{background:#d6f77b0d}
 .fanta-cal-team{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fanta-cal-team.is-away{justify-content:flex-end;text-align:right}
+.fanta-fit-team{display:block;min-width:0;width:100%;container:team-name / inline-size}
+.fanta-fit-team>span[aria-hidden="true"]{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fanta-fit-team>span[class^="team-name-"]{display:none}
+@container team-name (max-width:174px){
+ .fanta-fit-team>span:not([class]){display:none}
+ .fanta-fit-team>span.team-name-medium{display:block}
+}
+@container team-name (max-width:118px){
+ .fanta-fit-team>span.team-name-medium{display:none}
+ .fanta-fit-team>span.team-name-short{display:block}
+}
+@container team-name (max-width:78px){
+ .fanta-fit-team>span.team-name-short{display:none}
+ .fanta-fit-team>span.team-name-tiny{display:block}
+}
+.fanta-team-name:has(.fanta-fit-team){width:100%}
+.fanta-cal-team>.team-logo{flex:none}
+.fanta-cal-team>.fanta-fit-team{flex:1}
 .fanta-cal-team.is-me{color:var(--lime);font-weight:700}
 .fanta-cal-team i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
 .fanta-cal-score{display:flex;flex-direction:column;align-items:center;min-width:76px}

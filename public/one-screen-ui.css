@@ -474,7 +474,7 @@ html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-code{disp
 .lega-tile-detail.os-drill-target>.fanta-block{margin:0;padding-top:0;border-top:0}
 .lega-tile-detail.os-drill-target .fanta-lg-members{margin-top:4px}
 .v2-tab:has(>.league-unread){position:relative}
-.league-unread{position:absolute;top:3px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:#c54447;pointer-events:none}
+.league-unread{position:absolute;top:3px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:#ff7077;pointer-events:none}
 [data-league-chat],[data-fanta-chat]{position:relative}
 .lega-tile>.chat-tile-unread{position:absolute;top:10px;right:10px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#c54447;color:white;font:800 11px/1 'DM Sans',sans-serif;pointer-events:none}
 .league-unread[hidden],.chat-tile-unread[hidden]{display:none}

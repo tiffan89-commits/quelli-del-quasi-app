@@ -1,4 +1,5 @@
 import {esc} from './fanta/formato.mjs';
+import {fitTeamName} from './fanta/team-name.mjs';
 
 export function homeCountdown(deadline,now=Date.now()){
  const minutes=Math.ceil((Date.parse(deadline)-now)/60000);
@@ -16,6 +17,7 @@ export function socialHome({mode,stories,hero,last,cta,now,reminder=''}){
    ${hero.art}
   </section>
   ${last?`<button type="button" class="bar-home-last" ${last.action}><span class="bar-home-last-top"><b>${esc(last.title)}</b>${last.value?`<strong class="${last.valueClass||''}">${esc(last.value)}</strong>`:''}</span>
+  ${last.opponent?`<span class="home-last-opponent"><span>vs</span>${fitTeamName(last.opponent)}</span>`:''}
   ${last.segments?.length?`<span class="bar-home-segments" style="--segments:${last.segments.length}" aria-label="${esc(last.segmentLabel||'Esiti')}">${last.segments.map(item=>`<i class="is-${item.state}" role="img" aria-label="${esc(item.label)}"></i>`).join('')}</span>`:''}
   ${last.footer||''}</button>`:''}
   <button type="button" class="bar-home-cta primary" ${cta.disabled?'disabled':cta.action||''}${cta.busy?' aria-busy="true"':''}><span>${cta.warning?'<i class="home-cta-warning" aria-hidden="true"></i>':''}${esc(cta.label)}</span>
