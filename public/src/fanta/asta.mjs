@@ -320,7 +320,7 @@ export function renderAsta(a, ui = {}, players = null) {
   else if(a.status==='running')center=`${adminControls(a)}${a.mode==='manual'?modeSwitch(a):''}${myBar(a)}
     ${a.mode==='manual'?`${a.config&&a.caller?orderStrip(a):''}${a.isAdmin?manualConsole(a,ui,players):manualTable(a)}`:`${orderStrip(a)}${a.lot?lotCard(a,ui,compactClock(true))+activeBidders(a,ui):waitingCard(a,compactClock(true))}`}
     ${a.mode==='manual'?lastSaleBanner(a):''}`;
-  else center=`<section class="fanta-a-lot is-idle"><h2>${a.status==='scheduled'?esc(auctionWhen(a.startsAt)):a.status==='ended'?'L’asta è finita':'Nessuna asta in programma'}</h2>
+  else center=`<section class="fanta-a-lot is-idle"><h2>${a.status==='scheduled'?esc(auctionWhen(a.startsAt)):a.status==='ended'?(ui.adminView?label:'L’asta è finita'):'Nessuna asta in programma'}</h2>
     ${a.status==='scheduled'?'<p>La sala si apre automaticamente all’orario programmato.</p>':''}
     ${a.status==='ended'&&(a.competition?.status==='active'||a.competitionActivation?.status==='active')?'<p>La competizione è avviata.</p><button type="button" class="primary" data-go="formazione">Schiera la formazione →</button>':''}
     ${a.isAdmin?`<button type="button" class="primary" data-auction-manage="1">${a.status==='scheduled'?'Modifica programmazione':'Configura asta'}</button>${a.status==='scheduled'?'<button type="button" class="secondary" data-asta-close="1">Annulla asta programmata</button>':''}`:''}</section>`;
