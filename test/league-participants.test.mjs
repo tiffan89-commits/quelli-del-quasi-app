@@ -20,6 +20,8 @@ for(const sportsStorage of ['snapshot','rows'])test(`Bar and Fanta share the mem
  await f.db.query("UPDATE fanta_state SET payload=jsonb_set(payload,'{leagues}',$1)",[JSON.stringify([link])]);
  await f.db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key) VALUES($1,$2,$3,'native:test')",[bar,league,league+':main']);
  await f.db.query("UPDATE fanta_state SET payload=jsonb_set(jsonb_set(payload,'{users}',payload->'users'||$1::jsonb),'{sessions}',payload->'sessions'||$2::jsonb)",[JSON.stringify([{id:'outsider',name:'Esterno',emailVerified:true,email:'outsider@example.test'}]),JSON.stringify([{uid:'outsider',token:sha('token3'),expires:Date.now()+60000}])]);
+ await f.db.query("UPDATE fanta_state SET payload=jsonb_set(payload,'{leagues}',payload->'leagues'||$1::jsonb)",[JSON.stringify([{id:'a-other',name:'Altro Bar',admin:'outsider',members:[{uid:'outsider'}]}])]);
+ await f.db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key) VALUES('a-other',$1,$2,'native:other')",[league,league+':main']);
  const branding={type:'image',imageUrl:'/fanta-api/team/logo/image?league='+league+'&team=t1'};
  await f.db.query("UPDATE fanta.teams SET branding=$1 WHERE id='t1'",[JSON.stringify(branding)]);
  const image=Buffer.from([1,2,3,4]);
@@ -46,6 +48,7 @@ for(const sportsStorage of ['snapshot','rows'])test(`Bar and Fanta share the mem
  const [a,b]=await Promise.all([barResponse.json(),fantaResponse.json()]);
  const summary=x=>x.members.map(m=>[m.uid,m.email,m.team?.id]);
  assert.deepEqual(summary(a),summary(b));
+ assert.doesNotMatch(JSON.stringify(b),/outsider@example\.test/);
  assert.deepEqual(summary(b),[['u2','u2@example.test','t2'],['u1','u1@example.test','t1'],[undefined,undefined,'bot']]);
  const logo=a.members.find(m=>m.uid==='u1').team.branding.imageUrl;
  const logoResponse=await api(new Request(root+logo,{headers:{cookie:'sid=token2'}}));
