@@ -53,6 +53,9 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data?.json() || {};
   } catch {}
+  const path=typeof data.url==='string'?data.url:'';
+  const destination=path.startsWith('/?slip=')||path.startsWith('/?mode=fanta')||
+    /^\/#\/(?:bar\/schedina|fanta\/squadra\/studio)\?/.test(path)?path:null;
   event.waitUntil(
     self.registration.showNotification(
       String(data.title || "Chiacchiere da bar").slice(0, 100),
@@ -62,8 +65,8 @@ self.addEventListener("push", (event) => {
         ).slice(0, data.kind === "chat" ? 1300 : 200),
         icon: "/assets/icons/icon-192.png",
         badge: "/assets/icons/icon-192.png",
-        tag: typeof data.tag === "string" ? data.tag : "quasi-chat",
-        data: { league: typeof data.league === "string" ? data.league : null,kind:data.kind==='fanta'?'fanta':data.kind==='slip-reminder'?'slip-reminder':data.kind==='league-access'?'league-access':'chat',url:typeof data.url==='string'&&(data.url.startsWith('/?slip=')||data.url.startsWith('/?mode=fanta'))?data.url:null },
+        tag: typeof data.tag === "string" ? data.tag : (data.kind||"chat")+"-"+(data.league||"quasi"),
+        data: { league: typeof data.league === "string" ? data.league : null,kind:data.kind==='fanta'?'fanta':data.kind==='slip-reminder'?'slip-reminder':data.kind==='league-access'?'league-access':'chat',url:destination },
       },
     ),
   );
@@ -93,7 +96,9 @@ self.addEventListener("notificationclick", (event) => {
             if(opened){await opened.focus();return;}
           }
           await client.focus();
-          client.postMessage({ type: access?'open-league-access':fanta?'open-fanta':reminder?'open-slip':"open-chat", league,url:fanta?url:null,round:reminder?new URL(url).searchParams.get('round'):null });
+          const target=new URL(url);
+          const round=target.searchParams.get('round')||new URLSearchParams(target.hash.split('?')[1]).get('giornata');
+          client.postMessage({ type: access?'open-league-access':fanta?'open-fanta':reminder?'open-slip':"open-chat", league,url:fanta||reminder?url:null,round:reminder?round:null });
           return;
         }
       }
