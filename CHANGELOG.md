@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.40.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.39.1...v0.40.0) (2026-11-19)
+
+
+### Features
+
+* rinnova la home Bar e la navigazione condivisa ([80e3692](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/80e369299d4840b7d2fc50dae0c65467b434bd73))
+
 ## [0.39.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.39.0...v0.39.1) (2026-11-19)
 
 
