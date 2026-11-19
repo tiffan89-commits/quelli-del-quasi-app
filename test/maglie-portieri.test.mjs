@@ -44,10 +44,16 @@ test('new crests are local vector assets; missing clubs never reference the old 
  assert.equal(Object.keys(logos).length,23);for(const value of new Set(Object.values(logos))){assert.match(value,/^\/assets\/club-crests\/stemma-/);const svg=await fs.readFile(new URL('../public'+value,import.meta.url),'utf8');assert.match(svg,/<svg/);assert.doesNotMatch(svg,/<script|<foreignObject|(?:href|src)=["']https?:/);}
 });
 
-test('league identity preserves its saved palette across products, accepts Blu server-side and escapes emblems',()=>{
+test('league identity resolves separate colors, supports existing palettes and derives a text emblem for legacy icons',()=>{
  const bar={id:'bar',nativeFantaLink:{leagueId:'fanta'},branding:{emblem:'Q&B',accent:'#7bc8f7',motto:'Buona quasi'}},fanta={id:'fanta',accent:'#d6f77b'};
  assert.equal(linkedLeagueIdentity(null,[{id:'unlinked'}]),null);
  assert.ok(LEAGUE_COLORS.some(([value,name])=>value==='#7bc8f7'&&name==='Blu'));
  updateLeagueProfile(bar,{accent:'#c8b6ff',emblem:'Q&B',motto:'Salvato'});assert.equal(leagueAccent(linkedLeagueIdentity(fanta,[bar])),'#c8b6ff');assert.equal(fanta.accent,'#d6f77b');
- assert.match(leagueEmblem(bar),/Q&amp;B/);assert.match(leagueEmblem({...bar,branding:{emblem:'<img>'}}),/&lt;img&gt;/);
+ assert.match(leagueEmblem(bar),/Q&amp;B/);
+ assert.match(leagueEmblem({name:'Coppa 🏆 Amici',branding:{emblem:'🏆'}}),/>CA<\/span>/);
+ updateLeagueProfile(bar,{name:'Coppa ⚽',accent:'#ffb13d',fantaAccent:'#49e891',emblem:'CP',motto:'Salvato'});
+ assert.equal(leagueAccent(bar,'bar'),'#ffb13d');
+ assert.equal(leagueAccent(linkedLeagueIdentity(fanta,[bar]),'fanta'),'#49e891');
+ assert.equal(linkedLeagueIdentity(fanta,[bar]).name,'Coppa ⚽');
+ assert.equal(leagueAccent(null),'#7bc8f7');
 });

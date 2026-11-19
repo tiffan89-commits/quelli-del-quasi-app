@@ -73,23 +73,23 @@ export function charmArt(r) {
   return `<g fill="${c}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">${shapes[r.motif] || shapes[0]}</g>`;
 }
 
-// Motivi della maglia: disegnati sopra il busto, già ritagliati sulla sagoma dal renderer.
+// Le fantasie seguono la sagoma della singola divisa. Giacca e sciarpa hanno il proprio taglio.
 export function outfitArt(r) {
   if (!r) return '';
   const c = r.secondary || '#eee7d0', cream = '#efe5c9';
   const checks = [];
   for (let y = 184, row = 0; y < 264; y += 12, row++) for (let x = 84 + (row % 2) * 12; x < 196; x += 24) checks.push(`M${x} ${y}h12v12h-12Z`);
   const paths = [
-    `<path d="M84 254 176 178l22 16-92 74Z"/><path d="M90 250 180 184" fill="none" stroke="${light(c, .35)}" stroke-width="2.5"/>`,
-    `<path d="M104 180h16v84h-16Zm56 0h16v84h-16Z"/>`,
-    `<path d="M86 186q10-8 32-10l14 86H86Zm108 0q-10-8-32-10l-14 86h46Z"/><path d="M118 176l14 86m30-86-14 86" fill="none" stroke="${light(c, .3)}" stroke-width="2.5"/>`,
-    `<path d="m140 202 7 15 17 2-12 11 3 17-15-8-15 8 3-17-12-11 17-2Z"/>`,
-    `<path d="M80 200h120v12H80Zm0 24h120v12H80Zm0 24h120v12H80Z"/>`,
-    `<path d="${checks.join('')}" opacity=".85"/>`,
-    `<path d="m84 214 14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12v12l-14 12-14-12-14 12-14-12-14 12-14-12-14 12-14-12-14 12Z"/>`,
-    `<path d="M114 176q26 22 52 0 8 8 2 16-28 18-56 0-6-8 2-16Z"/><path d="M148 196l20-2 4 60-20 2Z"/><path d="M150 214l20-2m-18 20 20-2" fill="none" stroke="${cream}" stroke-width="6"/>`,
-    `<path d="M106 180v84m12-84v84m12-84v84m20-84v84m12-84v84m12-84v84" fill="none" stroke="${c}" stroke-width="3"/>`,
-    `<path d="M114 212h52v52h-52Z" fill="${cream}"/><path d="M114 212q-6-16 4-30m44 30q6-16-4-30" fill="none" stroke="${cream}" stroke-width="3"/><path d="M128 232h24v14h-24Z" fill="${c}"/>`,
+    `<path d="M84 254 176 178l22 16-92 74Z" stroke="none"/><path d="M90 250 180 184" fill="none" stroke="${light(c, .35)}" stroke-width="2.5"/>`,
+    '<path d="M105 179h13v83h-13Zm29 0h12v83h-12Zm28 0h13v83h-13Z" stroke="none"/>',
+    '',
+    '<path d="m140 203 6 13 14 2-10 10 3 14-13-7-13 7 3-14-10-10 14-2Z"/><path d="m116 208 2 4 5 1-4 3v5l-3-2-4 2 1-5-4-3 5-1Zm48 0 2 4 5 1-4 3 1 5-4-2-3 2v-5l-4-3 5-1Z" stroke="none"/>',
+    `<path d="M80 198h120v11H80Zm0 22h120v11H80Zm0 22h120v11H80Z" stroke="none"/><path d="M88 209h104m-104 22h104m-104 22h104" fill="none" stroke="${light(c,.35)}" stroke-width="1.8"/>`,
+    `<path d="${checks.join('')}" opacity=".88" stroke="none"/>`,
+    `<path d="m83 213 14 11 14-11 14 11 15-11 15 11 14-11 14 11 14-11v10l-14 11-14-11-14 11-15-11-15 11-14-11-14 11-14-11Z" stroke="none"/><path d="m83 241 14 11 14-11 14 11 15-11 15 11 14-11 14 11 14-11" fill="none" stroke="${light(c,.25)}" stroke-width="3"/>`,
+    '',
+    `<path d="M83 183h26l7 77H83Zm114 0h-26l-7 77h33Z" stroke="none"/><path d="M116 198h48m-45 56h42" fill="none" stroke="${c}" stroke-width="3"/><path d="M140 213l8 5v10l-8 5-8-5v-10Z" fill="${cream}"/>`,
+    `<path d="M118 179q-4 16 3 33m41-33q4 16-3 33" fill="none" stroke="${cream}" stroke-width="6"/><path d="M119 205q21 9 42 0l12 55H107Z" fill="${cream}"/><path d="M126 230h28v14q-14 7-28 0Z" fill="${c}"/><path d="M113 254h53" fill="none" stroke="${c}" stroke-width="2"/>`,
   ];
-  return `<g fill="${c}" stroke="${INK}" stroke-width="2" stroke-linejoin="round">${paths[r.motif] || paths[0]}</g>`;
+  return `<g fill="${c}" stroke="${INK}" stroke-width="2" stroke-linejoin="round">${paths[r.motif] ?? paths[0]}</g>`;
 }

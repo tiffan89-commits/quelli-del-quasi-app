@@ -114,26 +114,9 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 .match-page .match-details-body .event-item.compact-penalty{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
 .match-page .match-details-body .compact-penalty strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .match-page .match-details-body .compact-penalty p{margin:0;font-size:11px}
-.match-sheet[open]{
- --match-pitch-height:clamp(244px,calc(91dvh - 236px),405px);
- --match-sheet-bottom:max(var(--app-tabbar-height,0px),env(safe-area-inset-bottom));
- position:fixed;inset:auto 0 var(--match-sheet-bottom);width:min(100%,650px);max-width:none;
- max-height:calc(100dvh - var(--match-sheet-bottom) - max(20px,env(safe-area-inset-top)));
- box-sizing:border-box;margin:0 auto;padding:0 12px max(12px,env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain;
- border:0;border-radius:22px 22px 0 0;background:var(--panel);color:var(--white);box-shadow:0 -18px 55px #0006;
- animation:match-sheet-in 250ms ease-out;transform:translateY(var(--sheet-drag,0px));transition:transform 150ms ease-out;
-}
-.match-sheet.is-sheet-dragging{transition:none}
-.match-sheet::backdrop{background:#040b09a3}
-body.match-sheet-active{overflow:hidden;overscroll-behavior:none}
-.match-sheet-grip{display:grid;place-items:center;height:28px;touch-action:pan-x pinch-zoom}
-.match-sheet-grip .v2-sheet-handle{margin:0}
-.match-sheet .match-headline{grid-template-columns:44px minmax(0,1fr) 44px}
-.match-sheet .match-nav-button{min-width:44px;min-height:44px}
-.match-sheet .match-headline h2.match-page-title{gap:4px;min-width:0;font-size:clamp(15px,4.2vw,23px)}
-.match-sheet .match-headline .team-label:last-child{justify-content:flex-start;text-align:left}
-.match-sheet .match-headline .team-label .team-name{min-width:0;overflow-wrap:anywhere}
-.match-sheet .pitch-tabs>button{min-height:44px}
-.match-sheet-kickoff{margin:6px 0;color:var(--muted);font-size:.85rem}
-@keyframes match-sheet-in{from{transform:translateY(100%)}}
-@media(prefers-reduced-motion:reduce){.match-sheet[open]{animation:none;transition:none}}
+.match-page { transform:translateY(var(--match-drag,0px)); }
+.match-page .match-headline .team-label:last-child{justify-content:flex-start;text-align:left}
+.match-page .match-headline .team-label .team-name{min-width:0;overflow-wrap:anywhere}
+.match-page .match-headline .match-nav-button,.match-page .pitch-tabs>button{min-height:44px}
+.match-detail-kickoff{margin:6px 0;color:var(--muted);font-size:.85rem}
+@media(prefers-reduced-motion:reduce){.match-page{transform:none}}

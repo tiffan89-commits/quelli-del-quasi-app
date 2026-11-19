@@ -1,10 +1,9 @@
 body[data-game-mode] {
-  --mode-accent:#ffcf83;
+  --mode-accent:var(--league-accent,#7bc8f7);
   --mode-ink:#152018;
   --lime:var(--mode-accent);
   --social-radius:20px;
 }
-body[data-game-mode="fanta"] { --mode-accent:#78e0ba; }
 body[data-game-mode] #app-header>.shell-compact {
   display:grid!important; grid-template-columns:minmax(0,1fr) max-content!important; align-items:center;
   width:100%; min-width:0; box-sizing:border-box;
@@ -40,6 +39,7 @@ body[data-game-mode] .social-league-sheet .v2-league-row.is-active {
   border-color:var(--mode-accent);
 }
 body[data-game-mode] #app button.primary:not(:disabled) { background:var(--mode-accent); color:var(--mode-ink); }
+.league-onboarding .secondary { color:var(--lime); border-color:color-mix(in srgb,var(--line),var(--lime) 48%); }
 body:not(.match-page-active):has(#app>main .bar-ticket) #app>main {padding-bottom:var(--app-tabbar-height,56px)!important}
 html.os-on body[data-game-mode] .os-dots .os-dot::before { width:4px; height:4px; }
 html.os-on body[data-game-mode] .os-dots .os-dot.is-on::before { width:10px; }
@@ -71,6 +71,32 @@ button.screen-back.secondary,.bar-rules-page>#close-modal.screen-back {
 }
 .screen-back svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 .screen-back:focus-visible { outline:2px solid var(--lime); outline-offset:2px; }
+.league-identity-form { display:grid; gap:12px; }
+.league-identity-form .field { margin:0; min-width:0; }
+.league-identity-form .field input { box-sizing:border-box; width:100%; min-width:0; }
+.league-identity-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(76px,23%); gap:10px; }
+.league-identity-preview {
+  --league-accent:var(--identity-preview); display:flex; align-items:center; gap:10px; min-height:56px;
+  padding:8px 12px; color:var(--white); border-radius:14px; overflow-wrap:anywhere;
+  background:color-mix(in srgb,var(--panel),var(--identity-preview) 14%);
+}
+.league-identity-preview .league-emblem {
+  display:grid; place-items:center; flex:none; width:40px; height:38px; margin:0; padding:1px;
+  border:1px solid var(--identity-preview); border-radius:10px; color:var(--identity-preview);
+  background:var(--panel); font:700 .7rem/1 'DM Sans',sans-serif;
+}
+.league-identity-tabs {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; padding:3px;
+  border:1px solid var(--line); border-radius:999px; background:var(--panel);
+}
+.league-identity-tabs button { min-height:44px; padding:4px 10px; border:0; border-radius:999px; color:var(--white); background:transparent; }
+.league-identity-tabs button[aria-selected="true"] { background:var(--identity-preview); color:var(--mode-ink); font-weight:700; }
+.league-identity-form [data-identity-panel][hidden] { display:none; }
+.league-identity-form .league-identity-palette { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin:0; padding:0; border:0; }
+.league-identity-form .theme-option { min-height:44px; min-width:0; padding:5px 8px; font-size:.8rem; line-height:1.15; overflow-wrap:anywhere; }
+.league-identity-form .theme-swatch { width:22px; height:22px; }
+.league-identity-status { margin:0; }
+.league-identity-status:empty { display:none; }
 .president-panel .president-heading:has(.screen-back) { display:flex; align-items:center; gap:8px; }
 .bar-rules-page>.screen-back { position:sticky; top:var(--ux-header-height,64px); z-index:2; }
 .president-tiles .league-delete-action { color:#ffab91; }
@@ -85,7 +111,12 @@ button.screen-back.secondary,.bar-rules-page>#close-modal.screen-back {
 .president-reminders .participants-heading { margin-bottom:8px; }
 html.os-on body #app>main.os-split .president-reminder-scroll { overflow-y:auto; }
 .reminder-players { list-style:none; padding:0; margin:0 0 12px; }
-.reminder-players li { display:flex; align-items:center; min-height:44px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.reminder-players li { padding:5px 0; min-height:44px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.reminder-player-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; }
+.reminder-player-row>div { display:flex; gap:5px; }
+.reminder-player-row button { min-height:44px; padding:5px 8px; font-size:.8rem; }
+.reminder-players [data-reminder-feedback] { display:block; color:var(--muted); }
+.reminder-players [data-reminder-feedback]:empty { display:none; }
 .reminder-share {
   display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px;
   padding:8px 12px; border:1px solid var(--line); border-radius:12px; text-decoration:none;
@@ -238,7 +269,7 @@ body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); colo
 @property --mode-accent {
  syntax:"<color>";
  inherits:true;
- initial-value:#ffcf83;
+ initial-value:#7bc8f7;
 }
 body[data-game-mode] { transition:--mode-accent 200ms ease; }
 body[data-game-mode] .shell-compact .fanta-mode-btn { width:100%; min-width:0; padding:0; transition:color 200ms,background-color 200ms; }
@@ -249,11 +280,11 @@ body[data-game-mode] #app .bar-home-cta { transition:transform 130ms ease-out,ba
 html.os-on body[data-game-mode] #app main:has(.bar-home-social) { padding-inline:14px!important; }
 .bar-home-hero:has(.bar-home-room)::after {
   content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit;
-  background:linear-gradient(90deg,#0c1815f7,#0c1815d4 51%,#0c181530);
+  background:linear-gradient(90deg,color-mix(in srgb,#0c1815f7,var(--mode-accent) 14%),#0c1815d4 51%,#0c181530);
 }
 .bar-home-room { position:absolute; inset:0; z-index:-2; width:100%; height:100%; object-fit:cover; object-position:center 45%; border-radius:inherit; }
 .home-edit-mark { position:absolute; right:3px; bottom:12px; display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:var(--mode-accent); color:var(--mode-ink); font:700 17px/1 sans-serif; box-shadow:0 1px 4px #0008; }
-.fanta-social-home .bar-home-hero { background:radial-gradient(ellipse at 94% 85%,#235745,var(--panel) 75%); }
+.fanta-social-home .bar-home-hero { background:radial-gradient(ellipse at 94% 85%,color-mix(in srgb,var(--panel),var(--mode-accent) 28%),var(--panel) 75%); }
 .fanta-social-home .bar-home-hero h2 { overflow-wrap:anywhere; }
 .home-team-crest { display:grid; place-items:end; padding:0 8px 0 0; }
 .home-team-crest :is(.team-logo,svg,img) { width:100%; max-height:175px; height:auto; object-fit:contain; }

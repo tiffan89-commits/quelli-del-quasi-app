@@ -94,7 +94,7 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
    const match=data.round.matches.find(m=>m.id===b.dataset.detail);if(!match)return;
    const existing=root.ownerDocument.getElementById('match-page-root');if(existing?.open&&existing.dataset.match===match.id)return;
    message='';const key=scope+':'+data.round.id+':'+match.id,old=detailCache.get(key);
-   let live=null;const page=openMatchPage({document:root.ownerDocument,onClose:()=>{detail=null;live?.stop();}});detail=match.id;page.dataset.match=match.id;
+   let live=null;const page=openMatchPage({document:root.ownerDocument,trigger:b,onClose:()=>{detail=null;live?.stop();}});detail=match.id;page.dataset.match=match.id;
    if(globalThis.window&&match.nativeId&&!services?.snapshot?.()?.user?.demo){live=createSportsPush({context:()=>page.open?{mode:'fanta',league:context.leagueId,competition:context.competitionId,round:Number(data.round.number),matchup:match.nativeId}:null,apply:({matchup:view})=>{
     if(!page.open||!view||detail!==match.id)return;const before=detailCache.get(key)?.data,shape=v=>JSON.stringify(['home','away'].map(k=>[v?.[k]?.formation,...(v?.[k]?.starters||[]).map(p=>p.id),...(v?.[k]?.bench||[]).map(p=>p.id)]));detailCache.set(key,{data:view,at:now()});if(shape(before)!==shape(view))show();
     patchFantasyMatch(page,nativeSlipMatch(match,view));

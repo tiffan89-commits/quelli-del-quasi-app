@@ -457,7 +457,7 @@ export function startOneScreen(doc = globalThis.document) {
  win.addEventListener('hashchange', schedule);
  win.addEventListener('quasi:navigation', schedule);
  win.addEventListener('popstate',e=>{
-  if(!drill.length||!key.startsWith(win.location.hash+'|')||doc.body.classList.contains('match-sheet-active'))return;
+  if(!drill.length||!key.startsWith(win.location.hash+'|')||doc.body.classList.contains('match-page-active'))return;
   const depth=e.state?.qdqDrill||0;
   if(depth>=drill.length)return;
   e.stopImmediatePropagation();

@@ -32,7 +32,7 @@ export function createBarDemo({admin=false}={}){
   if(name==='chat-read'){l.chat.unread=0;return {unread:0};}
   if(name==='chat-send'){const text=String(body.text||'').trim();if(!text||text.length>1200)throw Error('Scrivi un messaggio fino a 1200 caratteri');const key=l.id+':'+body.nonce;if(body.nonce&&seen.has(key))return {message:structuredClone(seen.get(key))};const messages=room(l),message={id:'demo-message-'+crypto.randomUUID(),seq:(messages.at(-1)?.seq||0)+1,uid:state.user.id,name:state.user.name,text,created:new Date().toISOString()};messages.push(message);if(body.nonce)seen.set(key,message);return {message:structuredClone(message)};}
   if(name==='chat-delete'){const m=room(l).find(m=>m.id===body.message);if(!m)throw Error('Messaggio non trovato');if(m.uid!==state.user.id)needAdmin();m.text='Messaggio eliminato';m.deleted=true;l.chat.revision=(l.chat.revision||1)+1;return {ok:true};}
-  if(name==='league-profile'){needAdmin();l.branding={...l.branding,...body.branding};return {ok:true};}
+  if(name==='league-profile'){needAdmin();const {name:updatedName,...branding}=body.branding;l.name=updatedName??l.name;l.branding={...l.branding,...branding};return {ok:true,name:l.name,branding:l.branding};}
   if(name==='rules'){needAdmin();l.rules={...l.rules,...body.rules};return {ok:true};}
   if(name==='member-remove'||name==='member-restore'){needAdmin();const m=l.members.find(m=>m.uid===body.uid);if(!m||m.uid===l.admin)throw Error('Partecipante non disponibile');m.removed=name==='member-remove';return {ok:true};}
   if(name==='account-email'||name==='email-update'||name==='verify-email-resend')return {ok:true,message:'Nella demo non vengono inviate email. Crea un account per usare questa funzione.'};

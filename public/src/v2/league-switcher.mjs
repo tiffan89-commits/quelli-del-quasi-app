@@ -1,4 +1,4 @@
-import {leagueEmblem,linkedLeagueIdentity} from '../league-theme.mjs';
+import {leagueEmblem,leagueName,linkedLeagueIdentity} from '../league-theme.mjs';
 import {roundAvailability,sourceOf} from '../slip-state.mjs';
 import {paintAuctionBadges} from '../auction-index.mjs';
 import {openSiteOverlay} from '../site-overlay.mjs';
@@ -12,12 +12,10 @@ export function attentionOf(league,uid,now=Date.now()){
  if(!next)return {level:'ok',text:'Nessuna schedina aperta'};
  return next.slip?{level:'ok',text:'Schedina campionato salvata'}:{level:'todo',text:'Schedina campionato da compilare'};
 }
-const nameOf=league=>String(league.name||'Lega').replace(/^Random League/i,'Lega pilota');
-
-export function leagueChip(league,attributes,esc){
+export function leagueChip(league,attributes,esc,mode='bar'){
  if(!league)return '';
- return `<button type="button" class="v2-league-chip" ${attributes} aria-haspopup="dialog" aria-label="Cambia lega, ${esc(nameOf(league))}">
-  ${leagueEmblem(league)}<span class="shell-league-copy"><small>Lega</small><span class="v2-league-name">${esc(nameOf(league))}</span></span>
+ return `<button type="button" class="v2-league-chip" ${attributes} aria-haspopup="dialog" aria-label="Cambia lega, ${esc(leagueName(league))}">
+  ${leagueEmblem(league,mode)}<span class="shell-league-copy"><small>Lega</small><span class="v2-league-name">${esc(leagueName(league))}</span></span>
   <span class="shell-chevron" aria-hidden="true">⌄</span><span class="auction-index-dot" data-auction-indicator="*" aria-label="Asta in corso" hidden></span>
  </button>`;
 }
@@ -31,7 +29,7 @@ export function leagueSheetRows(bars,fantas,uid,mode){
  return rows.map(({bar,fanta})=>{
   const entrant=bar?.members?.find(m=>m.uid===uid);
   const rank=entrant?1+bar.members.filter(m=>Number(m.points||0)>Number(entrant.points||0)).length:null;
-  return {identity:bar||linkedLeagueIdentity(fanta,bars),id:mode==='bar'?(bar?.id||fanta?.id):(fanta?.id||bar?.id),
+  return {identity:mode==='fanta'&&fanta?linkedLeagueIdentity(fanta,bars):bar||fanta,id:mode==='bar'?(bar?.id||fanta?.id):(fanta?.id||bar?.id),
    barId:bar?.id,fantaId:fanta?.id||bar?.nativeFantaLink?.leagueId,rank,fantaRank:fanta?.position,
    pending:bar?attentionOf(bar,uid).level==='todo':false,lineupPending:!!fanta?.lineupPending};
  });
@@ -47,7 +45,7 @@ export function renderLeagueSheet(leagues,activeId,uid,esc,{fantas=[],mode='bar'
   <div class="sheet-top"><div class="v2-sheet-handle" aria-hidden="true"></div>
   <h2 id="social-league-title">Le tue leghe</h2><button type="button" data-close-leagues class="sheet-close" aria-label="Chiudi le leghe" autofocus>×</button></div>
   <div class="social-league-list" data-overlay-scroll>${rows.map(({identity,id,pending,lineupPending,...row})=>`<button type="button" class="v2-league-row${id===activeId?' is-active':''}" data-league-choice="${esc(id)}"${id===activeId?' aria-current="true"':''}>
-    ${leagueEmblem(identity)}<span class="v2-league-info"><b>${esc(nameOf(identity))}</b><small data-league-position>${esc(rankLine(row))}</small></span>
+    ${leagueEmblem(identity,mode)}<span class="v2-league-info"><b>${esc(leagueName(identity))}</b><small data-league-position>${esc(rankLine(row))}</small></span>
     <span class="sheet-indicators"><span class="auction-index-tag" data-auction-indicator="${esc(row.fantaId||'')}" hidden>ASTA</span>
     <span data-league-pending class="sheet-pending" ${pending||lineupPending?'':'hidden'} role="img" aria-label="${pending&&lineupPending?'Schedina e formazione da consegnare':pending?'Schedina da consegnare':'Formazione da consegnare'}"></span>
     ${id===activeId?'<span aria-hidden="true">✓</span>':''}</span>

@@ -16,7 +16,7 @@ const ICONS = {
 export const FANTA_TABS=[['schedine','Schedina'],['classifica','Classifica'],['oggi','Oggi'],['squadra','Squadra'],['lega','Lega']];
 
 export function topBar({mode,league}){
- return `<header class="v2-top fanta-top shell-compact">${leagueChip(league,'id="v2-open-fanta-leagues" data-action="leagues"',esc)}${modeSwitch(mode)}</header>`;
+ return `<header class="v2-top fanta-top shell-compact">${leagueChip(league,'id="v2-open-fanta-leagues" data-action="leagues"',esc,mode)}${modeSwitch(mode)}</header>`;
 }
 
 export function tabBar(active,{hasTrades=false}={}) {

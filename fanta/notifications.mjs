@@ -4,7 +4,9 @@ import {createHash,randomUUID} from 'node:crypto';
 import webpush from 'web-push';
 import {connection} from '../lib/db.mjs';
 import {recipientAllowed,blockedDelivery} from '../lib/release-env.mjs';
-import {queueMail,sendMail,mailReady} from '../lib/mail.mjs';
+import {sendMail,mailReady} from '../lib/mail.mjs';
+import {REMINDER_WINDOW_MS,isReminderDue} from '../lib/reminder-timing.mjs';
+import {sendAdminSubmissionReminder,submissionReminderMessage} from '../lib/submission-reminders.mjs';
 export function fantaNotificationUrl(league,kind,target={}){
  const page=kind==='lineupReminder'?'squadra':kind==='auction'?'asta':kind==='trade'?'scambi':target.round?'giornata':'oggi';
  const section=kind==='lineupReminder'?'studio':null;
@@ -35,9 +37,18 @@ export async function queueTradeNotice(c,{id,revision,league,uid,now,endsAt}){
   JSON.stringify({title,body:'Apri Scambi per vedere la proposta.',kind:'fanta',league:league.id,url:fantaNotificationUrl(league.id,'trade'),tradeId:id,revision}),expires]);
  return key;
 }
-export async function queueFantaNotifications({connect=connection,now=Date.now}={}){
+export async function queueFantaNotifications({connect=connection,now=Date.now,reminderHours=null,emailOnly=false}={}){
  const c=await connect();try{
-  const rounds=(await c.query(`SELECT r.competition_id,r.number,r.deadline,r.league_id,r.official,t.id AS team_id,t.user_id,EXISTS(SELECT 1 FROM fanta.lineups x WHERE x.competition_id=r.competition_id AND x.round=r.number AND x.team_id=t.id) AS has_lineup FROM fanta.rounds r JOIN fanta.leagues l ON l.id=r.league_id JOIN fanta.teams t ON t.league_id=l.id AND t.user_id IS NOT NULL WHERE l.rules->>'disabledAt' IS NULL AND (r.deadline BETWEEN $1 AND $2 OR (r.official AND EXISTS(SELECT 1 FROM fanta.results z JOIN fanta.matchups m ON m.id=z.matchup_id WHERE m.competition_id=r.competition_id AND m.round=r.number AND z.official AND NOT z.historical AND z.updated_at>=$3)))`,[new Date(now()-2*3600000).toISOString(),new Date(now()+2*3600000).toISOString(),new Date(now()-24*3600000).toISOString()])).rows;
+  const at=now(),target=reminderHours?at+reminderHours*3600000:null;
+  const rounds=(await c.query(`SELECT r.competition_id,r.number,r.deadline,r.league_id,r.official,t.id AS team_id,t.user_id,l.name,
+   EXISTS(SELECT 1 FROM fanta.lineups x WHERE x.competition_id=r.competition_id AND x.round=r.number AND x.team_id=t.id) AS has_lineup,
+   (NOT r.official AND EXISTS(SELECT 1 FROM fanta.competitions comp WHERE comp.id=r.competition_id AND comp.status='active')
+    AND EXISTS(SELECT 1 FROM fanta.matchups m WHERE m.competition_id=r.competition_id AND m.round=r.number AND t.id IN(m.home_id,m.away_id))) AS can_remind
+   FROM fanta.rounds r JOIN fanta.leagues l ON l.id=r.league_id JOIN fanta.teams t ON t.league_id=l.id AND t.user_id IS NOT NULL
+   WHERE l.rules->>'disabledAt' IS NULL AND (r.deadline BETWEEN $1 AND $2 OR r.deadline BETWEEN $4::timestamptz AND $5::timestamptz
+    OR (r.official AND EXISTS(SELECT 1 FROM fanta.results z JOIN fanta.matchups m ON m.id=z.matchup_id WHERE m.competition_id=r.competition_id AND m.round=r.number AND z.official AND NOT z.historical AND z.updated_at>=$3)))`,
+   [new Date(at-2*3600000).toISOString(),new Date(at+2*3600000).toISOString(),new Date(at-24*3600000).toISOString(),
+    target===null?null:new Date(target-REMINDER_WINDOW_MS).toISOString(),target===null?null:new Date(target).toISOString()])).rows;
   const pending=[];
   const enqueue=(uid,kind,key,title,body,league,lineup=null,target=lineup)=>pending.push({
    id:idFor([uid,kind,key]),user_id:uid,kind,
@@ -46,7 +57,12 @@ export async function queueFantaNotifications({connect=connection,now=Date.now}=
   });
   for(const r of rounds){
    const age=now()-Date.parse(r.deadline);
-   if(age<0&&age>=-2*3600000&&!r.has_lineup)enqueue(r.user_id,'lineupReminder',r.competition_id+':'+r.number,'Il Fanta sta per chiudere','Manca la formazione: il mister è ancora al bar?',r.league_id,{deadline:r.deadline,competition:r.competition_id,round:r.number,team:r.team_id});
+   if(reminderHours&&r.can_remind&&!r.has_lineup&&isReminderDue(Date.parse(r.deadline),at,reminderHours)){
+    const lineup={deadline:r.deadline,competition:r.competition_id,round:r.number,team:r.team_id};
+    const message=submissionReminderMessage('fanta',{id:r.league_id,name:r.name},{...lineup,lead:reminderHours});
+    pending.push({id:idFor([r.user_id,'lineupReminder',r.competition_id,r.number,Date.parse(r.deadline),reminderHours,emailOnly]),
+     user_id:r.user_id,kind:'lineupReminder',data:{...message,lineup,delivery:emailOnly?'email':'push'},expires_at:new Date(r.deadline).toISOString()});
+   }
    if(age>=0&&age<15*60000)enqueue(r.user_id,'roundStart',r.competition_id+':'+r.number,'Si gioca!','La giornata è iniziata. Le scuse sono già pronte.',r.league_id,null,{competition:r.competition_id,round:r.number});
    if(r.official&&age>=0)enqueue(r.user_id,'results',r.competition_id+':'+r.number,'Il conto della giornata','Risultati e voti ufficiali sono pronti nel Fanta.',r.league_id,null,{competition:r.competition_id,round:r.number});
   }
@@ -72,16 +88,20 @@ export async function deliverFantaNotifications({connect=connection,env=process.
    target=(await c.query(DELIVERY_SQL,[j.user_id])).rows[0];
    if(j.kind==='trade'&&!(await c.query("SELECT 1 FROM fanta.trades WHERE id=$1 AND recipient_uid=$2 AND revision=$3 AND status='pending'",[j.data.tradeId,j.user_id,j.data.revision])).rows.length)target=null;
    const lineup=j.kind==='lineupReminder'&&j.data.lineup;
-   if(env.FANTA_EMAIL_ENABLED==='true'&&target?.user.emailVerified&&target.user.emailRemindersEnabled&&lineup&&Date.parse(lineup.deadline)>now()&&recipientAllowed(target.user.email,env)&&mailReady(env)){
-    const saved=await c.query('SELECT 1 FROM fanta.lineups WHERE competition_id=$1 AND round=$2 AND team_id=$3',[lineup.competition,lineup.round,lineup.team]);
-    mailLineup=saved.rows.length===0;
+   if(lineup&&target){
+    const stillMissing=(await c.query(`SELECT 1 FROM fanta.rounds r JOIN fanta.teams t ON t.league_id=r.league_id
+     WHERE r.competition_id=$1 AND r.number=$2 AND t.id=$3 AND t.user_id=$4 AND r.deadline=$5 AND r.deadline>$6
+      AND NOT r.official AND NOT EXISTS(SELECT 1 FROM fanta.lineups x WHERE x.competition_id=$1 AND x.round=$2 AND x.team_id=$3)`,
+     [lineup.competition,lineup.round,lineup.team,j.user_id,lineup.deadline,new Date(now()).toISOString()])).rows.length;
+    if(!stillMissing)target=null;
+    mailLineup=!!(target&&j.data.delivery!=='push'&&env.FANTA_EMAIL_ENABLED==='true'&&target.user.emailVerified&&target.user.emailRemindersEnabled&&recipientAllowed(target.user.email,env)&&mailReady(env));
    }
   }finally{c.release();}let success=true;
   if(target&&recipientAllowed(target.user.email,env)){
    const keys={publicKey:env.WEB_PUSH_PUBLIC_KEY||target.keys?.publicKey,privateKey:env.WEB_PUSH_PRIVATE_KEY||target.keys?.privateKey};
    const url=j.data.lineup?fantaNotificationUrl(j.data.league,j.kind,j.data.lineup):j.kind==="auction"?fantaNotificationUrl(j.data.league,j.kind):j.data.url;
-   if(j.settings?.notify?.[j.kind]!==false)for(const device of target.devices||[])try{if(keys.publicKey&&keys.privateKey)await sendPush(device.subscription,JSON.stringify({...j.data,url,tag:'fanta-'+j.id}),{TTL:3600,vapidDetails:{subject:env.WEB_PUSH_SUBJECT||'mailto:account@quellidelquasi.com',...keys}});}catch(e){if(![404,410].includes(e.statusCode))success=false;}
-   if(mailLineup)try{const queue={},message={to:[target.user.email],subject:j.data.title,html:'<p>'+j.data.body+'</p><p><a href="'+(env.APP_BASE_URL||'https://quellidelquasi.com')+url.replaceAll('&','&amp;')+'">Apri lo Studio formazione</a></p>'};const id=queueMail(queue,message,env);await deliverMail(queue.mailOutbox.find(m=>m.id===id),undefined,env);}catch{success=false;}
+   if(j.data.delivery!=='email'&&j.settings?.notify?.[j.kind]!==false)for(const device of target.devices||[])try{if(keys.publicKey&&keys.privateKey)await sendPush(device.subscription,JSON.stringify({...j.data,url,tag:'fanta-'+j.id}),{TTL:3600,vapidDetails:{subject:env.WEB_PUSH_SUBJECT||'mailto:account@quellidelquasi.com',...keys}});}catch(e){if(![404,410].includes(e.statusCode))success=false;}
+   if(mailLineup)try{await sendAdminSubmissionReminder('email',{...j.data,url},target,{env,deliverMail});}catch{success=false;}
   }else if(target&&!recipientAllowed(target.user.email,env))blockedDelivery('fanta-notification',env);
   const end=await connect();try{await end.query('UPDATE fanta.notifications SET delivered_at=$2,lease_until=NULL WHERE id=$1 AND lease_until=$3',[j.id,success?new Date(now()).toISOString():null,lease]);if(success)delivered++;}finally{end.release();}
  }

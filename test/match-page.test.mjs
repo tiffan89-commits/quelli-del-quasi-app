@@ -6,35 +6,29 @@ test('match page preserves slip DOM and draft, retains app chrome and releases p
  const page=openMatchPage({document,onClose:()=>closed++});page._pitchCleanup=()=>cleaned++;page.innerHTML='<h2>Venezia – Udinese</h2>';assert.equal(page.tagName,'MAIN');assert.equal(page.previousElementSibling.id,'app');assert.equal(document.querySelector('dialog'),null);assert.equal(document.querySelector('#app input'),input);assert.ok(document.body.classList.contains('match-page-active'));assert.equal(document.querySelector('nav').textContent,'Oggi');
  page.close();assert.equal(page.open,false);assert.equal(document.querySelector('#match-page-root'),null);assert.equal(input.value,'draft');assert.equal(cleaned,1);assert.equal(closed,1);assert.ok(!document.body.classList.contains('match-page-active'));closeMatchPage();assert.equal(closed,1);
 });
-test('lineup sheet preserves the schedina and dismisses on a vertical pull, keeping horizontal swipes inside it',()=>{
+test('full-page match detail preserves the schedina and dismisses on a vertical pull without closing on horizontal swipes',()=>{
  const {document,Event}=parseHTML('<html><body><div id="app"><main><button id="match">Partita</button><input value="draft"></main></div></body></html>');
- const create=document.createElement.bind(document);
- document.createElement=(name,...args)=>{
-  const node=create(name,...args);
-  if(name==='dialog'){node.showModal=()=>{node.open=true;};node.close=()=>{node.open=false;};}
-  return node;
- };
  const origin=document.querySelector('#match'),draft=document.querySelector('input');
  let focused=false;
  origin.focus=()=>{focused=true;};
- const sheet=openMatchPage({document,kind:'lineup',trigger:origin});
- assert.equal(sheet.tagName,'DIALOG');
- assert.ok(document.body.classList.contains('match-sheet-active'));
- assert.ok(!document.body.classList.contains('match-page-active'));
+ const page=openMatchPage({document,trigger:origin});
+ page.innerHTML='<header>Squadre e risultato</header><p>Formazioni</p>';
+ assert.equal(page.tagName,'MAIN');
+ assert.ok(document.body.classList.contains('match-page-active'));
  const gesture=(target,from,to)=>{
   for(const [type,key,point] of [['touchstart','touches',from],['touchend','changedTouches',to]]){
    const event=new Event(type,{bubbles:true});event[key]=[{clientX:point[0],clientY:point[1]}];target.dispatchEvent(event);
   }
  };
- const grip=sheet.querySelector('[data-sheet-grip]');
- gesture(grip,[170,48],[43,60]);
- assert.equal(sheet.open,true);
- sheet.scrollTop=90;
- gesture(sheet.querySelector('p'),[170,48],[180,154]);
- assert.equal(sheet.open,true);
- sheet.scrollTop=0;
- gesture(grip,[170,48],[180,154]);
- assert.equal(sheet.open,false);
+ const heading=page.querySelector('header');
+ gesture(heading,[170,48],[43,60]);
+ assert.equal(page.open,true);
+ page.scrollTop=90;
+ gesture(page.querySelector('p'),[170,48],[180,154]);
+ assert.equal(page.open,true);
+ page.scrollTop=0;
+ gesture(heading,[170,48],[180,154]);
+ assert.equal(page.open,false);
  assert.equal(document.querySelector('#match-page-root'),null);
  assert.equal(document.querySelector('input'),draft);
  assert.equal(draft.value,'draft');

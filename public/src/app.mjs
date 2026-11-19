@@ -4,7 +4,7 @@ import {backButton,bindScreenBack} from './back-navigation.mjs';
 import {bindSiteValidation} from './site-validation.mjs';
 import {askConfirmation} from './site-confirm.mjs';
 import {presidentWorkspace,presidentOperationButtons} from './president-workspace.mjs';
-import {barReminder,renderPresidentReminders} from './president-reminders.mjs';
+import {barReminder,bindPresidentReminders,renderPresidentReminders} from './president-reminders.mjs';
 import {settingsFooter,presidentEntry,presidentPanel,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
 import {paintAuctionBadges,trackAuctionBadges} from './auction-index.mjs';
@@ -64,7 +64,8 @@ import {rewardById,rewardMark,rarityLabel,REWARD_TYPES} from './reward-catalog.m
 import {fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi} from './fanta-quasi.mjs';
 import {achievementBoard} from './achievement-board.mjs';
 
-import { LEAGUE_COLORS, LEAGUE_EMBLEMS, applyLeagueTheme } from "./league-theme.mjs";
+import {applyLeagueTheme,leagueIdentityKey,paintLeagueIdentity} from './league-theme.mjs';
+import {leagueIdentityForm,bindLeagueIdentityForm} from './league-identity-form.mjs';
 import {barLeagueFallback,bindLeagueWorkspace,leagueWorkspace} from './league-workspace.mjs';
 import {whatsappInvite} from './league-invite.mjs';
 import {createFantaApi} from './fanta/api.mjs';
@@ -441,7 +442,10 @@ async function refresh(reset = false) {
     const leagueKeys=new Map(previousLeagues.map(l=>[l.id,l.members.map(m=>m.uid).join()]));
     const changedMembers=state.leagues.filter(l=>l.members.map(m=>m.uid).join()!==leagueKeys.get(l.id));
     const leagueListChanged=state.leagues.length!==previousLeagues.length||state.leagues.some(l=>!leagueKeys.has(l.id));
-    if(changedMembers.length||leagueListChanged)refreshFantaMembership(state.leagues,changedMembers.map(l=>l.nativeFantaLink?.leagueId).filter(Boolean),leagueListChanged);
+    const identities=new Map(previousLeagues.map(l=>[l.id,leagueIdentityKey(l)]));
+    const changedIdentity=state.leagues.filter(l=>identities.get(l.id)!==leagueIdentityKey(l));
+    if(changedMembers.length||leagueListChanged||changedIdentity.length)refreshFantaMembership(state.leagues,changedMembers.map(l=>l.nativeFantaLink?.leagueId).filter(Boolean),leagueListChanged);
+    if(!preferredFanta()&&changedIdentity.some(l=>l.id===L()?.id))paintLeagueIdentity(L(),'bar');
     if (state.user && state.user.id !== previousUser && page !== "schedina") sourceScope = 'seriea';
     const openRequestedChat=!!requestedChat&&!!state.user?.emailVerified&&openChatNotification(requestedChat);
     if(requestedChat&&state.user?.emailVerified)clearRequestedChat();
@@ -766,8 +770,7 @@ function render() {
                         ? calendarPage()
                         : settings(l, r);
   document.body.dataset.gameMode='bar';
-  const palette = LEAGUE_COLORS.map(([color]) => color);
-  applyLeagueTheme(L());
+  applyLeagueTheme(l,'bar');
   $("#app").innerHTML = shell(
     '<main'+(!l||isLeagueEntryPage(page)||['admin','lega','impostazioni','seriea','classifiche','quasi','solleciti'].includes(page)?' data-os-flow':'')+'><div id="connection-status" class="notice connection-status" role="status" hidden></div>' +
       content +
@@ -818,6 +821,7 @@ function render() {
   document.querySelector('[data-president-copy-link]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/invito/'+encodeURIComponent(l.code));notify('Link copiato.');}catch{notify('Copia il codice della lega.');}});
   document.querySelectorAll('[data-president-section]').forEach(section=>section.addEventListener('toggle',()=>{if(!section.open&&presidentGroup===section.dataset.presidentSection)presidentGroup=null;}));
   bindNew(l, r);
+  bindPresidentReminders($('.president-reminders'),data=>api('league-reminder',data));
   $("#edit-suggested-nickname")?.addEventListener("click",()=>{const section=$(".profile-account");if(section)section.open=true;const field=$("#profile-name input");field?.scrollIntoView({block:"center",behavior:"smooth"});field?.focus({preventScroll:true});});
   if(liveStatus)showLiveStatus(liveStatus);
   updateChatWidget();
@@ -850,6 +854,8 @@ async function returnToLanding(button,push=true){
 }
 let publicUi=null;
 function renderAuth(){
+ delete document.body.dataset.gameMode;
+ applyLeagueTheme(null);
  restoreAppFooter(document);
  syncChatLauncher(null);
  hideLanding();document.getElementById('landing')?.remove();document.body.classList.add('public-area');if(publicUi)return;
@@ -1293,7 +1299,7 @@ function profile({embedded=false}={}) {
 function accountGroups(settings){
  const u=state.user;
  const toggle=(id,label,checked=false,attrs='')=>`<label class="account-toggle" ${attrs}><span>${label}</span><input type="checkbox" role="switch" class="fanta-switch" id="${id}" ${checked?'checked':''}></label>`;
- const bar=`<section class="account-alerts"><h2>Il bar ti chiama</h2>${toggle('chat-notify-preference','Messaggi di Chiacchiere da bar',false,'data-chat-preference-row hidden')}${toggle('reminder-preference','Promemoria schedina - due ore prima',u.remindersEnabled!==false)}${toggle('email-reminder-preference','Promemoria mail schedina o formazione - due ore prima',u.emailRemindersEnabled)}<button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button></section>`;
+ const bar=`<section class="account-alerts"><h2>Il bar ti chiama</h2>${toggle('chat-notify-preference','Messaggi di Chiacchiere da bar',false,'data-chat-preference-row hidden')}${toggle('reminder-preference','Promemoria schedina · 24, 12, 6 e 3 ore prima',u.remindersEnabled!==false)}${toggle('email-reminder-preference','Promemoria mail schedina o formazione - due ore prima',u.emailRemindersEnabled)}<button type="button" class="secondary" id="enable-device-alerts">Attiva avvisi su questo dispositivo</button></section>`;
  return {account:{summary:'Soprannome e accesso',html:profile({embedded:true})},avvisi:{summary:'Bar e Fanta',html:bar+renderFantaNotificationSettings(settings,{disabled:!settings,compact:true})},...(u.emailVerified&&!u.demo?{assistenza:{summary:'Segnalazioni e suggerimenti',html:supportSection()}}:{})};
 }
 function updateDashboard() {
@@ -2016,11 +2022,13 @@ async function openMatch(id, quiet = false, trigger) {
   let dialog = $("#match-page-root");
   if (quiet && (!dialog?.open || dialog.dataset.match !== id)) return;
   if (!quiet) {
-    dialog = openMatchPage({kind:'lineup',trigger,onClose:()=>{activeMatchId=null;}});
+    dialog = openMatchPage({trigger,onClose:()=>{activeMatchId=null;}});
+    dialog.innerHTML='<button type="button" class="match-nav-button match-close" aria-label="Chiudi partita">×</button><p role="status">Caricamento…</p>';
+    dialog.querySelector('button').onclick=()=>dialog.close();
     dialog.dataset.match = id;
     activeMatchId = id;
   }
-  const content=dialog.querySelector('[data-match-sheet-content]');
+  const content=dialog;
   try {
     const scroll = dialog.scrollTop,
       baseData = structuredClone(
@@ -2032,7 +2040,10 @@ async function openMatch(id, quiet = false, trigger) {
             .find((m) => m.id === id),
       );
     if (!baseData) throw Error("Partita non presente nel calendario salvato.");
-    const data=await matchSnapshot(baseData);
+    const data=await matchSnapshot(baseData).catch(error=>{
+      if(error.status===404)return baseData;
+      throw error;
+    });
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
@@ -2041,7 +2052,7 @@ async function openMatch(id, quiet = false, trigger) {
     const hasDetails=scheduled||!!(events.length||availability);
     const details=`<div class="match-details-body">
       <h3>Dettagli della partita</h3>
-      ${scheduled?`<p class="match-sheet-kickoff"><time datetime="${new Date(kickoff).toISOString()}">${esc(new Intl.DateTimeFormat('it-IT',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Rome'}).format(kickoff))}</time></p>`:''}
+      ${scheduled?`<p class="match-detail-kickoff"><time datetime="${new Date(kickoff).toISOString()}">${esc(new Intl.DateTimeFormat('it-IT',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Rome'}).format(kickoff))}</time></p>`:''}
       <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
       <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
       <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
@@ -2141,23 +2152,15 @@ async function submitLeague(kind, payload) {
 }
 
 function bindNew(l, r) {
-  const theme = $("#branding-form");
-  if (theme?.elements?.emblem) {
-    const preview = () => {
-      const emblem = theme.elements.emblem.value;
-      $("#branding-preview").textContent = emblem;
-      $("#branding-preview").style.color = theme.elements.accent.value;
-    };
-    theme.oninput = preview;
-    document.querySelectorAll("[data-emblem]").forEach(
-      (button) =>
-        (button.onclick = () => {
-          theme.elements.emblem.value = button.dataset.emblem;
-          preview();
-        }),
-    );
-    preview();
-  }
+  const theme=$('#branding-form');
+  if(theme&&l)bindLeagueIdentityForm(theme,async branding=>{
+    const saved=await api('league-profile',{league:l.id,branding});
+    const current=state.leagues.find(league=>league.id===l.id);
+    if(!current)return;
+    Object.assign(current,{name:saved.name,branding:saved.branding});
+    refreshFantaMembership(state.leagues,[]);
+    if(!preferredFanta()&&L()?.id===l.id)paintLeagueIdentity(current,'bar');
+  });
   const rulesForm = $("#rules");
   if (rulesForm?.elements?.mode)
     rulesForm.elements.mode.onchange = () => {
@@ -2325,15 +2328,6 @@ function bindNew(l, r) {
         void navigatePage(b.dataset.page);
       }),
   );
-  if ($("#branding-form"))
-    $("#branding-form").onsubmit = (e) => {
-      e.preventDefault();
-      act(
-        "league-profile",
-        { branding: Object.fromEntries(new FormData(e.target)) },
-        "Il bar ha un nuovo stemma. Le scuse sono le solite.",
-      );
-    };
   if ($("#balanced-rules"))
     $("#balanced-rules").onclick = () => {
       const form = $("#rules");
@@ -2447,46 +2441,7 @@ function switchLeague(id) {
   hydrateDraft();
   render();
 }
-function brandingForm(l) {
-  if (l.admin !== state.user.id) return "";
-  const emblem=l.branding?.emblem||'Q',accent=l.branding?.accent||LEAGUE_COLORS[0][0];
-  const names=new Set(['Lime','Menta','Ambra','Lilla','Rosa','Corallo','Prato','Blu','Cielo','Avio']);
-  const colors=LEAGUE_COLORS.filter(([color,label])=>color===accent||names.has(label));
-  const emblems=LEAGUE_EMBLEMS.filter(value=>['⚽','🏆','🍺','🔥','🦅','🐺','⭐','⚡'].includes(value));
-  return (
-    '<form id="branding-form"><div class="branding-identity"><span class="league-emblem" id="branding-preview" aria-hidden="true">' +
-    esc(emblem) +
-    '</span><label class="field">Sigla <small>Max 4</small><input name="emblem" maxlength="4" value="' +
-    esc(emblem) +
-    '" required></label></div><div class="emblem-presets" role="group" aria-label="Simboli della lega">' +
-    emblems.map(
-      (v) =>
-        '<button type="button" class="secondary" data-emblem="' +
-        esc(v) +
-        '">' +
-        esc(v) +
-        "</button>",
-    ).join("") +
-    '</div><fieldset class="theme-palette"><legend>Colore</legend>' +
-    colors.map(
-      ([color, label]) =>
-        '<label class="theme-option" title="'+esc(label)+'"><input type="radio" name="accent" data-color-name="'+esc(label)+'" aria-label="'+esc(label)+'" value="' +
-        color +
-        '" ' +
-        (accent === color
-          ? "checked"
-          : "") +
-        ' required><span style="--swatch:' +
-        color +
-        '" class="theme-swatch"></span><span>' +
-        label +
-        "</span></label>",
-    ).join("") +
-    '</fieldset><label class="field">Il vostro motto<input name="motto" maxlength="100" value="' +
-    esc(l.branding?.motto || "") +
-    '" placeholder="Qui il pareggio è una scelta di vita."></label><button class="primary">Salva identità</button></form>'
-  );
-}
+function brandingForm(l) { return leagueIdentityForm(l); }
 function bindFantasy(l) {
 }
 async function act(route, data, msg) {
@@ -2617,13 +2572,18 @@ document.addEventListener('quasi:chat-update',e=>{
 });
 document.addEventListener('quasi:chat-reconnect',()=>{if(state.user&&!state.user.demo)void refresh();});
 document.addEventListener('quasi:fanta-team-claimed',()=>{void refresh();});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkLeagueAccess();});
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden)return;
+ checkLeagueAccess();
+ if(L()&&state.user?.emailVerified&&!state.user.demo&&Date.now()-Number(lastRefresh)>30000)refreshLeagueMembers();
+});
 window.addEventListener('focus',checkLeagueAccess);
 document.addEventListener('quasi:chat-reconnect',refreshLeagueMembers);
 document.addEventListener('quasi:league-update',e=>{
  const {change,league}=e.detail||{};
  if(typeof league!=='string'||!state.user)return;
  if(change==='deleted')removeDeletedLeague(league);
+ if(change==='identity'&&state.leagues.some(l=>l.id===league))refreshLeagueMembers();
  if(change==='members'||change==='deleted'){
   if(L()?.id===league)void leagueWorkspaceView?.refresh();
   refreshLeagueMembers();

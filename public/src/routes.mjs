@@ -5,6 +5,8 @@ export function readAppRoute(hash=globalThis.location?.hash||''){
 }
 export const isSubmissionRoute=route=>!!(route?.league&&route.round&&(route.mode==='bar'?route.page==='schedina':route.mode==='fanta'&&route.page==='squadra'&&route.section==='studio'));
 export function appRoute({mode,page,section,league,round,competition}){if(!modes.has(mode))throw Error('Invalid app mode');const q=new URLSearchParams();if(league)q.set('lega',league);if(round)q.set('giornata',round);if(competition)q.set('competizione',competition);return '#/'+mode+'/'+page+(section?'/'+section:'')+(q.size?'?'+q:'');}
+export const submissionPath=(mode,league,{round,competition}={})=>'/'+appRoute(mode==='bar'?
+ {mode,page:'schedina',league,round}:{mode,page:'squadra',section:'studio',league,round,competition});
 export function writeAppRoute(route,{replace=false}={}){
  const hash=appRoute(route);
  if(!globalThis.location||!globalThis.history||location.hash===hash)return;
