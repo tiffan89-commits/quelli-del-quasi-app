@@ -14,6 +14,8 @@ test('release dialog survives refund clicks, live refresh and failed submission;
  try{
  app=mountFanta(root,{api,bootstrap:{me:{access:'full'},leagues,home}});
  const open=document.createElement('button');open.dataset.tab='asta';root.append(open);click(open);await flush();
+ assert.equal(root.querySelector('[data-release],[data-asta-close]'),null,'public auction must hide management actions');
+ const manage=document.createElement('button');manage.dataset.go='asta';manage.dataset.presidentTool='asta';root.append(manage);click(manage);await flush();
  click(root.querySelector('[data-release]'));let form=sheet.querySelector('form');assert.ok(form);
  const radio=form.querySelector('[value="custom"]');for(const e of form.querySelectorAll('input[type=radio]'))e.removeAttribute('checked');radio.setAttribute('checked','');click(radio);assert.equal(sheet.querySelector('form'),form,'refund click must not open player details');
  form.querySelector('[name=refund]').value='0';radio.dispatchEvent(new window.Event('change',{bubbles:true}));assert.match(form.querySelector('[data-refund-preview]').textContent,/0 crediti/);

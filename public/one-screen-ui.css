@@ -56,13 +56,6 @@ html.os-on main.os-root .v2-odd .v2-odd-points>em{font-size:9.5px;font-style:nor
 html.os-on main.os-root .v2-odd .v2-odd-points>span{display:none}
 
 /* ---------- Bar · Oggi: avviso presidente in una striscia, mossa e conto compatti ---------- */
-html.os-on main.os-root .president-todos{display:flex;align-items:center;gap:10px;margin:0 0 10px!important;padding:6px 6px 6px 12px!important;border-radius:12px;background:#1b2f23;border-color:#3b5a3f}
-html.os-on main.os-root .president-todos h2{margin:0!important;font-size:11px!important;letter-spacing:.12em;text-transform:uppercase;color:var(--lime);white-space:nowrap}
-html.os-on main.os-root .president-todos ul{flex:1;min-width:0}
-html.os-on main.os-root .president-todos li{min-height:32px!important;gap:8px!important;font-size:12px!important}
-html.os-on main.os-root .president-todos li+li{border-top:1px solid #3b5a3f}
-html.os-on main.os-root .president-todos li>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-html.os-on main.os-root .president-todos .text-button{min-height:30px!important;padding:0 6px}
 html.os-on main.os-root .league-dashboard{gap:10px!important}
 html.os-on main.os-root .league-dashboard>.dash-hero{height:104px!important;margin:0!important}
 html.os-on main.os-root .dash-hero-copy h1{font-size:23px!important;margin:4px 0!important}
@@ -185,7 +178,6 @@ html.os-on main.os-root .honour :is(.pill,.badge,span[class*="badge"],small:last
 html.os-on main.os-root .honour h3,html.os-on main.os-root .honour strong{font-size:14px!important;margin:0!important}
 
 /* ---------- Fanta · Oggi: squadra in una card, mossa, sfida e classifica nelle sottosezioni ---------- */
-html.os-on main.os-root .president-todos ul{display:flex;flex-direction:column}
 html.os-on main.os-root .fanta-home{gap:10px!important}
 html.os-on main.os-root .fanta-hero{padding:12px 14px!important;border-radius:16px!important;margin:0!important}
 html.os-on main.os-root .fanta-hero .eyebrow{font-size:9px!important;letter-spacing:1.6px!important}
@@ -404,10 +396,6 @@ html.os-on main.os-root .verdict-content .verdict-honours{padding:7px 10px;margi
 .fanta-notify-compact .fanta-io-toggles label{min-height:34px;padding:3px 8px;gap:6px}
 .fanta-notify-compact .fanta-io-toggles b{font-size:12px}
 .fanta-notify-compact .fanta-switch{flex:none}
-html.os-on main.os-root .president-todos-fanta{display:block}
-html.os-on main.os-root .president-todos-fanta ul{flex-direction:row;flex-wrap:wrap;gap:2px 8px}
-html.os-on main.os-root .president-todos-fanta li+li{border-top:0}
-html.os-on main.os-root .president-todos-fanta .text-button{padding-inline:3px}
 html.os-on main.os-root .fanta-rules .fanta-rule-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:10px}
 html.os-on main.os-root .fanta-rules .fanta-rule-list li{padding:3px 0;gap:4px}
 html.os-on main.os-root .fanta-rating-rules .rule-table{min-width:0;table-layout:fixed;font-size:10px;overflow-wrap:anywhere}
@@ -480,7 +468,6 @@ html.os-on main.os-root .fanta-home-compact .fanta-form i{width:16px;height:16px
 .fanta-home-compact .fanta-last-result{grid-template-columns:minmax(0,1fr) auto auto}
 .fanta-last-result small{display:block;color:var(--muted);font-size:10px}
 .fanta-last-result strong{font:700 21px/1 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
-html.os-on main.os-root .president-todos-fanta .president-action{min-height:34px;padding:5px 10px;border-radius:9px;font-size:12px}
 html.os-on main.os-root .fanta-league-auction .fanta-lg-card{margin:2px 0 8px;padding:10px 12px}
 html.os-on main.os-root .fanta-league-auction .fanta-lg-card :is(h2,h3,p){margin:3px 0}
 html.os-on main.os-root .v2-slip[data-slip-source="seriea"] .slip-team-name{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;overflow-wrap:anywhere;line-height:1.1}
@@ -532,8 +519,6 @@ html.os-on main.os-root .fanta-home-compact .fanta-hero-form{grid-column:1}
 .invite-hub-tile>button>b{font-size:14px;line-height:1.15}
 .invite-hub-tile>.whatsapp-invite{width:34px;height:34px;min-width:34px;min-height:34px;padding:5px;margin-right:6px;border-color:#52795a;color:#80d294}
 .invite-hub-tile>.whatsapp-invite svg{width:17px;height:17px}
-.president-todos-fanta .whatsapp-invite{width:30px;min-width:30px;height:30px;min-height:30px;padding:5px;color:#80d294}
-.president-todos-fanta .whatsapp-invite svg{width:15px;height:15px}
 @media(max-width:360px){
  html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{gap:0 7px!important}
  .invite-hub-tile>button>b{font-size:12px}

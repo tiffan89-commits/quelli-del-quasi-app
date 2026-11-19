@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
-import {presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
+import {presidentPanel,bindPresidentPanel} from '../public/src/president-panel.mjs';
 import {renderLeagueChip} from '../public/src/v2/league-switcher.mjs';
 import {tabForPage,routeForTab,renderTabBar} from '../public/src/v2/tabs.mjs';
 import {renderLeagueSheet} from '../public/src/v2/league-switcher.mjs';
@@ -9,7 +9,6 @@ test('panel keeps only permitted closed groups, escaped summaries and contextual
  const html=presidentPanel({groups:{associazioni:{summary:'18 membri',html:'<form id="unchanged"></form>'}}}),{document}=parseHTML(html);
  assert.deepEqual([...document.querySelectorAll('.president-group')].map(d=>d.dataset.presidentSection),['associazioni']);assert.equal(document.querySelectorAll('details[open]').length,0);assert.ok(document.querySelector('#unchanged'));assert.ok(!document.querySelector('script'));assert.equal(tabForPage('admin'),'legainfo');assert.equal(tabForPage('impostazioni'),null);
  assert.equal(document.querySelector('.president-heading').textContent,'Impostazioni');assert.equal(document.querySelector('.president-context'),null);
- assert.equal(presidentTodos([]),'');assert.equal(barPresidentTasks({nativeFantaLink:{}}).length,0);
 });
 test('settings entry is shown to every member, outside league selector button',()=>{
  const league={name:'Bar',admin:'a',members:[]};for(const uid of ['a','member']){const {document}=parseHTML(renderLeagueChip(league,uid,String,String));assert.equal(!!document.querySelector('.president-entry'),true);assert.equal(document.querySelector('.v2-league-chip .president-entry'),null);}

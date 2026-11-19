@@ -1,11 +1,10 @@
 import {fantaLeagueFallback,leagueWorkspace} from '../league-workspace.mjs';
-import {presidentPanel} from '../president-panel.mjs';
+import {presidentOperationButtons,presidentWorkspace} from '../president-workspace.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
 import { esc, pts, dayTime, OUTCOME, extremeClass, resultsFirst } from './formato.mjs';
 import {teamLogo} from './team-logo.mjs';
-import {renderCompetitions} from './competitions-ui.mjs';
-import {whatsappInvite} from '../league-invite.mjs';
+import {renderCompetitionManagement,renderCompetitions} from './competitions-ui.mjs';
 import {auctionWhen} from './auction-wizard.mjs';
 
 export const LEGA_GROUPS={classifica:['classifica','calendario','schedine'],lega:['asta','regole','competizioni']};
@@ -90,10 +89,11 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   if (!l) return '<div class="fanta-loading" role="status">Carichiamo la lega…</div>';
   const pilot=l.league.kind==='pilot',group=ui.group||'classifica';
   if(group==='lega')return leagueWorkspace({id:l.league.id,mode:'fanta',fallback:fantaLeagueFallback(l,ui.bar||ui.invite,ui.viewer)});
+  if(group==='competizioni'&&ui.adminTool&&l.isAdmin)return presidentWorkspace({tool:ui.adminTool,body:renderCompetitionManagement(l,ui.adminTool),back:ui.adminBack});
   if(group==='regolamento'||group==='competizioni'){
    const title=group==='regolamento'?'Regolamento del Fanta':'Competizioni';
    return `<header class="participants-heading" data-os-header><button type="button" class="secondary league-settings-back" data-go="lega">‹ Indietro</button><h1>${title}</h1></header>
-   <div data-os-content>${group==='regolamento'?rules(l):renderCompetitions(l,{...ui,adminTools:l.isAdmin})}</div>`;
+   <div data-os-content>${group==='regolamento'?rules(l):renderCompetitions(l)}</div>`;
   }
   const tabs=SUBS.filter(([k])=>LEGA_GROUPS[group].includes(k)&&(!pilot||k!=='competizioni')),sub=tabs.some(([k])=>k===ui.sub)?ui.sub:tabs[0][0];
   const body = { classifica: standings, calendario: calendar, asta: auctionSection, regole: rules, competizioni:renderCompetitions,schedine:()=>ui.slipsHtml||'<p>Classifica schedine in arrivo.</p>' }[sub](l, ui, now);
@@ -103,33 +103,21 @@ export function renderLega(l, ui = {}, now = Date.now()) {
     <div data-os-content>
     ${body}
 
-    ${l.isAdmin && l.importReview?.length ? `<details class="fanta-block"><summary>Import · ${l.importReview.length} elementi da controllare</summary><ul class="fanta-rule-list">${l.importReview.map(p=>`<li><span>${esc(p.team)}${p.name?' · '+esc(p.name):''}${p.round?' · Giornata '+p.round:''}</span><small>${esc(p.issue)}</small></li>`).join('')}</ul></details>` : ''}
     </div>
   </div>`;
 }
 
-export function fantaPresidentTasks(l,invite,{hasTrades=false,directInvite=null}={}){
- if(!l?.isAdmin)return [];
- const tasks=[],free=l.league.maxMembers-(l.members?l.members.filter(m=>m.human).length:l.league.humanMembers??l.league.maxMembers);
- if(l.league.kind!=='pilot')tasks.push({action:'Gestisci asta',auction:true,button:true});
- if(hasTrades)tasks.push({action:'Gestisci scambi',trades:true,button:true});
- if(directInvite)tasks.push({action:'Invita per nickname o email',directInvite,button:true});
- if(free>0&&invite?.code)tasks.push({whatsapp:whatsappInvite(invite,esc)});
- tasks.push({participants:true,action:'Partecipanti ›',button:true});
- if(l.competition?.status==='draft')tasks.push({text:'Competizione da avviare',competitions:true,action:'Verifica'});
- return tasks;
-}
-export function renderFantaPresident(l,ui={},now=Date.now()){
- if(!l)return '<div class="fanta-loading" role="status">Carichiamo il pannello…</div>';
+export function renderFantaPresident(l,ui={}){
+ if(!l)return '<div class="fanta-loading" role="status">Caricamento…</div>';
  if(!l.isAdmin)return renderLega(l,{...ui,group:'lega'});
- const bar=ui.bar;
- return presidentPanel({mode:'fanta',title:'Pannello del presidente',back:'data-go="lega"',open:ui.presidentGroup,tasks:fantaPresidentTasks(l,ui.invite,{hasTrades:ui.hasTrades,directInvite:!ui.demo&&bar?.id}),groups:{
- ...(l.league.kind!=='pilot'&&l.league.kind!=='random'?{associazioni:{summary:'Collega un account a una squadra',html:teamAssociations(l,ui)}}:{}),
- regole:{summary:l.rules.budget+' crediti · bonus, malus e formazione',html:rules(l)},
- ...(l.isAdmin?{
- identita:{summary:bar?'Colori e simbolo condivisi con il Bar':'Identità della lega',html:bar?'<p>Il simbolo, il colore e il motto sono comuni a Bar e Fanta.</p><button type="button" class="secondary" data-mode="bar" data-bar-page="admin">Modifica identità nel Bar</button>':'<p>Lo stemma della tua squadra si modifica dalla pagina Oggi.</p>'}
- }:{}),
-
- ...(l.isAdmin&&bar?.admin===ui.me?.id&&!ui.demo?{elimina:{summary:'Bar, Fanta e storico',html:'<button type="button" class="secondary league-delete-action" data-mode="bar" data-bar-page="admin" data-president-group="elimina">Apri conferma di eliminazione</button>'}}:{})
- }});
+ const tool=ui.adminTool;
+ const bodies={
+  associa:()=>teamAssociations(l,ui),
+  rose:()=>'<nav class="president-operation-list" aria-label="Squadre">'+l.members.map(m=>'<button type="button" class="secondary president-operation" data-team-roster="'+esc(m.team.id)+'">'+esc(m.team.name)+'<span aria-hidden="true">›</span></button>').join('')+'</nav>',
+  importazione:()=>l.importReview?.length?'<ul class="fanta-rule-list">'+l.importReview.map(p=>'<li><span>'+esc(p.team)+(p.name?' · '+esc(p.name):'')+'</span><small>'+esc(p.issue)+'</small></li>').join('')+'</ul>':'<p>Nessuna rosa importata da controllare.</p>',
+  rimuovi:()=>leagueWorkspace({id:l.league.id,mode:'fanta',view:'manage'}),
+ };
+ const selected=Object.hasOwn(bodies,tool)?tool:null;
+ return presidentWorkspace({tool:selected,body:selected?bodies[selected]():'',buttons:presidentOperationButtons({mode:'fanta',fanta:l.league,hasTrades:ui.hasTrades}),
+  back:selected?ui.adminBack:'data-go="lega"'});
 }

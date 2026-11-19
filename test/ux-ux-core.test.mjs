@@ -52,25 +52,31 @@ test('build keeps landing styles bounded with a tiny install card and excludes l
 
 test('preview team endpoint supplies the own roster when no explicit team parameter is present',async()=>{const result=await handler(new Request('https://preview.test/fanta-api/team?league=lega-quasi',{headers:{cookie:'preview-role=member'}}));assert.equal(result.status,200);const team=await result.json();assert.equal(team.roster.length,25);assert.equal(team.canManageRoster,false);});
 import {renderLega,renderFantaPresident} from '../public/src/fanta/lega.mjs';import {createDemoFantaApi} from '../public/src/fanta/demo-api.mjs';import {renderSlipV2} from '../public/src/v2/slip-v2.mjs';
-test('competition tools belong to the Fanta league, while auction management stays in the president panel',async()=>{
+test('Fanta keeps public competitions separate from president operations',async()=>{
  const data=await createDemoFantaApi({delay:0}).league('lega-quasi');data.isAdmin=true;data.league.kind='native';
- const panel=renderFantaPresident(data);assert.match(panel,/data-auction-manage/);
- assert.match(panel,/class="secondary president-action"[^>]+data-go="partecipanti"/);
- assert.match(panel,/data-president-section="associazioni"[\s\S]*data-team-link-form/);
- assert.doesNotMatch(panel,/data-president-section="competizioni"|data-competition-create-form|data-fanta-slips-form/);
+ const panel=renderFantaPresident(data,{hasTrades:true});
+ assert.match(panel,/data-go="asta" data-president-tool="asta"/);
+ assert.match(panel,/data-go="scambi" data-president-tool="scambi"/);
+ assert.match(panel,/data-go="presidente" data-president-tool="associa"/);
+ assert.doesNotMatch(panel,/president-todos|data-competition-create-form|data-team-link-form/);
+ assert.match(renderFantaPresident(data,{adminTool:'associa',adminBack:'data-go="presidente"'}),/data-team-link-form/);
  assert.match(renderLega(data,{group:'lega'}),/data-go="competizioni"/);
- assert.match(renderLega(data,{group:'competizioni'}),/data-competition-create-form/);
- data.isAdmin=false;assert.doesNotMatch(renderLega(data,{group:'competizioni'}),/data-competition-create-form|data-team-link-form/);
+ assert.doesNotMatch(renderLega(data,{group:'competizioni'}),/data-competition-create-form|data-team-link-form/);
+ assert.match(renderLega(data,{group:'competizioni',adminTool:'crea-competizione'}),/data-competition-create-form/);
+ assert.doesNotMatch(renderLega(data,{group:'competizioni',adminTool:'schedine-fanta'}),/data-competition-create-form/);
+ data.isAdmin=false;assert.doesNotMatch(renderLega(data,{group:'competizioni',adminTool:'crea-competizione'}),/data-competition-create-form|data-team-link-form/);
 });
 test('unpriced future slip has disabled choices and no confirmation button',()=>{const r=round(13,{closed:true,kickoff:new Date(Date.now()+864e5).toISOString(),matches:[{id:'m',home:'Casa',away:'Ospiti',odds:{}}]});const html=renderSlipV2({round:r,esc:String,fmt:String,date:String});assert.match(html,/data-pick="m" data-value="1" disabled/);assert.ok(!html.includes('id="save-slip"'));});
 import vm from 'node:vm';import {createBarDemo} from '../public/src/bar-demo.mjs';
-import {settingsFooter,presidentPanel,presidentTodos,barPresidentTasks} from '../public/src/president-panel.mjs';
+import {presidentWorkspace,presidentOperationButtons} from '../public/src/president-workspace.mjs';
 import {LEAGUE_COLORS} from '../public/src/league-theme.mjs';
-import {isLeagueAdmin} from '../public/src/v2/league-switcher.mjs';
 test('the Bar president panel keeps league rules separate from participants and the personal settings',()=>{
  const text=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=text.slice(text.indexOf('let presidentGroup='),text.indexOf('function calendarStatus('));
- const {state}=createBarDemo({admin:true}),context={state,esc:String,LEAGUE_COLORS,presidentPanel,barPresidentTasks,isLeagueAdmin,brandingForm:()=>'',adminBudget:()=>'',leagueMembers:()=>'<p>Allenatore di prova</p>',whatsappInvite:()=>'',barLeagueInfo:()=>'<p>Lega</p>'};
+ const {state}=createBarDemo({admin:true}),context={state,esc:String,LEAGUE_COLORS,presidentOperation:null,presidentNative:null,presidentWorkspace,presidentOperationButtons,brandingForm:()=>'',adminBudget:()=>'',whatsappInvite:()=>'',barLeagueInfo:()=>'<p>Lega</p>'};
  vm.createContext(context);vm.runInContext(body+'\nresult=leagueAdmin(state.leagues[0]);',context);
- assert.match(context.result,/Salva regole/);assert.match(context.result,/data-bar-page="partecipanti"/);assert.doesNotMatch(context.result,/data-president-section="account"|profile-name/);
+ assert.match(context.result,/data-president-operation="regole"/);assert.match(context.result,/data-president-operation="rimuovi"/);
+ assert.doesNotMatch(context.result,/president-todos|profile-name|Salva regole/);
+ vm.runInContext('presidentOperation="regole";result=leagueAdmin(state.leagues[0]);',context);
+ assert.match(context.result,/Salva regole/);assert.doesNotMatch(context.result,/data-president-operation="rimuovi"|profile-name/);
  state.user.id='other';vm.runInContext('barLeagueInfo=()=>"<p>Lega</p>";result=leagueAdmin(state.leagues[0]);',context);assert.equal(context.result,'<p>Lega</p>');
 });

@@ -17,11 +17,11 @@ export function refreshFantaMembership(barLeagues,linkedLeagues,listChanged=fals
 }
 export function preferredFanta(){return selectedMode==='fanta';}
 export function leaveFanta({keepSplash=false}={}){selectedMode='bar';if(!keepSplash)document.querySelector('.mode-splash')?.remove();operation++;if(instance){instance.suspend?.();parked.set(activeUser||'demo',instance);}instance=null;document.body.classList.remove('fanta-active');try{const url=new URL(location.href);url.searchParams.delete('mode');url.searchParams.delete('fantaLeague');history.replaceState(null,'',url.pathname+url.search+url.hash);}catch{}}
-export async function enterFanta(root,{user,onBar,barLeagues=[],leagueId=null,force=false,slipServices=null,initialTab='oggi'}={}){
+export async function enterFanta(root,{user,onBar,barLeagues=[],leagueId=null,force=false,slipServices=null,initialTab='oggi',initialSection=null}={}){
  if(user&&!user.demo&&!barLeagues.length)return;
  const requested=readAppRoute();
  if(!force&&instance&&activeUser===user?.id&&(root.querySelector('.fanta-top')||document.querySelector('#app-header .fanta-top')))return;
- loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();selectedMode='fanta';const cached=parked.get(user?.id||'demo');if(cached&&cached.hasTeam!==false&&!force&&!requested?.competition&&requested?.section!=='studio'&&(!leagueId||cached.leagueId===leagueId)){instance=cached;activeUser=user?.id;document.body.classList.add('fanta-active');const route=readAppRoute();if(route?.mode!=='fanta')writeAppRoute({mode:'fanta',page:initialTab||'oggi',league:cached.leagueId});cached.setBarLeagues?.(barLeagues);cached.resume(initialTab,{route:route?.mode==='fanta'?route:null});return;}
+ loadAppStyles();if(typeof startOneScreen==='function')startOneScreen();selectedMode='fanta';const cached=parked.get(user?.id||'demo');if(cached&&cached.hasTeam!==false&&!force&&!requested?.competition&&requested?.section!=='studio'&&(!leagueId||cached.leagueId===leagueId)){instance=cached;activeUser=user?.id;document.body.classList.add('fanta-active');const route=readAppRoute();if(route?.mode!=='fanta')writeAppRoute({mode:'fanta',page:initialTab||'oggi',section:initialSection,league:cached.leagueId});cached.setBarLeagues?.(barLeagues);cached.resume(initialTab,{route:readAppRoute()});return;}
  const hideSplash=showModeSplash('fanta');activeUser=user?.id;
  const mine=++operation;const old=parked.get(user?.id||'demo');if(old&&old!==instance)old.destroy();parked.delete(user?.id||'demo');instance?.destroy();instance=null;root.innerHTML='';document.body.classList.add('fanta-active');
  try{
@@ -32,7 +32,7 @@ export async function enterFanta(root,{user,onBar,barLeagues=[],leagueId=null,fo
   if(mine!==operation)return;
   const demo=access==='demo',demoSession=demo?(await import('./demo-session.mjs')).getDemoSession():null;if(demoSession)await demoSession.ready;try{localStorage.setItem('qdq:mode','fanta');}catch{}
   const demoServices=demoSession?.slips||null;if(demoSession)barLeagues=demoSession.bar.state.leagues;
- writeAppRoute({mode:'fanta',page:readAppRoute()?.mode==='fanta'?readAppRoute().page:initialTab,section:readAppRoute()?.section,round:readAppRoute()?.round,competition:readAppRoute()?.competition,league:leagueId||readAppRoute()?.league});
+ writeAppRoute({mode:'fanta',page:readAppRoute()?.mode==='fanta'?readAppRoute().page:initialTab,section:readAppRoute()?.mode==='fanta'?readAppRoute().section:initialSection,round:readAppRoute()?.round,competition:readAppRoute()?.competition,league:leagueId||readAppRoute()?.league});
  instance=mountFanta(root,{api:demo?demoSession.fanta:real,bootstrap,barLeagues,slipServices:demoServices?{...demoServices,account:slipServices?.account}:slipServices,initialTab,viewerId:user?.id,demo:access==='pilot'?'pilot':demo,onModeChange:async (mode,target)=>{if(mode==='bar'){const hide=()=>{};leaveFanta({keepSplash:true});try{localStorage.setItem('qdq:mode','bar');}catch{}writeAppRoute({mode:'bar',page:target?.page==='invita'?'impostazioni':target?.page==='barleague'?'lega':target?.page||'oggi',league:linkedBarTarget(barLeagues,target?.fantaLeague,target)?.league});onBar?.(linkedBarTarget(barLeagues,target?.fantaLeague,target));requestAnimationFrame(hide);}}});
  await instance.ready;
  if(assigned&&mine===operation)document.dispatchEvent(new CustomEvent('quasi:fanta-team-claimed',{detail:{league:instance.leagueId}}));

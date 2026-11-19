@@ -6,7 +6,8 @@ import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 import {leagueActions} from '../public/src/league-actions.mjs';
 import {slipCreditReserve,slipStakeLimit} from '../public/slip-events.mjs';
 import {placeAppFooter,restoreAppFooter} from '../public/src/app-footer.mjs';
-import {settingsFooter,presidentEntry,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel} from '../public/src/president-panel.mjs';
+import {settingsFooter,presidentEntry,presidentPanel,bindPresidentPanel} from '../public/src/president-panel.mjs';
+import {presidentLaunch,presidentWorkspace,presidentOperationButtons} from '../public/src/president-workspace.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
@@ -120,7 +121,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
     isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding,bindLeagueCreation,leagueWorkspace,barLeagueFallback,bindLeagueWorkspace,refreshFantaMembership(){},
-    ...v2Tabs, leagueActions,barHomeInvite,settingsFooter,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentTodos,barPresidentTasks,bindPresidentPanel,
+    ...v2Tabs, leagueActions,barHomeInvite,settingsFooter,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentLaunch,presidentWorkspace,presidentOperationButtons,bindPresidentPanel,bindSiteValidation(){},
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },
@@ -324,8 +325,11 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /id="fantasy-connect"/);
   vm.runInContext("page='admin';render()",ctx);
   assert.doesNotMatch(html, /id="fantasy-connect"/);
+  assert.match(html,/data-president-operation="whatsapp"/);
+  assert.doesNotMatch(html,/aria-label="Invita con WhatsApp"/);
+  vm.runInContext("presidentOperation='whatsapp';render()",ctx);
   assert.match(html,/aria-label="Invita con WhatsApp"/);
-  vm.runInContext("page='barleague';render()",ctx);
+  vm.runInContext("presidentOperation=null;page='barleague';render()",ctx);
   assert.match(html,/aria-label="Invita con WhatsApp"/);
   assert.doesNotMatch(html,/quasi-roster-grid/);
   assert.doesNotMatch(html, /Collega competizione/);

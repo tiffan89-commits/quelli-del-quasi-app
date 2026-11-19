@@ -1,3 +1,6 @@
+import {dateTimeFields,readDateTime} from '../site-datetime.mjs';
+import {askConfirmation} from '../site-confirm.mjs';
+import {bindStyledSelects} from '../styled-select.mjs';
 import {esc} from './formato.mjs';
 
 const ROLES=['P','D','C','A'];
@@ -28,12 +31,12 @@ function renderForm(data,draft,request){
  const changed=request&&different(draft,terms(request));
  return `<form class="card trade-form" data-trade-form>
   <h2 tabindex="-1">${request?'Controproposta':'Proponi scambi'}</h2>
-  ${request?`<p>${esc(target?.name||request.sender.name)}</p>`:`<label class="field">Squadra<select name="recipient" data-native-select required>
+  ${request?`<p>${esc(target?.name||request.sender.name)}</p>`:`<label class="field">Squadra<select name="recipient" required>
    <option value="">Scegli una squadra</option>${data.teams.filter(t=>t!==mine).map(t=>`<option value="${esc(t.id)}"${t===target?' selected':''}>${esc(t.name)} · ${esc(t.manager)}</option>`).join('')}
   </select></label>`}
   ${target?`<p class="muted trade-balance">Ogni rosa deve avere 3 P, 8 D, 8 C e 6 A.</p><div class="trade-rosters">${roster(mine,'offer',draft.offer)}${roster(target,'want',draft.want)}</div>
    <div class="trade-credit-fields">
-    <label class="field">Crediti<select name="creditDirection" data-native-select><option value="0">Nessun credito</option><option value="1"${draft.direction===1?' selected':''}>Offri crediti</option><option value="-1"${draft.direction===-1?' selected':''}>Richiedi crediti</option></select></label>
+    <label class="field">Crediti<select name="creditDirection"><option value="0">Nessun credito</option><option value="1"${draft.direction===1?' selected':''}>Offri crediti</option><option value="-1"${draft.direction===-1?' selected':''}>Richiedi crediti</option></select></label>
     <label class="field" data-trade-credit-amount ${draft.direction?'':'hidden'}>Importo<input name="creditAmount" type="number" inputmode="numeric" min="1" max="2147483647" step="1" value="${esc(draft.amount)}" ${draft.direction?'required':'disabled'}></label>
    </div>
    <p class="muted trade-balance">${esc(mine.name)} · ${mine.credits} crediti disponibili<br>${esc(target.name)} · ${target.credits} crediti disponibili</p>`:''}
@@ -65,8 +68,8 @@ function renderHistory(history){
 
 function scheduleForm(start,end){
  return `<form class="card trade-schedule" data-trade-schedule><h2>Programma gli scambi</h2>
-  <label class="field">Inizio<input name="startsAt" type="datetime-local" required value="${esc(start)}"></label>
-  <label class="field">Fine<input name="endsAt" type="datetime-local" required value="${esc(end)}"></label>
+  ${dateTimeFields('startsAt','Inizio',start)}
+  ${dateTimeFields('endsAt','Fine',end)}
   <div class="trade-actions"><button class="primary" type="submit">Salva orari</button>${button('cancel-schedule','Annulla')}</div>
  </form>`;
 }
@@ -113,18 +116,25 @@ export function createTradePanel({root,api,context,signal,onRosterChange}){
    return;
   }
   const {open,isAdmin,canOpen,teams,requests,history,window}=data,request=requestFor(draft?.id);
+  const managing=context().management;
   const editor=draft?renderForm(data,draft,request):'';
   const otherRequests=requests.filter(r=>r.id!==request?.id);
   const scheduled=window.phase==='scheduled';
-  const openControl=isAdmin&&!schedule?(scheduled?button('close-window','Annulla programmazione'):button(open?'close-window':'open-window',open?'Chiudi gli scambi':'Apri adesso',open?'secondary':'primary',!open&&!canOpen?'disabled':''))+(open?'':button('schedule',scheduled?'Modifica orari':'Programma gli scambi','secondary',!canOpen?'disabled':'')):'';
+  const openControl=managing&&isAdmin&&!schedule?(scheduled?button('close-window','Annulla programmazione'):button(open?'close-window':'open-window',open?'Chiudi gli scambi':'Apri adesso',open?'secondary':'primary',!open&&!canOpen?'disabled':''))+(open?'':button('schedule',scheduled?'Modifica orari':'Programma gli scambi','secondary',!canOpen?'disabled':'')):'';
+  if(managing){
+   node.innerHTML=notice+(isAdmin?`<p>${windowText(data)}</p><div class="trade-actions trade-toolbar">${openControl}</div>${schedule?scheduleForm(schedule.startsAt,schedule.endsAt):''}`:'<p>Serve il presidente della lega.</p>');
+   if(busy)for(const control of node.querySelectorAll('button,input'))control.disabled=true;
+   return;
+  }
   const propose=open&&!draft&&teams.length>1?button('compose','Proponi scambi','primary'):'';
-  node.innerHTML=`${notice}<div class="trade-actions trade-toolbar">${propose}${openControl}</div>
-   <p>${windowText(data)}</p>${open&&teams.length<2?'<p>Serve un’altra squadra con un allenatore.</p>':''}
-   ${schedule?scheduleForm(schedule.startsAt,schedule.endsAt):''}${editor}
+  node.innerHTML=`${notice}<div class="trade-actions trade-toolbar">${propose}</div>
+   <p>${windowText({...data,isAdmin:false})}</p>${open&&teams.length<2?'<p>Serve un’altra squadra con un allenatore.</p>':''}
+   ${editor}
    ${(!request||otherRequests.length)?`<section class="trade-requests"><h2>Richieste di scambio</h2>
     ${otherRequests.map(r=>renderRequest(r,open,!!draft)).join('')||'<p class="muted">Nessuna richiesta.</p>'}
    </section>`:''}${renderHistory(history)}`;
   if(busy)for(const control of node.querySelectorAll('button,input,select'))control.disabled=true;
+  bindStyledSelects(node);
  }
 
  function watchWindow({window,serverNow}){
@@ -192,22 +202,25 @@ export function createTradePanel({root,api,context,signal,onRosterChange}){
   error='';paint();panel()?.querySelector('[data-trade-form] h2')?.focus();
  }
 
- root.addEventListener('click',event=>{
+ root.addEventListener('click',async event=>{
   const control=event.target.closest('[data-trade-action]');
   if(!control||!panel()?.contains(control)||busy||!live())return;
-  const action=control.dataset.tradeAction, request=requestFor(control.closest('[data-trade-id]')?.dataset.tradeId);
+  const action=control.dataset.tradeAction;
+  if(action!=='reload'&&!!context().management!==['open-window','close-window','schedule','cancel-schedule'].includes(action))return;
+  const request=requestFor(control.closest('[data-trade-id]')?.dataset.tradeId);
   if(action==='compose'||action==='edit')compose(request);
   if(action==='cancel'){draft=null;error='';paint();panel()?.querySelector('[data-trade-action="compose"]')?.focus();}
   if(action==='reload'){error='';paint();void load();}
   if(action==='open-window')void save('window',{open:true});
-  if(action==='close-window'&&(!data.open||window.confirm('Chiudere gli scambi? Le richieste in attesa scadranno.')))void save('window',{open:false});
-  if(action==='schedule'){schedule={startsAt:localDateTime(data.window.startsAt),endsAt:localDateTime(data.window.endsAt)};paint();panel()?.querySelector('[name="startsAt"]')?.focus();}
+  if(action==='close-window'&&(!data.open||await askConfirmation({title:'Chiudi gli scambi',message:'Le richieste in attesa scadranno.',confirmLabel:'Chiudi gli scambi',danger:true})))void save('window',{open:false});
+  if(action==='schedule'){schedule={startsAt:localDateTime(data.window.startsAt),endsAt:localDateTime(data.window.endsAt)};paint();panel()?.querySelector('[data-date-value]')?.focus();}
   if(action==='cancel-schedule'){schedule=null;error='';paint();panel()?.querySelector('[data-trade-action="schedule"]')?.focus();}
   if(request&&(action==='accept'||action==='reject'))void save(action,{id:request.id,revision:request.revision});
  },{signal});
 
- root.addEventListener('input',event=>{
-  if(schedule&&event.target.closest('[data-trade-schedule]')){schedule[event.target.name]=event.target.value;return;}
+ function updateFields(event){
+  const dateField=event.target.closest('[data-site-datetime]');
+  if(schedule&&dateField){schedule[dateField.dataset.siteDatetime]=readDateTime(dateField);return;}
   const form=event.target.closest('[data-trade-form]');
   if(!form||!draft)return;
   const fields=new FormData(form);
@@ -222,26 +235,29 @@ export function createTradePanel({root,api,context,signal,onRosterChange}){
   amount.closest('label').hidden=!draft.direction;
   const request=requestFor(draft.id);
   if(request)form.querySelector('[data-trade-submit]').textContent=different(draft,terms(request))?'Invia controproposta':'Accetta';
- },{signal});
+ }
+ root.addEventListener('input',updateFields,{signal});
+ root.addEventListener('change',event=>{if(event.target.matches('select'))updateFields(event);},{signal});
 
  root.addEventListener('submit',event=>{
   if(event.target.matches('[data-trade-schedule]')){
-   event.preventDefault();
-   const fields=event.target.elements,start=new Date(fields.startsAt.value),end=new Date(fields.endsAt.value);
+   event.preventDefault();if(!context().management||!data?.isAdmin)return;
+   const form=event.target,start=new Date(readDateTime(form.querySelector('[data-site-datetime="startsAt"]'))),end=new Date(readDateTime(form.querySelector('[data-site-datetime="endsAt"]')));
    if(end>start){void save('window',{startsAt:start.toISOString(),endsAt:end.toISOString()});}
    else{error='La fine deve essere successiva all’inizio.';paint();}
    return;
   }
   if(!event.target.matches('[data-trade-form]'))return;
   event.preventDefault();
-  if(!draft||busy)return;
+  if(context().management||!draft||busy)return;
   const request=requestFor(draft.id);
   const kind=request?(different(draft,terms(request))?'counter':'accept'):'propose';
   void save(kind,{id:draft.id||draft.proposalId,revision:draft.revision,recipient:draft.recipient,offer:draft.offer,want:draft.want,credits:draft.credits});
  },{signal});
 
  return {render(){
-  return `<section class="fanta-trades"><header class="president-heading"><button type="button" class="secondary league-settings-back" data-go="lega" aria-label="Torna alla lega">‹</button><h1>Scambi</h1></header><div data-trades-body></div></section>`;
+  const {management,back}=context();
+  return `<section class="fanta-trades"><header class="participants-heading"><button type="button" class="secondary league-settings-back" ${management?back:'data-go="lega"'}>‹ Indietro</button><h1>${management?'Gestisci gli scambi':'Scambi'}</h1></header><div data-trades-body></div></section>`;
  },attach(){
   switchLeague();paint();
   if(panel()&&!data)void load();
