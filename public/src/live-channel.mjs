@@ -119,6 +119,7 @@ function patch(current, fresh) {
   if (current.nodeType !== fresh.nodeType || current.nodeName !== fresh.nodeName) { current.replaceWith(fresh.cloneNode(true)); return; }
   if (current.nodeType === 3) { if (current.nodeValue !== fresh.nodeValue) current.nodeValue=fresh.nodeValue; return; }
   if (current.nodeType !== 1 || preserved(current)) return;
+  if(current.localName==='template'&&current.innerHTML!==fresh.innerHTML)current.innerHTML=fresh.innerHTML;
   for (const a of [...current.attributes]) if (!fresh.hasAttribute(a.name) && a.name!=='open') current.removeAttribute(a.name);
   for (const a of [...fresh.attributes]) if(a.name!=='open' && current.getAttribute(a.name)!==a.value) current.setAttribute(a.name,a.value);
   const keyed=new Map([...current.children].filter(key).map(el=>[key(el),el]));

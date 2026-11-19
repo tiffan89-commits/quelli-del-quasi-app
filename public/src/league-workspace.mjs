@@ -6,12 +6,13 @@ import {avatarSvg} from './avatar.mjs';
 import {showQuasi} from './quasi-scene.mjs';
 import {hubTile} from './league-hub.mjs';
 import {leagueActions} from './league-actions.mjs';
-import {whatsappInvite} from './league-invite.mjs';
+import {barHomeInvite} from './bar-home-invite.mjs';
+import {presidentEntry} from './president-panel.mjs';
 
 const personCount=members=>members.filter(m=>m.uid).length;
 const workspaceData=(data,view)=>view==='manage'&&data?{...data,members:data.members.filter(m=>m.uid)}:data;
-export function renderLeagueHub({bar,fanta,isAdmin,members},mode){
- const barMode=mode==='bar',id=bar?.id;
+export function renderLeagueHub({bar,fanta,isAdmin,members},mode,inviteBar=bar){
+ const barMode=mode==='bar',id=bar?.id,viewer=members.find(m=>m.isMe);
  const fantaAction=tab=>barMode?`data-league-fanta="${tab}" data-native-league="${esc(fanta.id)}"`:`data-go="${tab}"`;
  const hasTools=fanta?.isCoach&&fanta.kind!=='pilot';
  const auctionStatus=fanta?.auction==='running'?'In corso':fanta?.auction==='scheduled'?'Programmata':'Conclusa';
@@ -24,9 +25,9 @@ export function renderLeagueHub({bar,fanta,isAdmin,members},mode){
   hasTools&&['scheduled','running','ended'].includes(fanta.auction)?hubTile('auction','Asta',auctionStatus,{action:fantaAction('asta'),arrow:true}):'',
   fanta?.isCoach?hubTile('trade','Scambi','',{action:fantaAction('scambi'),arrow:true}):'',
   id?hubTile('chat','Chat della lega','',{action:(barMode?'data-league-chat':'data-fanta-chat')+' aria-controls="league-chat-widget"'}):'',
-  bar?.code?whatsappInvite(bar,esc,{className:'lega-tile whatsapp-invite'}):'',
+  bar?.code&&inviteBar?barHomeInvite({...inviteBar,members:inviteBar.members||members.filter(m=>m.uid)},viewer?{id:viewer.uid}:null,esc):'',
  ];
- return `<div class="lega-hub">${tiles.join('')}</div>${leagueActions({bridge:!barMode})}`;
+ return `<div class="league-section-title"><h1>Lega</h1>${presidentEntry(barMode?'data-bar-page="impostazioni"':'data-tab="impostazioni"')}</div><div class="lega-hub">${tiles.join('')}</div>${leagueActions({bridge:!barMode})}`;
 }
 
 export function renderParticipantRows({members,isAdmin}){
@@ -72,7 +73,7 @@ export function bindLeagueWorkspace(node,{load,remove,initial,onRemoved=()=>{},o
  let data=workspaceData(initial,view),revision=0,activeRemoval=false;
  function paint(next){
   data=workspaceData(next,view);
-  node.innerHTML=view==='hub'?renderLeagueHub(data,mode):renderParticipantRows({...data,isAdmin:view==='manage'&&data.isAdmin});
+  node.innerHTML=view==='hub'?renderLeagueHub(data,mode,initial?.bar||data.bar):renderParticipantRows({...data,isAdmin:view==='manage'&&data.isAdmin});
   onPaint();
  }
  async function refresh(){

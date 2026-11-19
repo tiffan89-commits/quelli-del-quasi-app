@@ -614,17 +614,6 @@ body:has(#app>main .bar-ticket) #app>main{
 }
 #app>main:has(.bar-ticket)>.slip-section-buttons .seg-long{display:none}
 #app>main:has(.bar-ticket)>.slip-section-buttons>button::after{content:attr(data-short)}
-body:not(.match-page-active):has(#app>main .bar-ticket) #app>.v2-tabbar{
-  position:static!important;inset:auto!important;transform:none!important;order:0;
-  flex:none;width:100%!important;max-width:760px!important;margin:0 auto!important;
-  min-height:0;border-radius:0;
-}
-#app>main:has(.bar-ticket)~.v2-tabbar>.v2-tab{min-height:44px}
-@media(min-width:1024px){
-  body:not(.match-page-active):has(#app>main .bar-ticket) #app>.v2-tabbar{
-    width:calc(100% - 40px)!important;max-width:1180px!important;
-  }
-}
 body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
   flex:1 1 auto;overflow:auto;overscroll-behavior:contain;
 }

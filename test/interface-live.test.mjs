@@ -205,7 +205,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     .replace('  } catch (e) {\n    offline = true;', '  } catch (e) {\n    throw e;\n    offline = true;');
   vm.runInContext(source, ctx);
   await new Promise((r) => setImmediate(r));
-  assert.match(html, /aria-label="La tua dashboard"/);
+  assert.match(html, /aria-label="Home del Bar"/);
   assert.match(html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1], /data-v2-tab="oggi"/);
   const beforeNavigation=requestCount;blockRequests=true;
   try{
@@ -214,7 +214,7 @@ test("live results render inside the slip, calendar remains clickable, standings
       assert.equal(vm.runInContext('page',ctx),target==='profilo'?'impostazioni':target);
       assert.match(html,/aria-current="page"/);
       if(target==='profilo')assert.match(html,/Impostazioni/);
-      if(target==='lega')assert.match(html,/class="dash-hero"/);
+      if(target==='lega')assert.match(html,/class="bar-home-hero"/);
     }
     assert.equal(requestCount,beforeNavigation,'menus must render synchronously without requesting state, even when the server cannot respond');
   }finally{blockRequests=false;pendingRequests.forEach(resolve=>resolve(state));}
@@ -229,7 +229,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /id="open-chat"/);assert.match(html,/data-chat-badge/);
   const nav = html.match(/<nav[^>]*>([\s\S]*?)<\/nav>/)[1];
   assert.equal(nav.includes("Movimenti"), false);
-  assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.match(html,/aria-label="Apri impostazioni"/);assert.doesNotMatch(html,/class="ux-profile"/);
+  assert.doesNotMatch(nav, /data-v2-tab="io"/);assert.doesNotMatch(nav,/data-v2-tab="profilo"/);assert.doesNotMatch(html,/aria-label="Apri impostazioni"|class="ux-profile"/);
   assert.equal(nav.includes("Regolamento"), false);
   assert.equal(nav.includes('data-page="altri"'), false);
   assert.match(html, /La mia schedina/);
@@ -251,20 +251,21 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='lega';render()", ctx);
   // La Home non duplica ciò che sta già in Lega, Io o nel selettore.
   assert.doesNotMatch(html, /league-regulation|Regolamento della lega|Movimenti e giornate archiviate|Entra o crea una nuova lega|class="card my-league"/);
-  assert.match(html, /class="dash-hero"/);
-  assert.match(html, /id="day-objectives"/);
-  assert.match(html, /class="dash-summary home-card round-recap/);
+  assert.match(html, /class="bar-home-hero"/);
+  assert.doesNotMatch(html, /id="day-objectives"/);
+  assert.match(html, /class="bar-home-cta primary"/);
   assert.doesNotMatch(html, /Il Fantacalcio del Quasi|Scegli la tua squadra/);
   assert.doesNotMatch(html,/Borsa del Quasi|portfolio-mini/);
   vm.runInContext("page='regolamento';render()", ctx);
   assert.match(html, /IL REGOLAMENTO/);
   vm.runInContext("page='quasi';render()", ctx);
   assert.match(html, /league-quasi-card/);
+  assert.match(html, /id="day-objectives"/);
   assert.match(html, /data-v2-tab="quasi"/);
   vm.runInContext("page='fantaquasi';render()", ctx);
   assert.match(html, /Il fantacalcio che si gioca al bar/);
   assert.match(html, /Cosa ci troverai/);
-  vm.runInContext("page='lega';render()", ctx);
+  vm.runInContext("page='barleague';render()", ctx);
   assert.match(html, /data-home-league-invite/);
   vm.runInContext("page='classifiche';render()",ctx);
   assert.doesNotMatch(html,/data-v2-lega=|Borsa del Quasi|Giornate archiviate/);
@@ -274,16 +275,16 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("state.leagues.push({...state.leagues[0],id:'second'});render()",ctx);
   assert.doesNotMatch(html,/id="league-switch"|central-league-context|brand-logo|reload-data/);
   assert.match(html,/id="v2-open-leagues"/);
-  assert.match(html,/class="v2-credits"/);
+  assert.doesNotMatch(html,/class="v2-credits"/);
   vm.runInContext("state.leagues.pop();render()",ctx);
   assert.doesNotMatch(html, /id="results"|id="import"|Salva risultati/);
-  assert.match(html, /<header class="v2-top">/);
+  assert.match(html, /<header class="v2-top shell-compact">/);
   assert.doesNotMatch(html, /Entra o crea una nuova lega/);
   assert.doesNotMatch(html, /Le leghe di cui fai parte|Associa Chrome/);
   assert.doesNotMatch(html, /chat-context-button|id="switch"/);
   vm.runInContext("page='classifiche';rankingScope='seriea';render()", ctx);
   assert.match(html,/data-ranking-metric="points"/);assert.doesNotMatch(html,/Vittorie casa/);
-  vm.runInContext("page='schedina';sourceScope='seriea';slipScope='standings';render()",ctx);
+  vm.runInContext("page='seriea';sourceScope='seriea';render()",ctx);
   assert.match(html,/Classifica del campionato/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori|differenza reti|Ultimo aggiornamento/);assert.match(html,/serie-table-card/);
   vm.runInContext("slipScope='mine'",ctx);
   vm.runInContext("page='schedina';rankingScope='league';render()", ctx);
@@ -343,7 +344,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='lega';showLiveStatus(liveStatus)",ctx);
   assert.equal(nodes.get('#live-channel-status').hidden,true,'connection notice is only relevant to results');
   vm.runInContext("state.leagues[0].admin='another-president';page='lega';render()",ctx);
-  assert.match(html,/data-home-league-invite/);assert.doesNotMatch(html,/id="copy"/);
+  assert.doesNotMatch(html,/data-home-league-invite|id="copy"/);
   assert.doesNotMatch(html,/data-page="admin"/);
   vm.runInContext("page='admin';render()",ctx);
   assert.equal(vm.runInContext('page',ctx),'admin');assert.match(html,/Invita con WhatsApp/);assert.doesNotMatch(html,/Salva regole|id="prizes"|id="branding"/);
