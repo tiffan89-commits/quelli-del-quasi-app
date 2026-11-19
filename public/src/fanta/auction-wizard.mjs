@@ -1,5 +1,6 @@
 import {dateTimeFields} from '../site-datetime.mjs';
 import { esc } from './formato.mjs';
+import {backButton} from '../back-navigation.mjs';
 
 import {AUCTION_TYPES,AUCTION_DESCRIPTIONS} from '../auction-formats.mjs';
 const teamOf=row=>row.team||row;
@@ -34,8 +35,8 @@ export function renderAuctionWizard(w){
     ${(w.type==='iniziale'||w.nomination==='personal')?`<fieldset><legend>Ordine delle squadre</legend>${options('turns',w.turns,[['random','Casuale'],['custom','Scelto dal presidente']])}</fieldset>`:''}
     ${(w.type==='iniziale'||w.nomination==='personal')&&w.turns==='custom'?`<ol class="auction-team-order">${w.teamOrder.map((id,i)=>`<li><span>${esc(w.teams.find(t=>t.id===id)?.name)}</span><button type="button" data-auction-order="${i}" data-step="-1" aria-label="Anticipa squadra" ${i===0?'disabled':''}>↑</button><button type="button" data-auction-order="${i}" data-step="1" aria-label="Posticipa squadra" ${i===w.teamOrder.length-1?'disabled':''}>↓</button></li>`).join('')}</ol>`:''}`;
   const title=['Tipo e orario','Crediti per squadra','Ordine di chiamata'][w.step-1];
-  return `<section class="fanta-asta auction-wizard" aria-label="Configurazione asta"><header class="auction-page-head"><button type="button" class="secondary" data-auction-exit="1">Chiudi ×</button><div><span class="eyebrow">Passo ${w.step} di 3</span><h1>${title}</h1></div></header>
+  return `<section class="fanta-asta auction-wizard" aria-label="Configurazione asta · ${title}"><header class="auction-page-head">${backButton((w.step>1?'data-auction-prev="1"':'data-auction-exit="1"')+(w.busy?' disabled':''),w.step>1?'Torna al passo precedente':'Torna al pannello del presidente')}<span class="eyebrow">Passo ${w.step} di 3</span></header>
     <form data-auction-wizard class="auction-wizard-form"><div class="auction-wizard-fields">${[first,second,third][w.step-1]}</div>
     ${w.error?`<p role="alert" class="fanta-note is-alert">${esc(w.error)}</p>`:''}
-    <div class="auction-wizard-actions">${w.step>1?`<button type="button" class="secondary" data-auction-prev="1" ${w.busy?'disabled':''}>Indietro</button>`:''}<button type="submit" class="primary" ${w.busy?'disabled aria-busy="true"':''}>${w.busy?'Salvataggio…':w.step<3?'Continua':w.timing==='now'?'Avvia l’asta':'Programma l’asta'}</button></div></form></section>`;
+    <div class="auction-wizard-actions"><button type="submit" class="primary" ${w.busy?'disabled aria-busy="true"':''}>${w.busy?'Salvataggio…':w.step<3?'Continua':w.timing==='now'?'Avvia l’asta':'Programma l’asta'}</button></div></form></section>`;
 }

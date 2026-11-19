@@ -7,6 +7,7 @@ import {auctionWhen} from './auction-wizard.mjs';
 import {renderReleases} from './mercato.mjs';
 import {avatarSvg} from '../avatar.mjs';
 import {LAMPO,lampoShownSeconds} from '../auction-formats.mjs';
+import {backButton} from '../back-navigation.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const RING = 2 * Math.PI * 26;
@@ -326,7 +327,7 @@ export function renderAsta(a, ui = {}, players = null) {
   const panes=[center,a?teamsList(a,ui,compactClock())+logList(a):'',a?myRoster(a,compactClock()):''];
   const panel=ui.panel||0;
   return `<section class="fanta-asta auction-room${compact?' is-compact':''}" aria-label="Sala d’asta">
-    ${compact?'<p class="auction-compact-connection" data-auction-connection role="status" hidden></p>':`<header class="auction-page-head"><button type="button" class="secondary" data-auction-exit="1">Esci ×</button><div><span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1><p data-auction-connection role="status"></p></div>${timer}</header>`}
+    ${compact?'<p class="auction-compact-connection" data-auction-connection role="status" hidden></p>':`<header class="auction-page-head">${backButton('data-auction-exit="1"',ui.adminView?'Torna al pannello del presidente':'Esci dall’asta')}<div>${ui.adminView?'':`<span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1>`}<p data-auction-connection role="status"></p></div>${timer}</header>`}
     <nav class="auction-room-tabs" aria-label="Schede dell’asta">${roomPanels.map((text,i)=>`<button type="button" class="v2-chip${i===panel?' is-active':''}" aria-pressed="${i===panel}" data-auction-panel="${i}">${text}</button>`).join('')}</nav>
     <div class="auction-panels" data-auction-panels>${panes.map((html,i)=>`<section class="auction-pane" aria-label="${roomPanels[i]}">${html}</section>`).join('')}</div>
     ${online?`<div class="auction-countdown-overlay${lobby?' is-start':''}" data-auction-countdown-overlay hidden><div><small>${lobby?'L’asta inizia tra':'Tempo in scadenza'}</small><strong data-overlay-seconds>–</strong></div></div>`:''}

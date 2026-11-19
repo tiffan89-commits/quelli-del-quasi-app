@@ -2,6 +2,7 @@ import {presidentPanel,settingsFooter} from '../president-panel.mjs';
 import {readDateTime} from '../site-datetime.mjs';
 import {fantaPresidentTool,presidentBack} from '../president-workspace.mjs';
 import {bindSwipeBack} from '../match-page.mjs';
+import {backButton,bindScreenBack} from '../back-navigation.mjs';
 import {patchRegion} from '../live-channel.mjs';
 import {placeAppFooter} from '../app-footer.mjs';
 import {createSportsPush} from '../sports-push.mjs';
@@ -208,7 +209,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(ui.choiceLeagueId||!ui.leagues.length&&ui.teamChoices.length)return renderTeamChoices(ui.choiceLeagueId?ui.teamChoices.filter(l=>l.id===ui.choiceLeagueId):ui.teamChoices,{busy:ui.claimingTeam,error:ui.choiceError});
     if(ui.me?.access==='full'&&!ui.leagues.length)return '<div class="fanta-empty"><h2>Il Fanta non è ancora attivo</h2><p>Questa lega non ha ancora attivato il Fanta.</p><button class="secondary" data-mode="bar">Torna al Bar</button></div>';
     if(ui.tab==='schedine')return ui.home?slips.render(slipContext()):'<div class="fanta-loading" role="status">Carichiamo la competizione…</div>';
-    if(ui.tab==='scambi')return api.trades?trades.render():'<div class="fanta-empty"><h1>Scambi</h1><button class="secondary" data-go="lega">Torna alla lega</button></div>';
+    if(ui.tab==='scambi')return api.trades?trades.render():`<div class="fanta-empty">${backButton('data-go="lega"','Torna alla lega')}<h1>Scambi</h1></div>`;
     if(ui.tab==='presidente')return renderFantaPresident(ui.lega.data,{...ui.lega,adminTool:isPresident()?ui.adminTool:null,adminBack:presidentBack(ownsLinkedBar()),hasTrades:!!api.trades});
     if (ui.tab==='solleciti'&&isPresident())return renderPresidentReminders('fanta',league().id,pendingFormations());
     if (ui.tab==='oggi'||ui.tab==='solleciti') return ui.home ? renderHome({...homeSocialData(),reminder:isPresident()?pendingFormations():null,balances:homeBalances(),openingLineup:openingHomeLineup}) : '<div class="fanta-loading" role="status">Carichiamo la tua squadra…</div>';
@@ -216,7 +217,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (ui.tab === 'squadra') return renderSquadra(ui.squadra);
     if(ui.tab==='asta'){
       const admin=inPresidentTool('asta'),auction=ui.asta.data;
-      return admin&&ui.asta.wizard?renderAuctionWizard(ui.asta.wizard):renderAsta(auction&&!admin?{...auction,isAdmin:false}:auction,{...ui.asta,members:linkedBar()?.members},ui.asta.players);
+      return admin&&ui.asta.wizard?renderAuctionWizard(ui.asta.wizard):renderAsta(auction&&!admin?{...auction,isAdmin:false}:auction,{...ui.asta,adminView:admin,members:linkedBar()?.members},ui.asta.players);
     }
     if(ui.tab==='lega'||ui.tab==='partecipanti'){
       if(!league())return '<div class="fanta-loading" role="status">Caricamento…</div>';
@@ -541,10 +542,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       bindSwipeBack(squadra,()=>move(1),'left');
       bindSwipeBack(squadra,()=>move(-1));
     }
-    const leaguePanel=root.querySelector('.president-panel:has(.league-settings-back)');
-    if(leaguePanel)bindSwipeBack(leaguePanel,()=>openTab('lega'),'right',()=>!leaguePanel.querySelector('.os-drill'));
-    const wizard=root.querySelector('.auction-wizard');
-    if(wizard)bindSwipeBack(wizard,goToPresident,'right',event=>!ui.asta.wizard?.busy&&!event.target.closest('input,select,textarea,button'));
+    bindScreenBack(root.querySelector('main.fanta-main'));
     if(ui.tab==='asta'){
       showAuctionPanel(ui.asta.panel||0);
       root.querySelectorAll('.auction-pane').forEach((el,i)=>{el.scrollTop=paneScroll[i]||0;});

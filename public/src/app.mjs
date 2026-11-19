@@ -1,5 +1,6 @@
 import {joinInvite} from './invite-join.mjs';
 import {bindSwipeBack,openMatchPage} from './match-page.mjs';
+import {backButton,bindScreenBack} from './back-navigation.mjs';
 import {bindSiteValidation} from './site-validation.mjs';
 import {askConfirmation} from './site-confirm.mjs';
 import {presidentWorkspace,presidentOperationButtons} from './president-workspace.mjs';
@@ -171,8 +172,11 @@ const fmt = (n) =>
     "Under / Over 2,5": ["Under 2.5", "Over 2.5"],
     "Goal / No Goal": ["Goal", "No Goal"],
   };
-function teamLabel(name,{vs,home,fantasy=page==='calendario'?calendarScope==='fantacalcio':sourceScope==='fantacalcio'}={}) {
-  if(!fantasy)return `<span class="team-label">${clubShirt(name,{vs,home})}<span>${esc(name)}</span></span>`;
+function teamLabel(name,{vs,home,shirtAfter=false,fantasy=page==='calendario'?calendarScope==='fantacalcio':sourceScope==='fantacalcio'}={}) {
+  if(!fantasy){
+    const shirt=clubShirt(name,{vs,home}),text=`<span class="team-name">${esc(name)}</span>`;
+    return `<span class="team-label">${shirtAfter?text+shirt:shirt+text}</span>`;
+  }
   const team=Object.values(L()?.fantasyTeams?.[competitionScope]||{}).find(t=>t.name===name);
   const logo=team?.logo||team?.shirt;
   const icon=logo?`<img class="team-logo" data-deferred-src="${esc(logo)}" alt="" width="32" height="32" loading="lazy" onerror="this.hidden=true">`:`<span class="crest">${esc(name.slice(0,2))}</span>`;
@@ -607,7 +611,7 @@ function shell(content) {
   if (!user) return '<header><div class="brand"><img class="brand-logo" src="/league-logo.svg" alt="Logo Quelli del Quasi" width="38" height="44">QUELLI DEL <b>QUASI.</b></div></header>'+content;
   if (!l) {
     const settings=['impostazioni','profilo'].includes(page);
-    const button=settings?'<button type="button" class="secondary" data-page="lega">‹ Torna alla scelta</button>':presidentEntry('data-bar-page="impostazioni"');
+    const button=settings?'':presidentEntry('data-bar-page="impostazioni"');
     return `<header class="v2-top league-onboarding-top">${button}</header>${content}`;
   }
   if(!user.emailVerified&&!user.demo)return content;
@@ -739,13 +743,13 @@ function render() {
       : (!state.user.emailVerified && !state.user.demo)
       ? profile()
       : page === "impostazioni"
-        ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,back:'data-bar-page="barleague"',footer:settingsFooter(),groups:accountGroups()})
+        ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,back:l?'data-bar-page="barleague"':'data-page="lega"',footer:settingsFooter(),groups:accountGroups()})
         : page === "seriea"
         ? classificationTabs('seriea')+serieATable()
         : page === "altri"
           ? otherSlips(l, r)
           : page === "regolamento"
-            ? '<button type="button" class="secondary" data-page="barleague">← Chiudi regolamento</button>'+regulation(l, r)
+            ? backButton('data-bar-page="barleague"','Torna alla lega')+regulation(l, r)
             : page === "fantaquasi" ? fantaQuasiPage(l, state.user, esc)
               : page === "barleague" || page === "partecipanti" ? barLeagueInfo(l)
               : page === "quasi" ? quasiPage(l)
@@ -790,11 +794,9 @@ function render() {
    finally{button.disabled=false;}
   };
   bindPresidentPanel($('#app'));
-  const panel=document.querySelector('.president-panel:has(.league-settings-back)');
-  if(panel)bindSwipeBack(panel,()=>navigatePage('barleague'),'right',()=>!panel.querySelector('.os-drill'));
+  bindScreenBack($('#app > main'));
   const presidentWizard=$('.president-workspace');
   if(presidentWizard){
-    bindSwipeBack(presidentWizard,()=>presidentOperation?openPresidentOperation(null):navigatePage('barleague'),'right',e=>!e.target.closest('input,textarea,select,button'));
     bindPresidentOperations(presidentWizard,l);
   }
   const deleteLeagueForm=$('#president-delete-league');
@@ -1370,7 +1372,7 @@ function barReminderPage(league){
 }
 let presidentGroup=null;
 function barRulesForm(l){
- return `<form id="rules"><h3>Le regole del Bar</h3><p>Ogni esito corretto vale la sua quota. Un errore vale zero punti.</p>
+ return `<form id="rules"><p>Ogni esito corretto vale la sua quota. Un errore vale zero punti.</p>
  <label class="field">Crediti iniziali per i nuovi iscritti<input name="initial" type="number" step="0.25" value="${l.rules.initial}" required></label>
  <label class="field"><span><input type="checkbox" name="points" ${l.rules.winners.includes("points")?"checked":""}> Premia primo per punti</span></label>
  <label class="field"><span><input type="checkbox" name="credits" ${l.rules.winners.includes("credits")?"checked":""}> Premia primo per crediti</span></label>
@@ -1444,8 +1446,8 @@ function calendarStatus(m) {
 function openBarRules(){
   const view=openMatchPage({label:'Regolamento del Bar',swipeBack:'both'});
   view.classList.add('bar-rules-page');
-  view.innerHTML='<button type="button" class="secondary rule-close" id="close-modal">← Chiudi regolamento</button>'+regulation(L(),R());
-  view.querySelector('.rule-close').onclick=()=>view.close();
+  view.innerHTML=backButton('id="close-modal"','Torna alla lega')+regulation(L(),R());
+  view.querySelector('#close-modal').onclick=()=>view.close();
 }
 function regulation(l){
  const initial=fmt(l?.rules?.initial??500);
@@ -1731,7 +1733,7 @@ function bind(l, r) {
   bindBarSlips();
   document
     .querySelectorAll("[data-detail]")
-    .forEach((b) => (b.onclick = () => openMatch(b.dataset.detail)));
+    .forEach((b) => (b.onclick = () => openMatch(b.dataset.detail,false,b)));
   document.querySelectorAll("[data-page]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -1975,7 +1977,7 @@ function matchDetailStatus(match){
   if(liveMatchStatus(match.status))return match.clock?'Live · '+match.clock:'Live';
   return 'Da giocare';
 }
-async function openMatch(id, quiet = false) {
+async function openMatch(id, quiet = false, trigger) {
   const fantasyRound = L()?.rounds.find(
     (r) => r.source === "fantacalcio" && r.matches.some((m) => m.id === id),
   );
@@ -1985,7 +1987,7 @@ async function openMatch(id, quiet = false) {
       activeMatchId = null;
       return;
     }
-    const d = quiet ? document.querySelector("#match-page-root") : openMatchPage({onClose:()=>{activeMatchId=null;}}),
+    const d = quiet ? document.querySelector("#match-page-root") : openMatchPage({trigger,onClose:()=>{activeMatchId=null;}}),
       scroll = d.scrollTop;
     activeMatchId = id;
     try{match=await matchSnapshot(match,fantasyRound);}catch(error){d.innerHTML='<button class="secondary" id="close-modal">Chiudi ×</button><p>'+esc(error.message)+'</p>';$('#close-modal').onclick=()=>d.close();return;}
@@ -2014,10 +2016,11 @@ async function openMatch(id, quiet = false) {
   let dialog = $("#match-page-root");
   if (quiet && (!dialog?.open || dialog.dataset.match !== id)) return;
   if (!quiet) {
-    dialog = openMatchPage({onClose:()=>{activeMatchId=null;}});
+    dialog = openMatchPage({kind:'lineup',trigger,onClose:()=>{activeMatchId=null;}});
     dialog.dataset.match = id;
     activeMatchId = id;
   }
+  const content=dialog.querySelector('[data-match-sheet-content]');
   try {
     const scroll = dialog.scrollTop,
       baseData = structuredClone(
@@ -2033,20 +2036,26 @@ async function openMatch(id, quiet = false) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const events = (data.details?.events || []).filter(isMatchEvent);
-    const availability=matchAvailability(data),hasDetails=!!(events.length||availability);
+    const availability=matchAvailability(data),kickoff=Date.parse(data.officialKickoff||data.kickoff);
+    const scheduled=Number.isFinite(kickoff);
+    const hasDetails=scheduled||!!(events.length||availability);
     const details=`<div class="match-details-body">
       <h3>Dettagli della partita</h3>
+      ${scheduled?`<p class="match-sheet-kickoff"><time datetime="${new Date(kickoff).toISOString()}">${esc(new Intl.DateTimeFormat('it-IT',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Rome'}).format(kickoff))}</time></p>`:''}
       <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
       <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
       <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
     </div>`;
-    dialog.innerHTML = `<div class="match-headline">
+    const moveFocus=content.contains(document.activeElement);
+    content.innerHTML = `<div class="match-headline">
       <button type="button" class="secondary match-nav-button match-close" id="close-modal" aria-label="Chiudi partita">×</button>
-      <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,fantasy:false})}</h2>
+      <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,shirtAfter:true,fantasy:false})}</h2>
       <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
       <button type="button" class="secondary match-nav-button" data-match-details-button aria-label="Dettagli della partita" ${hasDetails?'':'hidden'}>›</button>
     </div>${renderLineup(data,{paged:true,details,detailsAvailable:hasDetails})}`;
-    dialog.querySelector('#close-modal').onclick=()=>dialog.close();
+    const close=dialog.querySelector('#close-modal');
+    close.onclick=()=>dialog.close();
+    if(moveFocus)close.focus({preventScroll:true});
     const arrow=dialog.querySelector('[data-match-details-button]');
     let returnPage=null;
     const carousel=bindLineupPitch(dialog,{onPage:showing=>{
@@ -2055,6 +2064,7 @@ async function openMatch(id, quiet = false) {
       arrow.textContent=showing?'‹':'›';
       arrow.setAttribute('aria-label',showing?'Torna alle formazioni':'Dettagli della partita');
     }});
+    if(!carousel)return;
     arrow.onclick=()=>{
       if(dialog._pitchPage===carousel.teamCount){carousel.go(returnPage??carousel.teamCount-1);return;}
       returnPage=dialog._pitchPage;
@@ -2072,13 +2082,15 @@ async function openMatch(id, quiet = false) {
     },{passive:true});
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
-    if (!quiet) {
-      dialog.innerHTML = `<button class="secondary" id="close-modal">Chiudi ×</button><p class="muted">${esc(e.message || "Dettagli momentaneamente non disponibili.")}</p>`;
-      $("#close-modal").onclick = () => {
+    if (!quiet&&dialog.open) {
+      content.innerHTML = `<button type="button" class="match-nav-button match-close" id="close-modal" aria-label="Chiudi partita">×</button><p class="muted">${esc(e.message || "Dettagli momentaneamente non disponibili.")}</p>`;
+      const close=content.querySelector('#close-modal');
+      close.onclick = () => {
         activeMatchId = null;
         dialog.dataset.match = "";
         dialog.close();
       };
+      close.focus({preventScroll:true});
     }
   }
 }
@@ -2204,7 +2216,7 @@ function bindNew(l, r) {
     };
   if ($("#share-verdict"))
     $("#share-verdict").onclick = () => {
-      const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar',swipeBack:true});
+      const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar',swipeBack:'both'});
       const fit=()=>{
         const card=d.querySelector('.verdict-postcard'),portrait=d.querySelector('.postcard-quasi');
         if(!card||!portrait)return;
@@ -2215,7 +2227,7 @@ function bindNew(l, r) {
         d.style.setProperty('--postcard-quasi-width',Math.max(76,Math.min(220,width))+'px');
       };
       const show=uid=>{
-        d.innerHTML='<div class="verdict-page-toolbar"><button type="button" class="secondary" id="close-modal">← Verdetto</button></div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);
+        d.innerHTML='<div class="verdict-page-toolbar">'+backButton('id="close-modal"','Torna al verdetto')+'</div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);
         d.querySelector('#close-modal').onclick=()=>d.close();
         d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));
         fit();

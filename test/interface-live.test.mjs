@@ -10,6 +10,7 @@ import {settingsFooter,presidentEntry,presidentPanel,bindPresidentPanel} from '.
 import {presidentLaunch,presidentWorkspace,presidentOperationButtons} from '../public/src/president-workspace.mjs';
 import {nicknameNotice} from '../public/src/nickname-notice.mjs';
 import {readAppRoute,writeAppRoute} from '../public/src/routes.mjs';
+import {backButton} from '../public/src/back-navigation.mjs';
 import {saveOnce} from '../public/src/save-guard.mjs';
 import {applySlipReceipt} from '../public/src/slip-receipt.mjs';
 import {displayCache,clearDisplayCaches} from '../public/src/display-cache.mjs';
@@ -121,7 +122,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     randomLeagueControls,bindRandomLeagues,
     fantasyAccount,fantasyGroup,fantasyWalletKey,
     isLeagueEntryPage,renderLeagueEntry,renderLeagueOnboarding,bindLeagueCreation,leagueWorkspace,barLeagueFallback,bindLeagueWorkspace,refreshFantaMembership(){},
-    ...v2Tabs, leagueActions,barHomeInvite,settingsFooter,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentLaunch,presidentWorkspace,presidentOperationButtons,bindPresidentPanel,bindSiteValidation(){},
+    ...v2Tabs, leagueActions,barHomeInvite,settingsFooter,presidentEntry,renderLeagueChip, isLeagueAdmin, renderSlipV2,patchSlipV2,placeAppFooter,restoreAppFooter,presidentPanel,presidentLaunch,presidentWorkspace,presidentOperationButtons,bindPresidentPanel,backButton,bindSiteValidation(){},bindScreenBack(){},
     pendingInvite(){return null;},markSession(){},hideLanding(){},showLanding(){},bindLanding(){},clearPendingInvite(){},
     bindTabBar(handler){barTab=handler;},bindLeagueSwitcher(){},bindSlipV2(){},
     crypto: { randomUUID: () => "test-request-id" },

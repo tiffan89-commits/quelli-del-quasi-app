@@ -1,4 +1,5 @@
 import {esc} from './fanta/formato.mjs';
+import {backButton} from './back-navigation.mjs';
 import {hubIcon} from './league-hub.mjs';
 import {whatsappIcon} from './league-invite.mjs';
 import {appRoute} from './routes.mjs';
@@ -40,7 +41,7 @@ export function renderPresidentReminders(mode,league,reminder){
  const back=bar?'data-bar-page="lega"':'data-go="oggi"';
  const players=reminder?.participants||[];
  return `<section class="president-reminders">
-  <header class="participants-heading" data-os-header><button class="secondary league-settings-back" type="button" ${back}>‹ Indietro</button><h1>${title}</h1></header>
+  <header class="participants-heading" data-os-header>${backButton(back,'Torna alla home')}<h1>${title}</h1></header>
   <div data-os-content data-os-flow class="president-reminder-scroll">${players.length?`
    <p class="fanta-note">Giornata ${esc(reminder.number||reminder.round)}</p>
    <ul class="reminder-players">${players.map(name=>`<li>${esc(name)}</li>`).join('')}</ul>
