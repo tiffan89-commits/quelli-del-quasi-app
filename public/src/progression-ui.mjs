@@ -3,11 +3,26 @@ import {rewardById,rewardMark,REWARD_SLOTS} from './reward-catalog.mjs';
 import {hatArt,charmArt,outfitArt,INK} from './avatar-art.mjs';
 import {fantasyProgression} from './fantasy-accounts.mjs';
 const sign=(n,fmt)=>(n>0?'+':'')+fmt(n);
-export function recapView(l,source,competition,esc,fmt){
- const history=(source==='fantacalcio'?fantasyProgression(l,competition):l.progression?.[source])?.history||[],last=history.filter(r=>source!=='fantacalcio'||!competition||r.competitionKey===competition).at(-1);
- if(!last)return `<section class="round-recap recap-empty"><span class="eyebrow">IL CONTO DEL BAR</span><h2>La prima storia è ancora da scrivere.</h2><p>Qui ritroverai il resoconto della tua giornata.</p></section>`;
- const gift=last.awards.map(rewardById).find(Boolean);
- return `<section class="round-recap"><div class="recap-heading"><div><span class="eyebrow">IL CONTO DEL BAR</span><h2>${esc(last.title)} <small>${esc(last.competitionName)}</small></h2></div><span class="pill">${last.played?last.correct+' / '+last.total+' prese':'PANCHINA'}</span></div><div class="recap-grid"><div><span>Punti giornata</span><b class="${last.points<0?'loss':'gain'}">${sign(last.points,fmt)}</b></div><div><span>Bilancio crediti</span><b class="${last.profit<0?'loss':'gain'}">${sign(last.profit,fmt)} <small>cr</small></b></div><div><span>Posizione punti</span><b>${last.position}° <small class="${last.positionChange<0?'loss':'gain'}">${last.positionChange>0?'↑ '+last.positionChange:last.positionChange<0?'↓ '+Math.abs(last.positionChange):'↔'}</small></b></div></div>${gift?`<button type="button" class="recap-gift" data-recap-reward="${esc(gift.id)}">${rewardMark(gift)}<span>Il bottino della giornata<strong>${esc(gift.name)}</strong></span><b aria-hidden="true">↗</b></button>`:''}</section>`;
+export function recapView(league,source,competition,round,esc,fmt){
+ const heading='<span class="eyebrow">IL CONTO DEL BAR</span>';
+ if(!round)return `<section class="dash-summary home-card round-recap recap-empty">${heading}<p>Nessuna giornata conclusa.</p></section>`;
+ const history=(source==='fantacalcio'?fantasyProgression(league,competition):league.progression?.[source])?.history;
+ const last=history?.find(entry=>entry.id===round.id);
+ const gift=last?.awards?.map(rewardById).find(Boolean);
+ const tally=last?(last.played?last.correct+'/'+last.total+' prese':'In panchina'):'';
+ return `<section class="dash-summary home-card round-recap">
+  ${heading}
+  <div class="recap-heading">
+   <h2>${esc(round.title)}${tally?` <small>${esc(tally)}</small>`:''}</h2>
+   <button type="button" class="secondary recap-results" data-dashboard-slip="${esc(round.id)}">Risultati e schedina <span aria-hidden="true">→</span></button>
+  </div>
+  ${last?`<div class="recap-grid">
+   <div><span>Punti giornata</span><b class="${last.points<0?'loss':'gain'}">${sign(last.points,fmt)}</b></div>
+   <div><span>Bilancio crediti</span><b class="${last.profit<0?'loss':'gain'}">${sign(last.profit,fmt)} <small>cr</small></b></div>
+   <div><span>Posizione punti</span><b>${last.position}° <small class="${last.positionChange<0?'loss':'gain'}">${last.positionChange>0?'↑ '+last.positionChange:last.positionChange<0?'↓ '+Math.abs(last.positionChange):'↔'}</small></b></div>
+  </div>`:''}
+  ${gift?`<button type="button" class="recap-gift" data-recap-reward="${esc(gift.id)}">${rewardMark(gift)}<span>Il bottino della giornata<strong>${esc(gift.name)}</strong></span><b aria-hidden="true">↗</b></button>`:''}
+ </section>`;
 }
 function ownedRewards(user){
  const rewards=new Map();

@@ -22,7 +22,7 @@ export function renderIo(me, leagues, activeLeagueId, ui = {}, demo = false) {
   return `<div class="fanta-io">
     <header class="fanta-sq-head"><span class="eyebrow">Il tuo profilo</span><h1>${esc(me.user.name)}</h1>${me.user.username?`<p>@${esc(me.user.username)}</p>`:""}</header>
     ${demo ? `<section class="fanta-io-demo"><span class="eyebrow">Modalità demo</span><h2>Stai provando il Fanta</h2>
-      <p>Calciatori e club di Serie A sono reali; squadre fantasy e aste sono simulate. Le tue modifiche restano durante la prova; ricaricando la pagina si riparte.</p>
+      <p>Calciatori e club di Lega A sono reali; squadre fantasy e aste sono simulate. Le tue modifiche restano durante la prova; ricaricando la pagina si riparte.</p>
       <button type="button" class="secondary" data-action="demo-info">Come funziona la demo</button></section>` : ''}
     ${notifications}
     <section class="fanta-block"><div class="dash-section-head"><div><h2>Le tue leghe Fanta</h2></div></div>
@@ -47,7 +47,7 @@ export function renderDemoInfo() {
         <li><b>Sei l'allenatore di SamBuca Juniors</b> in una lega di prova con 8 squadre. Sei anche l'admin, così puoi provare tutto.</li>
         <li><b>Puoi fare tutto</b>: schierare e salvare la formazione, trascinare i giocatori, guardare voti e bonus spiegati, giocare un'asta contro squadre simulate o fare il banditore di un'asta dal vivo.</li>
         <li><b>Niente resta salvato davvero</b>: le modifiche restano durante la prova, anche passando dal Fanta al Bar. Ricaricando la pagina si riparte. Nessun altro le vede.</li>
-        <li><b>Calciatori e club di Serie A sono reali</b>. I risultati e i voti della giornata 10 provengono dall’archivio; le squadre fantasy, le altre giornate e la diretta dimostrativa sono simulate.</li>
+        <li><b>Calciatori e club di Lega A sono reali</b>. I risultati e i voti della giornata 10 provengono dall’archivio; le squadre fantasy, le altre giornate e la diretta dimostrativa sono simulate.</li>
       </ul>
       <section class="fanta-block"><h3>Prova una giornata</h3><p>Scegli il momento della stagione da esplorare.</p><div class="fanta-today-tabs"><button type="button" class="secondary" data-demo-scenario="da-schierare">Prima del fischio</button><button type="button" class="secondary" data-demo-scenario="in-corso">In diretta</button><button type="button" class="secondary" data-demo-scenario="calcolata">Giornata calcolata</button></div></section>
       <button type="button" class="primary" data-action="demo-ok">Ho capito, proviamo</button>

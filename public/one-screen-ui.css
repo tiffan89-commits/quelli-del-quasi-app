@@ -63,14 +63,9 @@ html.os-on main.os-root .dash-next{padding:12px 14px!important;gap:8px 12px!impo
 html.os-on main.os-root .dash-next h2{font-size:24px!important;margin:2px 0!important}
 html.os-on main.os-root .dash-next p{font-size:12px!important;margin:0!important}
 html.os-on main.os-root .dash-cta{min-height:42px!important}
-html.os-on main.os-root .dash-last-round{min-height:0!important;padding:10px 14px!important;margin:0!important}
-html.os-on main.os-root .dash-last-round strong{font-size:22px!important}
 html.os-on main.os-root .dash-summary{gap:10px!important;margin:0!important}
 html.os-on main.os-root .dash-numbers>button{min-height:0!important;padding:8px 10px!important}
 html.os-on main.os-root .home-league-invite{margin:10px 0 0!important}
-html.os-on main.os-root .dash-last-round{display:flex!important;align-items:center;justify-content:space-between}
-html.os-on main.os-root .dash-last-round>span:first-child{display:flex;align-items:baseline;gap:8px}
-html.os-on main.os-root .dash-last-round strong{font-size:18px!important}
 html.os-on main.os-root .dash-numbers small,html.os-on main.os-root .dash-numbers span{font-size:10.5px}
 html.os-on main.os-root .portfolio-mini{padding:8px 14px!important}
 html.os-on main.os-root .portfolio-mini svg{height:30px!important;margin-top:4px!important}
@@ -81,10 +76,6 @@ html.os-on main.os-root .goal-token{flex:none!important;min-height:0!important;p
 html.os-on main.os-root .goal-token strong{font-size:15px!important;line-height:1.15}
 html.os-on main.os-root .goal-token .goal-state{width:22px;height:22px;font-size:13px}
 html.os-on main.os-root .goal-panel{grid-column:1/-1}
-html.os-on main.os-root .dash-last-round{min-height:0!important;padding:8px 14px!important}
-html.os-on main.os-root .dash-last-round small{display:none}
-html.os-on main.os-root .dash-last-round strong{font-size:16px!important;line-height:1.2}
-html.os-on main.os-root .dash-last-round>span:last-child{font-size:12px}
 html.os-on main.os-root .dash-numbers>button{padding:6px 10px!important}
 html.os-on main.os-root .dash-numbers strong,html.os-on main.os-root .dash-numbers b{font-size:22px!important;line-height:1.1!important}
 html.os-on main.os-root .home-league-invite>*{min-height:40px!important}
@@ -500,9 +491,6 @@ html.os-on main.os-root .fanta-home-compact .fanta-hero-crest>.team-logo{width:1
 html.os-on main.os-root .fanta-home-compact .fanta-hero-stats{grid-template-columns:repeat(3,max-content);gap:0 13px!important}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-copy h1{overflow-wrap:anywhere}
 html.os-on main.os-root .fanta-home-compact .fanta-hero-form{grid-column:1}
-.dash-recap-details .round-recap{margin:0}
-.dash-recap-details .recap-empty h2{margin:3px 0;font-size:18px}
-.dash-recap-details .recap-empty p{margin:0;font-size:11px}
 
 @media(max-height:700px) and (max-width:759px){
  .lega-hub{gap:7px}
@@ -586,7 +574,7 @@ html.os-on main.os-root .league-dashboard>.dash-hero:has(.dash-numbers){height:1
 .home-sections>.home-card{box-sizing:border-box;border:1px solid var(--line);border-radius:var(--home-card-radius);background:var(--panel);overflow:hidden;break-inside:avoid}
 html.os-on main.os-root .home-sections>:is(.fanta-hero,.dash-hero){border-radius:var(--home-card-radius)}
 html.os-on main.os-root :is(.league-dashboard.home-sections>*~*,.fanta-home-compact.home-sections>:not([data-fanta-auction-banner]:empty)~*){margin-top:var(--home-card-gap)!important}
-html.os-on main.os-root .home-sections>:is(.dash-next,.dash-summary,.dash-last-round,.fanta-last-result){padding:var(--home-card-padding)!important}
+html.os-on main.os-root .home-sections>:is(.dash-next,.dash-summary,.fanta-last-result){padding:var(--home-card-padding)!important}
 html.os-on main.os-root .home-sections>.dash-next{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 10px!important}
 html.os-on main.os-root .home-sections .dash-next h2{font-size:20px!important;margin:2px 0!important}
 html.os-on main.os-root .home-sections .dash-next .dash-clock strong{font-size:20px}
@@ -595,13 +583,17 @@ html.os-on main.os-root .home-sections .dash-cta{min-height:36px!important;margi
 html.os-on main.os-root .home-sections .fanta-home-match{padding:0!important}
 html.os-on main.os-root .home-sections .fanta-match-link,html.os-on main.os-root .home-sections .home-card>.fanta-last-result{padding:var(--home-card-padding)!important}
 .home-sections .home-card>.fanta-bar-link{width:calc(100% - 2 * var(--home-card-padding));margin:0 var(--home-card-padding) var(--home-card-padding)}
-.home-sections .dash-recap-details{margin:0;padding:0;border:0}
-html.os-on main.os-root .home-sections .dash-recap-details .round-recap{border:0;margin:0;padding:0;background:none}
-.home-sections .recap-heading h2{font-size:21px}
-.home-sections .recap-grid{gap:8px;margin:10px 0 0}
+.home-sections .round-recap>.eyebrow{font-size:9px;color:#c6b782;letter-spacing:2px}
+.home-sections .recap-heading{margin-top:3px}
+.home-sections .recap-heading h2{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 5px;font-size:21px;margin:0}
+.home-sections .recap-heading h2 small{margin:0;color:var(--muted);white-space:nowrap}
+.home-sections .recap-results{flex:none;min-height:40px;padding:4px 8px;font-size:12px;white-space:nowrap}
+.home-sections .recap-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0 0}
+.home-sections .recap-grid>div:nth-child(2){text-align:center}
+.home-sections .recap-grid>div:last-child{text-align:right}
 .home-sections .recap-grid b{font-size:22px;margin-top:2px}
 .home-sections .recap-gift{margin-top:8px}
-.home-sections .dash-last-round>span:last-child{text-align:right}
+.home-sections .recap-empty p{margin:4px 0 0}
 @media(min-width:900px){html.os-on main.os-root .league-dashboard.home-sections>*~*{margin-top:0!important}}
 
 /* Bar · La mia. Only the fixtures move between the round controls and the ticket summary. */

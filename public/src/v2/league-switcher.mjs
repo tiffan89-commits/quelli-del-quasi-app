@@ -14,7 +14,7 @@ export function attentionOf(league, uid, now = Date.now()) {
   const open = (league.rounds || []).filter(r => r.matches?.length && !isClosed(r, now));
   const fanta = open.find(r => sourceOf(r) === 'seriea');
   if (!fanta) return { level: 'ok', text: 'Nessuna schedina aperta' };
-  const label = sourceOf(fanta) === 'fantacalcio' ? 'Schedina fanta' : 'Schedina Serie A';
+  const label = sourceOf(fanta) === 'fantacalcio' ? 'Schedina fanta' : 'Schedina campionato';
   return fanta.slip ? { level: 'ok', text: label + ' salvata' } : { level: 'todo', text: label + ' da compilare' };
 }
 
@@ -27,7 +27,7 @@ export function renderLeagueChip(league, uid, esc, fmt, mode='', account=null, c
     '<span class="v2-league-name">' + esc(league.name) + '</span>' +
     '<span class="auction-index-dot" data-auction-indicator="*" aria-label="Asta in corso" hidden></span><span class="league-add" aria-hidden="true">+</span></button><div class="ux-controls">' + mode +
     (me ? '<div class="v2-credits"><b>' + fmt(me.credits ?? 0) + '</b><span>'+esc(caption)+'</span></div>' : '') +
-    presidentEntry('data-bar-page="impostazioni"',profileActive)+'</div><p class="ux-mode-label">Bar · partite vere di Serie A</p></header>';
+    presidentEntry('data-bar-page="impostazioni"',profileActive)+'</div><p class="ux-mode-label">Bar · partite vere di Lega A</p></header>';
 }
 
 export function renderLeagueSheet(leagues, activeId, uid, esc) {

@@ -12,7 +12,7 @@ const FAQ = [
   ['Ci sono pubblicità?', 'No, e non ce ne saranno mai: né banner né video. I crediti del Bar sono finti: non si comprano e non si vincono soldi.'],
   ['Quanti amici possono giocare in una lega?', 'Fino a 12. Chi crea la lega è l\'admin e invita gli altri con un link.'],
   ['Il Fanta è già disponibile?', 'È in prova con una lega pilota. Intanto puoi provarlo nella demo, senza registrarti: niente viene salvato.'],
-  ['Da dove arrivano i voti?', 'Dalle statistiche vere di ogni partita di Serie A, con una formula pubblica. Ogni voto ha la sua spiegazione: «Perché 6,5?».'],
+  ['Da dove arrivano i voti?', 'Dalle statistiche vere di ogni partita di Lega A, con una formula pubblica. Ogni voto ha la sua spiegazione: «Perché 6,5?».'],
 ];
 
 // Vetrina: tre pezzi d'app che si capiscono al volo.
@@ -66,7 +66,7 @@ export function renderLanding({ invite = null, barDemo = false } = {}) {
       <div class="pb-hero-copy">
         <span class="eyebrow">Una lega di amici · due giochi</span>
         <h1 id="pb-title">Il fanta dei tuoi amici. <em>Con il bar dentro.</em></h1>
-        <p>Schieri la formazione, segui i voti in diretta spiegati riga per riga e fai l'asta online o dal vivo. Al Bar scommetti crediti virtuali sulla Serie A. </p>
+        <p>Schieri la formazione, segui i voti in diretta spiegati riga per riga e fai l'asta online o dal vivo. Al Bar scommetti crediti virtuali sulla Lega A. </p>
         <div class="pb-actions">
           <a class="pb-btn is-primary" href="#registrati" data-go="register">Crea il tuo account <span aria-hidden="true">→</span></a>
           <button type="button" class="pb-btn" data-go="demo">Guarda la demo <small>senza registrarti</small></button>
@@ -94,9 +94,9 @@ export function renderLanding({ invite = null, barDemo = false } = {}) {
         <article class="pb-game is-bar">
           <span class="pb-badge is-on">Disponibile</span>
           <h3>Bar</h3>
-          <p>Schedine sulla Serie A, con crediti virtuali e prese in giro vere.</p>
+          <p>Schedine sulla Lega A, con crediti virtuali e prese in giro vere.</p>
           <ul>
-            <li><b>Scommetti sulle partite vere</b> della Serie A.</li>
+            <li><b>Scommetti sulle partite vere</b> della Lega A.</li>
             <li><b>Il tuo Quasi</b>: un personaggio da vestire con i premi che vinci.</li>
             <li><b>Classifica crediti</b>, chat della lega e i profili da pronosticatore.</li>
           </ul>
@@ -141,5 +141,5 @@ export function renderDemoChooser({ barDemo }) {
   return `<div class="pb-sheet-head"><h2 id="pb-sheet-title">Quale demo vuoi provare?</h2><button type="button" class="pb-close" data-go="close" aria-label="Chiudi">×</button></div>
     <p class="pb-muted">Nessuna registrazione. È tutto finto e niente viene salvato.</p>
     <button type="button" class="pb-choice is-fanta" data-go="demo-fanta"><b>Fanta</b><span>Formazione, voti spiegati, asta. Sei l'allenatore di una squadra di prova.</span></button>
-    ${barDemo ? '<button type="button" class="pb-choice is-bar" data-go="demo-bar"><b>Bar</b><span>Schedine di Serie A, crediti finti e il tuo Quasi.</span></button>' : ''}`;
+    ${barDemo ? '<button type="button" class="pb-choice is-bar" data-go="demo-bar"><b>Bar</b><span>Schedine di Lega A, crediti finti e il tuo Quasi.</span></button>' : ''}`;
 }
