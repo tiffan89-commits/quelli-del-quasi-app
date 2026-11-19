@@ -132,12 +132,12 @@ body[data-game-mode]:has(.bar-home-social,.fanta-home) #pwa-install-card { displ
 .bar-home-segments i { height:5px; border-radius:999px; background:var(--line); }
 .bar-home-segments i.is-yes { background:#78e0ba; }
 .bar-home-segments i.is-no { background:#fc3f56; }
-body[data-game-mode="bar"] #app .bar-home-cta {
+body[data-game-mode] #app .bar-home-cta {
   min-height:54px; width:100%; display:flex; justify-content:space-between; align-items:center;
   text-align:start; gap:10px; padding:9px 17px; border:0; border-radius:999px;
   background:var(--mode-accent); color:var(--mode-ink); font-size:16px; font-weight:700;
 }
-body[data-game-mode="bar"] #app .bar-home-cta:disabled { background:var(--panel); color:var(--muted); opacity:1; }
+body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); color:var(--muted); opacity:1; }
 .bar-home-cta { transition:transform .13s ease-out; }
 .bar-home-cta>span:last-child { white-space:nowrap; }
 .bar-home-cta:not(:disabled):active { transform:scale(.98); }
