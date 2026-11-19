@@ -71,14 +71,30 @@ export function leagueMonogram(league){
  const initials=[...leagueName(league).matchAll(/(?:^|[^\p{L}\p{N}])([\p{L}\p{N}])[\p{L}\p{N}]*/gu)].slice(0,4).map(m=>m[1]).join('');
  return initials.toLocaleUpperCase('it')||'Q';
 }
-const hex=value=>typeof value==='string'&&/^#[\da-f]{6}$/i.test(value)?value:null;
+export const validLeagueAccent=value=>typeof value==='string'&&value.length===7&&/^#[\da-f]{6}$/i.test(value);
+const hex=value=>validLeagueAccent(value)?value:null;
 export function leagueAccent(league,mode='bar'){
  if(!league)return PUBLIC_LEAGUE_ACCENT;
  const branding=league.branding;
  return (mode==='fanta'?hex(branding?.fantaAccent):null)||hex(branding?.accent)||hex(league.accent)||hex(league.color)||MODE_DEFAULTS[mode]||PUBLIC_LEAGUE_ACCENT;
 }
+const luminance=rgb=>rgb.reduce((sum,channel,index)=>{
+ const value=channel/255;
+ return sum+[0.2126,0.7152,0.0722][index]*(value<=0.04045?value/12.92:((value+0.055)/1.055)**2.4);
+},0);
+
+export function leagueDisplayAccent(accent){
+ // Accent text sits on dark panels, and buttons use dark text over the same accent.
+ const rgb=[1,3,5].map(index=>parseInt(accent.slice(index,index+2),16));
+ if(luminance(rgb)>=0.25)return accent;
+ for(let step=1;step<=20;step++){
+  const tint=rgb.map(channel=>Math.round(channel+(255-channel)*step/20));
+  if(luminance(tint)>=0.25)return '#'+tint.map(channel=>channel.toString(16).padStart(2,'0')).join('');
+ }
+ return '#ffffff';
+}
 export function applyLeagueTheme(league,mode='bar',doc=globalThis.document){
- const accent=leagueAccent(league,mode);
+ const accent=leagueDisplayAccent(leagueAccent(league,mode));
  doc.documentElement.style.setProperty('--lime',accent);
  doc.documentElement.style.setProperty('--league-accent',accent);
 }
@@ -91,7 +107,7 @@ export function paintLeagueIdentity(league,mode,doc=globalThis.document){
  chip.setAttribute('aria-label','Cambia lega, '+name);
  chip.querySelector('.v2-league-name').textContent=name;
  emblem.textContent=leagueMonogram(league);
- emblem.style.setProperty('--league-accent',leagueAccent(league,mode));
+ emblem.style.setProperty('--league-accent',leagueDisplayAccent(leagueAccent(league,mode)));
 }
 
 export function linkedLeagueIdentity(league,bars=[]){
@@ -101,6 +117,6 @@ export function linkedLeagueIdentity(league,bars=[]){
 }
 export function leagueEmblem(league,mode='bar'){
  const value=leagueMonogram(league).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const color=leagueAccent(league,mode);
+ const color=leagueDisplayAccent(leagueAccent(league,mode));
  return `<span class="league-emblem" style="--league-accent:${color}" aria-hidden="true">${value}</span>`;
 }

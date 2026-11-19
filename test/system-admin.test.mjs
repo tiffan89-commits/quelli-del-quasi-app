@@ -97,7 +97,7 @@ for(const sportsStorage of ['snapshot','rows'])test(`the verified president can 
  assert.deepEqual((await state()).leagues.find(x=>x.id===l.id).branding,branding);
  assert.equal(updates[0].change,'identity');
  assert.deepEqual(new Set(updates[0].recipients),new Set([p.id,member.id,'u1','u2']));
- const renamed={...branding,name:'Il Bar degli amici 🍻',accent:'#ffb13d',fantaAccent:'#49e891'};
+ const renamed={...branding,name:'Il Bar degli amici 🍻',accent:'#a32f72',fantaAccent:'#1234ab'};
  const rename=await call('league-profile',presidentToken,{branding:renamed});
  assert.equal(rename.status,200,await rename.clone().text());
  const saved=(await state()).leagues.find(x=>x.id===l.id);
