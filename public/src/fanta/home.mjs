@@ -32,9 +32,8 @@ function storyItems(h){
   const sheet=[data?.home,data?.away].find(side=>side?.team?.id===ownTeam);
   const starters=sheet?.starters||[];
   const scorers=[...starters.filter(p=>!p.replacedBy),...(sheet?.bench||[]).filter(p=>p.enteredFor)].filter(p=>p.events?.goals>0);
-  const ratings=starters.filter(p=>number(p.vote));
   const info=`<p class="home-story-score">${esc(last.home.name)} <b>${last.home.goals}–${last.away.goals}</b> ${esc(last.away.name)}</p>${number(own?.points)?`<p>${fp(own.points)}</p>`:''}`;
-  const details=(scorers.length?`<h3>Marcatori</h3>${playersList(scorers,p=>p.events.goals)}`:'' )+(ratings.length?`<h3>Voti dei titolari</h3>${playersList(ratings,p=>pts(p.vote))}`:'');
+  const details=(scorers.length?`<h3>Marcatori</h3>${playersList(scorers,p=>p.events.goals)}`:'' )+(starters.length?`<section class="home-story-votes"><h3>Voti dei titolari</h3>${playersList(starters,p=>number(p.vote)?pts(p.vote):'s.v.')}</section>`:'');
   items.push({id:'results',version:last.matchupId||last.round,label:'G'+last.round,title:'Giornata '+last.round,body:info+details+storyButton('giornata','Apri il tabellino',last.round,last.matchupId)});
   const voted=[...starters.filter(p=>!p.replacedBy),...(sheet?.bench||[]).filter(p=>p.enteredFor)].filter(p=>number(p.fantavote)).sort((a,b)=>b.fantavote-a.fantavote);
   if(voted.length>=4)items.push({id:'top',version:last.matchupId||last.round,label:'Top e flop',title:'Top e flop',body:'<h3>Top</h3>'+playersList(voted.slice(0,2),p=>pts(p.fantavote))+'<h3>Flop</h3>'+playersList(voted.slice(-2).reverse(),p=>pts(p.fantavote))});

@@ -15,6 +15,7 @@ html.os-on body #app>main.os-split [data-os-content]{width:100%;max-width:100%;p
 html.os-on body #app>main.os-split [data-os-header]{margin-inline:14px}
 html.os-on body #app>main.os-root:not(.os-split)[data-os-flow]{columns:auto;overflow-y:auto}
 html.os-on body #app>main.os-split [data-os-content][data-os-flow]{columns:auto}
+html.os-on body #app>main.os-split .fanta-calendar-scroll{overflow-y:auto;padding-bottom:12px!important}
 html.os-nocols.os-on body #app .os-track{columns:auto;overflow-y:auto}
 html.os-on body #app .os-track::-webkit-scrollbar{display:none}
 

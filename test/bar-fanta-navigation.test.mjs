@@ -5,6 +5,7 @@ import {routeForTab} from '../public/src/v2/tabs.mjs';
 import {currentSlipRound} from '../public/src/slip-state.mjs';
 import {findBarSlip} from '../public/src/fanta/bar-slip.mjs';
 import {renderHome,homeTeam} from '../public/src/fanta/home.mjs';
+import {renderLega} from '../public/src/fanta/lega.mjs';
 import {fantasyMatchView} from '../public/src/bar-fanta-match.mjs';
 import {patchFantasyMatch} from '../public/src/fantasy-live-detail.mjs';
 import {liveSnapshot} from '../lib/live-snapshot.mjs';
@@ -38,14 +39,18 @@ test('home banner resolves own league, competition, round and matchup without fe
 });
 test('social Fanta home shows personal match stories, form, credits and a single play action',()=>{
  const me={id:'me',name:'Squadra mia'},rival={id:'them',name:'Squadra rivale'};
- const starters=Array.from({length:5},(_,i)=>({id:'p'+i,name:'Titolare '+i,vote:5+i/2,fantavote:4+i,events:{goals:i===4?1:0}}));
+ const starters=Array.from({length:11},(_,i)=>({id:'p'+i,name:'Titolare '+i,vote:i<6?5+i/2:null,fantavote:i<6?4+i:null,events:{goals:i===4?1:0}}));
  const now=Date.parse('2026-11-19T08:00Z');
  const home={league:{id:'fanta',season:'2026/27'},me:{teamId:'me',teamName:me.name,position:3,points:9,fantapoints:260,form:['P','N','V']},round:{number:5,state:'da-schierare',deadline:'2026-11-19T16:00Z'},match:{home:me,away:rival},lineup:{},
   lastResult:{round:4,matchupId:'old',home:{...rival,goals:1},away:{...me,goals:2,points:75},outcome:'V'},
   standings:[{team:rival,position:5,form:['V','N','P']}],balances:{slip:480,auction:47},storyData:{lastMatch:{away:{team:me,starters}},tradeCount:1}};
  const view=state=>parseHTML(renderHome(state,now)).document;
  const doc=view(home),result=doc.querySelector('#fanta-story-results + template');
- assert.match(result.innerHTML,/Marcatori.*Titolare 4/s);assert.match(result.innerHTML,/Voti dei titolari/);
+ assert.match(result.innerHTML,/Marcatori.*Titolare 4/s);
+ const votes=[...result.content.querySelectorAll('.home-story-votes li')];
+ assert.deepEqual(votes.map(li=>li.querySelector('span').textContent),starters.map(p=>p.name));
+ assert.equal(votes[0].querySelector('b').textContent,'5,0');
+ assert.equal(votes[10].querySelector('b').textContent,'s.v.');
  assert.ok(doc.querySelector('#fanta-story-top'));assert.ok(doc.querySelector('#fanta-story-opponent'));assert.ok(doc.querySelector('#fanta-story-market'));
  assert.equal(doc.querySelectorAll('.primary').length,1);assert.match(doc.querySelector('.bar-home-cta').textContent,/Schiera la formazione G5/);
  assert.match(doc.querySelector('.bar-home-last-top').textContent,/2–1/);
@@ -54,6 +59,19 @@ test('social Fanta home shows personal match stories, form, credits and a single
  const saved=view({...home,lineup:{savedAt:'2026-11-19T08:00Z'},storyData:{}});
  assert.match(saved.querySelector('.bar-home-cta').textContent,/✓ Formazione G5/);
  assert.equal(saved.querySelector('#fanta-story-market,#fanta-story-top'),null);
+});
+test('Fanta calendar renders in ascending order and opens the current round in the vertical track',()=>{
+ const round=(number,state)=>({number,state,matchups:[]});
+ const rounds=[round(3,'da-schierare'),round(4,'futura'),round(2,'calcolata'),round(1,'calcolata')];
+ const model={league:{id:'fanta',name:'Lega'},calendar:{current:3,last:4,rounds}};
+ const view=(ui={})=>parseHTML(renderLega(model,{sub:'calendario',...ui})).document;
+ const doc=view();
+ assert.ok(doc.querySelector('.fanta-calendar-scroll[data-os-content][data-os-flow]'));
+ assert.deepEqual([...doc.querySelectorAll('[data-lega-round]')].map(b=>b.dataset.legaRound),['1','2','3','4']);
+ assert.equal(doc.querySelector('.fanta-cal-round.is-current.is-open button').dataset.legaRound,'3');
+ assert.equal(doc.querySelector('[data-lega-round="2"]').getAttribute('aria-expanded'),'false');
+ assert.equal(view({openRound:2}).querySelector('[aria-expanded="true"]').dataset.legaRound,'2');
+ assert.equal(view({openRound:-1}).querySelector('[aria-expanded="true"]'),null);
 });
 test('live fantasy score and player votes patch in place, preserving formations and expanded sections',()=>{
  const html=fantasyMatchView(match,round,esc,(h,a)=>h+' – '+a,String);

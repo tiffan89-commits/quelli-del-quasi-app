@@ -54,9 +54,13 @@ export function openHomeStory(trigger,{uid,mode,onAction}){
   button.setAttribute('data-seen','');
   if(!button.getAttribute('aria-label').endsWith(', già vista'))button.setAttribute('aria-label',button.getAttribute('aria-label')+', già vista');
   content.replaceChildren(button.parentElement.querySelector('template').content.cloneNode(true));
+  content.scrollTop=0;
+  const scrollable=content.scrollHeight>content.clientHeight;
+  if(scrollable)content.tabIndex=0;else content.removeAttribute('tabindex');
   progress.innerHTML=stories.map((_,i)=>`<span class="${i<index?'is-done':i===index?'is-now':''}"><i></i></span>`).join('');
   dialog.querySelector('[data-story-back]').disabled=index===0;
   play();
+  if(scrollable&&content.querySelector('.home-story-votes')&&!paused)pause.click();
  }
  pause.onclick=()=>{
   paused=!paused;
