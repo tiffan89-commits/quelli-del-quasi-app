@@ -33,7 +33,7 @@ export function renderPilotPicker(p) {
   return `<div class="fanta-pilot">
     <header class="fanta-sq-head"><span class="eyebrow">${esc(p.league.name)} · ${esc(p.league.season)} · giornata ${p.league.round}</span>
       <h1>Scegli la tua squadra</h1>
-      <p>Rose vere, voti veri, partite vere di Serie A. Le squadre senza allenatore le guida il computer: ogni giornata schiera la formazione in base a forma e disponibilità. Tu ne prendi una e la porti avanti da qui: <b>le formazioni che salvi restano davvero</b>.</p></header>
+      <p>Rose vere, voti veri, partite vere di Lega A. Le squadre senza allenatore le guida il computer: ogni giornata schiera la formazione in base a forma e disponibilità. Tu ne prendi una e la porti avanti da qui: <b>le formazioni che salvi restano davvero</b>.</p></header>
     <div class="fanta-pl-count"><strong>${p.coached}<small>/${p.league.maxTeams}</small></strong><span>squadre con un allenatore in carne e ossa · ${free.length} libere</span></div>
     ${free.length ? '<button type="button" class="secondary fanta-pl-random" data-pilot-pick="random">Scegli tu per me</button>' : ''}
     <ul class="fanta-pl-grid">${[...free, ...p.teams.filter(t => t.coach.human)].map(teamCard).join('')}</ul>
@@ -62,7 +62,7 @@ export function renderPilotInfo() {
     <div class="fanta-demo-info">
       <p>Stai giocando nella <b>lega pilota</b> del Fanta di Quelli del Quasi.</p>
       <ul>
-        <li><b>È tutto vero</b>: giocatori, partite di Serie A, voti e classifica. <b>Le formazioni che salvi restano.</b></li>
+        <li><b>È tutto vero</b>: giocatori, partite di Lega A, voti e classifica. <b>Le formazioni che salvi restano.</b></li>
         <li><b>Le squadre senza allenatore le guida il computer</b>, che ogni giornata schiera in base a forma e disponibilità. Se un amico entra, può prendere una di quelle squadre.</li>
         <li>Sei un partecipante: <b>la rosa non si cambia</b>, niente asta e niente mercato.</li>
         <li>Quando le 10 squadre hanno tutte un allenatore, si apre una nuova lega pilota.</li>

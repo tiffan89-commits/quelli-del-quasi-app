@@ -358,7 +358,7 @@ export function createApi({
             fail("Analisi disponibile dopo la chiusura della giornata", 403);
           if (r.pointsOnly || r.source === "fantacalcio")
             fail(
-              "Il profilo del pronosticatore è disponibile per le schedine di Serie A",
+              "Il profilo del pronosticatore è disponibile per le schedine del campionato",
               400,
             );
           if (wanted && !l.members.some((m) => m.uid === wanted))

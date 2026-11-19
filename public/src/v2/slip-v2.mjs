@@ -104,7 +104,7 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
         </div></dialog>`:''}
     </section>`;
   }
-  return '<section class="v2-slip" data-slip-source="'+(fanta?'fantacalcio':'seriea')+'" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'SERIE A') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
+  return '<section class="v2-slip" data-slip-source="'+(fanta?'fantacalcio':'seriea')+'" data-slip-round="'+esc(round.id||'')+'"><div class="v2-eyebrow">' + (fanta ? 'IL FANTA DEL TUO BAR' : 'CAMPIONATO') + ' · ' + esc(round.title || ('Giornata ' + round.number)) + '</div>' +
     '<h1 class="v2-title">La schedina</h1><div data-os-content data-os-slip data-slip-match-list>' + rows + '</div>'+slipNotice(missingOdds)+'</section>' +
     (ready ? renderTicketBar({round,picks,stake,credits,fmt}) : '');
 }

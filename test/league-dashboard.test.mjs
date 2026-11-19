@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {dashboardModel,countdownLabel} from '../public/src/league-dashboard.mjs';
+import {parseHTML} from 'linkedom';
+import {dashboardModel,countdownLabel,leagueDashboard} from '../public/src/league-dashboard.mjs';
 import {normalizeAvatar,avatarSvg,DEFAULT_AVATAR} from '../public/src/avatar.mjs';
 import {emptyState} from '../lib/db.mjs';
 import {session,stateFor} from '../lib/game.mjs';
@@ -16,6 +17,23 @@ test('dashboard uses shared places and keeps the fantasy wallet aggregated once 
 test('countdown selects the nearest open deadline for the selected source, never a settled or empty round',()=>{
  const l={members:[],rounds:[round('past',-1),{...round('settled',1000),settled:true},{...round('empty',1000),matches:[]},round('later',86400000),round('next',3600000),round('fanta',1000,'fantacalcio')]};
  assert.equal(dashboardModel(l,'a','seriea',now).round.id,'next');assert.equal(dashboardModel(l,'a','fantacalcio',now).round.id,'fanta');assert.equal(countdownLabel(null,now),'In attesa');assert.equal(countdownLabel(l.rounds[4].deadline,now),'1h 00m');assert.equal(countdownLabel(new Date(now).toISOString(),now),'Tempo scaduto');assert.equal(countdownLabel(new Date(now+90000000).toISOString(),now),'1g 1h 0m');
+});
+test('the Bar recap has one matching round title, selection tally and results action',()=>{
+ const closed={id:'closed',title:'Giornata 11',kickoff:new Date(now).toISOString(),matches:[{id:'m',status:'FT',score:[1,0]}]};
+ const history=[{id:'closed',title:'Giornata 11',competitionName:'Serie A',played:true,correct:3,total:10,points:5.76,profit:-20,position:3,positionChange:-2}];
+ const league={name:'Bar',members:[{uid:'u'}],rounds:[closed],progression:{seriea:{history}}};
+ const recap=()=>parseHTML(leagueDashboard(league,{id:'u',name:'Quasi'},'seriea',false,String,String)).document.querySelector('.dash-summary');
+ const card=recap(),heading=card.querySelector('.recap-heading');
+ assert.equal(heading.querySelector('h2').textContent,'Giornata 11 3/10 prese');
+ assert.equal(heading.querySelector('[data-dashboard-slip]').dataset.dashboardSlip,'closed');
+ assert.equal(card.querySelectorAll('h2, [data-dashboard-slip]').length,2);
+ assert.equal(card.querySelectorAll('.recap-grid>div').length,3);
+ assert.doesNotMatch(card.textContent,/Serie A/);
+ league.rounds.push({...closed,id:'newer',title:'Giornata 12',kickoff:new Date(now+3600000).toISOString()});
+ const pending=recap();
+ assert.equal(pending.querySelector('h2').textContent,'Giornata 12');
+ assert.equal(pending.querySelector('[data-dashboard-slip]').dataset.dashboardSlip,'newer');
+ assert.equal(pending.querySelector('.recap-grid'),null);
 });
 test('avatar is a small validated configuration: arbitrary markup, URLs and fields cannot enter its SVG',()=>{
  const malicious={skin:'" onload="alert(1)',hair:'<script>',outfit:'https://other.test',adminOnly:true};

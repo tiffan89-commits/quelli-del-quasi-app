@@ -36,7 +36,7 @@ export async function competitionAction(s,c,input,uid,kind,now=Date.now()){
  if(kind==='start'){
   const comp=s.competition;if(!comp||comp.status!=='draft')fail('Questa competizione è già stata avviata',409);
   if(!readyRosters(s))fail(`Completa e salva tutte le ${s.league.maxMembers} rose: 3 P, 8 D, 8 C e 6 A per squadra`,409);
-  const start=Number(input.startRound);if(!Number.isInteger(start)||start<1||start>38)fail('Scegli la giornata di Serie A iniziale');
+  const start=Number(input.startRound);if(!Number.isInteger(start)||start<1||start>38)fail('Scegli la giornata iniziale del campionato');
   const fixture=s.fixtures.filter(f=>f.round===start&&f.kickoff).sort((a,b)=>Date.parse(a.kickoff)-Date.parse(b.kickoff))[0];if(!fixture||Date.parse(fixture.kickoff)<=now)fail('Scegli una giornata futura con calendario disponibile');
   const data=planCompetition(s.teams.map(t=>t.id),comp.kind,{groups:Number(input.groups||2),qualify:Number(input.qualify||2),twice:!!input.twice});
   const needed=data.plan.length+(comp.kind==='groups'?Math.log2(Number(input.groups||2)*Number(input.qualify||2)):comp.kind==='knockout'?Math.ceil(Math.log2(s.teams.length))-1:0);
@@ -68,6 +68,6 @@ export async function advanceCup(s,c){
   }ids=winners.sort((a,b)=>a.seed-b.seed).map(w=>w.team);
  }
  if(ids.length===1){data.winner=ids[0];await c.query("UPDATE fanta.competitions SET status='finished',data=$2 WHERE id=$1",[comp.id,JSON.stringify(data)]);return true;}
- if(comp.start_round+last.number>38){data.needsReview='Giornate di Serie A terminate: serve una decisione del presidente.';await c.query('UPDATE fanta.competitions SET data=$2 WHERE id=$1',[comp.id,JSON.stringify(data)]);return false;}
+ if(comp.start_round+last.number>38){data.needsReview='Giornate di campionato terminate: serve una decisione del presidente.';await c.query('UPDATE fanta.competitions SET data=$2 WHERE id=$1',[comp.id,JSON.stringify(data)]);return false;}
  data.plan.push(knockoutStage(ids,last.number+1));await c.query('UPDATE fanta.competitions SET data=$2 WHERE id=$1',[comp.id,JSON.stringify(data)]);await materializeCalendar(c,{...comp,data},s.league.season);return true;
 }

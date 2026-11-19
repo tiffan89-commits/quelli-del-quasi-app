@@ -253,7 +253,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.doesNotMatch(html, /league-regulation|Regolamento della lega|Movimenti e giornate archiviate|Entra o crea una nuova lega|class="card my-league"/);
   assert.match(html, /class="dash-hero"/);
   assert.match(html, /id="day-objectives"/);
-  assert.match(html, /class="dash-summary home-card"/);
+  assert.match(html, /class="dash-summary home-card round-recap/);
   assert.doesNotMatch(html, /Il Fantacalcio del Quasi|Scegli la tua squadra/);
   assert.doesNotMatch(html,/Borsa del Quasi|portfolio-mini/);
   vm.runInContext("page='regolamento';render()", ctx);
@@ -284,7 +284,7 @@ test("live results render inside the slip, calendar remains clickable, standings
   vm.runInContext("page='classifiche';rankingScope='seriea';render()", ctx);
   assert.match(html,/data-ranking-metric="points"/);assert.doesNotMatch(html,/Vittorie casa/);
   vm.runInContext("page='schedina';sourceScope='seriea';slipScope='standings';render()",ctx);
-  assert.match(html,/Classifica Serie A/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori|differenza reti|Ultimo aggiornamento/);assert.match(html,/serie-table-card/);
+  assert.match(html,/Classifica del campionato/);assert.doesNotMatch(html,/Vittorie casa|Vittorie fuori|differenza reti|Ultimo aggiornamento/);assert.match(html,/serie-table-card/);
   vm.runInContext("slipScope='mine'",ctx);
   vm.runInContext("page='schedina';rankingScope='league';render()", ctx);
   assert.doesNotMatch(html, /data-source="fantacalcio"/);

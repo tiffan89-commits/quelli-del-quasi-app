@@ -639,7 +639,7 @@ function slipsPage(l, r, m) {
       ["mine", "La mia schedina", "La mia"],
       ["bar", "Le schedine del Bar", "Del Bar"],
       ["community", "Il verdetto", "Verdetto"],
-      ...(sourceScope==='seriea'?[["standings","Classifica Serie A","Serie A"]]:[]),
+      ...(sourceScope==='seriea'?[["standings","Classifica del campionato","Campionato"]]:[]),
     ]
       .map(
         ([id, t, short]) =>
@@ -897,7 +897,7 @@ function schedina(l, r, m) {
     " <small>cr</small></strong></div><div><span>Impegnati</span><strong>" +
     fmt(m.committedCredits || 0) +
     " <small>cr</small></strong></div><div><span>" +
-    (sourceScope === "fantacalcio" ? "Punti Fantacalcio" : "Punti Serie A") +
+    (sourceScope === "fantacalcio" ? "Punti Fantacalcio" : "Punti campionato") +
     "</span><strong>" +
     fmt(
       sourceScope === "fantacalcio"
@@ -1428,7 +1428,7 @@ function regulation(l){
  const initial=fmt(l?.rules?.initial??500);
  return `<section class="hero"><h1>IL REGOLAMENTO.</h1></section><div class="rule-grid">
   <article class="card"><h3>Come giocare</h3><p>Scegli le partite che vuoi, con un esito per partita. Ogni scelta si chiude al suo calcio d’inizio. La puntata si blocca quando inizia la prima partita che hai scelto.</p></article>
-  <article class="card"><h3>Punti</h3><p>Ogni esito giusto vale la quota accettata. Quota 1,35 significa 1,35 punti. Esiti sbagliati o saltati valgono zero. Si parte dalla giornata 11 di Serie A 2026/27 e dalle giornate Fanta corrispondenti ancora da liquidare.</p></article>
+  <article class="card"><h3>Punti</h3><p>Ogni esito giusto vale la quota accettata. Quota 1,35 significa 1,35 punti. Esiti sbagliati o saltati valgono zero. Si parte dalla giornata 11 di Lega A 2026/27 e dalle giornate Fanta corrispondenti ancora da liquidare.</p></article>
   <article class="card"><h3>Puntata</h3><p>Hai ${initial} crediti virtuali iniziali. Puoi puntare da 1 credito al saldo disponibile, tenendo da parte 1 credito per ogni giornata successiva in cui devi ancora giocare.</p></article>
   <article class="card"><h3>Crediti</h3><p>Se indovini tutte le partite giocate, ricevi la puntata moltiplicata per il prodotto delle quote. Gli eventi annullati valgono quota 1. Se sono tutti annullati, ti viene restituita la puntata.</p></article>
   <article class="card"><h3>Risultati</h3><p>Live, punti e crediti diventano definitivi dopo la conferma dei risultati. Le quote mancanti sono indicate con ?. Le giornate già liquidate conservano il loro punteggio.</p></article>
@@ -1459,7 +1459,7 @@ function serieACalendarPage() {
   const c = state.calendar;
   if (!c)
     return '<div class="card">Calendario ufficiale disponibile nella versione Netlify.</div>';
-  return `<section class="hero"><div class="eyebrow">SERIE A · ${c.season}/${String(c.season + 1).slice(-2)}</div><h1>38 GIORNATE.<br><em>380 POSSIBILI SCUSE.</em></h1><p>Date, partite e risultati.</p></section>${renderCalendarSections(
+  return `<section class="hero"><div class="eyebrow">LEGA A · ${c.season}/${String(c.season + 1).slice(-2)}</div><h1>38 GIORNATE.<br><em>380 POSSIBILI SCUSE.</em></h1><p>Date, partite e risultati.</p></section>${renderCalendarSections(
     c.rounds,
     (r, focus) =>
       `<details class="card" ${focus ? "open" : ""}><summary style="cursor:pointer;font:600 24px Barlow Condensed">Giornata ${r.number} <span class="muted tiny">· ${r.matches.every((m) => m.status === "FT" && m.score) ? "Conclusa" : r.date.split("-").reverse().join("/")}</span></summary>${groupMatches(
@@ -1816,7 +1816,7 @@ function serieATable() {
   if (!t) return '<div class="card">Classifica in aggiornamento.</div>';
   const columns=["#","Squadra","Pt","PG","V","N","P","GF","GS","DR"];
   const rows=t.rows.map((x,i)=>`<tr data-ranking-team="${esc(x.name)}"><td>${i+1}</td><td>${teamLabel(x.name,{fantasy:false})}</td><td><b class="green">${x.points}</b></td>${["played","won","drawn","lost","gf","gs","dr"].map(k=>`<td>${x[k]}</td>`).join('')}</tr>`).join('');
-  return `<h1 class="sr-only">Classifica Serie A</h1><div data-os-content data-os-flow class="serie-standings"><div class="serie-table-card"><table class="serie-table"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  return `<h1 class="sr-only">Classifica del campionato</h1><div data-os-content data-os-flow class="serie-standings"><div class="serie-table-card"><table class="serie-table"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function otherSlips(l, r) {
   if (!l || !r)

@@ -147,7 +147,6 @@ body.v2-on .league-dashboard{border:0;border-radius:0;background:none;box-shadow
 .dash-numbers strong sup{font-size:.42em;vertical-align:super;margin-left:2px;color:#cdb980}
 .dash-numbers small{font-size:11px;color:#b7c8b4}
 .dash-numbers>button:disabled{opacity:.55}
-body.v2-on .league-dashboard .round-recap{background:none;border:0;padding:22px 2px 6px}
 body.v2-on .league-dashboard .dashboard-sources{padding:14px 0 0;justify-content:flex-start}
 .dash-section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:0 0 12px}
 .dash-section-head h2{font:600 26px/1.05 'Barlow Condensed',sans-serif;margin:0}
