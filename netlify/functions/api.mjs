@@ -4,7 +4,7 @@ import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
 import {createLeaguePair} from '../../fanta/league-creation.mjs';
 import {addLeagueMember,leagueAccessAction,leagueAccessInbox,leagueDirectory,updateNickname} from '../../lib/league-access.mjs';
 import {readLeagueParticipants} from '../../lib/league-participants.mjs';
-import {detachBarCoach} from '../../fanta/linked-membership.mjs';
+import {detachBarCoach,reattachBarCoach} from '../../fanta/linked-membership.mjs';
 import {dispatchFanta} from '../../fanta/jobs.mjs';
 import {inviteInfo} from '../../lib/public-area.mjs';
 import {liveSnapshot} from '../../lib/live-snapshot.mjs';
@@ -687,15 +687,26 @@ export function createApi({
               l.removedMembers??=[];
               if(!l.removedMembers.some(m=>m.uid===p.uid))l.removedMembers.push({uid:p.uid,initial:l.rules.initial,credits:l.rules.initial,points:0,removedAt:new Date().toISOString(),removedBy:u.id});
             }
-            const fantaLeague=detached[0]?.league_id||l.nativeFantaLink?.leagueId;
+            const former=detached[0];
+            if(former)l.removedMembers.find(m=>m.uid===p.uid).removedFantaTeam={id:former.id,leagueId:former.league_id};
+            const fantaLeague=former?.league_id||l.nativeFantaLink?.leagueId;
             if(c&&fantaLeague){
               const {rows}=await c.query('SELECT user_id FROM fanta.teams WHERE league_id=$1 AND user_id IS NOT NULL',[fantaLeague]);
               for(const row of rows)recipients.add(row.user_id);
             }
             return {data:{ok:true},leagueUpdate:{league:l.id,fantaLeague,change:'members',recipients:[...recipients]}};
           }
-          else if (route === "member-restore")
-            restoreLeagueMember(l, p.uid, u.id);
+          else if (route === "member-restore") {
+            const target=s.users.find(person=>person.id===p.uid);
+            if(!target)fail('Partecipante non trovato',404);
+            const member=restoreLeagueMember(l,p.uid,u.id),former=member.removedFantaTeam;
+            delete member.removedFantaTeam;
+            const restored=c?await reattachBarCoach(c,l,target,member,{former}):null;
+            return {data:{ok:true,...(former&&!restored?.team?{teamUnavailable:true}:{})},leagueUpdate:{
+              league:l.id,fantaLeague:restored?.league||l.nativeFantaLink?.leagueId,change:'members',
+              recipients:[...new Set([...l.members.map(m=>m.uid),...(restored?.coaches||[])])]
+            }};
+          }
           else if (route === "rules") l.rules = validateRules(p.rules);
           else if (route === "league-profile") {
             const branding=updateLeagueProfile(l,p.branding||{});

@@ -957,7 +957,12 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     api.invalidateReads?.();
     const id=league()?.id,revision=++membershipRevision;
     if(suspended){ui.lega.data=null;refreshMembershipOnResume=true;return;}
-    if(!id||destroyed||ui.choiceLeagueId)return;
+    if(!id||destroyed)return;
+    if(ui.choiceLeagueId){
+      const next=await api.bootstrap(id).catch(()=>null);
+      if(!next||destroyed||suspended||revision!==membershipRevision||ui.choiceLeagueId!==id)return;
+      bootstrap=next;await load();return;
+    }
     const visible=needsLeagueDetails(ui.tab);
     const data=await Promise.all([currentChanged?api.home(id):null,currentChanged&&visible?api.league(id):null,listChanged?api.leagues():null]).catch(()=>null);
     if(!data||destroyed||suspended||id!==league()?.id||revision!==membershipRevision)return;

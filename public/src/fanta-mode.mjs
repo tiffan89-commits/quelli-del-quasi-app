@@ -37,5 +37,10 @@ export async function enterFanta(root,{user,onBar,barLeagues=[],leagueId=null,fo
  instance=mountFanta(root,{api:demo?demoSession.fanta:real,bootstrap,barLeagues,slipServices:demoServices?{...demoServices,account:slipServices?.account}:slipServices,initialTab,viewerId:user?.id,demo:access==='pilot'?'pilot':demo,onModeChange:async (mode,target)=>{if(mode==='bar'){const hide=()=>{};leaveFanta({keepSplash:true});try{localStorage.setItem('qdq:mode','bar');}catch{}writeAppRoute({mode:'bar',page:target?.page==='invita'?'impostazioni':target?.page==='barleague'?'lega':target?.page==='lega'?'oggi':target?.page||'oggi',league:linkedBarTarget(barLeagues,target?.fantaLeague,target)?.league});onBar?.(linkedBarTarget(barLeagues,target?.fantaLeague,target));requestAnimationFrame(hide);}}});
  await instance.ready;
  if(assigned&&mine===operation)document.dispatchEvent(new CustomEvent('quasi:fanta-team-claimed',{detail:{league:instance.leagueId}}));
- }catch{if(mine===operation)root.innerHTML=modeSwitch('fanta','data-app-mode')+'<main class="fanta-empty"><h2>Il Fanta si sta preparando.</h2><p>Riprova tra poco.</p><button class="secondary" data-app-mode="bar">Torna al Bar</button></main>';}finally{hideSplash();}
+ }catch{
+  if(mine===operation){
+   root.innerHTML='<main class="fanta-empty"><h2>Il Fanta non si è caricato</h2><button type="button" class="primary" data-fanta-entry-retry>Riprova</button> <button type="button" class="secondary" data-app-mode="bar">Torna al Bar</button></main>';
+   root.querySelector('[data-fanta-entry-retry]').onclick=()=>void enterFanta(root,{user,onBar,barLeagues,leagueId,force:true,slipServices,initialTab,initialSection});
+  }
+ }finally{hideSplash();}
 }

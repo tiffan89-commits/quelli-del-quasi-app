@@ -9,6 +9,7 @@ import {roundRobin,materializeCalendar} from './competitions.mjs';
 import {writeAutoLineups} from './auto-lineups.mjs';
 import {syncNativeBar} from './bar.mjs';
 import {availableTeamNames} from './team-names.mjs';
+import {formerTeamAtJoin} from './linked-membership.mjs';
 
 // All writes below are one-off transactions, never part of a client's read path.
 export async function ensureBar(c,league,{barId,now=Date.now()}={}){
@@ -73,10 +74,20 @@ export async function runRandomCreation(jobId,{connect=connection,env=process.en
 export async function claimRandom(user,leagueId,{connect=connection,random=randomInt,teamId=null}={}){
  if(teamId!==null&&(typeof teamId!=='string'||!teamId||teamId.length>200))fail('Scegli una squadra valida');
  return withPilotTransaction(async c=>{await c.query(`SELECT id FROM ${barMembershipRoot()} WHERE id=1 FOR UPDATE`);const row=(await c.query(`SELECT l.*,b.bar_league_id FROM fanta.leagues l JOIN fanta.bar_links b ON b.fanta_league_id=l.id AND b.active WHERE l.id=$1 AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL`,[leagueId])).rows[0];if(!row)fail('Lega non disponibile',404);
-  const member=(await c.query(`SELECT 1 FROM ${barMembershipRoot()} CROSS JOIN LATERAL jsonb_array_elements(payload->'leagues') l CROSS JOIN LATERAL jsonb_array_elements(l->'members') m WHERE l->>'id'=$1 AND m->>'uid'=$2 AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(coalesce(l->'removedMembers','[]')) gone WHERE gone->>'uid'=$2)`,[row.bar_league_id,user.id])).rows.length;if(!member)fail('Devi prima entrare nel Bar della lega',403);
-  const existing=(await c.query('SELECT id FROM fanta.teams WHERE league_id=$1 AND user_id=$2',[leagueId,user.id])).rows[0];if(existing)return {league:{id:leagueId},team:existing,reused:true};
+  const member=(await c.query(`SELECT m AS member,l->'members' AS members,l->'removedMembers' AS removed FROM ${barMembershipRoot()}
+   CROSS JOIN LATERAL jsonb_array_elements(payload->'leagues') l CROSS JOIN LATERAL jsonb_array_elements(l->'members') m
+   WHERE l->>'id'=$1 AND m->>'uid'=$2 AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(coalesce(l->'removedMembers','[]')) gone WHERE gone->>'uid'=$2)`,[row.bar_league_id,user.id])).rows[0];
+  if(!member)fail('Devi prima entrare nel Bar della lega',403);
+  const teams=(await c.query('SELECT id,name,user_id,joined_at FROM fanta.teams WHERE league_id=$1 ORDER BY id FOR UPDATE',[leagueId])).rows;
+  const existing=teams.find(t=>t.user_id===user.id);if(existing)return {league:{id:leagueId},team:{id:existing.id},reused:true};
   if(row.rules?.creationPending)fail('Le rose sono ancora in preparazione. Riprova tra poco.',409);
-  const free=(await c.query('SELECT id,name FROM fanta.teams WHERE league_id=$1 AND user_id IS NULL ORDER BY id FOR UPDATE',[leagueId])).rows;if(!free.length)fail('Tutte le squadre hanno già un allenatore',409);const team=teamId?free.find(t=>t.id===teamId):free[random(free.length)];if(!team)fail('Questa squadra non è più disponibile. Scegline un’altra.',409);await c.query('UPDATE fanta.teams SET user_id=$2,manager=$3,joined_at=now() WHERE id=$1',[team.id,user.id,user.name||user.username]);await ensureBar(c,row,{barId:row.bar_league_id});return {league:{id:leagueId},team};
+  const free=teams.filter(t=>!t.user_id);
+  if(!free.length)fail('Tutte le squadre hanno già un allenatore',409);
+  const former=teamId===null?formerTeamAtJoin(teams,[...member.members,...(member.removed||[])],member.member):null;
+  const pick=teamId?free.find(t=>t.id===teamId):former?free.find(t=>t.id===former):free[random(free.length)];
+  if(!pick)fail('Questa squadra non è più disponibile. Scegline un’altra.',409);
+  await c.query(`UPDATE fanta.teams SET user_id=$2,manager=$3,joined_at=CASE WHEN $4::boolean THEN joined_at ELSE now() END WHERE id=$1`,[pick.id,user.id,user.name||user.username,!!former]);
+  await ensureBar(c,row,{barId:row.bar_league_id});return {league:{id:leagueId},team:{id:pick.id,name:pick.name}};
  },{connect});
 }
 export async function setSlips(user,leagueId,enabled,{connect=connection}={}){if(typeof enabled!=='boolean')fail('Impostazione non valida');return withPilotTransaction(async c=>{

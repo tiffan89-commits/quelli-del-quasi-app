@@ -36,7 +36,8 @@ for(const sportsStorage of ['snapshot','rows'])test(`Bar and Fanta share the mem
  const options={connect:f.connect,sportsStorage},events=[];
  const api=createApi({participantsReader:(token,id,mode,opts)=>readLeagueParticipants(token,id,mode,{...options,...opts}),membershipTransact:fn=>membershipTransaction(fn,options),env:{}});
  const get=(id,mode,token='token1')=>api(new Request(root+'/api/league-participants?'+new URLSearchParams({league:id,mode}),{headers:{cookie:'sid='+token}}));
- const remove=(token,uid)=>api(new Request(root+'/api/member-remove',{method:'POST',headers:{cookie:'sid='+token},body:JSON.stringify({league:bar,uid})}),{leagueUpdate:event=>events.push(event)});
+ const membership=(action,token,uid)=>api(new Request(root+'/api/member-'+action,{method:'POST',headers:{cookie:'sid='+token},body:JSON.stringify({league:bar,uid})}),{leagueUpdate:event=>events.push(event)});
+ const remove=(token,uid)=>membership('remove',token,uid);
  assert.equal((await get(bar,'bar','unknown')).status,403);
  assert.equal((await get(bar,'bar','token3')).status,403);
  assert.equal((await get(league,'fanta','token3')).status,403);
@@ -60,6 +61,13 @@ for(const sportsStorage of ['snapshot','rows'])test(`Bar and Fanta share the mem
  assert.equal((await get(league,'fanta','token2')).status,403);
  assert.equal((await api(new Request(root+logo,{headers:{cookie:'sid=token2'}}))).status,404);
  assert.deepEqual(events,[{league:bar,fantaLeague:league,change:'members',recipients:['u1','u2']}]);
+ assert.equal((await membership('restore','token2','u2')).status,403);
+ const restored=await membership('restore','token1','u2');
+ assert.equal(restored.status,200,await restored.clone().text());
+ assert.equal((await get(league,'fanta','token2')).status,200);
+ assert.equal((await f.db.query("SELECT user_id FROM fanta.teams WHERE id='t2'")).rows[0].user_id,'u2');
+ assert.equal((await f.db.query("SELECT user_id FROM fanta.teams WHERE id='bot'")).rows[0].user_id,null);
+ assert.deepEqual(events[1],{league:bar,fantaLeague:league,change:'members',recipients:['u1','u2']});
 });
 
 test('one hub and compact participant rows have member-only actions, inline badges and independent zoom controls',()=>{

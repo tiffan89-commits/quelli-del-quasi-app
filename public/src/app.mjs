@@ -1,6 +1,7 @@
 import {joinInvite} from './invite-join.mjs';
 import {bindSwipeBack,openMatchPage} from './match-page.mjs';
 import {backButton,bindScreenBack} from './back-navigation.mjs';
+import {withMembershipProgress} from './membership-progress.mjs';
 import {bindSiteValidation} from './site-validation.mjs';
 import {askConfirmation} from './site-confirm.mjs';
 import {presidentWorkspace,presidentOperationButtons} from './president-workspace.mjs';
@@ -365,6 +366,7 @@ const barRoutePages={solleciti:'solleciti',seriea:'seriea',partecipanti:'parteci
 const barPageFor=route=>isLeagueEntryPage(route?.page)?route.page:barRoutePages[route?.page]||'lega';
 const deletedLeagues=new Set();
 let leagueRefreshQueued=false,leagueWorkspaceView=null,presidentOperation=null,presidentNative=null;
+let finishSnapshotRefresh=null,activeSnapshotRefresh=null;
 function loadLeagueWorkspace(id,mode){return requestJson('/api/league-participants?'+new URLSearchParams({league:id,mode}),{credentials:'same-origin'});}
 function removeLeagueParticipant({bar,uid}){return api('member-remove',{league:bar.id,uid});}
 function resetLeagueView(id=null){
@@ -399,9 +401,16 @@ function refreshLeagueMembers(){
   if(refreshing){leagueRefreshQueued=true;return;}
   void refresh();
 }
+async function refreshMembershipAfterWrite({bar}={}){
+  if(!bar)return;
+  while(activeSnapshotRefresh)await activeSnapshotRefresh;
+  const updated=await refresh(true);
+  if(!updated||await leagueWorkspaceView?.ready===false)throw Error('Modifica salvata. Ricarica la lega per vedere i partecipanti aggiornati.');
+}
 async function refresh(reset = false) {
   if (refreshing) return false;
   refreshing = true;
+  activeSnapshotRefresh=new Promise(resolve=>{finishSnapshotRefresh=resolve;});
   try {
     const next = await api("state?lite=1&ledger=0");
     if (!next || !Array.isArray(next.leagues))
@@ -491,7 +500,7 @@ async function refresh(reset = false) {
       chatBadge();
       updateDashboard();
     }
-    checkLeagueAccess();
+    if(!document.querySelector('.membership-progress[open]'))checkLeagueAccess();
     return true;
   } catch (e) {
     offline = true;
@@ -506,6 +515,7 @@ async function refresh(reset = false) {
     return false;
   } finally {
     refreshing = false;
+    finishSnapshotRefresh?.();activeSnapshotRefresh=null;finishSnapshotRefresh=null;
     if(leagueRefreshQueued){leagueRefreshQueued=false;refreshLeagueMembers();}
     if(state.user){await loadAppStyles();const header=document.getElementById('app-header');if(header)document.documentElement.style.setProperty('--ux-header-height',header.offsetHeight+'px');}
     await initialViewReady;
@@ -785,7 +795,7 @@ function render() {
   syncChatLauncher(l);
   bind(l, r);
   const workspace=$('[data-league-workspace]');
-  leagueWorkspaceView=workspace&&l?bindLeagueWorkspace(workspace,{load:state.user.demo?()=>Promise.resolve(barLeagueFallback(barDemo?.state.leagues.find(item=>item.id===l.id)||l,state.user.id)):loadLeagueWorkspace,remove:removeLeagueParticipant,initial:barLeagueFallback(l,state.user.id),onRemoved:refreshLeagueMembers,onPaint:chatBadge}):null;
+  leagueWorkspaceView=workspace&&l?bindLeagueWorkspace(workspace,{load:state.user.demo?()=>Promise.resolve(barLeagueFallback(barDemo?.state.leagues.find(item=>item.id===l.id)||l,state.user.id)):loadLeagueWorkspace,remove:removeLeagueParticipant,initial:barLeagueFallback(l,state.user.id),onRemoved:refreshMembershipAfterWrite,onPaint:chatBadge}):null;
   const directory=$('[data-league-directory]');
   if(directory)void bindLeagueDirectory(directory,{api,onJoined:enterAccessLeague,onSupport:openLeagueAccessSupport})();
   const codeForm=$('[data-join-code]');
@@ -1437,8 +1447,15 @@ function bindPresidentOperations(root,l){
  for(const button of root.querySelectorAll('[data-president-restore]'))button.onclick=async()=>{
   const member=l.removedMembers.find(m=>m.uid===button.dataset.presidentRestore);
   if(!member||button.disabled)return;button.disabled=true;
-  try{if(await askConfirmation({title:'Riammetti partecipante',message:'Vuoi riammettere '+member.name+' nella lega?',confirmLabel:'Riammetti'}))await act('member-restore',{uid:member.uid},'Partecipante riammesso.');}
-  finally{button.disabled=false;}
+  try{
+   if(!await askConfirmation({title:'Riammetti partecipante',message:'Vuoi riammettere '+member.name+' nella lega?',confirmLabel:'Riammetti'})||!button.isConnected)return;
+   const result=await withMembershipProgress(document,'Riammissione del partecipante…',async()=>{
+    const saved=await api('member-restore',{league:l.id,uid:member.uid});
+    await refreshMembershipAfterWrite({bar:l});
+    return saved;
+   });
+   notify(result.teamUnavailable?'Partecipante riammesso nel Bar. Verifica la disponibilità della squadra precedente nel Fanta.':'Partecipante riammesso.');
+  }catch(error){notify(error.message);}finally{button.disabled=false;}
  };
 }
 function calendarStatus(m) {
@@ -1523,7 +1540,7 @@ function navigatePage(next) {
 }
 function nativeSlipServices(){return {
  account:{groups:accountGroups,bind:(onChanged,barLeague)=>bindAccount(onChanged,{manageFanta:false,barLeague})},
- league:{load:loadLeagueWorkspace,remove:removeLeagueParticipant,onRemoved:refreshLeagueMembers},
+ league:{load:loadLeagueWorkspace,remove:removeLeagueParticipant,onRemoved:refreshMembershipAfterWrite},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
  save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1&ledger=0');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1&ledger=0');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
