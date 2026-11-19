@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.42.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.1...v0.42.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* apri le formazioni dal basso e uniforma il ritorno mobile ([0d72631](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/0d726311f019a10c2e90ad9f53f820b09f068787))
+
 ## [0.42.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.0...v0.42.1) (2026-11-19)
 
 
