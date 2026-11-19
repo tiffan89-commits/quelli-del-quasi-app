@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.41.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.41.0...v0.41.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* corregge calendario e interfaccia mobile Fanta ([a499ad1](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/a499ad11d5c8e7142f78a6337df899ec0815aa94))
+
 ## [0.41.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.40.0...v0.41.0) (2026-11-19)
 
 
