@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.39.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.38.0...v0.39.0) (2026-11-19)
+
+
+### Features
+
+* unifica il pannello del presidente e migliora la schedina ([f74a375](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/f74a375bffee8399e3679cb7b712f680cbae73ee))
+
 ## [0.38.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.37.0...v0.38.0) (2026-11-19)
 
 
