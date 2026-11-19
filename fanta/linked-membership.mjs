@@ -13,9 +13,10 @@ export async function detachBarCoach(c,bar,uid){
 // Older removals did not record a team ID. Recover one only when the original
 // Bar join and exactly one detached team assignment share the same timestamp.
 export function formerTeamAtJoin(teams,members,member){
- const at=Date.parse(member?.joinedAt);
- if(!Number.isFinite(at)||members.some(m=>m.uid!==member.uid&&Math.abs(Date.parse(m.joinedAt)-at)<=1000))return null;
- const matches=teams.filter(t=>Math.abs(Date.parse(t.joined_at)-at)<=1000);
+ const timestamp=value=>new Date(value??NaN).getTime();
+ const at=timestamp(member?.joinedAt);
+ if(!Number.isFinite(at)||members.some(m=>m.uid!==member.uid&&Math.abs(timestamp(m.joinedAt)-at)<=1000))return null;
+ const matches=teams.filter(t=>Math.abs(timestamp(t.joined_at)-at)<=1000);
  return matches.length===1&&!matches[0].user_id?matches[0].id:null;
 }
 

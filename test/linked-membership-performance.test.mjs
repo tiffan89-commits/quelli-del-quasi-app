@@ -23,8 +23,8 @@ test('Bar removal atomically detaches only the linked Fanta coach, cannot be rev
  }finally{await f.close();}
 });
 test('legacy re-admission restores a bench only when its assignment time identifies one member and team',()=>{
- const earlier='2026-11-08T12:00:00.000Z',prior='2026-11-18T05:33:57.817Z';
- const member={uid:'returning',joinedAt:'2026-11-18T05:33:57.862Z'};
+ const earlier='2026-11-08T12:00:00.000Z',prior=new Date('2026-11-18T05:33:57.984Z');
+ const member={uid:'returning',joinedAt:'2026-11-18T05:33:58.029Z'};
  const teams=[{id:'other',joined_at:earlier,user_id:'somebody'},{id:'old-team',joined_at:prior,user_id:null}];
  const members=[{uid:'somebody',joinedAt:earlier},member];
  assert.equal(formerTeamAtJoin(teams,members,member),'old-team');
