@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.42.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.0...v0.42.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* pianifica le probabili e riallinea i job delle gare ([a5997aa](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/a5997aa07830a604e64c9bf4f05ece251be3645e))
+
 ## [0.42.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.41.1...v0.42.0) (2026-11-19)
 
 
