@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.42.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.4...v0.42.5) (2026-11-19)
+
+
+### Bug Fixes
+
+* compatta la palette e aggiunge i colori personalizzati della lega ([63de7e8](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/63de7e88b1001b975d42c4c790df47acbf874eaf))
+
 ## [0.42.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.3...v0.42.4) (2026-11-19)
 
 
