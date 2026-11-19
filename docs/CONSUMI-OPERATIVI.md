@@ -32,7 +32,8 @@ Blobs, DB, deploy e preview: nessuna attribuzione di spesa agli altri progetti.
 | sync-fantacalcio | ogni 5 minuti | connessioni, sessioni, import e assets | verifica mattutina o richiesta manuale del presidente |
 | send-chat-push | ogni minuto | coda dispositivi e messaggi | job creato dal messaggio; tentativi limitati sui destinatari rimasti |
 | send-reminders | ogni minuto | scansioni leghe, utenti e code | push a −2h/email a −1h, come richiesto; nessuna scansione periodica |
-| sync-match-cache | ogni 5 minuti | dettagli, probabili, ritratti e relativo DB | avvio nel controllo mattutino; letture utente dal DB |
+| sync-match-cache | ogni 5 minuti | dettagli, probabili, ritratti e relativo DB | recupero dei dettagli e dei ritratti nel controllo mattutino |
+| probable-lineups | 10 passaggi giornalieri tra due giornate | fonti editoriali condivise per la prossima giornata | da 08:00 a 21:30 ogni 90 minuti, fino a 30 minuti dal primo calcio d’inizio |
 | sync-fantasy-lineups | ogni ora | export Excel/browser e import | avvio mattutino/manuale; hash semantico invariato non importa di nuovo |
 | FE Bar | live privato ogni minuto anche senza gare | letture per utente, progressioni/classifiche | cache sportiva pubblica CDN solo nella finestra utile; dati privati su cambio risultato |
 | FE Fanta | giornata aperta ogni minuto | due letture private anche tra giorni senza gare | verifica finestra effettiva; niente overlap/offline; Bar sospeso in modalità Fanta |
@@ -66,6 +67,7 @@ consumo zero o un risparmio in euro senza misurare il periodo successivo.
   dei servizi collegati/probabili. Ogni sottolavoro usa il worker già autorizzato;
   errori restano nei relativi stati amministrativi. Se mancano dati definitivi, ripresa dopo un’ora solo sulle partite incomplete,
   fino a 48 ore dalla prima verifica. Un operatore può ripetere la verifica.
+- Le probabili ripartono dopo la chiusura registrata della giornata. Il primo passaggio del giorno verifica gli orari ufficiali delle gare candidate. Il worker Windows esegue questa coda separatamente da live, ufficiali e chiusure.
 - La richiesta del presidente e l'azione dell'amministratore sono eventi utente:
   possono avviare un aggiornamento senza attendere una nuova pubblicazione.
 - Il nuovo motore ha una manutenzione iniziale finita, a blocchi di 12 fixture:
