@@ -58,7 +58,7 @@ test('Bar slip uses plain home shirts and changes only the away shirt if the hom
  assert.equal(contrast[1].querySelector('rect').getAttribute('fill'),KITS.Juventus.home.a);
  assert.equal(document.querySelectorAll('.club-kit text,.club-kit img').length,0);
  assert.doesNotMatch(renderTabBar('profilo'),/data-v2-tab="profilo"/);
- assert.match(renderLeagueChip({name:'Bar',members:[]},'u',esc,fmt,'',null,'crediti Bar',true),/data-bar-page="impostazioni"[^>]+aria-label="Apri impostazioni"/);
+ assert.doesNotMatch(renderLeagueChip({name:'Bar'},'u',esc,fmt),/settings-entry|v2-credits|league-add/);
 });
 
 test('lineups share fixture kits without removing the player surname and number',()=>{

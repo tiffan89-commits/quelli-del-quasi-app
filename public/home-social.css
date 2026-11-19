@@ -1,0 +1,186 @@
+body[data-game-mode] {
+  --mode-accent:#ffcf83;
+  --mode-ink:#152018;
+  --lime:var(--mode-accent);
+  --social-radius:20px;
+}
+body[data-game-mode="fanta"] { --mode-accent:#78e0ba; }
+body[data-game-mode] #app-header>.shell-compact {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; min-height:58px; padding:6px max(14px,env(safe-area-inset-left)) 6px max(14px,env(safe-area-inset-right));
+}
+body[data-game-mode] .shell-compact .v2-league-chip {
+  display:flex; align-items:center; text-align:start; min-width:0; min-height:44px; flex:0 1 auto;
+  gap:8px; border:0; background:none; padding:0; max-width:none; border-radius:12px;
+  height:auto!important; min-height:44px!important;
+}
+body[data-game-mode] #app-header .shell-compact .v2-league-chip .league-emblem { flex:0 0 36px; width:36px; height:36px; border-radius:11px; font-size:12px; }
+.shell-league-copy { display:grid; min-width:0; line-height:1.15; }
+.shell-league-copy small { font-size:11px; color:var(--muted); font-weight:500; }
+body[data-game-mode] .shell-compact .v2-league-name { max-width:none; font-size:14px; color:var(--white); }
+.shell-chevron { color:var(--muted); flex:none; line-height:1; }
+body[data-game-mode] .shell-compact .fanta-mode { display:flex; flex:none; border:0; padding:2px; background:var(--panel); border-radius:999px; }
+body[data-game-mode] .shell-compact .fanta-mode-btn { min-height:44px!important; height:auto!important; padding:0 12px; border:0; background:transparent; color:var(--muted); border-radius:999px; }
+body[data-game-mode] .shell-compact .fanta-mode-btn.is-active { background:var(--mode-accent); color:var(--mode-ink); }
+body[data-game-mode] .v2-tabbar .v2-tab.is-active { color:var(--mode-accent)!important; }
+body[data-game-mode] .v2-tabbar .v2-tab { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; min-height:44px; padding:0!important; }
+body[data-game-mode] .v2-tabbar {
+  position:fixed; bottom:0; z-index:25; min-height:56px;
+  height:calc(52px + max(4px,env(safe-area-inset-bottom)))!important;
+  padding:3px 5px max(4px,env(safe-area-inset-bottom))!important;
+}
+body[data-game-mode] #app button.primary:not(:disabled),
+body[data-game-mode] .social-league-sheet .v2-league-row.is-active {
+  border-color:var(--mode-accent);
+}
+body[data-game-mode] #app button.primary:not(:disabled) { background:var(--mode-accent); color:var(--mode-ink); }
+body:not(.match-page-active):has(#app>main .bar-ticket) #app>main {padding-bottom:var(--app-tabbar-height,56px)!important}
+html.os-on body[data-game-mode] .os-dots .os-dot::before { width:4px; height:4px; }
+html.os-on body[data-game-mode] .os-dots .os-dot.is-on::before { width:10px; }
+.league-section-title { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:4px 0 8px; }
+.league-section-title h1 { font:700 26px/1 'Barlow Condensed',sans-serif; margin:0; }
+.league-section-title .settings-entry { min-width:44px; min-height:44px; }
+.settings-legal { margin-block:16px; color:var(--muted); font-size:12px; }
+.settings-legal p { margin-bottom:4px; }
+.settings-legal .analytics-footer { display:flex; position:static; margin:0; text-align:left; justify-content:flex-start; gap:4px 14px; }
+.classification-tabs { display:flex; gap:4px; margin:0 14px 8px; padding:3px; background:var(--panel); border-radius:999px; }
+.classification-tabs button { flex:1; min-height:44px; border:0; border-radius:999px; background:transparent; color:var(--white); }
+.classification-tabs button[aria-pressed=true] { background:var(--mode-accent); color:var(--mode-ink); }
+body[data-game-mode="fanta"] .fanta-hero-balances { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; padding-inline-end:24%; }
+.fanta-hero-balances span,.bar-home-balances button { border-radius:999px; background:var(--bg); color:var(--white); padding:3px 8px; border:0; font-size:11px; }
+.fanta-hero-balances b { color:var(--mode-accent); }
+
+.social-league-sheet,.bar-story-dialog {
+  color:var(--white); border:0; overscroll-behavior:contain;
+}
+.social-league-sheet .v2-league-row .league-emblem {
+  flex:0 0 36px; width:36px; height:36px; border-radius:10px; font-size:12px;
+  color:var(--league-accent); border-color:var(--league-accent); background:var(--panel);
+}
+.social-league-sheet::backdrop,.bar-story-dialog::backdrop { background:rgb(4 11 9 / .82); }
+.social-league-sheet[open] {
+  display:flex; flex-direction:column; position:fixed; inset:auto 0 0; margin:0 auto;
+  width:min(100%,500px); max-width:none; max-height:75dvh;
+  padding:0 16px max(16px,env(safe-area-inset-bottom)); background:var(--panel);
+  border-radius:var(--social-radius) var(--social-radius) 0 0; box-shadow:0 -18px 55px #0006;
+  animation:league-sheet-in 250ms ease-out;
+}
+@keyframes league-sheet-in { from { transform:translateY(100%); } }
+.sheet-top { position:relative; flex:none; padding-top:10px; touch-action:pan-x; }
+.sheet-top .v2-sheet-handle { margin:0 auto 8px; }
+.sheet-top h2 { margin:0 46px 8px 0; font:700 30px/1.1 'Barlow Condensed',sans-serif; }
+.sheet-close { position:absolute; top:8px; right:0; }
+.sheet-close,.bar-story-controls button,.bar-story-pages>button {
+  border:0; border-radius:999px; min-width:44px; min-height:44px; background:transparent; color:var(--white);
+}
+.social-league-list { display:grid; min-height:0; max-height:285px; overflow:auto; overscroll-behavior:contain; gap:5px; }
+.social-league-list .v2-league-row {
+  min-width:0; width:100%; min-height:53px; margin:0; gap:9px; padding:7px 9px;
+  border:1px solid transparent; border-radius:14px; background:var(--bg);
+}
+.social-league-list .v2-league-row.is-active { background:color-mix(in srgb,var(--panel) 93%,var(--mode-accent)); }
+.social-league-list .v2-league-info b { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.sheet-indicators { display:flex; gap:6px; align-items:center; color:var(--mode-accent); }
+.sheet-pending { width:8px; height:8px; background:var(--mode-accent); border-radius:50%; display:block; }
+.sheet-pending[hidden] { display:none; }
+.social-league-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; flex:none; margin-top:10px; }
+.social-league-actions button { min-height:44px; font-size:13px; padding:6px; }
+
+body[data-game-mode]:has(.bar-home-social,.fanta-home) #pwa-install-card { display:none!important; }
+.bar-home-social {
+  display:grid; grid-template-columns:minmax(0,1fr); gap:12px;
+  width:min(100%,580px); margin:0 auto; padding:5px 0 12px;
+}
+html.os-on body[data-game-mode="bar"] main.os-root:has(.bar-home-social) { padding-inline:14px!important; }
+.bar-home-stories { display:flex; gap:12px; overflow-x:auto; scrollbar-width:none; padding:3px 2px; }
+.bar-home-stories[hidden] { display:none; }
+.bar-home-story-slot { flex:none; }
+.bar-story-trigger {
+  display:grid; justify-items:center; gap:3px; min-width:56px; min-height:44px; padding:0;
+  border:0; background:none; color:var(--white); --story-accent:var(--mode-accent);
+}
+.bar-story-trigger.story-rewards { --story-accent:#ffab91; }
+.bar-story-trigger.story-crossings { --story-accent:#78e0ba; }
+.bar-story-trigger[data-seen] { --story-accent:var(--muted); }
+.bar-story-trigger>span {
+  display:grid; place-items:center; width:49px; height:49px; border-radius:50%;
+  border:2px solid var(--story-accent); color:var(--story-accent); background:var(--panel);
+}
+.bar-story-trigger svg { width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+.bar-story-trigger small { font-size:11px; }
+.bar-home-hero,.bar-home-last { border-radius:var(--social-radius); border:0; background:var(--panel); }
+.bar-home-hero {
+  position:relative; min-height:188px; isolation:isolate;
+  background:radial-gradient(ellipse at 92% 86%,color-mix(in srgb,var(--panel) 83%,var(--mode-accent)),var(--panel) 80%);
+}
+.bar-home-hero-copy { display:flex; flex-direction:column; min-height:inherit; max-width:70%; padding:17px 10px 14px 16px; }
+.bar-home-hero h2 { color:var(--mode-accent); margin:0 0 5px; font:700 10px/1.3 'DM Sans',sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+.bar-home-hero p { margin:0 0 10px; font:700 clamp(24px,6.6vw,35px)/1.02 'Barlow Condensed',sans-serif; text-wrap:pretty; }
+.bar-home-balances { display:flex; flex-wrap:wrap; gap:5px; margin-top:auto; }
+.bar-home-balances button { min-height:44px; padding:4px 9px; font-size:12px; white-space:nowrap; }
+.bar-home-mascot {
+  position:absolute; inset:auto 1px -7px auto; width:40%; height:calc(100% + 3px);
+  padding:0; border:0; background:none; color:var(--white); overflow:visible;
+}
+.bar-home-mascot .quasi-avatar { width:100%; height:100%; object-fit:contain; object-position:bottom right; filter:drop-shadow(0 6px 8px #0007); }
+.bar-home-last {
+  display:grid; gap:8px; text-align:start; min-height:62px; width:100%;
+  padding:10px 14px; color:var(--white);
+}
+.bar-home-last-top { display:flex; align-items:baseline; justify-content:space-between; gap:6px; }
+.bar-home-last-top b,.bar-home-last-top strong { font:700 21px/1 'Barlow Condensed',sans-serif; }
+.bar-home-segments { display:grid; grid-template-columns:repeat(var(--segments,10),minmax(0,1fr)); gap:4px; }
+.bar-home-segments i { height:5px; border-radius:999px; background:var(--line); }
+.bar-home-segments i.is-yes { background:#78e0ba; }
+.bar-home-segments i.is-no { background:#fc3f56; }
+body[data-game-mode="bar"] #app .bar-home-cta {
+  min-height:54px; width:100%; display:flex; justify-content:space-between; align-items:center;
+  text-align:start; gap:10px; padding:9px 17px; border:0; border-radius:999px;
+  background:var(--mode-accent); color:var(--mode-ink); font-size:16px; font-weight:700;
+}
+body[data-game-mode="bar"] #app .bar-home-cta:disabled { background:var(--panel); color:var(--muted); opacity:1; }
+.bar-home-cta { transition:transform .13s ease-out; }
+.bar-home-cta>span:last-child { white-space:nowrap; }
+.bar-home-cta:not(:disabled):active { transform:scale(.98); }
+
+.bar-story-dialog[open] {
+  position:fixed; inset:0; width:100%; max-width:none; height:100dvh; max-height:none; padding:0; margin:0;
+  background:var(--bg); border-radius:0;
+}
+.bar-story-frame {
+  display:flex; flex-direction:column; width:min(100%,680px); height:100%; margin:auto;
+  padding:max(15px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom));
+  background:radial-gradient(ellipse at center,var(--panel),var(--bg));
+}
+.bar-story-progress { display:flex; gap:5px; }
+.bar-story-progress>span { overflow:hidden; flex:1; height:4px; background:var(--line); border-radius:999px; }
+.bar-story-progress i { display:block; width:100%; height:100%; background:var(--mode-accent); transform:scaleX(0); transform-origin:left; }
+.bar-story-progress .is-done i { transform:none; }
+.bar-story-progress .is-now i { animation:story-fill linear forwards; animation-play-state:paused; }
+@keyframes story-fill { to { transform:scaleX(1); } }
+.bar-story-controls { display:flex; justify-content:flex-end; gap:8px; touch-action:pan-x; }
+.bar-story-controls button:last-child { font-size:26px; }
+.bar-story-pages { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; flex:1; min-height:0; align-items:center; }
+.bar-story-pages>button { height:100%; font-size:26px; opacity:.8; touch-action:pan-x; }
+.bar-story-pages>button:disabled { opacity:.35; }
+.bar-story-copy { max-height:100%; overflow:auto; overscroll-behavior:contain; text-align:center; }
+.bar-story-copy h2 { font:700 clamp(34px,8vw,52px)/1 'Barlow Condensed',sans-serif; margin-top:0; }
+.bar-story-copy button { min-height:44px; }
+.bar-story-copy ul { padding:0; list-style:none; }
+.bar-story-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.bar-story-stats>div,.bar-story-rewards li { border-radius:14px; background:var(--panel); padding:9px; }
+.bar-story-stats dt { color:var(--muted); font-size:12px; }
+.bar-story-stats dd { margin:0; font:700 24px/1.2 'Barlow Condensed',sans-serif; }
+.bar-story-rewards li { display:flex; align-items:center; gap:8px; text-align:left; margin:0 0 8px; }
+@media(max-width:380px) {
+  .bar-home-social { gap:9px; }
+  .bar-home-hero { min-height:165px; }
+  .bar-home-hero-copy { padding-top:13px; max-width:73%; }
+  .bar-home-story-slot { min-width:52px; }
+}
+@media(prefers-reduced-motion:reduce){
+ .social-league-sheet[open],.bar-story-progress .is-now i { animation:none; }
+ .bar-story-progress .is-now i { transform:scaleX(.6); }
+ .bar-home-cta { transition:none; }
+ .bar-home-cta:not(:disabled):active { transform:none; }
+}

@@ -72,7 +72,7 @@ test('le classi radice della sala d\'asta sono tra le esclusioni', async () => {
 test('il foglio one-screen.css è caricato in sviluppo e nel bundle', async () => {
  for (const file of ['../public/src/app-styles.mjs', '../scripts/build-ux.mjs']) {
   const text = await readFile(new URL(file, import.meta.url), 'utf8');
-  assert.match(text, /'auction-room\.css','one-screen\.css','one-screen-ui\.css'\]/, file);
+  assert.match(text, /'auction-room\.css','one-screen\.css','one-screen-ui\.css','home-social\.css'\]/, file);
  }
  const css = await readFile(new URL('../public/one-screen.css', import.meta.url), 'utf8');
  assert.match(css, /html\.os-on/);

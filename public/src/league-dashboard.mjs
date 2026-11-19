@@ -1,9 +1,9 @@
-import {quasiBanner} from './quasi-scene.mjs';
+import {quasiMascot} from './quasi-scene.mjs';
+import {stableHash} from './reward-catalog.mjs';
+import {BAR_HOME_QUOTES} from './bar-home-quotes.mjs';
+import {matchSegments,renderBarStories} from './bar-home-stories.mjs';
 
-import {recapView} from './progression-ui.mjs';
-import {rewardById} from './reward-catalog.mjs';
-
-import { sourceOf, deadlineOf, isClosed } from './slip-state.mjs';
+import { sourceOf, deadlineOf, isClosed, roundAvailability } from './slip-state.mjs';
 import {fantasyGroup} from './fantasy-accounts.mjs';
 export function dashboardModel(league, uid, source='seriea', now=Date.now(), competition=null) {
   const fantasy=source==='fantacalcio', members=league.members||[];
@@ -29,14 +29,46 @@ export function countdownLabel(deadline,now=Date.now()) {
   const mins=Math.ceil(diff/60000),days=Math.floor(mins/1440),hours=Math.floor(mins%1440/60),minutes=mins%60;
   return days?`${days}g ${hours}h ${minutes}m`:`${hours}h ${String(minutes).padStart(2,'0')}m`;
 }
-export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,competition=null) {
-  if(source==='fantacalcio'&&!fantasyAvailable)source='seriea';
-  const competitions=[...new Map((league.rounds||[]).filter(r=>sourceOf(r)==='fantacalcio').map(r=>[r.competitionKey,r.competitionName||'Fantalega'])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'it'));
-  if(!competitions.some(([key])=>key===competition))competition=competitions[0]?.[0]||null;
-  const d=dashboardModel(league,user.id,source,Date.now(),source==='fantacalcio'?competition:null),title=rewardById(user.avatar?.rewardTitle);
-  const selector=source==='fantacalcio'?'<label class="field dashboard-competition">Il tuo campo di gioco<select id="dashboard-competition" aria-label="Scegli Fantalega">'+competitions.map(([key,name])=>{const next=dashboardModel(league,user.id,source,Date.now(),key).round;return '<option value="'+esc(key)+'" '+(key===competition?'selected':'')+'>'+esc(name+(next?' · '+next.title:''))+'</option>';}).join('')+'</select></label>':'';
-  const alerts=(league.notifications||[]).slice(-3).map(a=>{let round='';try{round=new URL(a.url,'https://quellidelquasi.com').searchParams.get('round')||'';}catch{}return '<aside class="league-alert" role="status"><span><strong>'+esc(a.title)+'</strong>'+esc(a.body)+'</span><button data-dashboard-slip="'+esc(round)+'">Apri ↗</button></aside>';}).join('');
-  const slipLabel=d.active?'Segui in diretta':d.round?(d.round.slip?'Rivedi la schedina':'Compila la schedina'):'Vai alle schedine';
-  const stats=`<div class="dash-numbers"><button data-dashboard-rank="points"><span>Punti</span><strong>${fmt(d.points)}</strong><small>${d.pointsRank?d.pointsRank+'° in classifica':'—'}</small></button><button data-dashboard-rank="credits" ${d.creditsAvailable?'':'disabled'}><span>Crediti</span><strong>${d.creditsAvailable?fmt(d.credits):'—'}</strong><small>${d.creditsRank?d.creditsRank+'° in classifica':'Solo punti'}</small></button><button data-dashboard-rank="points"><span>Al bancone</span><strong>${d.memberCount}</strong><small>partecipanti</small></button></div>`;
-  return alerts+`<section class="league-dashboard home-sections" aria-label="La tua dashboard" data-selected-competition="${esc(competition||'')}"><div class="dash-hero">${quasiBanner(user.avatar,user.name)}<div class="dash-hero-copy"><span class="eyebrow">${esc(league.name)}</span><h1>Ciao, ${esc(user.name)}.</h1><p>${title?esc(title.name):'Le certezze passano. Il bar resta.'}</p>${stats}</div></div><div class="dash-next home-card"><div class="dash-next-copy"><span class="eyebrow">LA TUA PROSSIMA MOSSA</span><h2>${d.round?esc(d.round.title):'La prossima sfida arriva.'}</h2><p>${d.round?(source==='fantacalcio'?esc(d.round.competitionName||'La tua Fantalega'):d.active?'Segui i risultati della giornata.':'Scegli gli esiti prima della chiusura.'):'Intanto, prendi posto.'}</p></div><div class="dash-clock dashboard-countdown"><span>${d.active?'Giornata in corso':'Alla chiusura'}</span><strong data-dashboard-countdown ${d.deadline?`data-deadline="${esc(d.deadline)}"`:''}>${d.active?'In corso':countdownLabel(d.deadline)}</strong></div><button class="secondary dash-cta" data-dashboard-slip="${esc(d.round?.id||'')}">${slipLabel} <span aria-hidden="true">→</span></button></div>${fantasyAvailable?`<div class="dashboard-sources" aria-label="Riepilogo competizione"><button data-dashboard-source="seriea" aria-pressed="${source==='seriea'}">Campionato</button><button data-dashboard-source="fantacalcio" aria-pressed="${source==='fantacalcio'}">Fantacalcio</button></div>`:''}${selector}${recapView(league,source,competition,d.lastRound,esc,fmt)}</section>`;
+const shortRound=round=>round?.number?'G'+round.number:'';
+const sign=(value,fmt)=>(value>0?'+':'')+fmt(value);
+export function homeCountdown(deadline,now=Date.now()){
+ const minutes=Math.ceil((Date.parse(deadline)-now)/60000);
+ if(minutes<=0||!Number.isFinite(minutes))return '';
+ const days=Math.floor(minutes/1440),hours=Math.floor(minutes%1440/60);
+ return days?days+'g '+hours+'h':hours?hours+'h '+minutes%60+'m':minutes+'m';
+}
+
+function quote(user,league,last,upcoming,now){
+ const change=last?.positionChange||0,rate=last?.played&&last.total?last.correct/last.total:null;
+ const key=upcoming&&!upcoming.slip&&Date.parse(deadlineOf(upcoming))-now<86400000?'late':
+  rate!==null&&rate<=.3?'low':rate!==null&&rate>=.7?'high':change>0?'up':change<0?'down':!last?'welcome':'steady';
+ const options=BAR_HOME_QUOTES[key];
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Rome'}).format(now);
+ const variation=stableHash([user.id,league.id,day,key].join(':'))%options.length;
+ return options[variation]({correct:last?.correct,total:last?.total,change:Math.abs(change),next:shortRound(upcoming)});
+}
+
+export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,competition=null,now=Date.now()){
+ const model=dashboardModel(league,user.id,source,now,competition);
+ const round=model.lastRound,last=league.progression?.seriea?.history?.find(item=>item.id===round?.id);
+ const candidates=(league.rounds||[]).filter(item=>sourceOf(item)==='seriea'&&!item.archived&&item.matches?.length&&Date.parse(deadlineOf(item))>now)
+  .sort((a,b)=>Date.parse(deadlineOf(a))-Date.parse(deadlineOf(b)));
+ const open=candidates.find(item=>roundAvailability(item,now)==='aperta');
+ const live=model.active?model.round:null, upcoming=open||candidates[0];
+ const cta=live?{round:live,label:shortRound(live)+' in corso · segui live'}:
+  open?{round:open,label:(open.slip?'Rivedi schedina':'Schedina')+(shortRound(open)?' '+shortRound(open):''),deadline:deadlineOf(open)}:
+  {label:upcoming?'Prossima giornata':'Schedine in arrivo',deadline:upcoming&&deadlineOf(upcoming),disabled:true};
+ const segments=round?matchSegments(round):[];
+ return `<section class="bar-home-social" aria-label="Home del Bar">
+  ${renderBarStories({league,user,round,history:last,short:shortRound(round),esc,fmt})}
+  <section class="bar-home-hero">
+   <div class="bar-home-hero-copy"><h2>Il tuo Quasi dice</h2><p>“${esc(quote(user,league,last,open,now))}”</p>
+   <div class="bar-home-balances"><button type="button" data-dashboard-rank="points" aria-label="Punti, apri la classifica del Bar">${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</button><button type="button" data-dashboard-rank="credits" aria-label="Crediti, apri la classifica del Bar">${fmt(model.credits)} cr</button></div></div>
+   ${quasiMascot(user.avatar,user.name)}
+  </section>
+  ${round?`<button type="button" class="bar-home-last" data-dashboard-slip="${esc(round.id)}"><span class="bar-home-last-top"><b>${esc(round.title)}</b>${last?`<strong class="${last.points<0?'loss':last.points>0?'gain':''}">${sign(last.points,fmt)} pt</strong>`:''}</span>
+  <span class="bar-home-segments" style="--segments:${segments.length}" aria-label="Esiti">${segments.map(item=>`<i class="is-${item.state}" role="img" aria-label="${esc(item.label)}"></i>`).join('')}</span></button>`:''}
+  <button type="button" class="bar-home-cta primary" ${cta.disabled?'disabled':`data-dashboard-slip="${esc(cta.round.id)}"`}><span>${cta.label}</span>
+  <span>${cta.deadline?`<span data-dashboard-countdown data-deadline="${esc(cta.deadline)}">${cta.disabled?'tra ':''}${homeCountdown(cta.deadline,now)}</span>`:''}${cta.disabled?'':' <span aria-hidden="true">→</span>'}</span></button>
+ </section>`;
 }

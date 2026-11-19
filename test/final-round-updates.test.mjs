@@ -33,9 +33,14 @@ test('Oggi retains a clickable completed round while the next round is open; exp
  const source=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=source.slice(source.indexOf('function availableRounds()'),source.indexOf('\nfunction me()')),ctx={L:()=>l,slipCreditReserve,publicSlipView:()=>false,sourceScope:'seriea',competitionScope:null,selectedRoundId:'old',selectableSlipRounds,selectablePublicSlipRounds,sourceOf,currentSlipRound,defaultSlipRound,currentPublicSlipRound,state,Date};vm.createContext(ctx);vm.runInContext(body+'\nselected=R().id;',ctx);assert.equal(ctx.selected,'old');
 });
 
-test('header controls share one non-wrapping container; both products expose settings in the same header position',()=>{
- const {document}=parseHTML(renderLeagueChip({id:'l',name:'Lega',members:[{uid:'u',credits:9999}]},'u',String,String,'<button>Bar Fanta</button>'));assert.ok(document.querySelector('.ux-controls .v2-credits'));assert.equal(document.querySelectorAll('.ux-controls .settings-entry').length,1);
- const f=parseHTML(topBar({mode:'fanta',league:{name:'Lega'},credits:9999,slipCredits:9999})).document;assert.equal(f.querySelectorAll('.ux-controls .settings-entry').length,1);assert.equal(f.querySelectorAll('.ux-controls .v2-credits').length,2);
+test('Bar and Fanta share a compact league selector away from balances and settings',()=>{
+ const bar=renderLeagueChip({id:'l',name:'Lega'},'u',String,String,'<button>Bar Fanta</button>');
+ const fanta=topBar({mode:'fanta',league:{id:'l',name:'Lega'}});
+ for(const html of [bar,fanta]){
+  const {document}=parseHTML(html);
+  assert.ok(document.querySelector('.shell-compact .v2-league-chip'));
+  assert.equal(document.querySelector('.settings-entry,.v2-credits'),null);
+ }
 });
 
 test('the official Bologna–Monza save correction requires the exact event and preserves provider comments',()=>{

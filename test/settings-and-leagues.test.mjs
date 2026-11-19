@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
-import {renderLeagueChip,renderLeagueSheet,bindLeagueSwitcher} from '../public/src/v2/league-switcher.mjs';
-import {topBar,leagueSheet} from '../public/src/fanta/shell.mjs';
+import {renderLeagueChip,renderLeagueSheet} from '../public/src/v2/league-switcher.mjs';
+import {topBar} from '../public/src/fanta/shell.mjs';
 import {modeSwitch} from '../public/src/mode-switch.mjs';
 import {renderFantaPresident} from '../public/src/fanta/lega.mjs';
 import {createDemoFantaApi} from '../public/src/fanta/demo-api.mjs';
@@ -10,25 +10,28 @@ import {rewardsView} from '../public/src/progression-ui.mjs';
 import {stateFor,newLeague} from '../lib/game.mjs';
 import {barHomeInvite} from '../public/src/bar-home-invite.mjs';
 
-test('both products expose one settings gear and a plus inside the league selector, without profile or down arrow',()=>{
- const league={id:'l',name:'Bar di prova',admin:'admin',role:'member',members:[{uid:'member',credits:500}]};
- for(const html of [renderLeagueChip(league,'member',String,String,modeSwitch('bar')),topBar({mode:'fanta',league,credits:100,slipCredits:500})]){
-  const {document}=parseHTML(html);assert.equal(document.querySelectorAll('.settings-entry').length,1);assert.equal(document.querySelector('.settings-entry').getAttribute('aria-label'),'Apri impostazioni');assert.ok(document.querySelector('.settings-entry svg'));assert.equal(document.querySelectorAll('.league-add').length,1);assert.equal(document.querySelector('.league-add').textContent,'+');assert.equal(document.querySelector('.league-add').parentElement,document.querySelector('.v2-league-chip'));assert.equal(document.querySelector('.league-add').tagName,'SPAN');assert.equal(document.querySelector('.v2-league-chip button'),null);assert.equal(document.querySelector('.ux-profile'),null);assert.ok(!html.includes('▾'));
+test('both modes show only the named league selector and mode control in the header',()=>{
+ const league={id:'l',name:'Bar di prova',members:[{uid:'member',points:5,credits:500}],nativeFantaLink:{leagueId:'linked'}};
+ for(const html of [renderLeagueChip(league,'member',String,String,modeSwitch('bar')),topBar({mode:'fanta',league})]){
+  const {document}=parseHTML(html),button=document.querySelector('.v2-league-chip');
+  assert.equal(button.getAttribute('aria-label'),'Cambia lega, Bar di prova');
+  assert.equal(button.querySelector('small').textContent,'Lega');
+  assert.equal(document.querySelectorAll('.fanta-mode-btn').length,2);
+  assert.equal(document.querySelector('.settings-entry,.league-add,.v2-credits'),null);
  }
- for(const html of [renderLeagueSheet([league],'l','member',String),leagueSheet([league],'l')]){const {document}=parseHTML(html);assert.equal([...document.querySelectorAll('.league-actions button')].map(b=>b.textContent).join('|'),'Entra in una lega|Crea lega · Bar + Fanta');}
-});
-
-test('plus shows dedicated join and create destinations without mounting forms in the selector',()=>{
- const oldDocument=globalThis.document,oldAdd=globalThis.addEventListener;
- const {document}=parseHTML('<body>'+renderLeagueChip({name:'Bar',members:[]},'member',String,String)+'<div id="v2-sheet-root" hidden></div></body>');
- globalThis.document=document;globalThis.addEventListener=()=>{};
- try{bindLeagueSwitcher({leagues:[],uid:'member',esc:String});document.querySelector('.league-add').closest('button').onclick();assert.equal(document.getElementById('v2-sheet-root').hidden,false);const sheet=document.getElementById('v2-sheet-root');assert.equal(sheet.querySelectorAll('form,[data-league-directory]').length,0);assert.ok(sheet.querySelector('[data-bar-page="join-league"]'));sheet.querySelector('[data-bar-page="create-league"]').onclick();assert.equal(sheet.hidden,true);}finally{globalThis.document=oldDocument;globalThis.addEventListener=oldAdd;}
+ const html=renderLeagueSheet([league],'l','member',String,{fantas:[{id:'linked',position:4,lineupPending:true}]});
+ const {document}=parseHTML(html);
+ assert.equal(document.querySelector('dialog h2').textContent,'Le tue leghe');
+ assert.equal(document.querySelector('[aria-current=true] small').textContent,'Bar 1° · Fanta 4°');
+ assert.equal(document.querySelector('[data-league-pending]').hidden,false);
+ assert.deepEqual([...document.querySelectorAll('[data-league-entry]')].map(b=>b.dataset.leagueEntry),['create-league','join-code']);
+ assert.equal(document.querySelector('form'),null);
 });
 
 test('a Fanta member who opens the president route returns to the league without management controls',async()=>{
  const data=await createDemoFantaApi({delay:0}).league('lega-quasi');data.isAdmin=false;data.league.role='member';
  const html=renderFantaPresident(data,{invite:{code:'TEST',name:'Bar test'}}),{document}=parseHTML(html);
- assert.ok(document.querySelector('.lega-hub'));assert.match(html,/Invita con WhatsApp/);
+ assert.ok(document.querySelector('.lega-hub'));assert.match(html,/Apri impostazioni/);
  assert.doesNotMatch(html,/Pannello del presidente|data-league-size-form|data-competition-create-form|data-team-link-form|data-president-section/);
 });
 

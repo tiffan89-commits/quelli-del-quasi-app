@@ -18,23 +18,24 @@ test('countdown selects the nearest open deadline for the selected source, never
  const l={members:[],rounds:[round('past',-1),{...round('settled',1000),settled:true},{...round('empty',1000),matches:[]},round('later',86400000),round('next',3600000),round('fanta',1000,'fantacalcio')]};
  assert.equal(dashboardModel(l,'a','seriea',now).round.id,'next');assert.equal(dashboardModel(l,'a','fantacalcio',now).round.id,'fanta');assert.equal(countdownLabel(null,now),'In attesa');assert.equal(countdownLabel(l.rounds[4].deadline,now),'1h 00m');assert.equal(countdownLabel(new Date(now).toISOString(),now),'Tempo scaduto');assert.equal(countdownLabel(new Date(now+90000000).toISOString(),now),'1g 1h 0m');
 });
-test('the Bar recap has one matching round title, selection tally and results action',()=>{
- const closed={id:'closed',title:'Giornata 11',kickoff:new Date(now).toISOString(),matches:[{id:'m',status:'FT',score:[1,0]}]};
- const history=[{id:'closed',title:'Giornata 11',competitionName:'Serie A',played:true,correct:3,total:10,points:5.76,profit:-20,position:3,positionChange:-2}];
- const league={name:'Bar',members:[{uid:'u'}],rounds:[closed],progression:{seriea:{history}}};
- const recap=()=>parseHTML(leagueDashboard(league,{id:'u',name:'Quasi'},'seriea',false,String,String)).document.querySelector('.dash-summary');
- const card=recap(),heading=card.querySelector('.recap-heading');
- assert.equal(heading.querySelector('h2').textContent,'Giornata 11 3/10 prese');
- assert.equal(heading.querySelector('[data-dashboard-slip]').dataset.dashboardSlip,'closed');
- assert.equal(card.querySelectorAll('h2, [data-dashboard-slip]').length,2);
- assert.equal(card.querySelectorAll('.recap-grid>div').length,3);
- assert.doesNotMatch(card.textContent,/Serie A/);
- league.rounds.push({...closed,id:'newer',title:'Giornata 12',kickoff:new Date(now+3600000).toISOString()});
- const pending=recap();
- assert.equal(pending.querySelector('h2').textContent,'Giornata 12');
- assert.equal(pending.querySelector('[data-dashboard-slip]').dataset.dashboardSlip,'newer');
- assert.equal(pending.querySelector('.recap-grid'),null);
+test('Bar home shows saved results in the story, ten segments and the play action',()=>{
+ const now=Date.parse('2026-11-20T11:00Z');
+ const closed={id:'closed',number:11,title:'Giornata 11',kickoff:'2026-11-08T15:00Z',slip:{picks:{0:'1',1:'2'}},
+  matches:Array.from({length:10},(_,i)=>({id:String(i),home:'Casa',away:'Ospiti',status:'FT',score:[1,0],void:i===9}))};
+ const next={id:'open',number:12,title:'Giornata 12',kickoff:'2026-11-22T15:00Z',matches:[{id:'f',odds:{1:2,X:3,2:4}}]};
+ const history=[{id:'closed',played:true,correct:3,total:10,points:5.76,profit:-20,position:3,positionChange:-2,awards:['king-title']}];
+ const league={id:'l',name:'Bar',members:[{uid:'u',points:5.76}],rounds:[closed,next],progression:{seriea:{history}}};
+ const render=()=>parseHTML(leagueDashboard(league,{id:'u',name:'Quasi'},'seriea',false,String,String,null,now)).document;
+ let document=render();
+ assert.equal(document.querySelector('[data-dashboard-slip="closed"] b').textContent,'Giornata 11');
+ assert.match(document.querySelector('[data-story-card]').innerHTML,/3\/10 prese/);
+ assert.equal(document.querySelectorAll('.bar-home-segments i').length,10);
+ for(const type of ['yes','no','pending'])assert.ok(document.querySelector('.bar-home-segments .is-'+type));
+ assert.ok(document.querySelector('.story-rewards'));
+ assert.match(document.querySelector('.bar-home-cta').textContent,/Schedina G12/);
+ next.slip={picks:{f:'1'}};document=render();assert.match(document.querySelector('.bar-home-cta').textContent,/Rivedi schedina G12/);
 });
+
 test('avatar is a small validated configuration: arbitrary markup, URLs and fields cannot enter its SVG',()=>{
  const malicious={skin:'" onload="alert(1)',hair:'<script>',outfit:'https://other.test',adminOnly:true};
  assert.deepEqual(normalizeAvatar(malicious),DEFAULT_AVATAR);const svg=avatarSvg(malicious);assert.doesNotMatch(svg,/onload|<script|other.test|adminOnly/);assert.ok(Buffer.byteLength(svg)<7000);

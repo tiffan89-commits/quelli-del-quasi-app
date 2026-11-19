@@ -12,6 +12,11 @@ export function homeTeam(h){
  return [h?.match?.home,h?.match?.away,...(h?.standings||[]).map(s=>s.team)].find(t=>t?.id===id)||{id,name:h?.me?.teamName||'La tua squadra',branding:h?.me?.branding||{}};
 }
 
+function heroBalances(balances){
+ if(!balances||!Number.isFinite(balances.slip)&&!Number.isFinite(balances.auction))return '';
+ return `<div class="fanta-hero-balances">${Number.isFinite(balances.slip)?`<span><b>${pts(balances.slip)}</b> crediti schedina</span>`:''}${Number.isFinite(balances.auction)?`<span><b data-fanta-hero-auction-credits>${pts(balances.auction)}</b> crediti asta</span>`:''}</div>`;
+}
+
 function hero(h) {
   const { league, me } = h;
   const team=homeTeam(h);
@@ -27,6 +32,7 @@ function hero(h) {
       <div><dt>Punti</dt><dd>${me.points}</dd></div>
       <div><dt>Fantapunti</dt><dd>${pts(me.fantapoints)}</dd></div>
     </dl>
+    ${heroBalances(h.balances)}
     ${me.form?.length?'<div class="fanta-hero-form"><small>Ultime cinque</small>'+formDots(me.form)+'</div>':''}
   </section>`;
 }
@@ -142,12 +148,11 @@ export function auctionCard(h, now) {
 const auctionHomeSlot=(h,now)=>`<div data-fanta-auction-banner>${auctionCard(h,now)}</div>`;
 export function renderHome(h, now = Date.now()) {
   const invite=renderLeagueInvite(h.league,h.invite);
-  if(h.competition?.status==='draft')return `${h.presidentLink||''}${auctionHomeSlot(h,now)}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p><button type="button" class="primary" data-go="competizioni">Vedi la competizione</button></section>${invite}`;
+  if(h.competition?.status==='draft')return `${auctionHomeSlot(h,now)}<section class="fanta-block"><span class="eyebrow">${esc(h.league.name)}</span><h1>${esc(h.competition.name)}</h1><h2>Ai blocchi di partenza.</h2><p>${esc(h.me.teamName)} · Il presidente prepara le rose e sceglie la giornata iniziale. Poi si gioca.</p>${heroBalances(h.balances)}<button type="button" class="primary" data-go="competizioni">Vedi la competizione</button></section>${invite}`;
   const showMatch=h.round.state==='in-corso'||!h.lastResult;
   const live=h.round.state==='in-corso';
   return `<div class="fanta-home fanta-home-compact home-sections">
     ${auctionHomeSlot(h,now)}
-    ${h.presidentLink||''}
     ${hero(h)}
     ${live?matchCard(h):''}
     ${lastResult(h)}

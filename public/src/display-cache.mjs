@@ -12,6 +12,7 @@ export function clearDisplayCaches(userId,{storage=globalThis.localStorage}={}){
  try{for(let i=storage.length-1;i>=0;i--){const k=storage.key(i);if(k?.startsWith(prefix)&&k.endsWith(':'+userId))storage.removeItem(k);}}catch{}
 }
 export function linkedBarTarget(bars,fantaId,target={}){
+ if(target.league)return target;
  const bar=bars.find(b=>b.nativeFantaLink?.leagueId===fantaId);
  return bar?{...target,league:bar.id}:target;
 }
