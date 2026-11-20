@@ -4,17 +4,17 @@
 
 /* ---------- Barra delle sottosezioni (segmenti) ---------- */
 html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs),
-#app>main:has(>.bar-ticket)>.slip-section-buttons{
+:is(#app>main:has(>.bar-ticket)>.slip-section-buttons,#app>main>.fanta-native-slips:has(>.bar-ticket)>.fanta-slip-tabs){
  display:flex!important;flex-wrap:nowrap;gap:3px!important;margin:0 0 10px!important;padding:3px!important;
  border:1px solid var(--line);border-radius:999px;background:#0f1c18;overflow-x:auto;scrollbar-width:none;mask-image:none
 }
 html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs)>button,
-#app>main:has(>.bar-ticket)>.slip-section-buttons>button{
+:is(#app>main:has(>.bar-ticket)>.slip-section-buttons,#app>main>.fanta-native-slips:has(>.bar-ticket)>.fanta-slip-tabs)>button{
  flex:1 1 0!important;min-width:0;min-height:32px!important;padding:5px 8px!important;border:0!important;border-radius:999px!important;
  background:transparent!important;color:var(--muted)!important;font:600 12px/1.1 'DM Sans',sans-serif!important;white-space:nowrap;box-shadow:none!important
 }
 html.os-on main.os-root :is(.slip-section-buttons,.fanta-slip-tabs)>button:is(.on,[aria-pressed="true"],[aria-selected="true"]),
-#app>main:has(>.bar-ticket)>.slip-section-buttons>button[aria-pressed="true"]{background:var(--lime)!important;color:#10200f!important}
+:is(#app>main:has(>.bar-ticket)>.slip-section-buttons,#app>main>.fanta-native-slips:has(>.bar-ticket)>.fanta-slip-tabs)>button[aria-pressed="true"]{background:var(--lime)!important;color:#10200f!important}
 html.os-on main.os-root .slip-section-buttons>button[data-short] .seg-long{display:none}
 html.os-on main.os-root .slip-section-buttons>button[data-short]::after{content:attr(data-short)}
 
@@ -336,7 +336,6 @@ html.os-on main.os-root .bar-tile .bar-stub-head span+span{font-size:10px}
  .bar-slip-page .bar-dossier .bar-stub{grid-column:1/-1;align-self:stretch;padding:2px 3px}
 }
 
-.fanta-slip-balance{margin:2px 0 5px;color:var(--muted);font-size:11px}
 .serie-standings .serie-table{min-width:0;width:100%;table-layout:fixed;font-size:clamp(9px,2.8vw,14px)}
 .serie-standings .serie-table :is(th,td){padding:0 1px;height:clamp(17px,calc((var(--os-h,530px) - 12px)/21),26px)}
 .serie-standings .serie-table :is(th,td):first-child{width:7%}
@@ -518,7 +517,7 @@ html.os-on main.os-root .fanta-other-slips .bar-bets{grid-template-columns:repea
 html.os-on main.os-root .fanta-other-slips .bar-bet{height:46px;justify-content:center}
 html.os-on main.os-root .fanta-other-slips :is(.bar-teams,.bar-score){white-space:nowrap}
 html.os-on main.os-root .fanta-other-slips .inline-live{font-size:7px}
-html.os-on main.os-root :is(.round-selector,.bar-table .bar-round,.fanta-slip-round) .quasi-select-button{min-height:44px!important;padding:7px 13px!important;font-size:14px!important}
+html.os-on main.os-root :is(.round-selector,.bar-table .bar-round) .quasi-select-button{min-height:44px!important;padding:7px 13px!important;font-size:14px!important}
 @media(max-width:360px){
  html.os-on main.os-root .fanta-other-slips .bar-teams{font-size:7px}
  html.os-on main.os-root .fanta-other-slips .bar-bets{gap:2px}
@@ -601,7 +600,7 @@ html.os-on main.os-root .home-sections .fanta-match-link,html.os-on main.os-root
 .home-sections .recap-empty p{margin:4px 0 0}
 @media(min-width:900px){html.os-on main.os-root .league-dashboard.home-sections>*~*{margin-top:0!important}}
 
-/* Bar · La mia. Only the fixtures move between the round controls and the ticket summary. */
+/* La mia schedina. Solo le partite scorrono tra il selettore e il riepilogo. */
 html:has(#app>main .bar-ticket){overflow:hidden}
 body:has(#app>main .bar-ticket){
   position:fixed;inset:0;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
@@ -614,9 +613,11 @@ body:has(#app>main .bar-ticket) #app>main{
   display:flex;flex-direction:column;flex:1 1 auto;min-height:0;min-width:0;
   margin-block:0!important;padding:6px 0 0!important;max-width:760px!important;overflow:hidden;
 }
-#app>main:has(>.bar-ticket)>.slip-section-buttons{
+:is(#app>main:has(>.bar-ticket)>.slip-section-buttons,#app>main>.fanta-native-slips:has(>.bar-ticket)>.fanta-slip-tabs){
   flex:none;margin:0 14px 8px!important;
 }
+#app>main>.fanta-native-slips:has(>.bar-ticket){display:flex;flex:1;flex-direction:column;min-height:0;min-width:0}
+#app>main:has(>.fanta-native-slips>.bar-ticket)>.fanta-competition-switch{flex:none;margin-inline:14px}
 #app>main:has(.bar-ticket)>.slip-section-buttons .seg-long{display:none}
 #app>main:has(.bar-ticket)>.slip-section-buttons>button::after{content:attr(data-short)}
 body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
@@ -628,17 +629,20 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
   padding:0 12px;margin:0;overflow:hidden;
 }
 .bar-ticket button:focus-visible{outline:2px solid var(--ticket-accent);outline-offset:-2px}
-.ticket-round{display:grid;flex:none;margin:3px 17px 0}
-.ticket-round .round-selector{width:100%!important;min-width:0;margin:0!important;font-weight:700}
+.bar-ticket[data-slip-source="fantacalcio"],.bar-ticket[data-slip-source="fantacalcio"] .ticket-summary{--ticket-accent:var(--lime)}
+.ticket-round{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 8px;flex:none;margin:3px 17px 0}
+.ticket-round .round-selector{grid-column:1/-1;width:100%!important;min-width:0;margin:0!important;font-weight:700}
+.ticket-balance{color:var(--ticket-muted);font-size:12px}
+.bar-ticket [data-fanta-slip-feedback]{margin:0 0 6px}
 .ticket-round .quasi-select-button{min-height:44px!important;padding:7px 13px!important;font-size:14px!important}
 .bar-ticket [data-ticket-count]{
   border:0;background:none;color:var(--ticket-accent);padding:0 4px;
-  justify-self:end;min-height:44px;white-space:nowrap;font-size:12px;font-weight:700;
+  grid-column:2;justify-self:end;min-height:44px;white-space:nowrap;font-size:12px;font-weight:700;
 }
 .bar-ticket [data-ticket-count]:disabled{opacity:1;color:var(--ticket-muted)}
 .ticket-matches{
   flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;
-  overscroll-behavior:contain;padding-bottom:12px;scroll-padding-block:8px;scrollbar-width:thin;
+  overscroll-behavior:contain;overflow-anchor:none;touch-action:pan-y;padding-bottom:12px;scroll-padding-block:8px;scrollbar-width:thin;
 }
 .ticket-day{
   margin:0;padding:8px 2px 3px;color:var(--ticket-muted);
@@ -646,7 +650,7 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
 }
 .bar-ticket .ticket-match{
   display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px;
-  height:60px;min-height:60px;margin:0;padding:2px 0;
+  min-height:60px;margin:0;padding:2px 0;
   background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;min-width:0;
 }
 .bar-ticket .ticket-match .v2-match-head{
@@ -656,9 +660,10 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
 .ticket-match .slip-teams{display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;font-size:12px}
 .ticket-match .slip-team-label{display:flex;align-items:center;min-width:0;gap:4px}
 .bar-ticket .ticket-match .slip-team-label :is(svg,img,.team-logo){width:17px;min-width:17px;height:16px;flex:none}
-.ticket-match .slip-team-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticket-match .slip-team-name{display:block;min-width:0;overflow-wrap:anywhere;white-space:normal;line-height:1.15}
 .ticket-match .slip-match-indicator{margin:0;min-width:0;max-width:none;gap:0;text-align:center}
 .ticket-match .ticket-time{color:var(--ticket-muted);font-size:10px;white-space:nowrap}
+.ticket-match .slip-event-clock{color:var(--ticket-muted);font-size:10px;white-space:nowrap}
 .ticket-match .ticket-time[hidden]{display:none}
 .ticket-match .inline-result{gap:0;line-height:1.1}
 .ticket-match .inline-result:empty{display:none}
@@ -718,8 +723,6 @@ html.os-on main.os-root .bar-ticket .ticket-match :is(.v2-odd,.v2-more).pick-los
 .ticket-summary .ticket-save.is-done{color:var(--ticket-accent);background:transparent}
 .ticket-summary .ticket-save:disabled{background:#26332e;color:#c5ccc8;border-color:#4b5a53;opacity:1}
 .ticket-summary button:focus-visible{outline:2px solid var(--ticket-accent);outline-offset:-2px}
-.fanta-native-slips .ticket-stake:not(.ticket-stake-fixed){grid-template-columns:repeat(4,minmax(0,1fr))}
-.fanta-native-slips .ticket-stake b{grid-column:span 2}
 .bar-ticket .ticket-markets{
   position:fixed;inset:auto 0 0;max-width:560px;width:100%;max-height:80dvh;
   margin:0 auto;padding:0;border:0;background:transparent;color:var(--white);overflow:auto;
@@ -733,3 +736,9 @@ html.os-on main.os-root .bar-ticket .ticket-match :is(.v2-odd,.v2-more).pick-los
 .ticket-sheet-head h2{margin:0;font-size:20px;line-height:1.2}
 .ticket-sheet-head button{font-size:22px}
 .ticket-extra{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+@media(max-width:360px){
+ .bar-ticket .ticket-match{grid-template-columns:minmax(0,1fr);gap:4px;padding-block:5px}
+ .bar-ticket .ticket-match .v2-odds-main{grid-auto-columns:minmax(44px,1fr)}
+ .bar-ticket .ticket-stake:not(.ticket-stake-fixed){grid-template-columns:repeat(4,minmax(0,1fr))}
+ .bar-ticket .ticket-stake:not(.ticket-stake-fixed) b{grid-column:span 2}
+}

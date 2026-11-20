@@ -35,14 +35,8 @@ function optionPrice(m,p,closed,round){
 function option(m, p, picks, closed, esc, fmt, pointsOnly,round,barTicket=false) {
   const on = picks[m.id] === p;
   const {odd,saved,rules}=optionPrice(m,p,closed,round);
-  if(barTicket){
-    const quote=Number.isFinite(odd)?ticketQuote.format(odd):'—';
-    return `<button type="button" class="v2-odd${on?' is-on':''}" data-pick="${esc(m.id)}" data-value="${esc(p)}"
-      ${closed||round.virtualBookmaker&&!Number.isFinite(odd)?'disabled':''} aria-pressed="${on}"
-      aria-label="${esc(m.home+' – '+m.away+': '+show(p)+' · '+(Number.isFinite(odd)?'quota '+quote:'quota non disponibile'))}">
-      <b>${esc(pickCode(p))}</b><span>${quote}</span></button>`;
-  }
-  const quote=Number.isFinite(odd)?fmt(odd)+(m.oddsEstimated?.[p]?'*':''):null;
+  const estimated=m.oddsEstimated?.[p]&&(!barTicket||sourceOf(round)==='fantacalcio');
+  const quote=Number.isFinite(odd)?(barTicket?ticketQuote.format(odd):fmt(odd))+(estimated?'*':''):null;
   let label=quote?'Quota '+quote:'Quota in arrivo', points='';
   if(pointsOnly){
     const terms=(closed&&saved?.pointTerms?.[m.id])||m.pointOffers?.[p]||pointTerms(m,p,{mode:'weighted',scoring:'difficulty-v2',correct:1,wrong:-1,...rules});
@@ -50,6 +44,12 @@ function option(m, p, picks, closed, esc, fmt, pointsOnly,round,barTicket=false)
     const gain=terms.correct===null?'?':amount(terms.correct),loss=amount(terms.wrong);
     label=(terms.correct===null?'punti in attesa della quota':gain+' punti se corretto')+', '+loss+' punti se sbagliato';
     points='<small class="v2-odd-points"><em class="points-gain">'+esc(gain)+'</em><span aria-hidden="true"> / </span><em class="points-loss">'+esc(loss)+'</em> pt</small>';
+  }
+  if(barTicket){
+    return `<button type="button" class="v2-odd${on?' is-on':''}" data-pick="${esc(m.id)}" data-value="${esc(p)}"
+      ${closed||!pointsOnly&&round.virtualBookmaker&&!Number.isFinite(odd)?'disabled':''} aria-pressed="${on}"
+      aria-label="${esc(m.home+' – '+m.away+': '+show(p)+' · '+label)}">
+      <b>${esc(pickCode(p))}</b>${pointsOnly?points:`<span>${quote||'—'}</span>`}</button>`;
   }
   return '<button type="button" class="v2-odd' + (on ? ' is-on' : '') + '" data-pick="' + esc(m.id) + '" data-value="' + esc(p) + '"' +
     (closed ? ' disabled' : '') + ' aria-pressed="' + on + '" aria-label="' + esc(m.home + ' – ' + m.away + ': ' + show(p)+'; '+label) + '">' +
@@ -65,10 +65,10 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
   const rows = orderSlipMatches(round.matches || []).map(m => {
     const extraOn=EXTRA.includes(picks[m.id]),open=openMatch===m.id,locked=editingEventLocked(round,m);
     const kickoff=m.officialKickoff||m.kickoff;
-    const barTime=fanta?null:barKickoff(m);
+    const barTime=fanta&&!barTicket?null:barKickoff(m);
     const at=fanta&&partial&&!locked?eventDeadline(round,m):NaN;
-    const timing=barTime?`<time class="slip-match-kickoff${barTicket?' ticket-time':''}" datetime="${esc(barTime.kickoff)}"${barTime.label&&!hasFinalScore(m)?'':' hidden'}>${esc(barTicket?barTime.timeLabel:barTime.label)}</time>`:
-      Number.isFinite(at)?`<small class="slip-event-clock" data-slip-event-at="${at}" title="Tempo per giocare">${eventCountdown(at)}</small>`:'';
+    const timing=Number.isFinite(at)?`<small class="slip-event-clock" data-slip-event-at="${at}" title="Tempo per giocare">${eventCountdown(at)}</small>`:
+      barTime?`<time class="slip-match-kickoff${barTicket?' ticket-time':''}" datetime="${esc(barTime.kickoff)}"${barTime.label&&!hasFinalScore(m)?'':' hidden'}>${esc(barTicket?barTime.timeLabel:barTime.label)}</time>`:'';
     const live=m.status==='LIVE',status=fanta?(live?'In corso':hasFinalScore(m)?'':fantasyMeta?.(m)||(kickoff?date(kickoff):'')):'';
     if(barTicket){
       const pick=picks[m.id],price=extraOn?optionPrice(m,pick,locked||!ready,round).odd:null;
@@ -92,8 +92,8 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
   }).join('');
   if(barTicket){
     const match=round.matches.find(m=>m.id===openMatch);
-    return `<section class="v2-slip bar-ticket" data-slip-source="seriea" data-slip-round="${esc(round.id||'')}">
-      <div class="ticket-round">${roundPicker}<button type="button" data-ticket-count ${sum.count===sum.total?'disabled':''}
+    return `<section class="v2-slip bar-ticket" data-slip-source="${fanta?'fantacalcio':'seriea'}" data-slip-round="${esc(round.id||'')}">
+      <div class="ticket-round">${roundPicker}${fanta&&!pointsOnly?`<small class="ticket-balance">${fmt(credits)} crediti disponibili</small>`:''}<button type="button" data-ticket-count ${sum.count===sum.total?'disabled':''}
         aria-label="${sum.count} di ${sum.total} scelte. Vai alla prima partita senza scelta">${sum.count} di ${sum.total} scelte</button></div>
       ${conflictNotice}<div class="ticket-matches" data-slip-match-list>${rows}</div>
       ${renderTicketBar({round,picks,stake,credits,fmt})}
@@ -180,7 +180,8 @@ export function patchSlipV2(root,options){
   if(dialog&&nextDialog)patchRegion(dialog.querySelector('.ticket-sheet'),nextDialog.querySelector('.ticket-sheet').outerHTML);
   else if(dialog){
    const trigger=byId.get(dialog.dataset.ticketMarkets)?.querySelector('[data-v2-more]');
-   dialog.close();dialog.remove();trigger?.focus({preventScroll:true});
+   if(dialog.open)dialog.close();
+   dialog.remove();trigger?.focus({preventScroll:true});
   }else if(nextDialog)current.append(nextDialog);
  }else current.querySelector('.slip-play-note').hidden=fresh.querySelector('.slip-play-note').hidden;
  if(bar)patchSlipBar(bar,options);
