@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {normalizePitchLayout,canonicalPitchRows,explicitPitchRows} from '../public/src/pitch-layout.mjs';
-import {formationRows} from '../public/src/lineup-pitch.mjs';import {consensusLineups} from '../lib/lineup-consensus.mjs';
+import {formationRows,renderLineup} from '../public/src/lineup-pitch.mjs';import {consensusLineups} from '../lib/lineup-consensus.mjs';
 const juve={team:'Juventus',formation:'3-4-1-2',pitchOrder:'right-to-left',players:['Vicario','Kalulu','Bremer','Lucumi','McKennie','Koopmeiners','Douglas Luiz','Cabal','Alajbegovic','Woltemade','Kolo Muani'].map(name=>({name,role:name==='Cabal'?'D':'C'}))};
 test('right-to-left editorial rows become canonical: McKennie right and Cabal left, for home and away, independent of fantasy role',()=>{
  for(const side of ['home','away']){const t=normalizePitchLayout({...juve,side}),rows=canonicalPitchRows(t);assert.deepEqual(rows[2].map(p=>p.name),['Cabal','Douglas Luiz','Koopmeiners','McKennie']);assert.equal(t.players.find(p=>p.name==='McKennie').grid,'3:4');assert.equal(t.players.find(p=>p.name==='Cabal').grid,'3:1');assert.deepEqual(normalizePitchLayout(t),t);assert.deepEqual(formationRows(t)[2].map(p=>p.name),rows[2].map(p=>p.name));}
@@ -9,6 +9,16 @@ test('right-to-left editorial rows become canonical: McKennie right and Cabal le
 test('complete coordinates win over shuffled player arrays and stale formation text; broken grids fall back as a whole',()=>{
  const normalized=normalizePitchLayout(juve),shuffled={...normalized,formation:'4-4-2',players:[...normalized.players].reverse()};assert.deepEqual(canonicalPitchRows(shuffled),canonicalPitchRows(normalized));assert.equal(normalizePitchLayout(shuffled).formation,'3-4-1-2');
  const broken={...juve,players:juve.players.map(p=>({...p,grid:'2:1'}))};assert.equal(explicitPitchRows(broken),null);assert.equal(normalizePitchLayout(broken).players.find(p=>p.name==='McKennie').grid,'3:4');
+});
+test('a probable lineup with a missing player preserves the pitch and the empty slot',()=>{
+ const team=normalizePitchLayout(juve),partial={...team,players:team.players.filter(p=>p.grid!=='2:2')};
+ const rows=formationRows(partial,{allowVacancies:true});
+ assert.equal(rows.at(-2)[1],null);
+ assert.deepEqual(rows.map(row=>row.length),[2,1,4,3,1]);
+ const html=renderLineup({lineups:{kind:'probable',teams:[partial]}},{paged:true});
+ assert.match(html,/class="football-pitch"/);
+ assert.match(html,/class="pitch-vacancy">Da definire</);
+ assert.doesNotMatch(html,/class="lineup-sticker-list"/);
 });
 test('consensus uses the chosen source module and its slots, never coordinates pooled from a different source',()=>{
  const team=(formation,ids)=>normalizePitchLayout({team:'Juventus',formation,players:ids.map(id=>({name:'Player '+id,apiId:id}))}),a=team('4-4-2',Array.from({length:11},(_,i)=>i+1)),b=team('3-5-2',[1,2,3,4,5,6,7,8,9,10,12]);

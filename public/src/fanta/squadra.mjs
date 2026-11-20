@@ -164,7 +164,7 @@ function benchStrip(d, byId, max, locked) {
     const p = byId.get(id);
     return `<div class="fanta-bench-cell" data-drop="bench:${i}"${locked ? '' : ` data-drag-id="${esc(id)}" data-drag-from="bench"`} title="${esc(p.name)}">
       <span class="fanta-token-shirt">${playerVisual(p,{back:true})}<span class="fanta-role is-${p.role}">${p.role}</span></span>
-      <b>${i + 1}. ${esc(surname(p.name))}</b>
+      <b>${i + 1}. ${esc(surname(p))}</b>
       ${locked ? '' : `<button type="button" class="fanta-bench-x" data-bench-remove="${esc(id)}" aria-label="Togli ${esc(p.name)} dalla panchina">×</button>`}
     </div>`;
   }).join('');
@@ -349,7 +349,7 @@ export function renderBenchSheet(sq) {
     return list.length ? `<h4 class="fanta-pick-group">${ROLE_PLURAL[role]}</h4>${list.map(p => pickRow(p, d, 'data-bench-pick')).join('')}` : '';
   }).join('');
   const byId = new Map(data.roster.map(p => [p.id, p]));
-  const order = d.bench.length ? `<p class="fanta-ps-order">${d.bench.map((id, i) => `<span><b>${i + 1}</b> ${esc(surname(byId.get(id)?.name || ''))}</span>`).join('')}</p>` : '';
+  const order = d.bench.length ? `<p class="fanta-ps-order">${d.bench.map((id, i) => `<span><b>${i + 1}</b> ${esc(surname(byId.get(id)))}</span>`).join('')}</p>` : '';
   return `<div class="fanta-ps-head"><div><h2 id="fanta-sheet-title">${d.bench.length ? 'Panchina' : 'Ora la panchina'}</h2><small>Tocca nell'ordine in cui devono entrare · posto ${d.bench.length + 1}${data.rules.benchMax == null ? '' : ` di ${data.rules.benchMax}`}</small></div>
       <button type="button" class="fanta-close" data-action="close-sheet" aria-label="Chiudi">×</button></div>
     ${order}

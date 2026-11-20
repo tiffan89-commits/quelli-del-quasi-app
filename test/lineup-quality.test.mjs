@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
+import {readFile} from 'node:fs/promises';
 import {cleanLineupTeam,resolveLineupPlayer} from '../lib/lineup-quality.mjs';
 import {enrichPresence} from '../lib/lineup-presence.mjs';
 import {pinSeasonJerseys,recordLineupIssues} from '../lib/operations/lineup-quality.mjs';
@@ -11,7 +12,7 @@ import {officialLineups} from '../lib/official-lineups.mjs';
 const player=(id,name,club,number,seasonNumber,extra={})=>({id:'af:'+id,apiId:id,name,club,clubId:club,number,seasonNumber,role:'D',...extra});
 test('forecasts reconcile club identities, preserve pinned shirt numbers and hide ambiguous entries',()=>{
  const owusu=player(436927,'A. Owusu','Juventus',8,41,{verifiedNumber:'41'}),teun=player(36899,'T. Koopmeiners','Juventus',8,8);
- const kambwala=player(288112,'Willy Kambwala Ndengushi','Como',53,53),ramon=player(386305,'Jacobo Ramón Naveros','Como',4,4);
+ const kambwala=player(288112,'Willy Kambwala Ndengushi','Como',53,53,{shirtName:'Kambwala'}),ramon=player(386305,'Jacobo Ramón Naveros','Como',4,4,{shirtName:'Ramón'});
  const source={kind:'probable',teams:[
   {team:'Juventus',players:[{name:'Koopmeiners T.',jersey:'8'}],bench:[{name:'A. Owusu',jersey:'8'}]},
   {team:'Como',players:[{name:'Ram&oacute;n J.',jersey:'4'}],bench:[{name:'Kambwala'},{name:'Willy Kambwala Ndengushi',jersey:'53'},{name:'Nome errato'}]},
@@ -33,7 +34,27 @@ test('unresolved jersey collisions are hidden and encodings and common names are
  assert.equal(normalizedPlayerLabel('Jos&eacute; FranÃ§ois D&rsquo;Amico'),'José François D’Amico');
  assert.equal(normalizedPlayerLabel('A&#769;lex Valle'),'Álex Valle');
  assert.equal(normalizedPlayerLabel('Rad&#x1f;ek'),'Rad ek');
- assert.equal(playerDisplayName({name:'Jacobo Ramon',apiId:386305}),'Ramón');
+ assert.equal(playerDisplayName({name:'Jacobo Ramon',shirtName:'Ramón'}),'Ramón');
+});
+
+test('the catalog migration initializes all existing labels and provider upserts preserve the shirt name',async()=>{
+ const db=new PGlite();
+ try{
+  await db.exec(`CREATE SCHEMA fanta;
+   CREATE TABLE fanta.players(api_id int PRIMARY KEY, name text NOT NULL, data jsonb NOT NULL DEFAULT '{}');
+   INSERT INTO fanta.players VALUES (47522,'Douglas Luiz Soares de Paulo','{"surname":"Soares de Paulo"}'),
+    (30497,'Bremer','{"surname":"Silva Nascimento"}'),(386305,'Jacobo Ramón Naveros','{}'),
+    (9,'K. De Bruyne','{}'),(10,'Rossi É.','{}'),(11,'M&apos;Bala Nzola','{}');`);
+  await db.exec(await readFile(new URL('../netlify/database/migrations/025_player_shirt_names.sql',import.meta.url),'utf8'));
+  const labels=async()=>(await db.query('SELECT api_id,shirt_name FROM fanta.players ORDER BY api_id')).rows.map(p=>p.shirt_name);
+  assert.deepEqual(await labels(),['De Bruyne','Rossi',"M'Bala Nzola",'Bremer','Douglas Luiz','Ramón']);
+  await db.exec(`INSERT INTO fanta.players(api_id,name) VALUES(47522,'D. Soares de Paulo')
+   ON CONFLICT(api_id) DO UPDATE SET name=EXCLUDED.name;
+   INSERT INTO fanta.players(api_id,name) VALUES (12,'A. E. De Zan');`);
+  assert.deepEqual(await labels(),['De Bruyne','Rossi',"M'Bala Nzola",'De Zan','Bremer','Douglas Luiz','Ramón']);
+  const {rows:[record]}=await db.query('SELECT name,data FROM fanta.players WHERE api_id=47522');
+  assert.equal(record.name,'D. Soares de Paulo');assert.equal(record.data.surname,'Soares de Paulo');
+ }finally{await db.close();}
 });
 
 test('restoring coordinates from raw official lineups cannot resurrect a duplicated number or substitute',()=>{

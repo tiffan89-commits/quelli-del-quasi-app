@@ -12,6 +12,7 @@ export async function fixtureDb({cutover=true}={}){
  await db.exec(await fs.readFile(new URL('../../netlify/database/migrations/009_statistical_votes.sql',import.meta.url),'utf8'));
  await db.exec(await fs.readFile(new URL('../../netlify/database/migrations/010_identity_cache.sql',import.meta.url),'utf8'));
  if(cutover)await db.exec(await fs.readFile(new URL('../../netlify/database/migrations/011_native_pilot_market.sql',import.meta.url),'utf8'));
+ await db.exec(await fs.readFile(new URL('../../netlify/database/migrations/025_player_shirt_names.sql',import.meta.url),'utf8'));
  let tail=Promise.resolve();const connect=async()=>{let release;const next=new Promise(r=>release=r),prior=tail;tail=prior.then(()=>next);await prior;return {query:(...args)=>db.query(...args),release};};
  const users=[{id:'u1',username:'frankwood',name:'Presidente sintetico',emailVerified:true,demo:false,adminOnly:false,email:'u1@example.test'},{id:'u2',username:'amico',name:'Amico sintetico',emailVerified:true,demo:false,email:'u2@example.test'}],sessions=users.map((u,i)=>({uid:u.id,token:createHash('sha256').update('token'+(i+1)).digest('hex'),expires:Date.now()+3600000}));
  await db.query('INSERT INTO fanta_state VALUES(1,$1)',[JSON.stringify({users,sessions,leagues:[],rounds:[],chatSubscriptions:[]})]);

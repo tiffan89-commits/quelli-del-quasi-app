@@ -14,6 +14,19 @@ export function canonicalPitchRows(team){
  const counts=parts(team.formation);if(!counts||team.players?.length!==11)return null;
  let cursor=0;return counts.map(n=>{const row=team.players.slice(cursor,cursor+n);cursor+=n;return team.pitchOrder==='right-to-left'?row.reverse():row;});
 }
+export function partialPitchRows(team){
+ const counts=parts(team.formation),players=team.players||[];
+ if(!counts||!players.length||players.length>=11)return null;
+ const rows=counts.map(n=>Array(n).fill(null));
+ for(const player of players){
+  const coordinates=/^([1-6]):([1-5])$/.exec(String(player.grid||''));
+  if(!coordinates)return null;
+  const [,line,position]=coordinates,row=rows[Number(line)-1],slot=Number(position)-1;
+  if(!row||slot>=row.length||row[slot])return null;
+  row[slot]=player;
+ }
+ return rows;
+}
 export function normalizePitchLayout(team,{defaultOrder='left-to-right'}={}){
  const explicit=explicitPitchRows(team),rows=explicit||canonicalPitchRows({...team,pitchOrder:team.pitchOrder||defaultOrder});if(!rows)return team;
  const source=explicit?(team.layoutVersion===PITCH_LAYOUT_VERSION?team.layoutSource||'grid':'grid'):'source-order';

@@ -25,7 +25,7 @@ const FIRST_TEAM_KICKOFF=`(SELECT min(coalesce(
 const READ_LEAGUE_SQL=`SELECT l.*,row_to_json(selected) AS competition,${FIRST_TEAM_KICKOFF},(SELECT data->>'key' FROM fanta.jobs WHERE id='votes:active-model') AS vote_model_key,
  (SELECT coalesce(jsonb_agg(c ORDER BY c.created_at,c.id),'[]') FROM fanta.competitions c WHERE c.league_id=l.id) AS competitions,
  (SELECT coalesce(jsonb_agg(t ORDER BY t.id),'[]') FROM fanta.teams t WHERE t.league_id=l.id) AS teams,
- (SELECT coalesce(jsonb_agg(p.data||jsonb_build_object('id',p.id,'name',p.name,'role',p.role,'club',c.name,'clubId',p.club_id)),'[]') FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id WHERE $5::boolean OR p.id IN(SELECT player_id FROM fanta.rosters WHERE league_id=$1 UNION SELECT player_id FROM fanta.roster_entries WHERE league_id=$1 AND player_id IS NOT NULL UNION SELECT player_id FROM fanta.player_bindings WHERE league_id=$1 UNION SELECT jsonb_array_elements_text(starters||bench) FROM fanta.lineups WHERE league_id=$1)) AS players,
+ (SELECT coalesce(jsonb_agg(p.data||jsonb_build_object('id',p.id,'name',p.name,'shirtName',p.shirt_name,'role',p.role,'club',c.name,'clubId',p.club_id)),'[]') FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id WHERE $5::boolean OR p.id IN(SELECT player_id FROM fanta.rosters WHERE league_id=$1 UNION SELECT player_id FROM fanta.roster_entries WHERE league_id=$1 AND player_id IS NOT NULL UNION SELECT player_id FROM fanta.player_bindings WHERE league_id=$1 UNION SELECT jsonb_array_elements_text(starters||bench) FROM fanta.lineups WHERE league_id=$1)) AS players,
  (SELECT coalesce(jsonb_agg(r),'[]') FROM fanta.rosters r WHERE r.league_id=l.id) AS rosters,
  (SELECT coalesce(jsonb_agg(e),'[]') FROM fanta.roster_entries e WHERE e.league_id=l.id) AS entries,
  (SELECT data FROM fanta.auctions WHERE league_id=l.id) AS auction,
@@ -53,7 +53,7 @@ const assignedPlayer=`SELECT player_id FROM fanta.rosters WHERE league_id=$1
  UNION SELECT player_id FROM fanta.roster_entries WHERE league_id=$1 AND player_id IS NOT NULL`;
 const ROSTER_EDITOR_SQL=`SELECT l.id,l.kind,l.season,l.max_members,l.rules,
  (SELECT coalesce(jsonb_agg(t ORDER BY t.name,t.id),'[]') FROM fanta.teams t WHERE t.league_id=l.id) AS teams,
- (SELECT coalesce(jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'role',p.role,'club',c.name,
+ (SELECT coalesce(jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'shirtName',p.shirt_name,'role',p.role,'club',c.name,
   'active',p.data->'active',
   'jersey',COALESCE(p.data->>'jersey',p.data->>'number',p.data#>>'{seasonStats,games,number}'))),'[]')
   FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id WHERE p.id=ANY($3::text[]) OR p.id IN (${assignedPlayer})) AS players,
@@ -190,7 +190,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
      SELECT player_id FROM fanta.rosters WHERE league_id=$1 UNION SELECT player_id FROM fanta.roster_entries WHERE league_id=$1
      UNION SELECT player_id FROM fanta.player_bindings WHERE league_id=$1
      UNION SELECT jsonb_array_elements_text(starters||bench) FROM fanta.lineups WHERE competition_id=$2 AND round=$3
-    ) ORDER BY p.id`:'SELECT p.*,c.name AS club FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id ORDER BY p.id',calculation?[id,selected.id,number]:[])).rows.map(p=>({...p.data,id:p.id,name:p.name,role:p.role,club:p.club,clubId:p.club_id}));
+    ) ORDER BY p.id`:'SELECT p.*,c.name AS club FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id ORDER BY p.id',calculation?[id,selected.id,number]:[])).rows.map(p=>({...p.data,id:p.id,name:p.name,shirtName:p.shirt_name,role:p.role,club:p.club,clubId:p.club_id}));
     const byId=new Map(players.map(p=>[p.id,p]));if(!calculation||number){
      const rosterRows=(await c.query(market?`SELECT r.*,p.name,p.role FROM fanta.rosters r JOIN fanta.players p ON p.id=r.player_id WHERE r.league_id=$1`:'SELECT * FROM fanta.rosters WHERE league_id=$1',[id])).rows;
      for(const r of rosterRows){

@@ -232,11 +232,12 @@ test('one reserve shelf orders the saved bench, swaps by role, and never drops a
  }finally{instance?.destroy();for(const[k,d]of old)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
 
-test('studio surnames and fantamedia stay available for field, bench and free players',()=>{
- assert.equal(surname('Franco Mastantuono'),'Mastantuono');assert.equal(surname('F. Mastantuono'),'Mastantuono');assert.equal(surname('Randal Kolo Muani'),'Kolo');assert.equal(surname('David de Gea'),'de Gea');assert.equal(surname('Juan Jesus'),'Jesus');assert.equal(surname({name:'Full Display Name',surname:'Surname with space'}),'Surname');
+test('studio renders the stored shirt name and fantamedia on the field and bench',()=>{
+ assert.equal(surname('F. Mastantuono'),'Mastantuono');assert.equal(surname('Juan Jesus'),'Juan Jesus');
+ assert.equal(surname({name:'Douglas Luiz',surname:'Soares de Paulo'}),'Douglas Luiz');
  assert.equal(surname({name:'G. Isaksen',surname:'Tang Isaksen',id:'af:135519'}),'Isaksen');
- assert.equal(playerDisplayName({name:'Gustav Tang Isaksen'}),'Isaksen');
- const players=roster.map((p,i)=>({...p,name:['David de Gea','Franco Mastantuono','K. De Bruyne','Randal Kolo Muani'][i],stats:{...p.stats,avgFanta:i===2?null:6.5}}));
+ assert.equal(playerDisplayName({name:'Gustav Tang Isaksen',shirtName:'Isaksen'}),'Isaksen');
+ const players=roster.map((p,i)=>({...p,name:['David de Gea','Franco Mastantuono','K. De Bruyne','Randal Kolo Muani'][i],shirtName:['de Gea','Mastantuono',null,'Kolo Muani'][i],stats:{...p.stats,avgFanta:i===2?null:6.5}}));
  const d=draftFrom(null,players);d.slots.P0=players[0].id;d.slots.D0=players[1].id;d.bench=[players[2].id];
  const {document}=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'tutti'},0));
  assert.equal(document.querySelector('[data-st-slot="D0"] .fs-shirt svg text').textContent,'MASTANTUONO');
@@ -244,7 +245,7 @@ test('studio surnames and fantamedia stay available for field, bench and free pl
  assert.equal(document.querySelectorAll('.fs-pitch .fs-fm').length,2);
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[2].id+'"] .fs-fm').textContent,'– FM');
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-fm').textContent,'6,50 FM');
- assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO');
+ assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO MUANI');
  const bench=parseHTML(renderStudio({data:{roster:players,round:{number:1,deadline:'2026-11-20'},rules:{formations:['4-4-2']}},draft:d},{role:'panchina'},0)).document;assert.equal(bench.querySelector('.fs-grid .fs-tile .fs-shirt svg text').textContent,'DE BRUYNE');assert.ok(bench.querySelector('.fs-grid .fs-fm'));
 });
 

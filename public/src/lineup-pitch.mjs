@@ -1,12 +1,12 @@
 import {hasEntered,fantasyGradeText,hasPitchPerformance,pitchPerformance} from './pitch-events.mjs';
 import {roundPresenceEstimate} from './fanta/presence-probability.mjs';
-import {canonicalPitchRows,recoverOfficialPitchLayout,normalizePitchLayout} from './pitch-layout.mjs';
+import {canonicalPitchRows,partialPitchRows,recoverOfficialPitchLayout,normalizePitchLayout} from './pitch-layout.mjs';
 import {playerDisplayName,playerSurname,playerJersey,pitchFixture} from './player-label.mjs';
 import {shirtBack} from './fanta/maglie-portieri.mjs';
 import {sameClub} from './fanta/maglie.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function formationRows(team){
- return canonicalPitchRows(team)?.reverse()||null;
+export function formationRows(team,{allowVacancies=false}={}){
+ return (canonicalPitchRows(team)||(allowVacancies?partialPitchRows(team):null))?.reverse()||null;
 }
 export const shirtSurname=playerSurname;
 function isGoalkeeper(p,team){
@@ -35,10 +35,10 @@ function benchSections(t,kind){
  if(!rest.length)return incoming;
  return incoming+(kind==='probable'&&!t.started?availablePlayers({...t,bench:rest}):'<details class="lineup-bench"><summary>A disposizione · '+rest.length+'</summary><div class="bench-stickers">'+rest.map(p=>sticker(p,t)).join('')+'</div></details>');
 }
-function pitchField(t){
- const rows=formationRows(t);
+function pitchField(t,kind){
+ const rows=formationRows(t,{allowVacancies:kind==='probable'});
  if(!rows)return `<div class="lineup-sticker-list">${t.players.length?t.players.map(p=>sticker(p,t)).join(''):'<p class="muted">Formazione non ancora salvata.</p>'}</div>`;
- return `<div class="football-pitch"><div class="pitch-marks" aria-hidden="true"></div><div class="pitch-rows" style="--pitch-lines:${rows.length}">${rows.map(row=>`<div class="pitch-row${row.length>=5?' row-5':''}" style="--players:${row.length}">${row.map(p=>sticker(p,t)).join('')}</div>`).join('')}</div></div>`;
+ return `<div class="football-pitch"><div class="pitch-marks" aria-hidden="true"></div><div class="pitch-rows" style="--pitch-lines:${rows.length}">${rows.map(row=>`<div class="pitch-row${row.length>=5?' row-5':''}" style="--players:${row.length}">${row.map(p=>p?sticker(p,t):'<span class="pitch-vacancy">Da definire</span>').join('')}</div>`).join('')}</div></div>`;
 }
 
 function benchPage(t,kind,label){
@@ -93,7 +93,7 @@ function pagedLineup(l,title,notes,details,detailsAvailable,showExtras=true){
   const benchLabel=l.kind==='probable'&&!team.started?'A disposizione':'Panchina';
   return `<section class="pitch-team" data-pitch-team="${i}" aria-label="Formazione ${esc(team.team)}">
     <div class="pitch-heading"><strong>${esc(team.team)}</strong><span>${esc(team.formation||'')}</span></div>
-    ${renderPitchFlip(pitchField(team),benchPage(team,l.kind,benchLabel),benchLabel)}
+    ${renderPitchFlip(pitchField(team,l.kind),benchPage(team,l.kind,benchLabel),benchLabel)}
   </section>`;
  }).join('')||'<section class="pitch-team pitch-empty"><p class="muted">Formazioni non ancora disponibili.</p></section>';
  return `<section class="lineup-section lineup-paged">${title?`<h3>${title}</h3>`:''}
@@ -114,7 +114,7 @@ export function renderLineup(data,{paged=false,details=null,detailsAvailable=tru
  const title=l.kind==='fantasy'?'Le formazioni':l.kind==='official'?'Formazioni ufficiali':'Probabili formazioni';
  const notes=`<p class="lineup-source">${l.kind==='fantasy'?(l.complete?'Definitive':l.teams.some(t=>t.players.length)?'Formazioni consegnate':'In attesa delle formazioni'):l.kind==='official'?'Formazione confermata':['minutes-presence-v1','recent-form-v2','recent-form-v3'].includes(l.method)?'Presenza stimata':'Stima basata su '+(l.sourceCount||1)+' fonti'+((l.sourceCount||1)<5?' · copertura parziale':'')}${l.updatedAt?' · '+new Date(l.updatedAt).toLocaleString('it-IT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):''}</p>${l.kind==='probable'?'<small class="lineup-method">Presenza stimata da minuti, titolarità e forma recente. Verde: formazione ufficiale.</small>':''}${l.kind==='probable'&&Number(l.accuracy?.validMatches)>=10&&Number.isFinite(l.accuracy?.accuracyPct)?'<p class="lineup-accuracy">Accuratezza degli 11: <strong>'+Number(l.accuracy.accuracyPct).toLocaleString('it-IT',{maximumFractionDigits:1})+'%</strong> · su '+Math.floor(l.accuracy.validMatches)+' partite</p>':''}`;
  if(paged)return pagedLineup(l,details!==null&&l.kind==='official'?'':title,notes,details,detailsAvailable,showExtras);
- return `<section class="lineup-section"><h3>${title}</h3><div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
+ return `<section class="lineup-section"><h3>${title}</h3><div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t,l.kind)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
 }
 export function bindLineupPitch(root,{onPage,autoHeight=true}={}){
  root._pitchCleanup?.();
