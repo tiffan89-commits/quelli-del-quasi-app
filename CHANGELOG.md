@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.43.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.3...v0.43.4) (2026-11-20)
+
+
+### Bug Fixes
+
+* semplifica il pannello presidente e mostra il vincitore del Bar ([31afbe9](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/31afbe9a10011415fa9d0d9cfaf1bba200368e21))
+
 ## [0.43.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.2...v0.43.3) (2026-11-20)
 
 
