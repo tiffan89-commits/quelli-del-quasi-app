@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.43.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.5...v0.43.0) (2026-11-20)
+
+
+### Features
+
+* rinnova la correzione rose e le impostazioni ([ece93d9](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/ece93d9450e6df3953aec77e63235c0cdc73191a))
+
 ## [0.42.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.42.4...v0.42.5) (2026-11-19)
 
 
