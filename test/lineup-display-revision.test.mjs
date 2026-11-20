@@ -10,11 +10,11 @@ import {PGlite} from '@electric-sql/pglite';import {patchSports} from '../lib/op
 const esc=x=>String(x??'').replaceAll('<','&lt;'),fmt=String;
 const raw={teams:{home:{id:1,name:'Milan'},away:{id:2,name:'Inter'}},lineups:[1,2].map(id=>({team:{id},formation:'4-4-2',startXI:Array.from({length:11},(_,i)=>({player:{id:id*100+i,name:'Firstname Surname'+i,number:i+1,pos:i===0?'G':i<5?'D':i<9?'M':'F'}})),substitutes:[{player:{id:id*100+99,name:'Backup Keeper',number:99,pos:'G'}}]}))};
 
-test('jerseys show surnames only, preserve compound family names and recover numbers from cached season data',()=>{
- for(const [name,family] of [['Albert Guðmundsson','Guðmundsson'],['C. De Ketelaere','De Ketelaere'],['Davis K.','Davis'],['Juan Jesus','Jesus'],['José R. D’Angelo','R. D’Angelo'],['F. D&apos;Amico',"D'Amico"],['Lorenzo De Silvestri','De Silvestri']])assert.equal(playerSurname(name),family);
- assert.equal(playerSurname({name:'Jacobo Ramón Naveros',surname:'Ramón'}),'Ramón');assert.equal(playerJersey({jersey:'',seasonStats:{games:{number:32}}}),32);
+test('jerseys use the catalog label and preserve unabridged legacy names and cached numbers',()=>{
+ for(const [name,label] of [['Albert Guðmundsson','Albert Guðmundsson'],['C. De Ketelaere','De Ketelaere'],['Davis K.','Davis'],['Juan Jesus','Juan Jesus'],['José R. D’Angelo','José R. D’Angelo'],['F. D&apos;Amico',"D'Amico"],['Lorenzo De Silvestri','Lorenzo De Silvestri']])assert.equal(playerSurname(name),label);
+ assert.equal(playerSurname({name:'Jacobo Ramón Naveros',surname:'Naveros',shirtName:'Ramón'}),'Ramón');assert.equal(playerJersey({jersey:'',seasonStats:{games:{number:32}}}),32);
  assert.equal(opponentLabel({opponent:'AC Milan',home:false}),'@ MIL');assert.equal(opponentLabel({opponent:'Juventus',home:true}),'JUV');
- const html=renderFantasyLineup({teams:[{name:'Fantasy Club',formation:'4-4-2',players:[{name:'Albert Guðmundsson',club:'Inter',starter:true,jersey:11,role:'A',next:{opponent:'Juventus',home:false}}]}]});
+ const html=renderFantasyLineup({teams:[{name:'Fantasy Club',formation:'4-4-2',players:[{name:'Albert Guðmundsson',shirtName:'Guðmundsson',club:'Inter',starter:true,jersey:11,role:'A',next:{opponent:'Juventus',home:false}}]}]});
  assert.match(html,/>GUÐMUNDSSON<\/text>/);assert.doesNotMatch(html,/>ALBERT GUÐM/);assert.match(html,/@JUV/);assert.match(html,/>11<\/text>/);
 });
 
@@ -62,8 +62,8 @@ test('Bar slip uses plain home shirts and changes only the away shirt if the hom
  assert.doesNotMatch(renderLeagueChip({name:'Bar'},'u',esc,fmt),/settings-entry|v2-credits|league-add/);
 });
 
-test('lineups share fixture kits without removing the player surname and number',()=>{
- const lineups={kind:'official',teams:[{team:'Atalanta',players:[{id:'a',name:'Marco Rossi',jersey:19,role:'D'}]},{team:'Inter',players:[{id:'b',name:'Luca Verdi',jersey:9,role:'A'}]}]};
+test('lineups share fixture kits without removing the stored shirt name and number',()=>{
+ const lineups={kind:'official',teams:[{team:'Atalanta',players:[{id:'a',name:'Marco Rossi',shirtName:'Rossi',jersey:19,role:'D'}]},{team:'Inter',players:[{id:'b',name:'Luca Verdi',jersey:9,role:'A'}]}]};
  const {document}=parseHTML(renderLineup({home:'Internazionale',away:'Atalanta',lineups}));
  const away=document.querySelector('[data-fantasy-player="a"] svg'),home=document.querySelector('[data-fantasy-player="b"] svg');
  assert.equal(away.querySelector('rect').getAttribute('fill'),KITS.Atalanta.away.a);

@@ -103,7 +103,7 @@ test('opening a native slip match reads saved XIs once, renders club jerseys and
  let calls=0,resolve;const f=fixture({loadMatchup:async(context,round,match)=>{calls++;assert.equal(context.leagueId,'a');assert.equal(round.number,11);return new Promise(r=>resolve=r);}});
  const pending=f.root.querySelector('[data-detail]').onclick();await f.root.querySelector('[data-detail]').onclick();assert.equal(calls,1);
  const fixturePlayer={id:'maldini',name:'Maldini',role:'A',club:'Cagliari',status:'to-play',opponent:'Frosinone',home:true,kickoff:'2026-11-07T14:00:00Z'};
- const livePlayer={id:'p',name:'Mario Rossi',role:'A',jersey:11,club:'Inter',status:'playing',opponent:'Juventus',home:false,kickoff:'2026-11-07T14:00:00Z',events:{goals:2,yellow:1},vote:7,fantavote:12.5};
+ const livePlayer={id:'p',name:'Mario Rossi',shirtName:'Rossi',role:'A',jersey:11,club:'Inter',status:'playing',opponent:'Juventus',home:false,kickoff:'2026-11-07T14:00:00Z',events:{goals:2,yellow:1},vote:7,fantavote:12.5};
  const matchup={official:false,state:'in-corso',home:{team:{name:'Casa'},formation:'4-4-2',starters:[livePlayer,fixturePlayer],bench:[],modifier:{applies:false}},away:{team:{name:'Ospite'},starters:[],bench:[]}};
  resolve(matchup);await pending;
  const page=f.root.ownerDocument.getElementById('match-page-root');

@@ -9,6 +9,18 @@ test('ties, unknown estimates, unavailable/inactive players and incompatible rol
  const out=selectEstimatedLineup({players:[p(1,'D',90),p(2,'C',null),p(3,'A',80)],bench:[p(4,'D',90),p(5,'C',90),p(6,'A',90,{availability:'injured'}),p(7,'A',90,{active:false}),p(8,'P',90)]});assert.deepEqual(out.players.map(p=>p.apiId),[1,2,3]);assert.equal(out.selectionChanges.length,0);
  const unavailable=selectEstimatedLineup({players:[p(1,'D',null,{availability:'suspended',grid:'2:1'})],bench:[p(2,'D',20)]});assert.equal(unavailable.players[0].apiId,2);assert.equal(unavailable.players[0].grid,'2:1');assert.equal(unavailable.bench.length,0);
 });
+test('a rejected defender leaves a specific slot and a compatible available player can complete the formation',()=>{
+ const roles=['P',...Array(4).fill('D'),...Array(5).fill('C'),'A'];
+ const team=normalizePitchLayout({team:'Milan',formation:'4-4-1-1',players:roles.map((role,i)=>p(i+1,role,90))});
+ const third=team.players.find(p=>p.grid==='2:2');
+ const catalog=[...team.players.filter(p=>p!==third),p(20,'D',85,{shirtName:'Difensore'}),p(21,'D',90,{status:{type:'injured'}}),p(22,'C',90)]
+  .map(x=>({...x,id:x.playerId,club:'Milan',stats:{minutes:x.probability*9,teamMatches:10}}));
+ const expected=enrichPresence({kind:'probable',teams:[team]},catalog).teams[0];
+ assert.equal(expected.players.length,11);
+ assert.equal(expected.players.find(p=>p.grid==='2:2').shirtName,'Difensore');
+ assert.ok(!expected.bench.some(p=>p.apiId===20));
+ assert.equal(expected.selectionChanges.at(-1).reason,'vacant-slot');
+});
 test('full roster estimates drive the XI even for candidates absent from the editorial bench; repeat is stable and official wins',()=>{
  const roles=['P',...Array(4).fill('D'),...Array(4).fill('C'),...Array(2).fill('A')],players=roles.map((role,i)=>p(i+1,role,i===1?20:90)),team=normalizePitchLayout({team:'Juventus',formation:'4-4-2',players,bench:[]}),lineups={kind:'probable',teams:[team]};
  const catalog=[...players,p(20,'D',85),p(21,'D',90,{status:{type:'injured'}}),p(22,'C',90)].map(x=>({...x,id:x.playerId,club:'Juventus',stats:{minutes:x.probability*9,teamMatches:10}}));catalog.push({...catalog.find(p=>p.apiId===20),id:'af:30',playerId:'af:30',apiId:30,club:'Inter'});

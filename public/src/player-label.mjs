@@ -1,8 +1,5 @@
 import {KITS} from './fanta/maglie.mjs';
 import {esc,fixtureTime} from './fanta/formato.mjs';
-const particles=/^(?:d[aeiou]|de|del|della|di|dos|das|van|von|der|den|el|al|la|le)$/i;
-const abbreviated=word=>/^\p{L}\.$/u.test(word);
-const familiarNames={'386305':'Ramón','288112':'Kambwala','135519':'Isaksen'};
 const entities={amp:'&',apos:"'",quot:'"',lsquo:'‘',rsquo:'’',nbsp:' ',oslash:'ø',Oslash:'Ø',aelig:'æ',AElig:'Æ',szlig:'ß'};
 const accents={acute:'\u0301',grave:'\u0300',circ:'\u0302',tilde:'\u0303',uml:'\u0308',cedil:'\u0327',ring:'\u030a',caron:'\u030c'};
 export function normalizedPlayerLabel(value){
@@ -19,30 +16,11 @@ export function normalizedPlayerLabel(value){
  });
  return text.normalize('NFC').replace(/[\u0000-\u001f\u007f-\u009f]/g,' ').replace(/\s+/g,' ').trim();
 }
-function familiarName(p){
- const id=String(p.apiId||p.api_id||p.playerId||p.id||'').replace(/^(?:af:|apifootball:|api-football:)/,'');
- const label=normalizedPlayerLabel(p.name);
- if(familiarNames[id])return familiarNames[id];
- if(/^(?:Jacobo|J\.)\s+Ram[oó]n(?: Naveros)?$/iu.test(label))return 'Ramón';
- if(/^(?:(?:Gustav|G\.)\s+)?Tang Isaksen$/iu.test(label))return 'Isaksen';
- return normalizedPlayerLabel(p.knownAs);
-}
-export const playerDisplayName=p=>familiarName(p)||normalizedPlayerLabel(p.name);
+const storedName=p=>normalizedPlayerLabel(p?.shirtName)||normalizedPlayerLabel(p?.knownAs);
+export const playerDisplayName=p=>storedName(p)||normalizedPlayerLabel(p?.name);
 export function playerSurname(player){
- const p=typeof player==='string'?{name:player}:player||{};
- const known=familiarName(p);if(known)return known;
- const family=p.surname||p.lastName||p.lastname||p.last_name;
- const words=normalizedPlayerLabel(family||p.name).split(/\s+/).filter(Boolean);
- if(!words.length)return "";
- if(!family){
-  if(words.length>1&&abbreviated(words.at(-1)))words.pop();
-  else if(words.length>1&&!abbreviated(words[0])&&!particles.test(words[0])&&!/^(Kolo Muani|Zambo Anguissa)$/i.test(words.join(" ")))words.shift();
-  else if(words.length>1&&abbreviated(words[0]))words.shift();
- }
- const name=[words.shift()];
- while(words.length&&particles.test(name.at(-1)))name.push(words.shift());
- if(words.length&&abbreviated(name.at(-1)))name.push(words.shift());
- return name.join(' ').replace(/[^\p{L}\p{M}\p{N}\s.'’\u2010\u2011-]/gu,'');
+ const p=typeof player==='string'?{name:player}:player;
+ return storedName(p)||normalizedPlayerLabel(p?.name).replace(/^(?:\p{L}\. )+|(?: \p{L}\.)+$/gu,'');
 }
 export const playerJersey=p=>[
  p?.clubId&&p.verifiedJersey?.clubId===p.clubId&&(!p.season||p.season===p.verifiedJersey.season)?p.verifiedJersey.number:null,

@@ -19,7 +19,7 @@ test('API position aliases map to fantasy roles; unknown roles and empty selecti
 });
 
 test('dedicated match pages put each bench behind its team and gate the details slide',()=>{
- const extended={...lineup,teams:lineup.teams.map(t=>({...t,bench:Array.from({length:25},(_,i)=>({id:String(i),name:'Nome Riserva'+i,role:'D',probability:55}))}))};
+ const extended={...lineup,teams:lineup.teams.map(t=>({...t,bench:Array.from({length:25},(_,i)=>({id:String(i),name:'Nome Riserva'+i,shirtName:'Riserva'+i,role:'D',probability:55}))}))};
  const {document}=parseHTML(renderLineup({lineups:extended},{paged:true}));
  const panes=[...document.querySelectorAll('.pitch-team')];
  assert.deepEqual(panes.map(p=>p.getAttribute('aria-label')),['Formazione Juventus','Formazione Inter']);
@@ -41,14 +41,14 @@ test('dedicated match pages put each bench behind its team and gate the details 
 
 test('match availability belongs to the details page and is limited to matches yet to start',()=>{
  const teams=[
-  {...lineup.teams[0],unavailable:[{name:'Kenan Yıldız',status:'In dubbio'}]},
-  {...lineup.teams[1],unavailable:[{name:'Lautaro Martínez',status:'Squalificato'}]}
+  {...lineup.teams[0],unavailable:[{name:'Kenan Yıldız',shirtName:'Yıldız',status:'In dubbio'}]},
+  {...lineup.teams[1],unavailable:[{name:'Lautaro Martínez',shirtName:'Lautaro',status:'Squalificato'}]}
  ];
  const data={status:'NS',lineups:{...lineup,teams}};
  const {document}=parseHTML(matchAvailability(data));
  const groups=[...document.querySelectorAll('.match-availability > section')];
  assert.deepEqual(groups.map(group=>group.querySelector('h4').textContent),['Juventus','Inter']);
- assert.deepEqual(groups.map(group=>group.querySelector('strong').textContent),['Yıldız','Martínez']);
+ assert.deepEqual(groups.map(group=>group.querySelector('strong').textContent),['Yıldız','Lautaro']);
  assert.deepEqual(groups.map(group=>group.querySelector('span').textContent),['In dubbio','Squalificato']);
  assert.equal(matchAvailability({...data,status:'1H'}),'');
  assert.equal(matchAvailability({...data,status:'FT'}),'');

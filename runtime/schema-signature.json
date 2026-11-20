@@ -204,6 +204,7 @@
   "fanta.players.id:text:NO",
   "fanta.players.name:text:NO",
   "fanta.players.role:text:NO",
+  "fanta.players.shirt_name:text:YES",
   "fanta.reference_results.captured_at:timestamptz:NO",
   "fanta.reference_results.data:jsonb:NO",
   "fanta.reference_results.digest:text:NO",

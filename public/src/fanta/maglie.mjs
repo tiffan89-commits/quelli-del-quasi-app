@@ -226,8 +226,7 @@ const BUSY = ['stripes', 'halves', 'cross', 'panels', 'camo'];
 // Retro: stessa maglia vista da dietro (metà, maniche e bande diagonali specchiate), girocollo basso, niente scudetto.
 // Con il cognome (figurine delle formazioni): cognome in alto e numero grande. Senza: solo il numero, o la sigla se manca.
 export function shirtSurname(surname, {nameSize = 0, wideName = false, ink = '#fff', edge = '#0c1815'} = {}) {
-  const full = String(surname || '').toUpperCase();
-  const name = wideName ? full : full.slice(0, 12);
+  const name = String(surname || '').toUpperCase();
   const size = wideName ? 6.4 : nameSize || (name.length > 9 ? 3 : name.length > 6 ? 3.6 : 4.2);
   const fit = wideName ? (name.length >= 9 ? 28 : name.length >= 7 ? 25 : 0) : (name.length * size * 0.58 > 24 ? 24 : 0);
   return `<text x="20" y="${wideName ? 13.3 : 13.6}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="${size}" letter-spacing="${wideName ? '0' : '.25'}" fill="${wideName ? '#fff' : ink}" stroke="${wideName ? '#0c1815' : edge}" stroke-width="${wideName ? '1.15' : '.9'}" paint-order="stroke"${fit ? ` textLength="${fit}" lengthAdjust="spacingAndGlyphs"` : ''}>${esc(name)}</text>`;
