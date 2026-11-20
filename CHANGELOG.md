@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.43.9](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.8...v0.43.9) (2026-11-20)
+
+
+### Bug Fixes
+
+* rispetta le posizioni reali nelle probabili ([3fd5451](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3fd5451f5b80290eb279a26920f255c9138086c6))
+
 ## [0.43.8](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.7...v0.43.8) (2026-11-20)
 
 
