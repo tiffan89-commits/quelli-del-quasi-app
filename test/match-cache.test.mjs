@@ -81,7 +81,7 @@ test("stored predictions refresh every hour until an official lineup replaces th
     lineupCheckedAt: "2026-10-28T12:00:00Z",
   };
   assert.equal(probableLineupsDue(m, now), true);
-  m.lineupCheckedAt='2026-10-30T13:30:00Z';m.lineups.enrichmentVersion=6;
+  m.lineupCheckedAt='2026-10-30T13:30:00Z';m.lineups.enrichmentVersion=7;
   assert.equal(probableLineupsDue(m, new Date("2026-10-30T14:29:59Z")), false);
   assert.equal(probableLineupsDue(m, new Date("2026-10-30T14:30:00Z")), true);
   m.lineupCheckedAt = "2026-10-30T14:31:00Z";
