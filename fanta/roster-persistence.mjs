@@ -74,9 +74,26 @@ async function moveTradePlayers(c,league,moves,now){
 
 export async function persistRosterChanges(c,before,after,{actor,kind,input,now=Date.now()}={}){
  const league=before.league.id;
- const audit=kind==='trade'?await moveTradePlayers(c,league,input.moves,now):await persistMarketMoves(c,before,after,now);
+ let audit,restore;
+ const release=kind==='release-undo'&&[...(after.auction.releases||[])].reverse().find(r=>r.player.id===input.playerId&&r.batch===after.auction.releaseBatchId);
+ if(kind==='release-batch'){
+  const teams=new Map(before.teams.map(team=>[team.id,team.roster]));
+  audit=input.entries.map(({teamId,playerId})=>({teamId,playerId,kind:'remove',before:teams.get(teamId).find(p=>p.id===playerId),after:null}));
+  restore=await applyRosterRows(c,league,audit,now);
+ }else if(release?.requestId){
+  const {rows:[receipt]}=await c.query(`SELECT data->'restore' AS restore FROM fanta.roster_changes
+   WHERE league_id=$1 AND actor=$2 AND kind='release-batch'
+   AND data->'input'->>'requestId'=$3 AND data->'input'->>'batchId'=$4`,[league,release.actor,release.requestId,release.batch]);
+  const id=release.player.id,team=release.team;
+  await applyRosterRows(c,league,[],now,{
+   rosters:receipt.restore.rosters.filter(row=>row.team_id===team&&row.player_id===id),
+   entries:receipt.restore.entries.filter(row=>row.team_id===team&&(row.player_id||row.source_id)===id),
+   sales:release.priorSaleIds,
+  });
+  audit=[{before:null,after:{...release.player,team}}];
+ }else audit=kind==='trade'?await moveTradePlayers(c,league,input.moves,now):await persistMarketMoves(c,before,after,now);
  for(const t of after.teams)if((t.creditAdjustment||0)!==(before.teams.find(p=>p.id===t.id)?.creditAdjustment||0))await c.query('UPDATE fanta.teams SET credit_adjustment=$2 WHERE id=$1',[t.id,t.creditAdjustment||0]);
- if(audit.length||['release','release-undo'].includes(kind))await c.query('INSERT INTO fanta.roster_changes(league_id,actor,kind,data) VALUES($1,$2,$3,$4)',[league,actor,kind,JSON.stringify({input,changes:audit})]);
+ if(audit.length||['release','release-undo'].includes(kind))await c.query('INSERT INTO fanta.roster_changes(league_id,actor,kind,data) VALUES($1,$2,$3,$4)',[league,actor,kind,JSON.stringify({input,changes:audit,restore})]);
  return audit;
 }
 

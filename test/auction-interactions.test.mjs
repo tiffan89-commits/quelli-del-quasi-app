@@ -3,29 +3,40 @@ import {mountFanta} from '../public/src/fanta/app.mjs';import {createDemoFantaAp
 import {auctionAction,auctionView,teamBudget} from '../fanta/auction.mjs';import {DEFAULT_RULES} from '../fanta/rules.mjs';
 import {auctionAudio,renderAsta,shownSeconds} from '../public/src/fanta/asta.mjs';
 const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
-test('release dialog survives refund clicks, live refresh and failed submission; close exits the release screen and stale polls cannot reopen it',async()=>{
+test('release drafts preserve refunds across refresh and retry, and closing the auction rejects stale snapshots',async()=>{
  const demo=createDemoFantaApi({delay:0}),leagues=await demo.leagues(),home=await demo.home(leagues[0].id),original=await demo.auction(leagues[0].id);
- const a={...original,status:'running',phase:'releases',releaseBatchId:'batch1',isAdmin:true,table:{...original.myRoster[0],ownerTeam:{id:original.me,name:'La mia squadra'}},releases:[]};let state=structuredClone(a),failRelease=true,released;
+ const a={...original,status:'running',phase:'releases',releaseBatchId:'batch1',isAdmin:true,table:null,releases:[]};const player=a.teams.find(t=>t.team.id===a.me).releaseRoster.find(p=>p.role==='P');
+ let state=structuredClone(a),failRelease=true;const calls=[];
  const {document,window}=parseHTML('<html><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
- const keys=['document','window','navigator','localStorage','scrollTo','setInterval','clearInterval','FormData'],saved=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)])),timers=new Map();let count=0,app;
- Object.defineProperties(globalThis,{document:{value:document,configurable:true},window:{value:window,configurable:true},navigator:{value:{onLine:true},configurable:true},localStorage:{value:{getItem:()=>null,setItem(){}},configurable:true},scrollTo:{value:()=>{},configurable:true},setInterval:{value:fn=>{timers.set(++count,fn);return count;},configurable:true},clearInterval:{value:id=>timers.delete(id),configurable:true},FormData:{value:class{constructor(form){this.map=new Map([...form.querySelectorAll('input[name]')].filter(e=>e.type!=='radio'||e.hasAttribute('checked')).map(e=>[e.name,e.value]));}get(k){return this.map.get(k);}[Symbol.iterator](){return this.map[Symbol.iterator]();}},configurable:true}});
- const api={...demo,auction:async()=>structuredClone(state),auctionAssigned:async()=>[{...a.table,team:a.table.ownerTeam}],auctionRelease:async(id,playerId,refund)=>{released={id,playerId,refund};if(failRelease)throw Error('Riprova lo svincolo');state={...state,version:state.version+1,table:null};return structuredClone(state);},auctionClose:async()=>{state={...state,status:'ended',table:null,version:state.version+1};return structuredClone(state);}};
+ const selectPrototype=Object.getPrototypeOf(document.createElement('select'));
+ Object.defineProperty(selectPrototype,'selectedOptions',{configurable:true,get(){return this.querySelectorAll('option[selected]');}});
+ const keys=['document','window','navigator','localStorage','scrollTo','setInterval','clearInterval'],saved=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)])),timers=new Map();let count=0,app;
+ Object.defineProperties(globalThis,{document:{value:document,configurable:true},window:{value:window,configurable:true},navigator:{value:{onLine:true},configurable:true},localStorage:{value:{getItem:()=>null,setItem(){}},configurable:true},scrollTo:{value:()=>{},configurable:true},setInterval:{value:fn=>{timers.set(++count,fn);return count;},configurable:true},clearInterval:{value:id=>timers.delete(id),configurable:true}});
+ const api={...demo,auction:async()=>structuredClone(state),auctionReleaseBatch:async(id,payload)=>{
+  calls.push({id,payload});if(failRelease)throw Error('Riprova lo svincolo');
+  state={...state,version:state.version+1,releases:[{player,team:a.me,batch:a.releaseBatchId,requestId:payload.requestId,refund:0}]};return structuredClone(state);
+ },auctionClose:async()=>{state={...state,status:'ended',table:null,version:state.version+1};return structuredClone(state);}};
  const root=document.getElementById('app'),sheet=document.getElementById('v2-sheet-root'),click=el=>el.dispatchEvent(new window.Event('click',{bubbles:true}));
  try{
  app=mountFanta(root,{api,bootstrap:{me:{access:'full'},leagues,home}});
  const open=document.createElement('button');open.dataset.tab='asta';root.append(open);click(open);await flush();
- assert.equal(root.querySelector('[data-release],[data-asta-close]'),null,'public auction must hide management actions');
+ assert.equal(root.querySelector('[data-release-toggle],[data-asta-close]'),null,'public auction must hide management actions');
  const manage=document.createElement('button');manage.dataset.go='asta';manage.dataset.presidentTool='asta';root.append(manage);click(manage);await flush();
- click(root.querySelector('[data-release]'));let form=sheet.querySelector('form');assert.ok(form);
- const radio=form.querySelector('[value="custom"]');for(const e of form.querySelectorAll('input[type=radio]'))e.removeAttribute('checked');radio.setAttribute('checked','');click(radio);assert.equal(sheet.querySelector('form'),form,'refund click must not open player details');
- form.querySelector('[name=refund]').value='0';radio.dispatchEvent(new window.Event('change',{bubbles:true}));assert.match(form.querySelector('[data-refund-preview]').textContent,/0 crediti/);
- const poll=[...timers.values()].find(f=>f.name==='pollAuction');state.version++;await poll();assert.equal(sheet.querySelector('form'),form,'poll must preserve entered values and DOM');
- form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await flush();assert.match(form.querySelector('[data-form-error]').textContent,/Riprova/);assert.equal(sheet.querySelector('form'),form);
- failRelease=false;form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await flush();assert.equal(released.playerId,a.table.id);assert.equal(released.refund,0);assert.equal(sheet.hidden,true);
+ click(root.querySelector(`[data-release-toggle="${player.id}"]`));const input=root.querySelector('[data-release-refund]');assert.ok(input);
+ input.value='0';input.dispatchEvent(new window.Event('input',{bubbles:true}));
+ assert.equal(calls.length,0);
+ const poll=[...timers.values()].find(f=>f.name==='pollAuction');state.version++;await poll();
+ assert.equal(root.querySelector('[data-release-refund]').value,'0');
+ const submit=()=>root.querySelector('[data-release-batch-form]').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+ submit();await flush();assert.match(root.querySelector('.auction-release-confirm [role=alert]').textContent,/Riprova/);
+ failRelease=false;submit();await flush();
+ assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);
+ assert.deepEqual(calls[1].payload.entries,[{playerId:player.id,teamId:a.me,refund:0}]);
+ assert.ok(root.querySelector('.auction-release-confirm [role=status]'));assert.equal(sheet.hidden,true);
  click(root.querySelector('[data-asta-close]'));assert.ok(sheet.querySelector('[data-auction-close-confirm]'));
  click(sheet.querySelector('[data-auction-close-confirm]'));await flush();assert.match(root.textContent,/Asta chiusa/);assert.doesNotMatch(root.textContent,/Prima facciamo spazio/);
  state={...a,version:1};await poll();assert.match(root.textContent,/Asta chiusa/,'stale in-flight snapshot must not undo close');
- }finally{app?.destroy();for(const [k,d]of saved)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
+ }finally{app?.destroy();delete selectPrototype.selectedOptions;for(const [k,d]of saved)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
 });
 test('wizard choices control the draw and order, and the compact room shows only active bidders',()=>{
  const state={league:{adminUid:'u1'},rules:{...DEFAULT_RULES,roster:{P:1,D:1,C:1,A:1}},teams:['t1','t2'].map((id,i)=>({id,name:id,userId:'u'+(i+1),roster:[]})),players:[{id:'striker',name:'Punta',role:'A'},{id:'keeper',name:'Portiere',role:'P'}],auction:{status:'none',version:1,log:[],order:[]}};
@@ -50,8 +61,8 @@ test('wizard choices control the draw and order, and the compact room shows only
  const rivalView=auctionView(next,'u2'),{document}=parseHTML(renderAsta(rivalView));
  assert.equal(document.querySelector('.fanta-a-history'),null);
  assert.equal(document.querySelector('.auction-page-head'),null);
- assert.equal(document.querySelectorAll('[data-auction-panel]').length,3);
- const timers=[...document.querySelectorAll('.auction-compact-clock')];assert.equal(timers.length,3);assert.ok(timers.every(el=>el.dataset.ends===rivalView.lot.endsAt));
+ assert.deepEqual([...document.querySelectorAll('[data-auction-panel]')].map(el=>el.textContent),['Tavolo','Partecipanti']);
+ const timers=[...document.querySelectorAll('.auction-compact-clock')];assert.equal(timers.length,2);assert.ok(timers.every(el=>el.dataset.ends===rivalView.lot.endsAt));
  assert.equal(document.querySelector('.auction-bidder-credits.is-projected b').textContent,'643');
  const input=document.querySelector('[data-auction-bid-range]');assert.equal(input.getAttribute('min'),'8');assert.equal(input.getAttribute('value'),'8');
  assert.equal(document.querySelector('[data-auction-bid-delta]').textContent,'(+1)');

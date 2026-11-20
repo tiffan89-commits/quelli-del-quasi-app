@@ -9,6 +9,7 @@ import {avatarSvg} from '../avatar.mjs';
 import {LAMPO,lampoShownSeconds} from '../auction-formats.mjs';
 import {backButton} from '../back-navigation.mjs';
 import {fitTeamName} from './team-name.mjs';
+import {teamLogo} from './team-logo.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const RING = 2 * Math.PI * 26;
@@ -187,13 +188,13 @@ function lotTag(a, id) {
 function teamsList(a,ui,timer='') {
   const order=a.order?.length&&a.config?.nomination!=='random'?a.order.map(id=>teamOf(a,id)).filter(Boolean):a.teams;
   const connected=new Set(ui.presence??a.teams.filter(t=>t.online).map(t=>t.team.id));
-  return `<section class="fanta-block"><div class="dash-section-head auction-clock-heading"><div><h2>Partecipanti</h2><small>crediti · puntata max · posti da riempire</small></div>${timer}</div>
-    <ul class="fanta-a-teams">${order.map((t, i) => `<li class="${t.team.id === a.me ? 'is-me' : ''}${t.team.id === a.caller ? ' is-caller' : ''}">
-      <i class="fanta-dot" style="background:${esc(t.team.color)}"></i>
-      <span class="fanta-p-name"><b><button type="button" class="auction-team-name" data-auction-team="${esc(t.team.id)}" aria-haspopup="dialog">${a.mode === 'manual' ? '' : `${i + 1}. `}${fitTeamName(t.team.name)}</button>${lotTag(a, t.team.id)}</b><small>${t.computer?'Computer':human(t)?esc(t.team.manager)+(connected.has(t.team.id)?' · connesso':' · disconnesso'):'Senza allenatore'}</small></span>
-      <span class="fanta-a-num"><b>${t.credits}</b><small>cr</small></span>
-      <span class="fanta-a-num"><b>${t.maxBid}</b><small>max</small></span>
-      <span class="fanta-a-num"><b>${t.slotsLeft}</b><small>posti</small></span>
+  return `<section class="fanta-block"><div class="dash-section-head auction-clock-heading"><h2>Partecipanti</h2>${timer}</div>
+    <ul class="auction-participants">${order.map(t => `<li class="${t.team.id === a.me ? 'is-me' : ''}${t.team.id === a.caller ? ' is-caller' : ''}">
+      <div class="auction-participant-identity">${teamLogo(t.team)}
+        <div><strong>${esc(t.team.name)}</strong>${lotTag(a,t.team.id)}
+          <small>${t.computer?'Computer':human(t)?[t.team.manager,connected.has(t.team.id)?'Connesso':'Disconnesso'].filter(Boolean).map(esc).join(' · '):'Senza allenatore'}</small></div>
+      </div>
+      <dl><div><dt>Crediti</dt><dd>${t.credits}</dd></div><div><dt>Puntata max</dt><dd>${t.maxBid}</dd></div><div><dt>Posti liberi</dt><dd>${t.slotsLeft}</dd></div></dl>
     </li>`).join('')}</ul></section>`;
 }
 
@@ -207,13 +208,6 @@ function logList(a) {
         <span class="fanta-p-name"><b>${esc(s.player.name)}</b><small><i class="fanta-dot" style="background:${esc(t.team.color)}"></i>${s.team === a.me ? 'Tu' : esc(t.team.name)}</small></span><b class="fanta-a-price">${s.price}</b>
         ${undo&&!s.released ? `<button type="button" class="fanta-a-undo" data-m-undo="${esc(s.id)}" aria-label="Annulla ${esc(s.player.name)}">×</button>` : ''}</li>`;
     }).join('')}</ul></section>`;
-}
-
-function myRoster(a,timer='') {
-  const by = r => a.myRoster.filter(p => p.role === r);
-  return `<section class="fanta-block"><div class="dash-section-head auction-clock-heading"><div><h2>La tua rosa</h2><small>${a.myRoster.length} di ${Object.values(a.rules.roster).reduce((x, y) => x + y, 0)}</small></div>${timer}</div>
-    ${'PDCA'.split('').map(r => `<div class="fanta-a-myrole"><span class="fanta-role is-${r}">${r}</span><span>${by(r).map(p => `${esc(p.name)} <b>${p.price}</b>`).join(' · ') || '<i>nessuno</i>'}</span></div>`).join('')}
-  </section>`;
 }
 
 // L'admin sceglie la modalità: online a tempo, oppure dal vivo con banditore.
@@ -305,7 +299,7 @@ function lastSaleBanner(a) {
     ${a.isAdmin&&!s.released ? `<button type="button" class="fanta-link" data-m-undo="${esc(s.id)}">Annulla</button>` : ''}</div>`;
 }
 
-const roomPanels=['Tavolo','Partecipanti','La tua rosa'];
+const roomPanels=['Tavolo','Partecipanti'];
 export function renderAsta(a, ui = {}, players = null) {
   const phase=a?.phase==='releases'&&a.status==='running';
   const lobby=a?.phase==='lobby'&&a.status==='running';
@@ -325,8 +319,8 @@ export function renderAsta(a, ui = {}, players = null) {
     ${a.status==='scheduled'?'<p>La sala si apre automaticamente all’orario programmato.</p>':''}
     ${a.status==='ended'&&(a.competition?.status==='active'||a.competitionActivation?.status==='active')?'<p>La competizione è avviata.</p><button type="button" class="primary" data-go="formazione">Schiera la formazione →</button>':''}
     ${a.isAdmin?`<button type="button" class="primary" data-auction-manage="1">${a.status==='scheduled'?'Modifica programmazione':'Configura asta'}</button>${a.status==='scheduled'?'<button type="button" class="secondary" data-asta-close="1">Annulla asta programmata</button>':''}`:''}</section>`;
-  const panes=[center,a?teamsList(a,ui,compactClock())+logList(a):'',a?myRoster(a,compactClock()):''];
-  const panel=ui.panel||0;
+  const panes=[center,a?teamsList(a,ui,compactClock())+logList(a):''];
+  const panel=ui.panel===1?1:0;
   return `<section class="fanta-asta auction-room${compact?' is-compact':''}" aria-label="Sala d’asta">
     ${compact?'<p class="auction-compact-connection" data-auction-connection role="status" hidden></p>':`<header class="auction-page-head">${backButton('data-auction-exit="1"',ui.adminView?'Torna al pannello del presidente':'Esci dall’asta')}<div>${ui.adminView?'':`<span class="eyebrow">${a?.currentRole?esc(ROLE_PLURAL[a.currentRole]):a?.config?.nomination==='random'?'Estrazione casuale':a?.computerTeamsActive?'Con squadre del computer':'Asta'}</span><h1>${label}</h1>`}<p data-auction-connection role="status"></p></div>${timer}</header>`}
     <nav class="auction-room-tabs" aria-label="Schede dell’asta">${roomPanels.map((text,i)=>`<button type="button" class="v2-chip${i===panel?' is-active':''}" aria-pressed="${i===panel}" data-auction-panel="${i}">${text}</button>`).join('')}</nav>

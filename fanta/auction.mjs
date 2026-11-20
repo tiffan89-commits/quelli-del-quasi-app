@@ -115,9 +115,42 @@ export function advanceAuction(s,now=Date.now(),{id=randomUUID,rng=randomInt}={}
  }
  if(!a.lot&&a.callDeadline&&Date.parse(a.callDeadline)<=now){a.skipped={team:a.caller};a.callDeadline=null;a.pausedUntil=new Date(now+2500).toISOString();a.version++;}
 }
+function releasePlayers(s,entries,{actor,now,id,requestId}){
+ const a=s.auction;
+ const owned=new Map(s.teams.flatMap(team=>team.roster.map(player=>[player.id,{team,player}])));
+ const selected=new Set();
+ for(const entry of entries){
+  const ownership=owned.get(entry?.playerId);
+  if(!ownership||entry.teamId!==undefined&&entry.teamId!==ownership.team.id)fail('La rosa è cambiata. Controlla i giocatori selezionati.',409);
+  if(selected.has(entry.playerId))fail('Lo stesso giocatore è stato selezionato più volte');
+  if(!Number.isInteger(entry.refund)||entry.refund<0||entry.refund>ownership.player.price)fail('Il rimborso deve essere tra zero e il prezzo pagato');
+  selected.add(entry.playerId);
+ }
+ const at=new Date(now).toISOString();
+ a.releases??=[];
+ for(const {playerId,refund} of entries){
+  const {team,player}=owned.get(playerId),priorSaleIds=[];
+  team.creditAdjustment=(team.creditAdjustment||0)+refund-player.price;
+  for(const sale of a.log)if(sale.player.id===playerId&&sale.team===team.id&&!sale.undone&&!sale.released){sale.released=true;priorSaleIds.push(sale.id);}
+  a.releases.push({id:id(),batch:a.releaseBatchId,player:{...player},team:team.id,paid:player.price,refund,at,actor,undone:false,priorSaleIds,...(requestId?{requestId}:{})});
+ }
+ for(const team of s.teams)team.roster=team.roster.filter(player=>!selected.has(player.id));
+ a.table=null;
+}
+
 export function auctionAction(state,kind,input,actor,{admin=false,now=Date.now(),id=randomUUID,rng=randomInt,computerTeam=null,receivedAt=now,latencyGrace=0}={}){
  const s=structuredClone(state),a=s.auction;
- const adminActions=['schedule','start','start-now','lobby-start','close','cancel-lot','mode','table','draw','assign','undo','release','release-undo','releases-done'];if(adminActions.includes(kind)&&!admin)fail('Solo il presidente può gestire l’asta',403);
+ const adminActions=['schedule','start','start-now','lobby-start','close','cancel-lot','mode','table','draw','assign','undo','release','release-batch','release-undo','releases-done'];if(adminActions.includes(kind)&&!admin)fail('Solo il presidente può gestire l’asta',403);
+ if(kind==='release-batch'){
+  const {batchId,entries,requestId}=input;
+  if(!batchId||batchId!==a.releaseBatchId)fail('La fase svincoli è cambiata. Riapri l’asta.',409);
+  if(typeof requestId!=='string'||requestId.length>64||!requestId||!Array.isArray(entries)||!entries.length||entries.length>1000||entries.some(e=>typeof e?.playerId!=='string'||typeof e.teamId!=='string'))fail('Controlla gli svincoli selezionati');
+  const previous=(a.releases||[]).filter(r=>r.batch===batchId&&r.requestId===requestId&&r.actor===actor);
+  if(previous.length){
+   if(previous.length!==entries.length||previous.some((r,i)=>r.player.id!==entries[i].playerId||r.team!==entries[i].teamId||r.refund!==entries[i].refund))fail('La conferma è già stata utilizzata',409);
+   return s;
+  }
+ }
  if(['schedule','start','start-now'].includes(kind)&&input.computerTeams!==undefined&&typeof input.computerTeams!=='boolean')fail('Impostazione squadre del computer non valida');
  // Closing/cancelling must never implicitly sell an expired lot before handling the command.
  if(!['close','cancel-lot'].includes(kind))advanceAuction(s,kind==='bid'&&a.type==='lampo'?Math.min(now,receivedAt):now,{id,rng});
@@ -146,16 +179,13 @@ export function auctionAction(state,kind,input,actor,{admin=false,now=Date.now()
    if(a.lobbyEndsAt)return s;
    a.lobbyEndsAt=new Date(now+10000).toISOString();
   }else if(a.phase==='lobby')fail('Aspetta che il presidente avvii l’asta',409);
-  else if(kind==='release'||kind==='release-undo'||kind==='releases-done'){
+  else if(kind==='release'||kind==='release-batch'||kind==='release-undo'||kind==='releases-done'){
    if(a.phase!=='releases')fail('La fase svincoli è chiusa',409);
    if(kind==='releases-done'){a.phase='bidding';a.table=null;if(a.mode==='live'&&a.config)a.phase='lobby';else if(a.mode==='live')nextCaller(s,now,{id,rng});else if(a.config)manualTurn(s);}
-   else if(kind==='release'){
-    const owner=s.teams.find(t=>t.roster.some(p=>p.id===input.playerId)),p=owner?.roster.find(p=>p.id===input.playerId),refund=input.refund;if(!p)fail('Il giocatore è già libero',409);
-    if(!Number.isInteger(refund)||refund<0||refund>p.price)fail('Il rimborso deve essere tra zero e il prezzo pagato');
-    owner.roster=owner.roster.filter(x=>x.id!==p.id);owner.creditAdjustment=(owner.creditAdjustment||0)+refund-p.price;
-    const priorSaleIds=[];for(const sale of a.log)if(sale.player.id===p.id&&sale.team===owner.id&&!sale.undone&&!sale.released){sale.released=true;priorSaleIds.push(sale.id);}
-    a.releases=[...(a.releases||[]),{id:id(),batch:a.releaseBatchId,player:{...p},team:owner.id,paid:p.price,refund,at:new Date(now).toISOString(),actor,undone:false,priorSaleIds}];a.table=null;
-   }else{
+   else if(kind==='release'||kind==='release-batch')releasePlayers(s,kind==='release'?[
+    {playerId:input.playerId,refund:input.refund},
+   ]:input.entries,{actor,now,id,requestId:kind==='release-batch'?input.requestId:null});
+   else{
     const release=[...(a.releases||[])].reverse().find(r=>r.player.id===input.playerId&&r.batch===a.releaseBatchId&&!r.undone);if(!release)fail('Svincolo non annullabile',409);
     if(s.teams.some(t=>t.roster.some(p=>p.id===release.player.id)))fail('Il giocatore non è più libero',409);
     const owner=s.teams.find(t=>t.id===release.team);owner.roster.push({...release.player,price:release.paid});owner.creditAdjustment=(owner.creditAdjustment||0)-release.refund+release.paid;release.undone=true;for(const sale of a.log)if(release.priorSaleIds?.includes(sale.id))sale.released=false;
@@ -204,5 +234,6 @@ export function auctionView(s,uid,now=Date.now()){
  const mixed=computerTeamsActive(s);
  const {randomSkipped,cancellations,...visible}=a;
  const rules=a.type==='lampo'?{...s.rules,openSeconds:LAMPO.open,raiseSeconds:LAMPO.raise,finalSeconds:LAMPO.final,finalStretch:LAMPO.stretch}:s.rules;
- return {...visible,lot:a.lot?{...a.lot,history:a.lot.history.filter(h=>!h.pass).slice(-5)}:null,singlePlayerAvailable:singlePlayerAvailable(s),computerTeamsAvailable:computerTeamsAvailable(s),computerTeamsActive:mixed,log:a.log.filter(x=>!x.undone).slice(-5).reverse(),rules,serverTime:new Date(now).toISOString(),me:t?.id||null,isAdmin,auctioneer:s.teams.find(t=>t.userId===s.league.adminUid)?.manager||'Presidente',teams:s.teams.map(t=>({team:t,...teamBudget(t,s.rules),human:!!t.userId,online:false,computer:mixed&&!t.userId})),myRoster:t?.roster||[]};
+ const showReleaseRoster=isAdmin&&a.status==='running'&&a.phase==='releases';
+ return {...visible,lot:a.lot?{...a.lot,history:a.lot.history.filter(h=>!h.pass).slice(-5)}:null,singlePlayerAvailable:singlePlayerAvailable(s),computerTeamsAvailable:computerTeamsAvailable(s),computerTeamsActive:mixed,log:a.log.filter(x=>!x.undone).slice(-5).reverse(),rules,serverTime:new Date(now).toISOString(),me:t?.id||null,isAdmin,auctioneer:s.teams.find(t=>t.userId===s.league.adminUid)?.manager||'Presidente',teams:s.teams.map(t=>({team:t,...teamBudget(t,s.rules),human:!!t.userId,online:false,computer:mixed&&!t.userId,...(showReleaseRoster?{releaseRoster:t.roster.map(({id,name,role,club,price})=>({id,name,role,club,price}))}:{})})),myRoster:t?.roster||[]};
 }

@@ -18,7 +18,7 @@ body.fanta-auction-page .fanta-main{
 .auction-page-head .fanta-a-timer b{font-size:34px}
 .auction-page-head .fanta-a-timer small{display:none}
 .auction-clock-label{font-weight:700;font-size:12px;color:var(--lime);white-space:nowrap}
-.auction-room-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;flex:none;order:0}
+.auction-room-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;flex:none;order:0}
 .auction-room-tabs .v2-chip{min-height:34px;margin:0;padding:4px;white-space:nowrap;font-size:12px}
 .auction-panels{display:flex;flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
 .auction-panels::-webkit-scrollbar{display:none}
@@ -130,8 +130,42 @@ body.fanta-auction-page .fanta-main{
 .auction-pane .fanta-a-bid.is-outbid{background:#51371c;border:2px solid #ffcd76;border-radius:12px;padding:5px 8px;color:#fff1cf;animation:auction-outbid .55s ease-out 3}
 .auction-pane .fanta-a-bid.is-outbid>span{color:#ffe0a5;font-weight:900}
 @keyframes auction-outbid{50%{box-shadow:0 0 18px #ffc15da0,inset 0 0 22px #ffc15d58}}
-.fanta-a-teams .auction-passed{display:inline-block;color:#ff9b91;background:#682d2d;border-radius:5px;padding:1px 5px;font-weight:800}
-.auction-team-name{border:0;padding:0;background:none;color:inherit;font:inherit;text-align:left;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;cursor:pointer}
+.auction-participants,.auction-release-players,.auction-release-teams,.auction-release-pending{display:grid;gap:6px;list-style:none;margin:0;padding:0}
+.auction-participants>li{display:grid;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.auction-participants>li.is-me{border-color:var(--lime)}
+.auction-participant-identity{display:flex;align-items:center;gap:8px}
+.auction-participant-identity strong,.auction-release-team strong,.auction-release-player-name,.auction-release-pending>li>span:nth-child(2){min-width:0;overflow-wrap:anywhere}
+.auction-participant-identity>.team-logo,.auction-release-team>.team-logo{width:30px;min-width:30px;height:33px;flex:none;margin:0}
+.auction-participant-identity small,.auction-release-player-name small{display:block;color:var(--muted);font-size:11px}
+.auction-participant-identity em{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--lime);color:var(--bg);font-size:10px;font-weight:800;font-style:normal}
+.auction-participant-identity em.is-pass{background:var(--bg);color:var(--muted)}
+.auction-participant-identity em.auction-passed{color:#ffb6ae;background:#682d2d}
+.auction-participants dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0;padding-top:5px;border-top:1px solid var(--line)}
+.auction-participants dl>div{display:flex;align-items:baseline;justify-content:space-between;gap:4px}
+.auction-participants dt{color:var(--muted);font-size:10px}
+.auction-participants dd{margin:0;font:700 16px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.auction-release-editor{display:grid;gap:12px;margin-bottom:14px}
+.fanta-lg-card.auction-release-roster{justify-items:stretch}
+.auction-release-roster label{display:block;margin-bottom:5px;font-weight:700}
+.auction-release-players{margin-top:10px}
+.auction-release-player{display:grid;grid-template-columns:24px 26px minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 6px;border:1px solid var(--line);border-radius:9px}
+.auction-release-player .fanta-mini-shirt{width:24px;height:30px}
+.auction-release-roster .auction-release-player>.secondary{min-height:42px;padding:4px 10px;font-size:12px;color:#ffb6ae}
+.auction-release-player.is-selected{border-color:#e98982;background:#d8615719}
+.auction-release-summary h2{margin:0}
+.auction-release-summary>p{margin:3px 0 7px}
+.auction-release-teams>li{padding:6px;border:1px solid var(--line);border-radius:9px}
+.auction-release-team{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:6px}
+.auction-release-team>.team-logo{width:26px;min-width:26px;height:29px}
+.auction-release-counts{display:flex;gap:5px;font-size:11px;font-variant-numeric:tabular-nums}
+.auction-release-counts>span{display:flex;align-items:center;gap:2px}
+.auction-release-counts .fanta-role{width:15px;height:15px;font-size:10px}
+.auction-release-pending{margin-top:6px}
+.auction-release-pending>li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 0;border-top:1px solid var(--line)}
+.auction-release-pending label{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
+.auction-release-pending input{width:3rem;min-height:34px;padding:3px 5px;text-align:center}
+.auction-release-confirm{display:grid;justify-items:center;gap:5px}
+.auction-release-confirm>p{margin:0}
 .auction-countdown-overlay:not([hidden]){position:fixed;inset:0;z-index:1200;display:grid;place-items:center;pointer-events:none;background:#080f0c55;text-align:center}
 .auction-countdown-overlay.is-start{background:#080f0cbb}
 .auction-countdown-overlay>div{display:grid;justify-items:center;padding:8px 24px 12px;border:2px solid #ffcd76;border-radius:22px;background:var(--panel);color:#ffe0a5;box-shadow:0 0 30px #ffcd7655}

@@ -489,19 +489,10 @@ body.fanta-dragging *{cursor:grabbing!important}
 .fanta-a-history b{margin-left:auto;font:700 16px 'Barlow Condensed',sans-serif}
 .fanta-a-callbtn{min-height:52px;border-radius:14px}
 
-.fanta-a-teams,.fanta-a-log{list-style:none;margin:0;padding:0}
-.fanta-a-teams li{display:grid;grid-template-columns:12px minmax(0,1fr) 40px 40px 40px;align-items:center;gap:8px;padding:9px 2px;border-top:1px solid var(--line)}
-.fanta-a-teams li.is-me{background:#d6f77b10}
-.fanta-a-teams em{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;margin-left:6px;border-radius:999px;background:var(--lime);color:var(--bg);vertical-align:2px}
-.fanta-a-num{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
-.fanta-a-num b{font:700 17px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
-.fanta-a-num small{font-size:9px;color:var(--muted)}
+.fanta-a-log{list-style:none;margin:0;padding:0}
 .fanta-a-log li{display:grid;grid-template-columns:30px 26px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line)}
 .fanta-a-log .fanta-dot{width:8px;height:8px;margin-right:4px}
 .fanta-a-price{font:700 20px 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
-.fanta-a-myrole{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding:8px 2px;border-top:1px solid var(--line);font-size:13px;line-height:1.5}
-.fanta-a-myrole b{color:var(--fanta-gold)}
-.fanta-a-myrole i{color:var(--muted)}
 
 .fanta-a-confirm{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:center;margin:10px 0;padding:12px;border-radius:14px;border:1px solid var(--lime);background:#d6f77b0d}
 .fanta-a-confirm .fanta-a-stepper,.fanta-a-confirm .primary,.fanta-a-confirm .fanta-note{grid-column:1/-1}
@@ -529,7 +520,6 @@ body.fanta-dragging *{cursor:grabbing!important}
 .fanta-a-pass small{font-size:10px;font-weight:500;color:var(--muted)}
 .fanta-a-why.is-passed{color:var(--fanta-gold)!important}
 .fanta-a-history li.is-pass{color:var(--muted)}
-.fanta-a-teams em.is-pass{background:#ffffff1a;color:var(--muted)}
 
 .fanta-a-order{margin:0 0 14px}
 .fanta-a-order-label{display:block;font-size:11px;font-weight:700;color:var(--fanta-gold);margin:0 2px 6px}

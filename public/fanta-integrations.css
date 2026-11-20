@@ -56,4 +56,4 @@ dialog.fanta-logo-editor[open]{box-sizing:border-box;position:fixed;inset:0;disp
 @media(max-width:400px){.slip-section-buttons{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.slip-section-buttons>button{padding:11px 8px;font-size:12px}.v2-top .v2-credits{min-width:60px}}
 
 /* Svincoli e correzioni: controlli scorrevoli senza coprire il giocatore. */
-.fanta-release-list{display:grid;gap:6px;max-height:min(38dvh,360px);overflow-y:auto;overscroll-behavior:contain;margin-top:12px}.fanta-release-list>button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:10px}.fanta-release-list>button>span{display:grid;gap:4px;min-width:0}.fanta-release-list small{color:var(--muted);font-size:11px}.fanta-release-list svg{width:32px;height:36px;flex:none}.fanta-lg-form input[type=radio]{width:auto}.pb-principles{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}
+.fanta-lg-form input[type=radio]{width:auto}.pb-principles{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}

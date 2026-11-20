@@ -37,7 +37,7 @@ import { renderLega,renderFantaPresident } from './lega.mjs';
 import {bindLeagueWorkspace,fantaLeagueFallback,leagueWorkspace} from '../league-workspace.mjs';
 import { renderIo, renderDemoInfo } from './io.mjs';
 import { renderPilotPicker,renderPilotConfirm,renderPilotInfo } from './pilota.mjs';
-import {renderReleaseConfirm,renderMarketConfirm,refundFor} from './mercato.mjs';
+import {renderMarketConfirm} from './mercato.mjs';
 import {createRosterEditor} from './roster-editor.mjs';
 import { esc } from './formato.mjs';
 import {competitionSwitcher} from './competitions-ui.mjs';
@@ -287,7 +287,6 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       const exit=ui.sheet.auctionExit;
       return `<div class="v2-sheet-backdrop" data-action="close-sheet"></div><div class="v2-sheet fanta-sheet" role="dialog" aria-modal="true" aria-labelledby="fanta-sheet-title">${renderMarketConfirm(exit?'Vuoi uscire dalla sala?':'Chiudi l’asta per tutti?',exit?'L’asta continua. Puoi rientrare da Oggi.':'La sala verrà chiusa per tutti i partecipanti.',exit?'data-auction-exit-confirm':'data-auction-close-confirm')}</div>`;
     }
-    if(ui.sheet?.release)return `<div class="v2-sheet-backdrop" data-action="close-sheet"></div><div class="v2-sheet fanta-sheet" role="dialog" aria-modal="true" aria-labelledby="fanta-sheet-title">${renderReleaseConfirm(ui.asta.data)}</div>`;
     if(ui.sheet?.pilotConfirm)return renderPilotConfirm(ui.pilot,ui.sheet.pilotConfirm);
     if (ui.sheet?.mconfirm) return ui.asta.data ? renderAssignConfirm(ui.asta.data, ui.sheet.mconfirm, Number(ui.asta.mprice)) : '';
     let body = '';
@@ -617,7 +616,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   }
 
   function showAuctionPanel(index,{scroll=true}={}){
-    const panels=root.querySelector('[data-auction-panels]');if(!panels||!Number.isInteger(index)||index<0||index>2)return;
+    const panels=root.querySelector('[data-auction-panels]');if(!panels||!Number.isInteger(index)||index<0||index>=panels.children.length)return;
     ui.asta.panel=index;
     if(scroll)panels.scrollLeft=panels.clientWidth*index;
     root.querySelectorAll('[data-auction-panel]').forEach(button=>{const active=Number(button.dataset.auctionPanel)===index;button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',String(active));});
@@ -645,6 +644,23 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     note.textContent=ui.asta.syncError?'Connessione in ritardo…':auctionStream?.ready(league()?.id)?'● Sincronizzata':ui.asta.lastSync?'● Collegata':'Collegamento…';note.classList.toggle('is-alert',!!ui.asta.syncError);
     if(note.classList.contains('auction-compact-connection'))note.hidden=!ui.asta.syncError;
   }
+  function syncReleaseDraft(a){
+    const s=ui.asta,id=league()?.id;
+    if(a.status!=='running'||a.phase!=='releases'||!a.isAdmin){s.releaseDraft=null;return;}
+    if(s.releaseDraft?.batchId!==a.releaseBatchId||s.releaseDraft?.leagueId!==id){
+      s.releaseDraft={leagueId:id,batchId:a.releaseBatchId,teamId:a.me,entries:new Map()};
+    }
+    const draft=s.releaseDraft;
+    if(draft.requestId&&a.releases?.some(r=>r.batch===draft.batchId&&r.requestId===draft.requestId)){
+      draft.entries.clear();draft.requestId=null;draft.error=null;draft.saved=true;
+    }
+    if(draft.busy||!draft.entries.size)return;
+    const available=new Map(a.teams.flatMap(t=>(t.releaseRoster||[]).map(p=>[p.id,t.team.id])));
+    for(const [playerId,entry] of draft.entries){
+      if(available.get(playerId)===entry.teamId)continue;
+      draft.entries.delete(playerId);draft.requestId=null;draft.error='La rosa è cambiata. Controlla gli svincoli ancora selezionati.';
+    }
+  }
   function applyAuction(a,{requestStartedAt,clockOffset}={}) {
     const s = ui.asta;
     observeCompetitionActivation(a);
@@ -661,8 +677,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (s.data?.lot?.id !== a.lot?.id) { s.amount = null; s.error = null; } // nuovo giocatore in tavola
     if (s.data?.table?.id !== a.table?.id) { s.mprice = ''; s.error = null; } // dal vivo: nuovo giocatore sul tavolo
     const reloadListone = a.status==='running'&&a.phase!=='releases' && a.mode === 'manual' && a.isAdmin && (!s.players || s.data?.phase!==a.phase || s.data?.log?.[0]?.id !== a.log[0]?.id || s.data?.log?.length !== a.log.length);
-    if(a.status==='running'&&a.phase==='releases'&&a.isAdmin&&(!s.releasePlayers||JSON.stringify(a.releases||[])!==JSON.stringify(s.data?.releases||[]))){const id=league()?.id,batch=a.releaseBatchId,releases=JSON.stringify(a.releases||[]);api.auctionAssigned(id).then(players=>{if(destroyed||league()?.id!==id||s.data?.status!=='running'||s.data?.phase!=='releases'||s.data?.releaseBatchId!==batch||JSON.stringify(s.data?.releases||[])!==releases)return;s.releasePlayers=players;if(ui.tab==='asta')render();}).catch(()=>{});}
-    if(ui.sheet?.release&&(a.status!=='running'||a.phase!=='releases'||ui.sheet.release!==a.table?.id)){ui.sheet=null;toast('Il giocatore sul tavolo è cambiato.');}
+    syncReleaseDraft(a);
     if(ui.sheet?.startBidding&&(a.status!=='running'||a.phase!=='releases'))ui.sheet=null;
     s.data = a;ui.lega.data=null;api.invalidateReads?.();
     if(ui.home?.auction){Object.assign(ui.home.auction,{status:a.status,mode:a.mode,startsAt:a.startsAt,title:auctionTitles[a.type]});const budget=a.teams.find(t=>t.team.id===a.me);if(budget)Object.assign(ui.home.auction,{credits:budget.credits,slotsLeft:budget.slotsLeft});}
@@ -729,7 +744,17 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
 
   function handleAsta(d) {
     const s = ui.asta, id = league()?.id;
-    if(d.release){ui.sheet={release:d.release};renderSheet();return true;}
+    if(d.releaseToggle){
+      const draft=s.releaseDraft,team=s.data?.teams.find(t=>t.team.id===draft?.teamId)||s.data?.teams[0];
+      const player=team?.releaseRoster?.find(p=>p.id===d.releaseToggle);
+      if(draft&&!draft.busy&&player){
+        if(draft.entries.has(player.id))draft.entries.delete(player.id);
+        else draft.entries.set(player.id,{teamId:team.team.id,refund:String(Math.min(1,player.price))});
+        draft.requestId=null;draft.error=null;draft.saved=false;render();
+        [...root.querySelectorAll('[data-release-toggle]')].find(button=>button.dataset.releaseToggle===player.id)?.focus({preventScroll:true});
+      }
+      return true;
+    }
     if(d.releaseUndo){admin(api.auctionReleaseUndo(id,d.releaseUndo));return true;}
     if(d.releasesDone){ui.sheet={startBidding:true};renderSheet();return true;}
     if(d.releasesConfirm){ui.sheet=null;renderSheet();admin(api.auctionReleasesDone(id));return true;}
@@ -770,14 +795,23 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     return false;
   }
 
-  on(document.getElementById('v2-sheet-root'),'submit',async e=>{
-    const form=e.target;if(!form.matches('[data-release-form]'))return;e.preventDefault();if(form.dataset.busy==='1')return;const b=form.querySelector('button[type=submit]'),error=form.querySelector('[data-form-error]');
-    form.dataset.busy='1';b.disabled=true;b.setAttribute('aria-busy','true');
-    try{const refund=refundFor(form),id=league()?.id,a=await api.auctionRelease(id,form.dataset.releasePlayer,refund);if(destroyed||league()?.id!==id)return;applyAuction(a);ui.sheet=null;render();}
-    catch(err){error.textContent=err.message;}finally{form.dataset.busy='0';b.disabled=false;b.removeAttribute('aria-busy');}
-  });
-  on(document.getElementById('v2-sheet-root'),'change',e=>{if(e.target.closest('[data-release-form]')){const form=e.target.closest('form');form.querySelector('[data-refund-preview]').textContent=ui.asta.data.table.ownerTeam.name+' riavrà '+refundFor(form)+' crediti.';}});
+  async function saveReleaseDraft(){
+    const draft=ui.asta.releaseDraft;
+    if(!draft?.entries.size||draft.busy)return;
+    const entries=[...draft.entries].map(([playerId,{teamId,refund}])=>({playerId,teamId,refund:Number(refund)}));
+    draft.requestId??=crypto.randomUUID();
+    draft.busy=true;draft.error=null;render();
+    try{
+      const data=await api.auctionReleaseBatch(draft.leagueId,{batchId:draft.batchId,requestId:draft.requestId,entries});
+      if(!destroyed&&ui.asta.releaseDraft===draft){draft.entries.clear();draft.requestId=null;draft.saved=true;applyAuction(data);}
+    }catch(error){if(!draft.saved)draft.error=error.message;}
+    finally{
+      draft.busy=false;
+      if(!destroyed&&ui.asta.releaseDraft===draft&&ui.tab==='asta')render();
+    }
+  }
   on(root,'submit', e => {
+    if(e.target.matches('[data-release-batch-form]')){e.preventDefault();void saveReleaseDraft();return;}
     if(e.target.matches('[data-fanta-slips-form]')){e.preventDefault();if(!inPresidentTool('schedine-fanta'))return;const f=e.target,b=f.querySelector('button');if(f.dataset.busy==='true')return;f.dataset.busy='true';const enabled=f.elements.enabled.checked;b.disabled=true;b.setAttribute('aria-busy','true');api.setSlips(league()?.id,enabled).then(()=>{league().slipsEnabled=enabled;const bar=slips.context(slipContext()).league;if(bar)bar.fantaSlipsEnabled=enabled;return loadLega();}).catch(err=>toast(err.message)).finally(()=>{f.dataset.busy='false';b.disabled=false;b.removeAttribute('aria-busy');});return;}
     if(e.target.matches('[data-league-size-form],[data-competition-create-form],[data-competition-start-form]')){
       e.preventDefault();if(!isPresident()||!['dimensione','crea-competizione','avvia-competizione'].includes(ui.adminTool))return;const form=e.target;if(form.dataset.submitting==='true')return;form.dataset.submitting='true';const p=Object.fromEntries(new FormData(form)),b=form.querySelector('button[type="submit"]');b.disabled=true;
@@ -798,7 +832,8 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     // Campi numerici: solo cifre (sono di tipo testo perché il cursore resti dove si scrive).
     if (id === 'fanta-m-price') e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
     if (id === 'fanta-a-amount') syncOffer(e.target,Number(e.target.value));
-    if(id==='fanta-release-query'){ui.asta.releaseQuery=e.target.value;render();return;}
+    const refund=e.target.dataset?.releaseRefund,draft=ui.asta.releaseDraft;
+    if(refund&&draft?.entries.has(refund)&&!draft.busy){draft.entries.get(refund).refund=e.target.value;draft.requestId=null;return;}
     if (id === 'fanta-m-q') { ui.asta.mq = e.target.value; render(); }
     if (id === 'fanta-m-price') { ui.asta.mprice = e.target.value; render(); }
   });
@@ -1099,7 +1134,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   function selectLeague(id){
     resetCalendar();
     api.setCompetition?.(null);writeAppRoute({mode:'fanta',page:'oggi',league:id});ui.leagueId=id;void trades.check();store.set('qdq:fantaLeague',id);
-    ui.sheet=null;ui.home=null;ui.round=null;ui.roundNumber=null;ui.squadra.data=null;ui.asta.data=null;ui.asta.players=null;ui.asta.releasePlayers=null;ui.lega.data=null;ui.tab='oggi';ui.adminTool=null;stopAuction();render();void load();
+    ui.sheet=null;ui.home=null;ui.round=null;ui.roundNumber=null;ui.squadra.data=null;ui.asta.data=null;ui.asta.players=null;ui.asta.releaseDraft=null;ui.lega.data=null;ui.tab='oggi';ui.adminTool=null;stopAuction();render();void load();
   }
 
   function setMode(mode,barPage) {
@@ -1249,9 +1284,9 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
 
   function handle(e) {
     if(e.target.closest('.fanta-native-slips'))return;
-    const el = e.target.closest('[data-team-claim],[data-demo-scenario],[data-releases-confirm],[data-release],[data-release-undo],[data-releases-done],[data-pilot-pick],[data-pilot-claim],[data-competition-open],[data-team-roster],[data-mode],[data-tab],[data-go],[data-action],[data-league],[data-round],[data-matchup],[data-side],[data-player],[data-view],'
+    const el = e.target.closest('[data-team-claim],[data-demo-scenario],[data-releases-confirm],[data-release-toggle],[data-release-undo],[data-releases-done],[data-pilot-pick],[data-pilot-claim],[data-competition-open],[data-team-roster],[data-mode],[data-tab],[data-go],[data-action],[data-league],[data-round],[data-matchup],[data-side],[data-player],[data-view],'
       + '[data-pick-role],[data-studio],[data-st-bench-panel],[data-st-role],[data-st-slot],[data-st-player],[data-st-clear],[data-sq-sub],[data-sq-calendar-more],[data-sq-calendar-previous],[data-sq-filter],.fanta-team-formation [data-pitch-flip],[data-formation],[data-slot],[data-pick],[data-unpick],[data-bench-add],[data-bench-pick],[data-bench-remove],[data-bench-move],[data-lineup],[data-list-add],'
-      + '[data-lega-sub],[data-lega-round],[data-lega-invite],[data-auction-manage],[data-auction-exit],[data-auction-exit-confirm],[data-auction-close-confirm],[data-auction-lobby-start],[data-auction-panel],[data-auction-team],[data-auction-prev],[data-auction-order],'
+      + '[data-lega-sub],[data-lega-round],[data-lega-invite],[data-auction-manage],[data-auction-exit],[data-auction-exit-confirm],[data-auction-close-confirm],[data-auction-lobby-start],[data-auction-panel],[data-auction-wizard-back],[data-auction-order],'
       + '[data-asta-mode],[data-asta-cancel],[data-asta-close],[data-asta-draw],[data-m-role],[data-m-table],[data-m-clear],[data-m-team],[data-m-confirm],[data-m-undo],'
       + '[data-bid-step],[data-asta-pass],[data-asta-listone],[data-asta-role],[data-asta-pick],[data-asta-amount],[data-asta-call]');
     if(!el?.dataset.stSlot)lastStudioTap=null;
@@ -1265,10 +1300,15 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(d.auctionManage){void manageAuction(el);return;}
     if(d.auctionExit){if(inPresidentTool('asta'))goToPresident();else openTab(ui.asta.from||'lega');return;}
     if(d.auctionPanel!==undefined){showAuctionPanel(Number(d.auctionPanel));return;}
-    if(d.auctionTeam){void openRoster(d.auctionTeam);return;}
     const wizard=ui.asta.wizard;
-    if(wizard&&!wizard.busy&&d.auctionPrev){
-      if(history.state?.qdqAuctionStep===wizard.step)history.back();
+    if(wizard&&!wizard.busy&&d.auctionWizardBack){
+      if(wizard.step===1){
+        const previous=readAppRoute(history.state?.qdqPreviousRoute||'');
+        const bar=linkedBar(),fromPresident=!previous?.section&&(previous?.mode==='bar'&&previous.page==='admin'&&previous.league===bar?.id||previous?.mode==='fanta'&&previous.page==='presidente'&&previous.league===league()?.id);
+        ui.asta.wizard=null;
+        if(fromPresident)history.back();
+        else goToPresident();
+      }else if(history.state?.qdqAuctionStep===wizard.step)history.back();
       else{wizard.step--;wizard.error=null;ui.asta.keepWizardScroll=false;render();}
       return;
     }
@@ -1312,6 +1352,12 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
 
   // Interruttori delle notifiche (pagina Io): si salvano subito.
   on(root,'change', e => {
+    const draft=ui.asta.releaseDraft;
+    if(e.target.matches('[data-release-team]')&&draft&&!draft.busy){
+      draft.teamId=e.target.value;render();
+      root.querySelector('.auction-release-roster [role="combobox"]')?.focus({preventScroll:true});
+      return;
+    }
     const w=ui.asta.wizard;
     if(w&&e.target.closest('[data-auction-wizard]')){
       const dateField=e.target.closest('[data-site-datetime]');
