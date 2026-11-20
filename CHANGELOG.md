@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.43.10](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.9...v0.43.10) (2026-11-20)
+
+
+### Bug Fixes
+
+* allinea statistiche titolari e panchina ([f63f2a1](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/f63f2a1bc1f5d1f93632d5a97ed972daaabdcad5))
+
 ## [0.43.9](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.8...v0.43.9) (2026-11-20)
 
 
