@@ -1,8 +1,8 @@
-const MOVE_PX=8,FLIP_MS=220;
+const MOVE_PX=8,HOLD_MS=240,FLIP_MS=220;
 
 export function enableDrag(root,{canDrop,onStart,onFlip,onDrop,onCancel,signal}){
  const on=(target,type,fn,options={})=>target.addEventListener(type,fn,{...options,signal});
- let pending=null,drag=null,suppressClick=false,clickTimer,scrollFrame,flipTimer;
+ let pending=null,drag=null,suppressClick=false,holdTimer,clickTimer,scrollFrame,flipTimer;
  const targets=()=>root.querySelectorAll('[data-drop]');
  const at=(x,y)=>document.elementFromPoint(x,y)?.closest('[data-drop]');
  const allowed=(item,target)=>target&&root.contains(target)&&!target.closest('[hidden],[inert]')&&
@@ -48,23 +48,28 @@ export function enableDrag(root,{canDrop,onStart,onFlip,onDrop,onCancel,signal})
  function move(x,y){
   drag.point={x,y};
   drag.ghost.style.transform=`translate(${x-drag.dx}px,${y-drag.dy}px) scale(1.06)`;
+  drag.moved ||= Math.hypot(x-drag.origin.x,y-drag.origin.y)>MOVE_PX;
+  if(!drag.moved)return;
   markTarget();
   if(scrollFrame==null&&window.requestAnimationFrame)scrollFrame=window.requestAnimationFrame(scrollBench);
  }
  function start(p,x,y){
+  clearTimeout(holdTimer);
   pending=null;
+  if(!root.contains(p.el)||p.el.disabled||p.el.closest('[hidden],[inert]'))return;
   const candidate={id:p.el.dataset.dragId,from:p.el.dataset.dragFrom,flipped:false};
   if(![...targets()].some(t=>allowed(candidate,t)))return;
   onStart?.();
   const rect=p.el.getBoundingClientRect(),ghost=p.el.cloneNode(true);
   ghost.classList.add('fanta-ghost');ghost.setAttribute('aria-hidden','true');ghost.tabIndex=-1;
   ghost.style.width=rect.width+'px';document.body.append(ghost);
-  drag={...candidate,el:p.el,ghost,pointerId:p.pointerId,dx:p.x-rect.left,dy:p.y-rect.top,point:{x,y},over:null};
+  drag={...candidate,el:p.el,ghost,pointerId:p.pointerId,dx:p.origin.x-rect.left,dy:p.origin.y-rect.top,origin:p.origin,moved:false,over:null};
   try{root.setPointerCapture?.(p.pointerId);}catch{}
   p.el.classList.add('is-dragging');document.body.classList.add('fanta-dragging');
   paintTargets();navigator.vibrate?.(15);move(x,y);
  }
  function end(commit,{notify=true}={}){
+  clearTimeout(holdTimer);
   pending=null;if(!drag)return;
   const target=commit&&allowed(drag,drag.over)?drag.over.dataset.drop:null;
   if(target==='flip')turn();
@@ -79,18 +84,22 @@ export function enableDrag(root,{canDrop,onStart,onFlip,onDrop,onCancel,signal})
   else if(notify)onCancel?.({id,from,flipped,commit});
  }
  on(root,'pointerdown',e=>{
-  if(e.button>0||e.isPrimary===false||drag||e.target.closest('[data-no-drag],[inert],[hidden]'))return;
-  const handle=e.target.closest('[data-drag-handle]');
-  const el=e.target.closest('[data-drag-id]')||(handle&&!handle.disabled&&handle.closest('[data-drop]')?.querySelector('[data-drag-id]'));
+  if(e.button>0||e.isPrimary===false||drag||pending||e.target.closest('[inert],[hidden]'))return;
+  const el=e.target.closest('[data-drag-id]');
   if(!el||el.disabled||!root.contains(el))return;
-  // The shirt and handle are drag grips. The rest of a reserve card can scroll the bench.
-  if(el.dataset.dragFrom==='bench'&&e.pointerType!=='mouse'&&!handle&&!e.target.closest('.fs-shirt'))return;
-  pending={el,x:e.clientX,y:e.clientY,pointerId:e.pointerId};
+  // A swipe outside the shirt still scrolls the bench. Holding lifts the whole card.
+  const canSwipe=el.dataset.dragFrom==='bench'&&e.pointerType!=='mouse'&&!e.target.closest('.fs-shirt');
+  const point={x:e.clientX,y:e.clientY};
+  const press={el,origin:point,point,canSwipe,pointerId:e.pointerId};
+  pending=press;
+  holdTimer=setTimeout(()=>start(press,press.point.x,press.point.y),HOLD_MS);
  });
  on(window,'pointermove',e=>{
   if(e.pointerId!==(drag||pending)?.pointerId)return;
   if(drag){e.preventDefault();move(e.clientX,e.clientY);return;}
-  if(Math.hypot(e.clientX-pending.x,e.clientY-pending.y)<=MOVE_PX)return;
+  pending.point={x:e.clientX,y:e.clientY};
+  if(Math.hypot(e.clientX-pending.origin.x,e.clientY-pending.origin.y)<=MOVE_PX)return;
+  if(pending.canSwipe){end(false);return;}
   e.preventDefault();start(pending,e.clientX,e.clientY);
  },{passive:false});
  on(window,'pointerup',e=>{if(e.pointerId===(drag||pending)?.pointerId){if(drag)move(e.clientX,e.clientY);end(true);}});

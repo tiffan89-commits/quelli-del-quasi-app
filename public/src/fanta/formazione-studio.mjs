@@ -65,20 +65,14 @@ function pitch(d, byId, sel) {
   return `<div class="fs-pitch" style="--fs-max-line:${maxLine}" role="group" aria-label="Campo, modulo ${esc(d.formation)}"><div class="fs-lines" aria-hidden="true"><i></i></div>${cols}</div>`;
 }
 
-function reserveTile(p,d,index,{complete,blocked,tab}) {
+function reserveTile(p,index,{blocked,tab}) {
   return `<article class="fs-reserve" data-st-reserve-role="${esc(p.role)}" data-drop="bench:${index}" aria-label="${esc(surname(p))}, riserva ${index+1}" ${tab==='tutti'||p.role===tab?'':'hidden'}>
-    <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" aria-label="Schiera ${esc(p.name)}" ${blocked?'disabled':''}>
+    <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" aria-label="Schiera ${esc(p.name)}" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" ${blocked?'disabled':''}>
       <span class="fs-shirt" title="${esc(p.name)}">${studioShirt(p)}</span>${playBadge(p)}
       <strong class="fs-reserve-name">${esc(surname(p))}</strong>
       <span class="fs-tile-foot">${fantamedia(p)}${p.next?`<small class="fs-tile-next">${esc(nextLabel(p.next))}</small>`:''}</span>
       <em class="fanta-role is-${p.role}">${p.role}</em>
     </button>
-    <button type="button" class="fs-bench-grip" data-bench-grip="${esc(p.id)}" data-drag-handle aria-label="Ordina ${esc(p.name)} in panchina con le frecce" ${blocked?'disabled':''}><span aria-hidden="true">⠿</span> <span>${index+1}</span></button>
-    ${complete?`<div class="fs-reserve-order" aria-label="Ordine in panchina">
-      <button type="button" data-no-drag data-bench-move="${esc(p.id)}" data-step="-1" ${blocked||index===0?'disabled':''} aria-label="Anticipa ${esc(surname(p))} in panchina">←</button>
-      <span aria-label="Posizione ${index+1}">${index+1}</span>
-      <button type="button" data-no-drag data-bench-move="${esc(p.id)}" data-step="1" ${blocked||index===d.bench.length-1?'disabled':''} aria-label="Posticipa ${esc(surname(p))} in panchina">→</button>
-    </div>`:''}
   </article>`;
 }
 
@@ -146,7 +140,7 @@ export function renderStudio(sq, st, now = Date.now()) {
               <div class="fs-tabs" role="group" aria-label="Ruolo">${tabs}</div>
               ${hint}
               <div class="fs-grid" data-st-list="${tab}" aria-label="Panchina, ordine di ingresso">
-                ${available.map((p,index)=>reserveTile(p,d,index,{complete,blocked,tab})).join('')}
+                ${available.map((p,index)=>reserveTile(p,index,{blocked,tab})).join('')}
                 <p class="fs-all-picked" ${available.some(p=>tab==='tutti'||p.role===tab)?'hidden':''}>Nessuna riserva per questo ruolo.</p>
               </div>
               <div class="fs-bench-drop" data-drop="bench">Sposta in panchina</div>
@@ -154,6 +148,7 @@ export function renderStudio(sq, st, now = Date.now()) {
             </section>
           </div>
           <div class="fs-flip-control" data-drop="flip">
+            <span class="fs-flip-watermark" aria-hidden="true">${PITCH_FLIP_ICON}</span>
             <button type="button" class="fs-flip-button" data-st-bench-panel="open" aria-controls="fs-bench-panel" ${benchOpen?'hidden':''}>${PITCH_FLIP_ICON} Panchina</button>
             <button type="button" class="fs-flip-button" data-st-bench-panel="close" aria-controls="fs-field-panel" ${benchOpen?'':'hidden'}>${PITCH_FLIP_ICON} Titolari</button>
           </div>
