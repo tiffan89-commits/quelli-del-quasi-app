@@ -4,6 +4,8 @@ import {parseHTML} from 'linkedom';
 import {dashboardModel,countdownLabel,leagueDashboard} from '../public/src/league-dashboard.mjs';
 import {playerRanking} from '../public/src/bar-fanta-rankings.mjs';
 import {mergeLiveSnapshot} from '../public/src/live-channel.mjs';
+import {renderFantaStories} from '../public/src/fanta/home.mjs';
+import {officialRoundScores} from '../fanta/views.mjs';
 import {normalizeAvatar,avatarSvg,DEFAULT_AVATAR} from '../public/src/avatar.mjs';
 import {emptyState} from '../lib/db.mjs';
 import {session,stateFor} from '../lib/game.mjs';
@@ -69,6 +71,47 @@ test('Bar point and credit rankings use static rows and balances while keeping t
   assert.ok(rows.every(row=>row.localName==='div'&&!row.querySelector('button,a,summary,[tabindex]')));
   assert.equal(doc.querySelector('[data-ranking-metric="'+metric+'"]').getAttribute('aria-pressed'),'true');
  }
+});
+
+test('the Bar lowest-score story compares settled picks and includes every tied player',()=>{
+ const members=[{uid:'a',name:'Anna'},{uid:'b',name:'Bruno'},{uid:'c',name:'Carla'},{uid:'d',name:'Dario'}];
+ const round={id:'closed',number:10,title:'Giornata 10',kickoff:'2026-10-22T15:00Z',settled:false,
+  matches:[{id:'m',home:'Casa',away:'Ospiti',status:'FT',score:[1,0]}],
+  publicSlips:members.slice(0,3).map(({uid},i)=>({uid,points:i?-2:5,pointsSettled:true,picks:{m:i?'2':'1'},stake:1,prize:0}))};
+ const league={id:'l',name:'Bar',members,rounds:[round]};
+ const render=()=>parseHTML(leagueDashboard(league,{id:'d',name:'Dario'},'seriea',false,String,String,null,now)).document;
+ assert.equal(render().querySelector('template[data-story-kind=bar-worst]'),null);
+ round.settled=true;
+ const doc=render(),card=doc.querySelector('template[data-story-kind=bar-worst]');
+ assert.deepEqual([...card.content.querySelectorAll('.postcard-winner h3')].map(el=>el.textContent),['Bruno','Carla']);
+ assert.match(card.innerHTML,/-2 punti/);
+ assert.doesNotMatch(card.innerHTML,/SCHEDINA VINCENTE|Anna|Dario/);
+ assert.match(doc.querySelector('template[data-story-kind=winner]').innerHTML,/Anna/);
+ round.publicSlips=round.publicSlips.slice(0,1);
+ assert.equal(render().querySelector('template[data-story-kind=bar-worst]'),null);
+});
+
+test('Fanta score stories use every official matchup in the competition and exclude live results and byes',()=>{
+ const teams=['a','b','c','d','e'].map(id=>({id,name:'Squadra '+id}));
+ const rounds=[{number:8,official:true},{number:9,official:false}];
+ const matchups=[{id:'m1',round:8,home_id:'a',away_id:'b'},{id:'m2',round:8,home_id:'c',away_id:'d'},{id:'m3',round:9,home_id:'a',away_id:'e'}];
+ const results=[['m1',75.5,0],['m2',75.5,63],['m3',120,10]].map(([id,home,away])=>({matchup_id:id,official:true,data:{home:{points:home},away:{points:away}}}));
+ const state={rounds,matchups,results,teams};
+ const summary=officialRoundScores(state);
+ assert.equal(summary.round,8);
+ assert.deepEqual(summary.entries.map(row=>[row.team.id,row.points]),[['a',75.5],['b',0],['c',75.5],['d',63]]);
+ const home={league:{id:'l'},competition:{id:'camp'},me:{teamId:'e'},round:{number:9,state:'in-corso'},roundScores:summary};
+ const doc=parseHTML(renderFantaStories(home)).document;
+ const best=doc.querySelector('template[data-story-kind=fanta-best]').content;
+ const worst=doc.querySelector('template[data-story-kind=fanta-worst]').content;
+ assert.deepEqual([...best.querySelectorAll('h3')].map(el=>el.textContent),['Squadra a','Squadra c']);
+ assert.equal(worst.querySelector('h3').textContent,'Squadra b');
+ assert.equal(worst.querySelector('strong').textContent,'0,00');
+ assert.equal(worst.querySelector('[data-home-action]').dataset.mu,'m1');
+ results[1].official=false;
+ home.roundScores=officialRoundScores(state);
+ assert.equal(home.roundScores,null);
+ assert.doesNotMatch(renderFantaStories(home),/story-fanta-(best|worst)/);
 });
 
 test('avatar is a small validated configuration: arbitrary markup, URLs and fields cannot enter its SVG',()=>{

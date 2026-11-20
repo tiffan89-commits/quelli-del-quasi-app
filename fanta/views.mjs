@@ -61,8 +61,25 @@ export function lineupReminder(s,uid,round,now=Date.now()){
   .map(t=>({uid:t.userId,name:t.coachName||t.manager||t.name}));
  return missing.length?{round:round.number,deadline:round.deadline,competition:s.competition?.id,missing}:null;
 }
+export function officialRoundScores(s){
+ const round=s.rounds.filter(r=>r.official&&!r.data?.archivedWithoutResults).sort((a,b)=>b.number-a.number)[0];
+ if(!round)return null;
+ const results=new Map(s.results.filter(r=>r.official).map(r=>[r.matchup_id,r.data]));
+ const teams=new Map(s.teams.map(t=>[t.id,t]));
+ const entries=new Map();
+ for(const match of s.matchups.filter(m=>m.round===round.number)){
+  const result=results.get(match.id);
+  for(const side of ['home','away']){
+   const t=teams.get(match[side+'_id']),points=result?.[side]?.points;
+   if(!t||!Number.isFinite(points))return null;
+   entries.set(t.id,{team:team(t),points,matchupId:match.id});
+  }
+ }
+ return entries.size>1?{round:round.number,label:round.data?.label,entries:[...entries.values()]}:null;
+}
+
 export function homeView(s,uid,now=Date.now()){
  const l=leagueView(s,uid,now,{calendar:false}),t=s.teams.find(t=>t.userId===uid),r=currentRound(s,now),rv=r?roundView(s,r,uid,now):null,row=l.standings.find(x=>x.team.id===t.id),m=rv?.matchups.find(x=>x.isMine),lineup=r?savedLineup(s,t,r.number):null,last=[...s.results].sort((a,b)=>(s.matchups.find(m=>m.id===b.matchup_id)?.round||0)-(s.matchups.find(m=>m.id===a.matchup_id)?.round||0)).find(x=>x.official&&(x.data.home.team.id===t.id||x.data.away.team.id===t.id));
  const upcoming=lineupRound(s,now),next=upcoming&&Date.parse(upcoming.deadline)>now?savedLineup(s,t,upcoming.number):null;
- return {...(s.league.adminUid===uid?{lineupReminder:lineupReminder(s,uid,upcoming,now)}:{}),teamNameDeadline:s.teamNameDeadline??null,nextLineup:upcoming&&Date.parse(upcoming.deadline)>now?{round:upcoming.number,deadline:upcoming.deadline,formation:next?.formation||null,savedAt:next?.saved_at||null}:null,league:l.league,competition:l.competition,competitions:l.competitions,me:{teamId:t.id,teamName:t.name,manager:t.manager,position:row?.position||1,points:row?.points||0,fantapoints:row?.fantapoints||0,form:row?.form||[]},round:{...(rv?.round||{number:1,state:'da-schierare',matchesDone:0,matchesTotal:0}),deadline:r?.deadline||null,firstKickoff:r?.deadline||null},lineup:{status:lineup?'saved':'missing',formation:lineup?.formation||null,savedAt:lineup?.saved_at||null},match:m?{home:m.home.team,away:m.away.team,live:rv.round.state==='in-corso'?{home:{goals:m.home.goals,points:m.home.points,played:m.home.withVote,withVote:m.home.withVote},away:{goals:m.away.goals,points:m.away.points,played:m.away.withVote,withVote:m.away.withVote},of:11}:null,final:r.official?{home:m.home,away:m.away}:null}:null,lastResult:last?{...last.data,matchupId:last.matchup_id,home:{...last.data.home.team,points:last.data.home.points,goals:last.data.home.goals},away:{...last.data.away.team,points:last.data.away.points,goals:last.data.away.goals},round:s.matchups.find(m=>m.id===last.matchup_id)?.round,outcome:(()=>{const me=last.data.home.team.id===t.id?last.data.home:last.data.away,other=last.data.home.team.id===t.id?last.data.away:last.data.home;return me.goals>other.goals?'V':me.goals<other.goals?'P':'N';})(),topPlayer:null}:null,standings:l.standings,bar:null,auction:{...l.auction,title:l.auction.typeLabel,...l.auction.teams.find(x=>x.team.id===t.id)}};
+ return {roundScores:officialRoundScores(s),...(s.league.adminUid===uid?{lineupReminder:lineupReminder(s,uid,upcoming,now)}:{}),teamNameDeadline:s.teamNameDeadline??null,nextLineup:upcoming&&Date.parse(upcoming.deadline)>now?{round:upcoming.number,deadline:upcoming.deadline,formation:next?.formation||null,savedAt:next?.saved_at||null}:null,league:l.league,competition:l.competition,competitions:l.competitions,me:{teamId:t.id,teamName:t.name,manager:t.manager,position:row?.position||1,points:row?.points||0,fantapoints:row?.fantapoints||0,form:row?.form||[]},round:{...(rv?.round||{number:1,state:'da-schierare',matchesDone:0,matchesTotal:0}),deadline:r?.deadline||null,firstKickoff:r?.deadline||null},lineup:{status:lineup?'saved':'missing',formation:lineup?.formation||null,savedAt:lineup?.saved_at||null},match:m?{home:m.home.team,away:m.away.team,live:rv.round.state==='in-corso'?{home:{goals:m.home.goals,points:m.home.points,played:m.home.withVote,withVote:m.home.withVote},away:{goals:m.away.goals,points:m.away.points,played:m.away.withVote,withVote:m.away.withVote},of:11}:null,final:r.official?{home:m.home,away:m.away}:null}:null,lastResult:last?{...last.data,matchupId:last.matchup_id,home:{...last.data.home.team,points:last.data.home.points,goals:last.data.home.goals},away:{...last.data.away.team,points:last.data.away.points,goals:last.data.away.goals},round:s.matchups.find(m=>m.id===last.matchup_id)?.round,outcome:(()=>{const me=last.data.home.team.id===t.id?last.data.home:last.data.away,other=last.data.home.team.id===t.id?last.data.away:last.data.home;return me.goals>other.goals?'V':me.goals<other.goals?'P':'N';})(),topPlayer:null}:null,standings:l.standings,bar:null,auction:{...l.auction,title:l.auction.typeLabel,...l.auction.teams.find(x=>x.team.id===t.id)}};
 }

@@ -1,7 +1,7 @@
 import {predictionStatus} from '../prediction.mjs';
 import {rewardById,rewardMark} from './reward-catalog.mjs';
 import {renderHomeStories} from './home-stories.mjs';
-import {createVerdictCard,recapForRound} from './community.mjs';
+import {createVerdictCard,lowestBarPlayers,recapForRound} from './community.mjs';
 import {sourceOf} from './slip-state.mjs';
 
 const score=(value,fmt)=>(value>0?'+':'')+fmt(value);
@@ -43,6 +43,9 @@ export function renderBarStories({league,user,round,history,fmt,esc}){
   stories.push({id:'winner',label:'Verdetto',title:winners.length===1?'Vincitore di giornata':'Vincitori di giornata',version:verdictRound.id,
    body:winners.map(uid=>createVerdictCard(league,'seriea',null,uid,verdictRound.id,{embedded:true})).join('')});
  }
+ const lowest=lowestBarPlayers(community,verdictRound);
+ if(lowest.length)stories.push({id:'bar-worst',label:'Peggior esito',title:'Punteggio più basso',version:verdictRound.id,
+  body:lowest.map(({uid})=>createVerdictCard(league,'seriea',null,uid,verdictRound.id,{embedded:true,lowest:true})).join('')});
  if(round){
   const tally=history?.played?history.correct+'/'+history.total+' prese':'';
   const change=history?.positionChange;

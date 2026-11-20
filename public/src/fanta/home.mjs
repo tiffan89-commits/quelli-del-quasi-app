@@ -29,6 +29,24 @@ export function nextHomeOpponent(h){
 
 function storyItems(h){
  const last=h.lastResult, ownTeam=h.me.teamId, items=[];
+ const scores=h.roundScores;
+ const entries=(scores?.entries||[]).filter(entry=>number(entry.points));
+ if(entries.length>1){
+  const values=entries.map(entry=>entry.points);
+  const day=scores.label||'Giornata '+scores.round;
+  for(const [id,label,title,value] of [
+   ['fanta-best','Miglior FP','Miglior fantapunteggio',Math.max(...values)],
+   ['fanta-worst','Peggior FP','Peggior fantapunteggio',Math.min(...values)],
+  ]){
+   const cards=entries.filter(entry=>entry.points===value).map(({team,points,matchupId})=>
+    `<article class="home-round-score">
+     <div class="home-round-score-team">${teamLogo(team,{eager:true})}<h3>${esc(team.name)}</h3></div>
+     <p><strong>${pts(points,2)}</strong> fantapunti</p>
+     ${storyButton('giornata','Apri il tabellino',scores.round,matchupId)}
+    </article>`).join('');
+   items.push({id,label,title,version:scores.round,body:`<p class="home-round-score-day">${esc(day)}</p>${cards}`});
+  }
+ }
  if(number(last?.round)&&number(last.home?.goals)&&number(last.away?.goals)){
   const own=last.home.id===ownTeam?last.home:last.away, data=h.storyData?.lastMatch;
   const sheet=[data?.home,data?.away].find(side=>side?.team?.id===ownTeam);

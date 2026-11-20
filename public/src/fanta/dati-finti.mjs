@@ -2,7 +2,7 @@
 // Gli orari sono relativi ad "adesso", così il conto alla rovescia ha sempre senso.
 import {AUCTION_TYPES} from '../auction-formats.mjs';
 import { TEAMS, MY_TEAM, team } from './squadre-finte.mjs';
-import { matchupFor, CURRENT_ROUND } from './dati-finti-giornata.mjs';
+import { matchupFor, roundFor, CURRENT_ROUND } from './dati-finti-giornata.mjs';
 import { savedLineupOf } from './dati-finti-squadra.mjs';
 import { auctionFor } from './dati-finti-asta.mjs';
 import { standingsFor } from './dati-finti-lega.mjs';
@@ -48,11 +48,15 @@ export function homeFor(leagueId,state='da-schierare',now=Date.now(),auction=auc
   const kickoff=['in-corso','calcolata'].includes(state)?new Date(now-(state==='calcolata'?48:2)*HOUR).toISOString():first.toISOString();
   const last = result(CURRENT_ROUND - 1, state);
   const current = state === 'in-corso' || state === 'calcolata' ? result(CURRENT_ROUND, state) : null;
+  const officialRound=state==='calcolata'?CURRENT_ROUND:CURRENT_ROUND-1;
+  const entries=roundFor(officialRound,'calcolata').matchups.flatMap(({id,home,away})=>
+    [home,away].map(({team,points})=>({team,points,matchupId:id})));
   // Classifica calcolata dagli stessi risultati della pagina Giornata e della pagina Lega.
   const standings = standingsFor(state), mine = standings.find(s => s.team.id === MY_TEAM);
   const form = mine.form;
   const home = {
     league,
+    roundScores:{round:officialRound,entries},
     me: { teamId: MY_TEAM, teamName: TEAMS[MY_TEAM].name, manager: TEAMS[MY_TEAM].manager, position: mine.position, points: mine.points, fantapoints: mine.fantapoints, form },
     round: { number: CURRENT_ROUND, state, deadline, firstKickoff: kickoff, matchesTotal: 10, matchesDone:state==='calcolata'?10:state==='in-corso'?4:0 },
     lineup: saved ? { status: 'saved', formation: saved.formation, savedAt: saved.savedAt }

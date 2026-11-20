@@ -147,7 +147,10 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(!home||!key||matchStories.key===key)return;
     const id=home.league.id,teamId=home.me.teamId;
     const details={key};matchStories=details;
-    const findMine=async number=>(await api.round(id,number)).matchups.find(match=>match.isMine||[match.home?.team?.id,match.away?.team?.id].includes(teamId));
+    const findMine=async (number,{any=false}={})=>{
+      const {matchups}=await api.round(id,number);
+      return matchups.find(match=>match.isMine||[match.home?.team?.id,match.away?.team?.id].includes(teamId))||(any?matchups[0]:null);
+    };
     const tasks=[];
     if(home.lastResult?.round&&api.matchup){
       const last=home.lastResult;
@@ -160,7 +163,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       tasks.push(findMine(home.nextLineup.round).then(fixture=>{details.nextFixture=fixture;}));
     }
     if(api.round&&home.round.state==='in-corso'&&!home.match?.id&&!home.match?.matchupId){
-      tasks.push(findMine(home.round.number).then(fixture=>{details.liveMatchup=fixture?.id;}));
+      tasks.push(findMine(home.round.number,{any:true}).then(fixture=>{details.liveMatchup=fixture?.id;}));
     }
     if(tasks.length)void Promise.allSettled(tasks).then(()=>{
       if(matchStories!==details||storyKey()!==key||destroyed||suspended||ui.tab!=='oggi')return;
@@ -949,9 +952,10 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     apply:data=>{
       if(destroyed||suspended)return;
       if(data.round){
-        if(ui.tab==='oggi'&&ui.home?.round?.state==='in-corso'&&data.round.round.number===ui.home.round.number&&data.matchup){
+        if(ui.tab==='oggi'&&ui.home?.round?.state==='in-corso'&&data.round.round.number===ui.home.round.number){
           if(data.round.round.state!=='in-corso'){api.invalidateReads?.();void load();return;}
-          ui.home=withHomeVotes(ui.home,data.matchup);const home=root.querySelector('.fanta-social-home');if(home)patchRegion(home,page());return;
+          if(data.matchup){ui.home=withHomeVotes(ui.home,data.matchup);const home=root.querySelector('.fanta-social-home');if(home)patchRegion(home,page());}
+          return;
         }
         if(ui.tab!=='giornata'||data.round.round.number!==ui.roundNumber||data.matchup?.id&&data.matchup.id!==ui.matchupId)return;
         ui.round=data.round;
