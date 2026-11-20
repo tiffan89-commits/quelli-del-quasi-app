@@ -243,6 +243,11 @@ test('studio renders the stored shirt name and fantamedia on the field and bench
  assert.equal(document.querySelector('[data-st-slot="D0"] .fs-shirt svg text').textContent,'MASTANTUONO');
  assert.equal(document.querySelector('[data-st-slot="P0"] .fs-shirt svg text').textContent,'DE GEA');
  assert.equal(document.querySelectorAll('.fs-pitch .fs-fm').length,2);
+ const starter=document.querySelector('[data-st-slot="D0"]');
+ assert.equal(starter.querySelector('.fs-shirt > .fs-badge.is-pct').textContent,'50%');
+ assert.deepEqual([...starter.querySelector('.fs-tile-foot').children].map(el=>el.textContent),['6,50 FM','@ JUV']);
+ assert.equal(document.querySelector('[data-st-slot="P0"] .fs-tile-next').textContent,'JUV');
+ assert.equal(document.querySelector('[data-st-player="'+players[3].id+'"] .fs-tile-foot').innerHTML,starter.querySelector('.fs-tile-foot').innerHTML);
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[2].id+'"] .fs-fm').textContent,'– FM');
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-fm').textContent,'6,50 FM');
  assert.equal(document.querySelector('.fs-grid [data-st-player="'+players[3].id+'"] .fs-shirt svg text').textContent,'KOLO MUANI');

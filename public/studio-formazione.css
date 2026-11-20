@@ -105,11 +105,12 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fs-token:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; border-radius: 6px; }
 .fs-token > .fs-shirt { width: var(--fs-kit-size, 56px); height: var(--fs-kit-size, 56px); }
 .fs-shirt > svg { filter: drop-shadow(0 3px 2px #081d12aa); }
-.fs-stats { display: flex; align-items: center; justify-content: center; gap: 3px; }
-.fs-stats .fs-badge { position: static; height: 14px; box-shadow: none; }
+.fs-token > .fs-shirt > :is(.fs-badge,.fs-availability) { position: absolute; z-index: 1; top: -3px; right: 0; }
 .fs-badge.is-pct.is-out { background: #ad3029; color: #fff; }
-.fs-token .fs-fm { font-size: 10px; }
+.fs-token .fs-fm { padding-inline: 2px; font-size: 10px; }
 .fs-token .fs-fm > span + span { font-size: 8px; }
+.fs-token .fs-tile-foot { flex-wrap: wrap; gap: 1px 2px; }
+.fs-token .fs-tile-next { color: #dce8de; }
 .fs-dock { flex-basis: 196px; padding-inline: 14px; }
 .fs-tabs { margin-inline: -14px; padding-inline: 14px; }
 .fs-hint { min-height: 0; }
@@ -141,7 +142,7 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
   .fs-col.is-C { grid-area: midfield; }
   .fs-col.is-A { grid-area: attack; }
   .fs-token { width: min(104px, calc((100cqw - 20px) / var(--fs-count))); }
-  .fs-col[data-count='5'] .fs-stats { flex-direction: column; gap: 2px; }
+  .fs-col[data-count='5'] .fs-tile-next { font-size: 8px; }
   .fs-lines:before { inset: 50% 0 auto; border-left: 0; border-top: 2px solid #ffffff2e; }
   .fs-lines:after { width: 29%; }
   .fs-lines i:before,.fs-lines i:after { inset: auto 23%; width: auto; height: 13%; border: 2px solid #ffffff2e; }
@@ -154,6 +155,9 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
   .fs-title b > span { font-size: 10px; }
   .fs-title small { font-size: 9px; }
   .fs-close { width: 32px; height: 36px; }
+  .fs-token > .fs-shirt > :is(.fs-badge,.fs-availability) { top: -8px; }
+  .fs-col[data-count='5'] .fs-fm { font-size: 9px; }
+  .fs-token .fs-tile-next { font-size: 8px; }
 }
 @media (max-height: 500px) and (min-width: 620px) {
   .fs-title small { font-size: 8px; }

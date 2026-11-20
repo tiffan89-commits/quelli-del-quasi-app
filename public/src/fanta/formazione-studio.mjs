@@ -47,6 +47,9 @@ export function playBadge(p) {
 
 // ---------- Pezzi ----------
 function fantamedia(p){const n=p.stats?.avgFanta;return `<small class="fs-fm" aria-label="${n==null?'Fantamedia non disponibile':'Fantamedia '+pts(n,2)}"><span>${pts(n,2)}</span> <span>FM</span></small>`;}
+function playerFooter(p){
+  return `<span class="fs-tile-foot">${fantamedia(p)}${p.next?`<small class="fs-tile-next">${esc(nextLabel(p.next))}</small>`:''}</span>`;
+}
 function studioShirt(p) {
   return shirtBack(p.club, p.jersey, surname(p), { goalkeeper: p.role === 'P', wideName: true, vs: p.next?.opponent, home: p.next?.home });
 }
@@ -55,7 +58,7 @@ function token(slot, p, selected) {
   if (!p) return `<button type="button" class="${cls}" data-st-slot="${slot}" data-drop="slot:${slot}" aria-pressed="${selected}" aria-label="Scegli ${ROLE_NAMES[slot[0]].toLowerCase()}">
     <span class="fs-ring" aria-hidden="true">${ROLE_SHORT[slot[0]]}</span></button>`;
   return `<button type="button" class="${cls}" data-st-slot="${slot}" data-drop="slot:${slot}" data-drag-id="${esc(p.id)}" data-drag-from="slot:${slot}" title="${esc(p.name)}">
-    <span class="fs-shirt">${studioShirt(p)}</span><span class="fs-stats">${fantamedia(p)}${playBadge(p)}</span></button>`;
+    <span class="fs-shirt">${studioShirt(p)}${playBadge(p)}</span>${playerFooter(p)}</button>`;
 }
 
 function pitch(d, byId, sel) {
@@ -70,7 +73,7 @@ function reserveTile(p,index,{blocked,tab}) {
     <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" aria-label="Schiera ${esc(p.name)}" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" ${blocked?'disabled':''}>
       <span class="fs-shirt" title="${esc(p.name)}">${studioShirt(p)}</span>${playBadge(p)}
       <strong class="fs-reserve-name">${esc(surname(p))}</strong>
-      <span class="fs-tile-foot">${fantamedia(p)}${p.next?`<small class="fs-tile-next">${esc(nextLabel(p.next))}</small>`:''}</span>
+      ${playerFooter(p)}
       <em class="fanta-role is-${p.role}">${p.role}</em>
     </button>
   </article>`;
