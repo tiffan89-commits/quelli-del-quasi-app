@@ -25,13 +25,30 @@ const teamKey=name=>String(name||'').normalize('NFKD').replace(/[\u0300-\u036f]/
 // Restore coordinates from the cached official XI, never from the statistics-array order.
 export function recoverOfficialPitchLayout(lineups,sourceRows){
  if(!lineups?.teams?.length||!Array.isArray(sourceRows)||!sourceRows.length)return lineups;
+ const validated=lineups.method==='official-api-v1';
  let recovered=0;
  const teams=lineups.teams.map(t=>{
   const pool=[...(t.players||[]),...(t.bench||[])],ids=new Set(pool.map(playerKey));
-  const row=sourceRows.find(r=>r.startXI?.length===11&&(teamKey(r.team?.name)===teamKey(t.team)&&teamKey(t.team)||r.startXI.filter(x=>ids.has(String(x.player?.id))).length>=9));
-  if(!row)return t;recovered++;
-  const convert=({player:p})=>{const previous=pool.find(x=>playerKey(x)===String(p.id));return {...previous,id:'af:'+p.id,apiId:p.id,name:previous?.name||p.name,jersey:p.number??previous?.jersey??'',position:p.pos||'',grid:p.grid||null,probability:100,probabilityKind:'official'};};
-  return normalizePitchLayout({...t,formation:row.formation,players:row.startXI.map(convert),bench:(row.substitutes||[]).map(x=>({...convert(x),probability:0})),pitchOrder:'right-to-left'});
+  const row=sourceRows.find(r=>r.startXI?.length===11&&(teamKey(r.team?.name)===teamKey(t.team)&&teamKey(t.team)||r.startXI.filter(x=>ids.has(String(x?.player?.id))).length>=9));
+  if(!row)return t;
+  const convert=(entry,probability)=>{
+   const p=entry?.player,previous=pool.find(x=>playerKey(x)===String(p?.id));
+   if(!p?.id||!p.name||validated&&!previous)return null;
+   const number=validated?previous.jersey:p.number??previous?.jersey;
+   return {...previous,id:'af:'+p.id,apiId:p.id,name:previous?.name||p.name,jersey:/^[1-9][0-9]?$/.test(String(number))?number:'',position:p.pos||'',grid:p.grid||null,probability,probabilityKind:'official'};
+  };
+  const players=row.startXI.map(p=>convert(p,100)).filter(Boolean),seen=new Set(players.map(playerKey));
+  if(players.length!==11||seen.size!==11)return t;
+  const bench=[];
+  for(const entry of row.substitutes||[]){
+   const p=convert(entry,0);if(!p||seen.has(playerKey(p)))continue;
+   seen.add(playerKey(p));bench.push(p);
+  }
+  const jerseys=new Map();
+  for(const p of [...players,...bench])if(p.jersey)jerseys.set(String(p.jersey),(jerseys.get(String(p.jersey))||0)+1);
+  for(const p of [...players,...bench])if(jerseys.get(String(p.jersey))>1)p.jersey='';
+  recovered++;
+  return normalizePitchLayout({...t,formation:row.formation,players,bench,pitchOrder:'right-to-left'});
  });
  return recovered?{...lineups,kind:recovered===teams.length?'official':lineups.kind,teams}:lineups;
 }

@@ -5,6 +5,8 @@ import {cleanLineupTeam,resolveLineupPlayer} from '../lib/lineup-quality.mjs';
 import {enrichPresence} from '../lib/lineup-presence.mjs';
 import {pinSeasonJerseys,recordLineupIssues} from '../lib/operations/lineup-quality.mjs';
 import {normalizedPlayerLabel,playerDisplayName} from '../public/src/player-label.mjs';
+import {recoverOfficialPitchLayout} from '../public/src/pitch-layout.mjs';
+import {officialLineups} from '../lib/official-lineups.mjs';
 
 const player=(id,name,club,number,seasonNumber,extra={})=>({id:'af:'+id,apiId:id,name,club,clubId:club,number,seasonNumber,role:'D',...extra});
 test('forecasts reconcile club identities, preserve pinned shirt numbers and hide ambiguous entries',()=>{
@@ -32,6 +34,18 @@ test('unresolved jersey collisions are hidden and encodings and common names are
  assert.equal(normalizedPlayerLabel('A&#769;lex Valle'),'Álex Valle');
  assert.equal(normalizedPlayerLabel('Rad&#x1f;ek'),'Rad ek');
  assert.equal(playerDisplayName({name:'Jacobo Ramon',apiId:386305}),'Ramón');
+});
+
+test('restoring coordinates from raw official lineups cannot resurrect a duplicated number or substitute',()=>{
+ const raw={teams:{home:{id:1,name:'Como'},away:{id:2,name:'Juventus'}},lineups:[1,2].map((id,i)=>({
+  team:{id,name:i?'Juventus':'Como'},formation:'4-4-2',
+  startXI:Array.from({length:11},(_,j)=>({player:{id:id*100+j,name:'Player '+j,number:j+1}})),
+  substitutes:[{player:{id:id*100,name:'Duplicate',number:1}},{player:{id:id*100+99,name:'Substitute',number:8}}],
+ }))};
+ const filtered=officialLineups(raw),restored=recoverOfficialPitchLayout(filtered,raw.lineups);
+ for(const t of restored.teams){
+  assert.equal(t.players.length,11);assert.equal(t.players.find(p=>p.name==='Player 7').jersey,'');assert.equal(t.bench.length,1);assert.equal(t.bench[0].jersey,'');
+ }
 });
 
 test('verified numbers are pinned once per season and source anomalies are retained without duplicate rows',async()=>{
