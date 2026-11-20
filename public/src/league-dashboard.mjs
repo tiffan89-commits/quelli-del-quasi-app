@@ -57,7 +57,7 @@ export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,comp
  return socialHome({mode:'bar',now,reminder:homeReminderBanner('bar',barReminder(league,user.id,now)),
   stories:renderBarStories({league,user,round,history:last,esc,fmt}),
   hero:{title:'Il tuo Quasi dice',quote:quote(user,league,last,open,now),background:quasiHomeBackdrop(user.avatar),art:quasiMascot(user.avatar,user.name),
-   chips:`<button type="button" data-dashboard-rank="points" aria-label="Punti, apri la classifica del Bar">${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</button><button type="button" data-dashboard-rank="credits" aria-label="Crediti, apri la classifica del Bar">${fmt(model.credits)} cr</button>`},
+   chips:`<span>${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</span><span>${fmt(model.credits)} cr</span>`},
   last:round?{title:round.title,action:`data-dashboard-slip="${esc(round.id)}"`,segments,value:last?sign(last.points,fmt)+' pt':null,valueClass:last?.points<0?'loss':last?.points>0?'gain':''}:null,
   cta:{...cta,waiting:cta.disabled,action:cta.round?`data-dashboard-slip="${esc(cta.round.id)}"`:null}
  });

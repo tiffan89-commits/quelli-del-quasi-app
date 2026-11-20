@@ -73,7 +73,10 @@ test('president actions reuse the league tiles and personal settings has a cog',
  const doc=parseHTML(presidentWorkspace({buttons,back:'data-bar-page="barleague"'})).document;
  const tiles=[...doc.querySelectorAll('.lega-hub.president-tiles button.lega-tile')];
  assert.ok(tiles.length>10);
- for(const tile of tiles)assert.ok(tile.querySelector('.lega-tile-icon svg path')&&tile.querySelector('small').textContent);
+ for(const tile of tiles){
+  assert.ok(tile.querySelector('.lega-tile-icon svg path')&&tile.querySelector('b').textContent);
+  assert.equal(tile.querySelector('small'),null);
+ }
  assert.ok(doc.querySelector('.lega-tile[data-league-section="scambi"]'));
  assert.ok(doc.querySelector('.lega-tile[data-president-operation="elimina"].league-delete-action'));
  const wizard=parseHTML(presidentWorkspace({tool:'identita',body:'<form></form>',back:'data-president-operation=""'})).document;
