@@ -106,7 +106,7 @@ export function createDemoFantaApi({state=()=> 'da-schierare',delay=0,user={id:'
    return rosterEditor(id);
   }),
   auction:id=>write(()=>engine.auctionFor(id)),auctionPlayers:id=>read(()=>engine.auctionPlayersFor(id)),
-  auctionAssigned:(id,q)=>read(()=>engine.auctionAssigned(id,q)),auctionRelease:(id,p,r)=>write(()=>engine.release(id,p,r)),auctionReleaseUndo:(id,p)=>write(()=>engine.releaseUndo(id,p)),auctionReleasesDone:id=>write(()=>engine.releasesDone(id)),
+  auctionAssigned:(id,q)=>read(()=>engine.auctionAssigned(id,q)),auctionRelease:(id,p,r)=>write(()=>engine.release(id,p,r)),auctionReleaseBatch:(id,payload)=>write(()=>engine.releaseBatch(id,payload)),auctionReleaseUndo:(id,p)=>write(()=>engine.releaseUndo(id,p)),auctionReleasesDone:id=>write(()=>engine.releasesDone(id)),
   bid:(id,lotId,amount)=>write(()=>engine.bidFake(id,{lotId,amount})),pass:(id,lotId)=>write(()=>engine.passFake(id,{lotId})),nominate:(id,playerId,amount)=>write(()=>engine.nominateFake(id,{playerId,amount})),
   league:id=>read(()=>league(id)),auctionSchedule:(id,data)=>write(()=>engine.scheduleFake(id,data)),auctionStart:id=>write(()=>engine.startFake(id)),auctionLobbyStart:id=>write(()=>engine.lobbyStartFake(id)),
   auctionStartNow:(id,mode='manual',computerTeams,settings={})=>write(()=>{admin(id);if(engine.auctionFor(id).status==='running')return engine.auctionFor(id);engine.scheduleFake(id,{type:'riparazione',...settings,mode,computerTeams,startsAt:new Date(Date.now()+60000).toISOString()});return engine.startFake(id);}),

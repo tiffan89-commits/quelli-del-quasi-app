@@ -228,6 +228,7 @@ function auctionFor(leagueId, now = Date.now()) {
     skipped: A.skipped && now < A.pauseUntil ? { team: A.skipped.team,player:A.skipped.player } : null,
     teams: A.order.map(t => ({
       team: team(t), credits: credits(t), maxBid: maxBid(t), slotsLeft: slotsLeft(t), human:t===MY_TEAM,online:t===MY_TEAM,computer:A.mode==='live'&&A.computerTeams!==false&&t!==MY_TEAM,
+      ...(A.releasePhase&&isAdmin(leagueId)?{releaseRoster:owned(t).map(p=>({...playerView(p),price:p.price}))}:{}),
       roles: Object.fromEntries(Object.entries(AUCTION_RULES.roster).map(([r, max]) => [r, { have: roleCount(t, r), max }])),
     })),
     lot,
@@ -395,7 +396,25 @@ function nominateFake(leagueId, { playerId, amount }, now = Date.now()) {
 }
 
 function auctionAssigned(leagueId,query=''){select(leagueId);return A.players.filter(p=>p.soldTo&&(!query||p.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()))).map(p=>({...playerView(p),team:team(p.soldTo),ownerTeam:team(p.soldTo),price:p.price}));}
-function release(leagueId,playerId,refund){select(leagueId);needAdmin(leagueId);needOpen();if(!A.releasePhase)throw Error('Gli svincoli sono chiusi');const p=A.players.find(p=>p.id===playerId&&p.soldTo);if(!p)throw Error('Giocatore non assegnato');if(!Number.isInteger(refund)||refund<0||refund>p.price)throw Error('Rimborso non valido');A.releases.push({id:playerId,batch:A.releaseBatchId,player:playerView(p),team:p.soldTo,price:p.price,refund});A.adjustments??={};A.adjustments[p.soldTo]=(A.adjustments[p.soldTo]||0)+refund-p.price;p.soldTo=null;p.price=null;A.table=null;changed();return auctionFor(leagueId);}
+function releaseBatch(leagueId,{batchId,requestId,entries}){
+ select(leagueId);needAdmin(leagueId);needOpen();
+ if(batchId!==A.releaseBatchId||!A.releasePhase)throw Error('Gli svincoli sono chiusi');
+ if(requestId&&A.releases.some(r=>r.requestId===requestId))return auctionFor(leagueId);
+ const selected=new Set();
+ const players=entries.map(({playerId,teamId,refund})=>{
+  const p=A.players.find(p=>p.id===playerId&&p.soldTo);
+  if(!p||teamId!==undefined&&p.soldTo!==teamId||selected.has(playerId))throw Error('Controlla i giocatori selezionati');
+  if(!Number.isInteger(refund)||refund<0||refund>p.price)throw Error('Rimborso non valido');
+  selected.add(playerId);return {p,refund};
+ });
+ A.adjustments??={};
+ for(const {p,refund} of players){
+  A.releases.push({id:p.id,batch:batchId,requestId,player:playerView(p),team:p.soldTo,price:p.price,refund});
+  A.adjustments[p.soldTo]=(A.adjustments[p.soldTo]||0)+refund-p.price;p.soldTo=null;p.price=null;
+ }
+ A.table=null;changed();return auctionFor(leagueId);
+}
+function release(leagueId,playerId,refund){select(leagueId);return releaseBatch(leagueId,{batchId:A.releaseBatchId,entries:[{playerId,refund}]});}
 function releaseUndo(leagueId,playerId){select(leagueId);needAdmin(leagueId);needOpen();if(!A.releasePhase)throw Error('Gli svincoli sono chiusi');const r=A.releases.find(r=>r.id===playerId);if(!r)throw Error('Svincolo non trovato');const p=A.players.find(p=>p.id===playerId);if(p.soldTo)throw Error('Giocatore già assegnato');p.soldTo=r.team;p.price=r.price;A.adjustments[r.team]-=r.refund-r.price;A.releases=A.releases.filter(x=>x!==r);changed();return auctionFor(leagueId);}
 function releasesDone(leagueId){select(leagueId);needAdmin(leagueId);needOpen();A.releasePhase=false;A.table=null;A.lobby=A.mode==='live'&&!!A.config;changed();return auctionFor(leagueId);}
 
@@ -422,7 +441,7 @@ function correctBatch(leagueId,changes){
  }catch(error){rooms.set(leagueId,before);A=before;throw error;}
 }
 function drawFake(leagueId){select(leagueId);needAdmin(leagueId);needOpen();if(A.mode!=='manual'||A.config?.nomination!=='random'||A.releasePhase||A.table)throw Error('Estrazione non disponibile');const player=drawPlayer();if(!player)throw Error('Nessun giocatore disponibile');A.table=player.id;changed();return auctionFor(leagueId);}
-return {correctRoster,correctBatch,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,lobbyStartFake,closeFake,cancelLotFake,drawFake,auctionAssigned,release,releaseUndo,releasesDone};
+return {correctRoster,correctBatch,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,lobbyStartFake,closeFake,cancelLotFake,drawFake,auctionAssigned,release,releaseBatch,releaseUndo,releasesDone};
 }
 const defaultEngine=createDemoAuctionEngine();
 export const {correctRoster,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,closeFake,cancelLotFake,auctionAssigned,release,releaseUndo,releasesDone}=defaultEngine;

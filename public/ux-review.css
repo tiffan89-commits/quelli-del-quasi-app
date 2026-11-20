@@ -81,7 +81,6 @@ body.fs-open>#open-chat,body.fs-open #league-chat-widget,html.studio-active #ope
 .fanta-tools{flex-wrap:wrap}.fs-actions{flex-wrap:nowrap;justify-content:flex-end}.fs-restore{white-space:nowrap}@media(max-width:420px){.fs-head{column-gap:6px}.fs-actions{gap:4px;max-width:none}.fs-actions .fs-quick{padding:6px 8px;font-size:11px}.fs-actions .fs-restore{flex-basis:auto;padding-block:6px}.fanta-round-head{gap:8px!important}}
 
 #app-header .v2-top.fanta-top .ux-controls button.ux-profile{padding:0!important;align-items:center!important;justify-items:center!important}#app-header .v2-top.fanta-top .ux-controls button.ux-profile>svg{width:18px;height:18px}
-.fanta-a-teams>li:has(>.team-logo){grid-template-columns:32px minmax(0,1fr) 36px 36px 36px}.fanta-a-teams>li>.team-logo{width:32px;height:34px;min-width:32px;margin:0}.fanta-a-teams .fanta-p-name small{white-space:normal}
 
 /* Second local review: compact match data, equal product headers and full standings. */
 #app-header .v2-top .ux-controls button.ux-profile{padding:0!important;display:grid!important;place-items:center!important;line-height:0}#app-header .v2-top .ux-controls button.ux-profile>svg{display:block;width:18px;height:18px;margin:0}

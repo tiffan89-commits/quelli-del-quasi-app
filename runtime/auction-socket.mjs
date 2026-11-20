@@ -12,7 +12,7 @@ import {LAMPO} from '../public/src/auction-formats.mjs';
 export function socketAuctionView(state,uid,stamp){
  const data=auctionView(state,uid,stamp),player=p=>p?Object.fromEntries(['id','name','role','club','price','value','fm','played','ownerTeam'].filter(k=>p[k]!==undefined).map(k=>[k,p[k]])):p;
  data.competition=state.competition?{id:state.competition.id,status:state.competition.status,startRound:state.competition.start_round}:null;
- data.teams=data.teams.map(t=>({...t,team:{id:t.team.id,name:t.team.name,manager:t.team.manager,color:t.team.color,userId:t.team.userId}}));
+ data.teams=data.teams.map(t=>({...t,team:{id:t.team.id,name:t.team.name,manager:t.team.manager,color:t.team.color,userId:t.team.userId,branding:t.team.branding}}));
  data.myRoster=data.myRoster.map(player);data.log=data.log.map(s=>({...s,player:player(s.player)}));
  if(data.lot)data.lot={...data.lot,player:player(data.lot.player)};data.table=player(data.table);
  if(data.lastSale)data.lastSale={...data.lastSale,player:player(data.lastSale.player)};

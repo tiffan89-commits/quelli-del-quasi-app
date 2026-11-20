@@ -49,3 +49,46 @@ test('a purchased player can be released, restored, released again and purchased
   await call('auction/release',{playerId:'free',refund:4});await call('auction/releases-done',{});await call('auction/table',{playerId:'free'});const second=await call('auction/assign',{playerId:'free',teamId:'t2',price:3});assert.equal(second.status,200);assert.equal(second.data.teams.find(t=>t.team.id==='t1').credits,balance+4);assert.equal((await f.db.query("SELECT count(*)::int n FROM fanta.sales WHERE player_id='free'")).rows[0].n,2);assert.equal((await call('auction/undo',{saleId:original})).status,409);
  }finally{await f.close();}
 });
+
+test('one repair auction confirmation releases players across teams atomically and preserves imported entries on undo',async()=>{
+ const f=await fixtureDb();
+ try{
+  const store=sqlFantaStore(f),api=createFantaApi({store,env:{FANTA_BETA_USERS:'frankwood'}});
+  const call=async(path,body,token='token1')=>{
+   const response=await api(new Request('https://example.test/fanta-api/auction/'+path,{
+    method:'POST',headers:{cookie:'sid='+token},body:JSON.stringify({league:'fanta-lucas-a',...body}),
+   }));
+   return {status:response.status,data:await response.json()};
+  };
+  const {rows:[imported]}=await f.db.query(`INSERT INTO fanta.roster_entries(league_id,team_id,source_id,name,role,price,data)
+   VALUES('fanta-lucas-a','t1','legacy-keeper','Portiere importato','P',12,'{"club":"Squadra storica"}') RETURNING *`);
+  const started=await call('start-now',{mode:'manual',type:'riparazione'});
+  assert.equal(started.data.phase,'releases');
+  const first=started.data.teams.find(t=>t.team.id==='t1'),second=started.data.teams.find(t=>t.team.id==='t2');
+  const p=second.releaseRoster.find(player=>player.price>=1);
+  const payload={batchId:started.data.releaseBatchId,requestId:'release-test-1',entries:[
+   {teamId:'t1',playerId:'legacy-keeper',refund:5},{teamId:'t2',playerId:p.id,refund:1},
+  ]};
+  const invalid={...payload,entries:[payload.entries[0],{...payload.entries[1],refund:p.price+1}]};
+  assert.equal((await call('release-batch',invalid)).status,400);
+  assert.equal((await call('release-batch',payload,'token2')).status,403);
+  assert.equal((await call('release-batch',{...payload,batchId:'stale'})).status,409);
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM fanta.roster_entries WHERE source_id='legacy-keeper'")).rows[0].n,1);
+  const confirmed=await call('release-batch',payload);
+  assert.equal(confirmed.status,200);
+  assert.equal(confirmed.data.version,started.data.version+1);
+  assert.equal(confirmed.data.teams.find(t=>t.team.id==='t1').roles.P.have,first.roles.P.have-1);
+  assert.equal(confirmed.data.teams.find(t=>t.team.id==='t1').credits,first.credits+5);
+  assert.equal(confirmed.data.teams.find(t=>t.team.id==='t2').credits,second.credits+1);
+  assert.equal(confirmed.data.teams.find(t=>t.team.id==='t2').roles[p.role].have,second.roles[p.role].have-1);
+  assert.equal((await call('release-batch',payload)).data.version,confirmed.data.version);
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM fanta.roster_changes WHERE kind='release-batch'")).rows[0].n,1);
+  assert.equal((await f.db.query("SELECT count(*)::int n FROM fanta.roster_entries WHERE source_id='legacy-keeper'")).rows[0].n,0);
+  const undo=await call('release-undo',{playerId:'legacy-keeper'});
+  assert.equal(undo.status,200);
+  assert.equal(undo.data.teams.find(t=>t.team.id==='t1').credits,first.credits);
+  assert.deepEqual((await f.db.query("SELECT * FROM fanta.roster_entries WHERE source_id='legacy-keeper'")).rows[0],imported);
+  const spectator=await api(new Request('https://example.test/fanta-api/auction?league=fanta-lucas-a',{headers:{cookie:'sid=token2'}}));
+  assert.ok((await spectator.json()).teams.every(t=>!Object.hasOwn(t,'releaseRoster')));
+ }finally{await f.close();}
+});
