@@ -2,8 +2,8 @@ import {barStorageRoot} from '../lib/storage-mode.mjs';
 import {saveLineup} from './lineup-save.mjs';
 import {activateCompletedLeague} from './competition-activation.mjs';
 import {readyRosters} from './competitions.mjs';
-import {persistRosterBatch,persistRosterChanges} from './roster-persistence.mjs';
-import {applyRosterBatch,rosterEditorView} from './roster-editor.mjs';
+import {applyRosterRows,persistRosterBatch,persistRosterChanges} from './roster-persistence.mjs';
+import {applyRosterBatch,inverseRosterOrder,rosterEditorView} from './roster-editor.mjs';
 import {readTradeStatus} from './trades.mjs';
 import {connection} from '../lib/db.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
@@ -73,9 +73,24 @@ async function rosterReceipt(c,id,uid,input){
  if(receipt&&!receipt.same)fail('Identificativo di salvataggio già usato',409);
  return receipt;
 }
-async function finishRoster(c,state,now){
- const activation=await activateCompletedLeague(c,state,{now});
- if(activation.status==='active')state.auction.competitionActivation=activation;
+async function requireRosterAdmin(c,id,uid,lock=false){
+ if(!(await c.query(`SELECT l.id FROM fanta.leagues l WHERE ${rosterAdmin}${lock?' FOR UPDATE':''}`,[id,uid])).rows.length)fail('Serve il presidente di lega',403);
+}
+async function writeRoster(c,id,uid,fn){
+ await c.query('BEGIN');
+ try{
+  // The same league lock serializes corrections, auctions and trades.
+  await requireRosterAdmin(c,id,uid,true);
+  const result=await fn();
+  await c.query('COMMIT');
+  return result;
+ }catch(error){await c.query('ROLLBACK');throw error;}
+}
+async function finishRoster(c,state,now,{activate=true}={}){
+ if(activate){
+  const activation=await activateCompletedLeague(c,state,{now});
+  if(activation.status==='active')state.auction.competitionActivation=activation;
+ }
  await c.query('UPDATE fanta.auctions SET version=$2,data=$3 WHERE league_id=$1',[state.league.id,state.auction.version,JSON.stringify(state.auction)]);
  if(process.env.SELFHOST_RUNTIME==='true')await c.query("SELECT pg_notify('quasi_auction',$1)",[JSON.stringify({league:state.league.id,version:state.auction.version})]);
 }
@@ -118,11 +133,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
    if(!await rosterReceipt(c,id,uid,input))applyRosterBatch(state,input.changes,{validateLimits:false});
    return {ok:true};
   }),
-  saveRosterBatch:(uid,id,input,now)=>use(async c=>{
-   await c.query('BEGIN');
-   try{
-    // The same league lock serializes corrections, auctions and trades.
-    if(!(await c.query(`SELECT l.id FROM fanta.leagues l WHERE ${rosterAdmin} FOR UPDATE`,[id,uid])).rows.length)fail('Serve il presidente di lega',403);
+  saveRosterBatch:(uid,id,input,now)=>use(c=>writeRoster(c,id,uid,async()=>{
     const receipt=await rosterReceipt(c,id,uid,input);
     const before=await readRosterEditor(c,id,uid,receipt?[]:rosterAdditions(input),!receipt);
     let after=before;
@@ -131,11 +142,37 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
      await persistRosterBatch(c,id,uid,input,result.audit,now);
      await finishRoster(c,after,now);
     }
-    const view=rosterEditorView(after);
-    await c.query('COMMIT');
-    return view;
-   }catch(error){await c.query('ROLLBACK');throw error;}
+    return rosterEditorView(after);
+  })),
+  rosterOrders:(uid,id,before)=>use(async c=>{
+   await requireRosterAdmin(c,id,uid);
+   const {rows}=await c.query(`SELECT a.id::text AS id,a.created_at AS "createdAt",a.data->'changes' AS changes
+    FROM fanta.roster_changes a WHERE a.league_id=$1 AND a.kind='batch' AND NOT (a.data ? 'reversedAt')
+    AND ($2::bigint IS NULL OR a.id<$2) ORDER BY a.id DESC LIMIT 21`,[id,before]);
+   const orders=rows.slice(0,20);
+   return {orders,next:rows.length>20?orders.at(-1).id:null};
   }),
+  undoRosterOrder:(uid,id,orderId,now)=>use(c=>writeRoster(c,id,uid,async()=>{
+   const {rows:[order]}=await c.query(`SELECT data,created_at FROM fanta.roster_changes
+    WHERE league_id=$1 AND id=$2 AND kind='batch'`,[id,orderId]);
+   if(!order)fail('Ordine di correzione non trovato',404);
+   if(order.data.reversedAt)return rosterEditorView(await readRosterEditor(c,id,uid));
+   const playerIds=order.data.changes.map(change=>(change.before||change.after).id);
+   const {rows:[conflict]}=await c.query(`SELECT (EXISTS(
+    SELECT 1 FROM fanta.roster_changes newer CROSS JOIN LATERAL jsonb_array_elements(newer.data->'changes') AS entries(change)
+    WHERE newer.league_id=$1 AND newer.id>$2 AND NOT (newer.data ? 'reversedAt')
+      AND COALESCE(change->>'id',change->'before'->>'id',change->'after'->>'id')=ANY($3::text[])
+    ) OR EXISTS(SELECT 1 FROM fanta.sales WHERE league_id=$1 AND created_at>$4 AND NOT undone AND player_id=ANY($3::text[]))) AS found`,[id,orderId,playerIds,order.created_at]);
+   if(conflict.found)fail('Una correzione o un acquisto successivo riguarda gli stessi calciatori. Annulla prima le correzioni successive coinvolte.',409);
+   const before=await readRosterEditor(c,id,uid,playerIds,true);
+   const {state,audit,restore}=inverseRosterOrder(before,order.data);
+   try{await applyRosterRows(c,id,audit,now,restore);}
+   catch(error){if(['23503','23505'].includes(error.code))fail('Alcune assegnazioni sono cambiate e la rosa precedente non è più ripristinabile.',409);throw error;}
+   await finishRoster(c,state,now,{activate:false});
+   await c.query(`UPDATE fanta.roster_changes SET data=data||jsonb_build_object('reversedAt',$3::text,'reversedBy',$4::text)
+    WHERE league_id=$1 AND id=$2`,[id,orderId,new Date(now).toISOString(),uid]);
+   return rosterEditorView(state);
+  })),
   async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,teamIdentity=false,calculation=false}={}){return use(async c=>{
    if(!write&&!auction&&!market){
     const load=async()=>(await c.query(READ_LEAGUE_SQL,[id,uid,number?Number(number):null,competition||null,catalog,detailedVotes])).rows[0];let l;

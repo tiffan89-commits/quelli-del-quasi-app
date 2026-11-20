@@ -30,6 +30,8 @@ export function createFantaApi({userId}={}) {
     tradeAction:(league,kind,input)=>write('trades/'+kind,{...input,league}),
     rosterEditor:league=>getJson('roster/editor?'+q({league})),rosterPlayers:league=>getJson('roster/players?'+q({league}),10000),
     checkRosterBatch:(league,input)=>postJson('roster/check',{league,...input}),
+    rosterOrders:(league,before)=>getJson('roster/orders?'+q({league,...(before?{before}:{})})),
+    undoRosterOrder:(league,order)=>write('roster/orders/undo',{league,order}),
     saveRosterBatch:(league,input)=>write('roster/batch',{league,...input}),rosterChange:(league,kind,data)=>write('roster/'+kind,{league,...data}),rosterAudit:league=>read('roster/audit?'+q({league})),
     auctionAssigned:(league,query='')=>read('auction/assigned?'+q({league,q:query})),auctionRelease:(league,playerId,refund)=>write('auction/release',{league,playerId,refund}),auctionReleaseUndo:(league,playerId)=>write('auction/release-undo',{league,playerId}),auctionReleasesDone:league=>write('auction/releases-done',{league}),
     invalidateReads,setCompetition:id=>{competition=id||null;},
