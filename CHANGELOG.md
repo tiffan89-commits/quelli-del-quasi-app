@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.43.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.2...v0.43.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* allinea la schedina Fanta al Bar e isola le notifiche DB ([5272661](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/52726612d7674bf26d066e07224ede7df0adaec9))
+
 ## [0.43.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.1...v0.43.2) (2026-11-20)
 
 
