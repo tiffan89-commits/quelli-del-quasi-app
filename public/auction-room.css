@@ -145,11 +145,12 @@ body.fanta-auction-page .fanta-main{
 .auction-participants dt{color:var(--muted);font-size:10px}
 .auction-participants dd{margin:0;font:700 16px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
 .auction-release-editor{display:grid;gap:12px;margin-bottom:14px}
+.fanta-lg-card.auction-release-roster{justify-items:stretch}
 .auction-release-roster label{display:block;margin-bottom:5px;font-weight:700}
 .auction-release-players{margin-top:10px}
-.auction-release-player{display:grid;grid-template-columns:24px 20px minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 6px;border:1px solid var(--line);border-radius:9px}
+.auction-release-player{display:grid;grid-template-columns:24px 26px minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 6px;border:1px solid var(--line);border-radius:9px}
 .auction-release-player .fanta-mini-shirt{width:24px;height:30px}
-.auction-release-player>button{min-height:38px;padding:4px 8px;font-size:12px;color:#ffb6ae}
+.auction-release-roster .auction-release-player>.secondary{min-height:42px;padding:4px 10px;font-size:12px;color:#ffb6ae}
 .auction-release-player.is-selected{border-color:#e98982;background:#d8615719}
 .auction-release-summary h2{margin:0}
 .auction-release-summary>p{margin:3px 0 7px}
@@ -160,7 +161,7 @@ body.fanta-auction-page .fanta-main{
 .auction-release-counts>span{display:flex;align-items:center;gap:2px}
 .auction-release-counts .fanta-role{width:15px;height:15px;font-size:10px}
 .auction-release-pending{margin-top:6px}
-.auction-release-pending>li{display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 0;border-top:1px solid var(--line)}
+.auction-release-pending>li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 0;border-top:1px solid var(--line)}
 .auction-release-pending label{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
 .auction-release-pending input{width:3rem;min-height:34px;padding:3px 5px;text-align:center}
 .auction-release-confirm{display:grid;justify-items:center;gap:5px}
