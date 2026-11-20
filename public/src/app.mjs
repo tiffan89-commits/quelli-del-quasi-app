@@ -1329,9 +1329,6 @@ function bindDashboard() {
     if(slip)openDashboardSlip(slip.dataset.dashboardSlip);
   };
   const changeSource=()=>{persistDraft();sourceScope='seriea';selectedRoundId=null;competitionScope=null;};
-  document.querySelectorAll('[data-dashboard-rank]').forEach(b=>b.onclick=()=>{
-    changeSource(); tab=b.dataset.dashboardRank; rankingScope='league'; page='classifiche';writeAppRoute({mode:'bar',page:'classifica',league:L()?.id}); hydrateDraft(); render(); window.scrollTo(0,0);
-  });
   function openDashboardSlip(id){
     const round=L()?.rounds.find(x=>x.id===id);if(round?.source==='fantacalcio'){openNativeSlips();return;}
     changeSource();

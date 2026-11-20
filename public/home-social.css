@@ -58,13 +58,13 @@ html.os-on body[data-game-mode] .os-dots .os-dot.is-on::before { width:10px; }
   display:block; width:22px; height:22px;
   fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
 }
-.lega-hub.president-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.lega-hub.president-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:max-content; align-content:start; }
 .president-tiles .lega-tile:has(.lega-tile-next) {
-  display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto 1fr;
+  display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto;
   align-items:start; align-content:start; gap:5px 8px; min-width:0; padding:11px 12px;
   white-space:normal; overflow-wrap:anywhere;
 }
-.president-tiles .lega-tile :is(b,small) { grid-column:1/-1; min-width:0; white-space:normal; }
+.president-tiles .lega-tile>b { grid-column:1/-1; min-width:0; white-space:normal; }
 .lega-hub.president-tiles .lega-tile-next {
   position:static; transform:none!important; grid-column:2; grid-row:1; align-self:center;
 }
@@ -251,7 +251,7 @@ html.os-on body #app>main.os-split .president-reminder-scroll { overflow-y:auto;
 .classification-tabs button { flex:1; min-height:44px; border:0; border-radius:999px; background:transparent; color:var(--white); }
 .classification-tabs button[aria-pressed=true] { background:var(--mode-accent); color:var(--mode-ink); }
 body[data-game-mode="fanta"] .fanta-hero-balances { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; padding-inline-end:24%; }
-.fanta-hero-balances span,.bar-home-balances button { border-radius:999px; background:var(--bg); color:var(--white); padding:3px 8px; border:0; font-size:11px; }
+.fanta-hero-balances span { border-radius:999px; background:var(--bg); color:var(--white); padding:3px 8px; border:0; font-size:11px; }
 .fanta-hero-balances b { color:var(--mode-accent); }
 
 .social-league-sheet,.bar-story-dialog {
@@ -303,6 +303,7 @@ body[data-game-mode]:has(.bar-home-social,.fanta-home) #pwa-install-card { displ
   border:0; background:none; color:var(--white); --story-accent:var(--mode-accent);
 }
 .bar-story-trigger.story-rewards { --story-accent:#ffab91; }
+.bar-story-trigger.story-winner { --story-accent:#ffcf83; }
 .bar-story-trigger.story-crossings { --story-accent:#78e0ba; }
 .bar-story-ring {
   display:grid; place-items:center; width:clamp(66px,17.7vw,78px); aspect-ratio:1; border-radius:50%; padding:3px;
@@ -325,7 +326,6 @@ body[data-game-mode]:has(.bar-home-social,.fanta-home) #pwa-install-card { displ
 .bar-home-hero h2 { color:var(--mode-accent); margin:0 0 5px; font:700 10px/1.3 'DM Sans',sans-serif; letter-spacing:.16em; text-transform:uppercase; }
 .bar-home-hero p { margin:0 0 10px; font:700 clamp(24px,6.6vw,35px)/1.02 'Barlow Condensed',sans-serif; text-wrap:pretty; }
 .bar-home-balances { display:flex; flex-wrap:wrap; gap:5px; margin-top:auto; }
-.bar-home-balances button { min-height:44px; padding:4px 9px; font-size:12px; white-space:nowrap; }
 .bar-home-mascot {
   position:absolute; inset:auto 1px -7px auto; width:40%; height:calc(100% + 3px);
   padding:0; border:0; background:none; color:var(--white); overflow:visible;
@@ -359,7 +359,7 @@ body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); colo
 }
 .bar-story-dialog[data-story-kind="rewards"],.bar-story-dialog[data-story-kind="market"] { --story-accent:#ffab91; }
 .bar-story-dialog[data-story-kind="crossings"] { --story-accent:#78e0ba; }
-.bar-story-dialog[data-story-kind="top"] { --story-accent:#ffcf83; }
+.bar-story-dialog:is([data-story-kind="top"],[data-story-kind="winner"]) { --story-accent:#ffcf83; }
 .bar-story-dialog[data-story-kind="opponent"] { --story-accent:#8bd3ff; }
 .bar-story-frame {
   display:flex; flex-direction:column; width:min(100%,680px); height:100%; margin:auto;
@@ -389,6 +389,12 @@ body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); colo
 }
 .bar-story-copy h2 { font:700 clamp(32px,8vw,52px)/1 'Barlow Condensed',sans-serif; margin:0 0 14px; overflow-wrap:anywhere; }
 .bar-story-copy h3 { color:var(--story-accent); text-align:start; margin:10px 0 4px; }
+.bar-story-dialog[data-story-kind="winner"] .bar-story-copy { padding:clamp(8px,2vw,16px); }
+.bar-story-copy .verdict-postcard h2 { font-size:clamp(20px,5vw,27px); margin:3px 0; }
+.bar-story-copy .postcard-winner h3 { text-align:center; font-size:clamp(25px,6vw,36px); overflow-wrap:anywhere; }
+.bar-story-copy .postcard-quasi { width:min(100%,140px); }
+.bar-story-copy .postcard-totals { padding-block:8px; font-size:12px; }
+.bar-story-copy .verdict-postcard+.verdict-postcard { margin-top:12px; }
 .bar-story-copy > button { margin-top:8px; max-width:100%; }
 .bar-story-copy .home-story-score { display:grid; gap:4px; align-items:center; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); font-size:13px; overflow-wrap:anywhere; }
 .bar-story-copy .home-story-score b { color:var(--story-accent); white-space:nowrap; }

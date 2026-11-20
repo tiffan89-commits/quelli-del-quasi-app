@@ -1,6 +1,8 @@
 import {predictionStatus} from '../prediction.mjs';
 import {rewardById,rewardMark} from './reward-catalog.mjs';
 import {renderHomeStories} from './home-stories.mjs';
+import {createVerdictCard,recapForRound} from './community.mjs';
+import {sourceOf} from './slip-state.mjs';
 
 const score=(value,fmt)=>(value>0?'+':'')+fmt(value);
 const points=value=>Math.round(value*100);
@@ -33,6 +35,14 @@ export function matchSegments(round){
 
 export function renderBarStories({league,user,round,history,fmt,esc}){
  const stories=[];
+ const community=league.community?.seriea;
+ const verdictRound=(league.rounds||[]).filter(r=>sourceOf(r)==='seriea'&&r.settled)
+  .sort((a,b)=>Date.parse(b.kickoff)-Date.parse(a.kickoff)||b.number-a.number)[0];
+ const winners=verdictRound?.settled?recapForRound(community,verdictRound)?.winners:[];
+ if(winners?.length){
+  stories.push({id:'winner',label:'Verdetto',title:winners.length===1?'Vincitore di giornata':'Vincitori di giornata',version:verdictRound.id,
+   body:winners.map(uid=>createVerdictCard(league,'seriea',null,uid,verdictRound.id,{embedded:true})).join('')});
+ }
  if(round){
   const tally=history?.played?history.correct+'/'+history.total+' prese':'';
   const change=history?.positionChange;

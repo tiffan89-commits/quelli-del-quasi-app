@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
 import {dashboardModel,countdownLabel,leagueDashboard} from '../public/src/league-dashboard.mjs';
+import {playerRanking} from '../public/src/bar-fanta-rankings.mjs';
+import {mergeLiveSnapshot} from '../public/src/live-channel.mjs';
 import {normalizeAvatar,avatarSvg,DEFAULT_AVATAR} from '../public/src/avatar.mjs';
 import {emptyState} from '../lib/db.mjs';
 import {session,stateFor} from '../lib/game.mjs';
@@ -34,6 +36,39 @@ test('Bar home shows saved results in the story, ten segments and the play actio
  assert.ok(document.querySelector('.story-rewards'));
  assert.match(document.querySelector('.bar-home-cta').textContent,/Schedina · Giornata 12/);
  next.slip={picks:{f:'1'}};document=render();assert.match(document.querySelector('.bar-home-cta').textContent,/Rivedi schedina · Giornata 12/);
+});
+
+test('a newly settled Bar round shows the same winning postcards to members who did not play',()=>{
+ const members=[{uid:'a',name:'Anna',points:5,credits:500},{uid:'b',name:'Bruno',points:5,credits:500},{uid:'c',name:'Carla',points:0,credits:480}];
+ const old={id:'old',title:'Giornata 9',number:9,settled:true,kickoff:'2026-10-15T15:00Z',matches:[{id:'old-m',home:'Casa',away:'Ospiti',status:'FT',score:[1,0]}]};
+ const current={...old,id:'new',title:'Giornata 10',number:10,settled:false,kickoff:'2026-10-22T15:00Z',matches:[{...old.matches[0],id:'m'}]};
+ const league={id:'l',name:'Bar',members,rounds:[old,current],community:{seriea:{recap:{round:'old',winners:['c'],points:3},history:[]}}};
+ const render=uid=>parseHTML(leagueDashboard(league,{id:uid,name:uid},'seriea',false,String,String,null,now)).document.querySelector('template[data-story-kind=winner]');
+ assert.match(render('a').innerHTML,/Giornata 9/);
+ mergeLiveSnapshot({leagues:[league]},{league:'l',rounds:[{id:'new',closed:true,settled:true,matches:[],publicSlips:members.slice(0,2).map(m=>({uid:m.uid,points:5,pointsSettled:true,stake:10,prize:20,picks:{m:'1'}}))}]});
+ const story=render('c');
+ assert.equal(story.innerHTML,render('a').innerHTML);
+ assert.match(story.innerHTML,/Vincitori di giornata/);
+ assert.match(story.innerHTML,/1\/1 prese/);
+ assert.deepEqual([...story.content.querySelectorAll('.postcard-winner h3')].map(el=>el.textContent),['Anna','Bruno']);
+ assert.equal(story.content.querySelector('[data-verdict-player]'),null);
+ current.publicSlips[1].points=3;
+ assert.match(render('c').innerHTML,/Vincitore di giornata/);
+ assert.doesNotMatch(render('c').innerHTML,/Bruno|Carla|Giornata 9/);
+});
+
+test('Bar point and credit rankings use static rows and balances while keeping the metric selector',()=>{
+ const league={id:'l',name:'Bar',members:[{uid:'a',name:'Anna',points:2,credits:500},{uid:'b',name:'Bruno',points:5,credits:400,committedCredits:20}]};
+ const home=parseHTML(leagueDashboard(league,{id:'a',name:'Anna'},'seriea',false,String,String,null,now)).document;
+ assert.equal(home.querySelectorAll('.bar-home-balances > span').length,2);
+ assert.equal(home.querySelector('.bar-home-balances button'),null);
+ for(const metric of ['points','credits']){
+  const doc=parseHTML(playerRanking(league,'seriea',metric,{id:'a'},String,String)).document;
+  const rows=[...doc.querySelectorAll('.rankrow')];
+  assert.deepEqual(rows.map(row=>row.dataset.rankingUser),metric==='points'?['b','a']:['a','b']);
+  assert.ok(rows.every(row=>row.localName==='div'&&!row.querySelector('button,a,summary,[tabindex]')));
+  assert.equal(doc.querySelector('[data-ranking-metric="'+metric+'"]').getAttribute('aria-pressed'),'true');
+ }
 });
 
 test('avatar is a small validated configuration: arbitrary markup, URLs and fields cannot enter its SVG',()=>{
