@@ -67,6 +67,9 @@ test('native app opens dedicated slips, keeps slip picks away from lineup handle
  const {mountFanta}=await import('../public/src/fanta/app.mjs'),{createDemoFantaApi}=await import('../public/src/fanta/demo-api.mjs');
  const f=fixture(),document=f.root.ownerDocument,window=document.defaultView,demo=createDemoFantaApi({delay:0}),leagues=await demo.leagues(),h=await demo.home(leagues[0].id);
  h.round.state='in-corso';h.league={...h.league,id:'a'};h.competition={id:'camp',name:'Campionato'};h.competitions=[h.competition];
+ const selectPrototype=Object.getPrototypeOf(document.createElement('select'));
+ const selectedOptions=Object.getOwnPropertyDescriptor(selectPrototype,'selectedOptions');
+ Object.defineProperty(selectPrototype,'selectedOptions',{configurable:true,get(){return this.querySelectorAll('option[selected]');}});
  const keys=['document','window','navigator','localStorage','scrollTo','setInterval','clearInterval'],saved=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));let app;const timers=[];
  Object.defineProperties(globalThis,{document:{value:document,configurable:true},window:{value:window,configurable:true},navigator:{value:{onLine:true},configurable:true},localStorage:{value:f.storage,configurable:true},scrollTo:{value:()=>{},configurable:true},setInterval:{value:fn=>{timers.push(fn);return timers.length;},configurable:true},clearInterval:{value:()=>{},configurable:true}});
  const click=el=>el.dispatchEvent(new window.Event('click',{bubbles:true}));
@@ -84,7 +87,7 @@ test('native app opens dedicated slips, keeps slip picks away from lineup handle
   assert.ok(studio.querySelector('.pitch-slides'));
   click(studio.querySelector('[data-action="close-live-studio"]'));
   assert.equal(f.root.querySelector('.fanta-live-studio'),null);assert.ok(f.root.querySelector('.bar-home-cta'));
- }finally{app?.destroy();for(const [k,v]of saved){if(v)Object.defineProperty(globalThis,k,v);else delete globalThis[k];}}
+ }finally{app?.destroy();if(selectedOptions)Object.defineProperty(selectPrototype,'selectedOptions',selectedOptions);else delete selectPrototype.selectedOptions;for(const [k,v]of saved){if(v)Object.defineProperty(globalThis,k,v);else delete globalThis[k];}}
 });
 test('the existing local clock locks a native slip at kickoff without a request',()=>{
  const f=fixture();f.root.querySelector('[data-pick][data-value="1"]').onclick();assert.equal(f.root.querySelector('#save-slip').disabled,false);

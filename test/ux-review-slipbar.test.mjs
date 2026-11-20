@@ -40,10 +40,44 @@ test('choices and extra markets preserve the same shirt elements, headers, input
  assert.equal(patchSlipV2(root,{...options,round:{...round,id:'different-round'}}),false);assert.deepEqual([...root.querySelectorAll('.club-kit svg')],shirts);
 });
 
-test('Fanta picking, expanding markets and changing stake do not redraw the app or recreate team images',()=>{
+test('Fanta shares the Bar ticket with full team names and updates choices without replacing the list or crests',()=>{
  const {document}=parseHTML('<html><body><main></main></body></html>'),root=document.querySelector('main'),services=demoSlipServices(),context={leagueId:'lega-quasi',competitionId:'demo-main'},storage={getItem:()=>null,setItem(){},removeItem(){}};let draws=0;
+ const rounds=services.snapshot().leagues[0].rounds;
+ const match=rounds[0].matches[0],fullName='Football Club Quelli del Quasi United';
+ match.home=fullName;
+ const dialogPrototype=Object.getPrototypeOf(document.createElement('dialog'));
+ const previous={showModal:dialogPrototype.showModal,close:dialogPrototype.close};
+ dialogPrototype.showModal=function(){this.open=true;};dialogPrototype.close=function(){this.open=false;};
  const slips=createFantaSlips({services,storage,teamResolver:name=>({name,branding:{type:'image',imageUrl:'/fanta-api/team/logo/image?id='+encodeURIComponent(name)}}),redraw:()=>{draws++;root.innerHTML=slips.render(context);slips.bind(root,context);}});
- root.innerHTML=slips.render(context);slips.bind(root,context);const images=[...root.querySelectorAll('.v2-match-head img')],input=root.querySelector('#stake');assert.ok(images.length>0);
- const first=root.querySelector('[data-pick]');first.onclick();root.querySelector('[data-v2-more]').onclick();root.querySelector('[data-ticket-stake="25"]').click();
- assert.equal(draws,0);assert.deepEqual([...root.querySelectorAll('.v2-match-head img')],images);assert.equal(root.querySelector('#stake'),input);assert.match(root.querySelector('[data-v2-stake-current]').textContent,/25/);assert.equal(services.snapshot().leagues[0].members[0].fantasyWallets['lega-quasi'].credits,500);
+ try{
+  root.innerHTML=slips.render(context);slips.bind(root,context);
+  const ticket=root.querySelector('.bar-ticket[data-slip-source=fantacalcio]'),list=ticket.querySelector('.ticket-matches');
+  const images=[...list.querySelectorAll('.v2-match-head img')],input=ticket.querySelector('#stake');
+  assert.ok(images.length>0);assert.ok(list.querySelector('[data-slip-event-at]'));
+  assert.ok([...list.querySelectorAll('.slip-team-name')].some(el=>el.textContent===fullName));
+  assert.equal(list.querySelector('.slip-team-code,[data-os-slip]'),null);
+  const first=list.querySelector('[data-pick]');first.onclick();
+  list.querySelector('[data-v2-more]').onclick();
+  const dialog=ticket.querySelector('.ticket-markets');assert.equal(dialog.open,true);
+  dialog.querySelector('[data-value="1X"]').onclick();
+  assert.equal(dialog.querySelector('[data-value="1X"]').getAttribute('aria-pressed'),'true');
+  dialog.querySelector('[data-ticket-dismiss]').onclick();
+  assert.equal(ticket.querySelector('.ticket-markets'),null);
+  ticket.querySelector('[data-ticket-stake="25"]').click();
+  assert.equal(draws,0);assert.equal(ticket.querySelector('.ticket-matches'),list);
+  assert.deepEqual([...list.querySelectorAll('.v2-match-head img')],images);
+  assert.equal(ticket.querySelector('#stake'),input);
+  assert.match(ticket.querySelector('[data-ticket-count]').textContent,/1 di/);
+  assert.match(ticket.querySelector('[data-v2-stake-current]').textContent,/25/);
+  assert.equal(services.snapshot().leagues[0].members[0].fantasyWallets['lega-quasi'].credits,500);
+ }finally{for(const name of Object.keys(previous)){if(previous[name])dialogPrototype[name]=previous[name];else delete dialogPrototype[name];}}
+});
+
+test('the Fanta ticket leaves points-only rounds playable with point offers and skips credit controls',()=>{
+ const round=make({source:'fantacalcio',pointsOnly:true});
+ const {document}=parseHTML(renderSlipV2({round,barTicket:true,esc:String,fmt:String,date:String}));
+ const ticket=document.querySelector('.bar-ticket');
+ assert.ok(ticket.querySelector('[data-pick] .v2-odd-points .points-gain'));
+ assert.equal(ticket.querySelector('[data-v2-more],.ticket-stake,.ticket-balance'),null);
+ assert.ok(ticket.querySelector('#save-slip'));
 });

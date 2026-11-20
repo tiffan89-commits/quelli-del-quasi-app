@@ -545,6 +545,8 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     closeStyledSelect();
     const active = document.activeElement, focusId = root.contains(active) && active.id, sel = focusId && active.selectionStart;
     const paneScroll=[...root.querySelectorAll('.auction-pane')].map(el=>el.scrollTop);
+    const slipList=root.querySelector('.fanta-native-slips .ticket-matches');
+    const slipRound=slipList?.closest('[data-slip-round]')?.dataset.slipRound,slipScroll=slipList?.scrollTop;
     const wizardScroll=root.querySelector('.auction-wizard-fields')?.scrollTop;
     const oldStudio=root.querySelector('.fanta-live-studio'),railLeft=oldStudio?.querySelector('.fanta-mu-rail')?.scrollLeft??null;
     oldStudio?._pitchCleanup?.();
@@ -611,6 +613,10 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(ui.tab==='impostazioni')slipServices?.account?.bind?.(()=>render(),barLeagues.find(b=>b.nativeFantaLink?.leagueId===league()?.id));
     renderSheet();
     bindStyledSelects(root);
+    if(ui.tab==='schedine'&&slipScroll){
+      const ticket=root.querySelector('.fanta-native-slips .bar-ticket');
+      if(ticket?.dataset.slipRound===slipRound)ticket.querySelector('.ticket-matches').scrollTop=slipScroll;
+    }
     rosterEditor.sync();
     if (ui.tab === 'asta') {tickAuction(root, auctionStream?.offset()??ui.asta.offset,auctionSound.alert);showAuctionConnection();}
   }
@@ -962,10 +968,11 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
         slipServices.applyLive(data);
         const context=slipContext();
         slips.tick(context);
-        const track=root.querySelector('.fanta-native-slips [data-os-content]');
+        const selector='.fanta-native-slips :is(.ticket-matches,[data-os-content])';
+        const track=root.querySelector(selector);
         if(!track)return;
         const template=document.createElement('template');template.innerHTML=page();
-        const fresh=template.content.querySelector('[data-os-content]');
+        const fresh=template.content.querySelector(selector);
         if(!fresh)return;
         fresh.className=track.className;
         patchRegion(track,fresh.outerHTML);

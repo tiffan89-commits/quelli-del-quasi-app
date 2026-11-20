@@ -1,7 +1,7 @@
 import {barMembershipRoot} from '../lib/storage-mode.mjs';
 import {computerActionAt,computerDecision} from '../fanta/auction-computer.mjs';
 import {Server} from 'socket.io';
-import {connection} from '../lib/db.mjs';
+import {notificationConnection} from '../lib/db.mjs';
 import {sqlFantaStore} from '../fanta/store.mjs';
 import {auctionView,auctionAction,auctionTickDue,auctionTickNeedsCatalog,lotDeadline} from '../fanta/auction.mjs';
 import {queueAuctionOpened} from '../fanta/notifications.mjs';
@@ -21,7 +21,7 @@ export function socketAuctionView(state,uid,stamp){
 }
 
 // PostgreSQL NOTIFY is delivered only after COMMIT, including across processes.
-export async function listenAuctionChanges(change,{connect=connection,onUnavailable=()=>{},onReady=()=>{}}={}){
+export async function listenAuctionChanges(change,{connect=notificationConnection,onUnavailable=()=>{},onReady=()=>{}}={}){
  let client=null,closed=false,retry=null;
  async function open(){
   let c;try{
