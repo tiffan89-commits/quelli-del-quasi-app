@@ -2,7 +2,8 @@ import {barStorageRoot} from '../lib/storage-mode.mjs';
 import {saveLineup} from './lineup-save.mjs';
 import {activateCompletedLeague} from './competition-activation.mjs';
 import {readyRosters} from './competitions.mjs';
-import {persistRosterChanges} from './roster-persistence.mjs';
+import {persistRosterBatch,persistRosterChanges} from './roster-persistence.mjs';
+import {applyRosterBatch,rosterEditorView} from './roster-editor.mjs';
 import {readTradeStatus} from './trades.mjs';
 import {connection} from '../lib/db.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
@@ -45,6 +46,39 @@ function readState(l){
  return {voteModel:l.vote_model_key,teamNameDeadline:iso(l.team_name_deadline),league:{id:l.id,name:l.name,season:l.season,kind:l.kind,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,branding:l.rules?.leagueIdentity,maxMembers:l.max_members,inviteCode:l.invite_code},competition:l.competition,competitions:l.competitions,rules:{...DEFAULT_RULES,...l.rules,benchMax:null},teams,players:l.players,auction:{status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null,...l.auction},rounds:l.rounds,matchups:l.matchups,results:l.results,references:l.references,lineups:l.lineups,fixtures:l.fixtures,votes:l.votes,importReview:l.review};
 }
 function applyEntries(teams,byId,entries){for(const t of teams){const own=entries.filter(e=>e.team_id===t.id);if(!own.length)continue;const extra=t.roster.filter(p=>!own.some(e=>e.player_id===p.id));t.roster=[...own.map(e=>({...byId.get(e.player_id),id:e.player_id||e.source_id,name:e.name,role:e.role,club:byId.get(e.player_id)?.club||e.data.club||'',price:e.price,unmapped:!e.player_id})),...extra];}}
+
+const rosterAdmin=`l.id=$1 AND l.admin_uid=$2 AND l.rules->>'disabledAt' IS NULL
+ AND EXISTS(SELECT 1 FROM fanta.teams WHERE league_id=l.id AND user_id=$2)`;
+const assignedPlayer=`SELECT player_id FROM fanta.rosters WHERE league_id=$1
+ UNION SELECT player_id FROM fanta.roster_entries WHERE league_id=$1 AND player_id IS NOT NULL`;
+const ROSTER_EDITOR_SQL=`SELECT l.id,l.kind,l.season,l.max_members,l.rules,
+ (SELECT coalesce(jsonb_agg(t ORDER BY t.name,t.id),'[]') FROM fanta.teams t WHERE t.league_id=l.id) AS teams,
+ (SELECT coalesce(jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'role',p.role,'club',c.name,
+  'active',p.data->'active',
+  'jersey',COALESCE(p.data->>'jersey',p.data->>'number',p.data#>>'{seasonStats,games,number}'))),'[]')
+  FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id WHERE p.id=ANY($3::text[]) OR p.id IN (${assignedPlayer})) AS players,
+ (SELECT coalesce(jsonb_agg(r),'[]') FROM fanta.rosters r WHERE r.league_id=l.id) AS rosters,
+ (SELECT coalesce(jsonb_agg(e),'[]') FROM fanta.roster_entries e WHERE e.league_id=l.id) AS entries,
+ (SELECT CASE WHEN $4::boolean THEN a.data ELSE jsonb_build_object('status',a.data->'status') END FROM fanta.auctions a WHERE a.league_id=l.id) AS auction
+ FROM fanta.leagues l WHERE ${rosterAdmin}`;
+async function readRosterEditor(c,id,uid,playerIds=[],write=false){
+ const {rows:[row]}=await c.query(ROSTER_EDITOR_SQL,[id,uid,playerIds,write]);
+ if(!row)fail('Serve il presidente di lega',403);
+ return readState(row);
+}
+const rosterAdditions=input=>input.changes.filter(change=>change.kind==='add').map(change=>change.playerId);
+async function rosterReceipt(c,id,uid,input){
+ const {rows:[receipt]}=await c.query(`SELECT data->'input'=$4::jsonb AS same FROM fanta.roster_changes
+  WHERE league_id=$1 AND actor=$2 AND kind='batch' AND data->'input'->>'requestId'=$3 LIMIT 1`,[id,uid,input.requestId,JSON.stringify(input)]);
+ if(receipt&&!receipt.same)fail('Identificativo di salvataggio già usato',409);
+ return receipt;
+}
+async function finishRoster(c,state,now){
+ const activation=await activateCompletedLeague(c,state,{now});
+ if(activation.status==='active')state.auction.competitionActivation=activation;
+ await c.query('UPDATE fanta.auctions SET version=$2,data=$3 WHERE league_id=$1',[state.league.id,state.auction.version,JSON.stringify(state.auction)]);
+ if(process.env.SELFHOST_RUNTIME==='true')await c.query("SELECT pg_notify('quasi_auction',$1)",[JSON.stringify({league:state.league.id,version:state.auction.version})]);
+}
 export const AUTH_SQL=`SELECT u->>'id' AS id,u->>'username' AS username,u->>'name' AS name,(u->>'emailVerified')::boolean AS verified,(u->>'demo')::boolean AS demo,(u->>'adminOnly')::boolean AS admin_only FROM ${barStorageRoot()} s CROSS JOIN LATERAL jsonb_array_elements(s.payload->'sessions') a JOIN LATERAL jsonb_array_elements(s.payload->'users') u ON u->>'id'=a->>'uid' WHERE a->>'token'=$1 AND (a->>'expires')::numeric>$2 LIMIT 1`;
 export function sqlFantaStore({connect=connection,readCache=connect===connection?databaseReadCache():null}={}){
  const use=async fn=>{const c=await connect();try{return await fn(c);}finally{c.release();}};
@@ -69,6 +103,39 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
   }),
   settings:(uid,next)=>use(async c=>{if(next)await c.query('INSERT INTO fanta.notification_settings VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET data=EXCLUDED.data',[uid,JSON.stringify(next)]);return (await c.query('SELECT data FROM fanta.notification_settings WHERE user_id=$1',[uid])).rows[0]?.data||{notify:{lineupReminder:true,roundStart:true,liveEvents:true,results:true,auction:true}};}),
   tradeStatus:(id,uid,now)=>use(c=>readTradeStatus(c,id,uid,now)),
+  rosterEditor:(uid,id)=>use(async c=>rosterEditorView(await readRosterEditor(c,id,uid))),
+  rosterPlayers:(uid,id)=>use(async c=>{
+   const {rows:[row]}=await c.query(`SELECT (SELECT coalesce(jsonb_agg(jsonb_build_object(
+    'id',p.id,'name',p.name,'role',p.role,'club',c.name,'value',p.data->'value')),'[]')
+    FROM fanta.players p LEFT JOIN fanta.clubs c ON c.id=p.club_id
+    WHERE COALESCE(p.data->'active','true'::jsonb)<>'false'::jsonb AND p.id NOT IN (${assignedPlayer})) AS players
+    FROM fanta.leagues l WHERE ${rosterAdmin}`,[id,uid]);
+   if(!row)fail('Serve il presidente di lega',403);
+   return row.players;
+  }),
+  checkRosterBatch:(uid,id,input)=>use(async c=>{
+   const state=await readRosterEditor(c,id,uid,rosterAdditions(input));
+   if(!await rosterReceipt(c,id,uid,input))applyRosterBatch(state,input.changes,{validateLimits:false});
+   return {ok:true};
+  }),
+  saveRosterBatch:(uid,id,input,now)=>use(async c=>{
+   await c.query('BEGIN');
+   try{
+    // The same league lock serializes corrections, auctions and trades.
+    if(!(await c.query(`SELECT l.id FROM fanta.leagues l WHERE ${rosterAdmin} FOR UPDATE`,[id,uid])).rows.length)fail('Serve il presidente di lega',403);
+    const receipt=await rosterReceipt(c,id,uid,input);
+    const before=await readRosterEditor(c,id,uid,receipt?[]:rosterAdditions(input),!receipt);
+    let after=before;
+    if(!receipt){
+     const result=applyRosterBatch(before,input.changes);after=result.state;
+     await persistRosterBatch(c,id,uid,input,result.audit,now);
+     await finishRoster(c,after,now);
+    }
+    const view=rosterEditorView(after);
+    await c.query('COMMIT');
+    return view;
+   }catch(error){await c.query('ROLLBACK');throw error;}
+  }),
   async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,teamIdentity=false,calculation=false}={}){return use(async c=>{
    if(!write&&!auction&&!market){
     const load=async()=>(await c.query(READ_LEAGUE_SQL,[id,uid,number?Number(number):null,competition||null,catalog,detailedVotes])).rows[0];let l;

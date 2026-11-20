@@ -33,7 +33,8 @@ export async function enterFanta(root,{user,onBar,barLeagues=[],leagueId=null,fo
   if(mine!==operation)return;
   const demo=access==='demo',demoSession=demo?(await import('./demo-session.mjs')).getDemoSession():null;if(demoSession)await demoSession.ready;try{localStorage.setItem('qdq:mode','fanta');}catch{}
   const demoServices=demoSession?.slips||null;if(demoSession)barLeagues=demoSession.bar.state.leagues;
- writeAppRoute({mode:'fanta',page:readAppRoute()?.mode==='fanta'?readAppRoute().page:initialTab,section:readAppRoute()?.mode==='fanta'?readAppRoute().section:initialSection,round:readAppRoute()?.round,competition:readAppRoute()?.competition,league:leagueId||readAppRoute()?.league});
+ const activeRoute=readAppRoute();
+ writeAppRoute({...(activeRoute?.mode==='fanta'?activeRoute:{page:initialTab,section:initialSection}),mode:'fanta',league:leagueId||activeRoute?.league});
  instance=mountFanta(root,{api:demo?demoSession.fanta:real,bootstrap,barLeagues,slipServices:demoServices?{...demoServices,account:slipServices?.account}:slipServices,initialTab,viewerId:user?.id,demo:access==='pilot'?'pilot':demo,onModeChange:async (mode,target)=>{if(mode==='bar'){const hide=()=>{};leaveFanta({keepSplash:true});try{localStorage.setItem('qdq:mode','bar');}catch{}writeAppRoute({mode:'bar',page:target?.page==='invita'?'impostazioni':target?.page==='barleague'?'lega':target?.page==='lega'?'oggi':target?.page||'oggi',league:linkedBarTarget(barLeagues,target?.fantaLeague,target)?.league});onBar?.(linkedBarTarget(barLeagues,target?.fantaLeague,target));requestAnimationFrame(hide);}}});
  await instance.ready;
  if(assigned&&mine===operation)document.dispatchEvent(new CustomEvent('quasi:fanta-team-claimed',{detail:{league:instance.leagueId}}));

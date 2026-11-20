@@ -27,6 +27,14 @@ export function createDemoFantaApi({state=()=> 'da-schierare',delay=0,user={id:'
   data.calendar=league(id).calendar.rounds.flatMap(r=>r.matchups.filter(m=>m.home.team.id===teamId||m.away.team.id===teamId).map(m=>({...m,round:r.number,official:r.state==='calcolata'})));data.teamNameDeadline=nameDeadline(id);return decorate(data,id);
  };
  const change=(id,kind,input)=>{admin(id);const a=engine.auctionFor(id);if(['running','scheduled'].includes(a.status))throw Error('C’è un’asta aperta: usa gli strumenti dell’asta');const {teamId,playerId,price,toTeamId}=input;if(!TEAMS[teamId])throw Error('Squadra non valida');const result=engine.correctRoster(id,kind,input);room(id).audit.unshift({kind,created_at:new Date().toISOString(),username:user.username,data:{input}});return result;};
+ const rosterEditor=id=>{
+  admin(id);
+  const a=engine.auctionFor(id),players=engine.auctionAssigned(id),budget=a.rules.budget;
+  return decorate({locked:['running','scheduled'].includes(a.status),lockMessage:'Chiudi l’asta prima di correggere le rose.',budget,limits:a.rules.roster,teams:a.teams.map(({team,credits})=>{
+   const roster=players.filter(p=>p.team.id===team.id);
+   return {team,roster,creditAdjustment:credits-budget+roster.reduce((sum,p)=>sum+p.price,0)};
+  })},id);
+ };
  const api={
   invalidateReads(){},setCompetition:id=>{selected=id||null;},
   setScenario:value=>write(()=>{if(!['da-schierare','in-corso','calcolata'].includes(value))throw Error('Scenario non valido');scenario=value;onScenario(value);return {scenario};}),
@@ -57,6 +65,17 @@ export function createDemoFantaApi({state=()=> 'da-schierare',delay=0,user={id:'
   linkTeam:(id,team,username)=>write(()=>{admin(id);if(!TEAMS[team])throw Error('Squadra non valida');room(id).links[team]=username;return {demo:true};}),
   setSlips:(id,enabled)=>write(()=>{admin(id);room(id).slipsEnabled=!!enabled;onSlips(id,!!enabled);return {enabled:!!enabled};}),
   rosterPlayers:id=>read(()=>engine.auctionPlayersFor(id)),rosterAudit:id=>read(()=>room(id).audit),rosterChange:(id,kind,data)=>write(()=>change(id,kind,data)),
+  rosterEditor:id=>read(()=>rosterEditor(id)),
+  checkRosterBatch:(id,{changes})=>read(()=>{
+   const view=rosterEditor(id),free=new Set(engine.auctionPlayersFor(id).map(p=>p.id));
+   if(view.locked)throw Error(view.lockMessage);
+   for(const {teamId,playerId,kind,previousPrice} of changes){
+    const row=view.teams.find(t=>t.team.id===teamId);
+    if(!row||(kind==='add'?!free.has(playerId):row.roster.find(p=>p.id===playerId)?.price!==previousPrice))throw Error('La rosa o la disponibilità è cambiata. Rivedi la bozza.');
+   }
+   return {ok:true};
+  }),
+  saveRosterBatch:(id,{changes})=>write(()=>{admin(id);engine.correctBatch(id,changes);return rosterEditor(id);}),
   auction:id=>write(()=>engine.auctionFor(id)),auctionPlayers:id=>read(()=>engine.auctionPlayersFor(id)),
   auctionAssigned:(id,q)=>read(()=>engine.auctionAssigned(id,q)),auctionRelease:(id,p,r)=>write(()=>engine.release(id,p,r)),auctionReleaseUndo:(id,p)=>write(()=>engine.releaseUndo(id,p)),auctionReleasesDone:id=>write(()=>engine.releasesDone(id)),
   bid:(id,lotId,amount)=>write(()=>engine.bidFake(id,{lotId,amount})),pass:(id,lotId)=>write(()=>engine.passFake(id,{lotId})),nominate:(id,playerId,amount)=>write(()=>engine.nominateFake(id,{playerId,amount})),

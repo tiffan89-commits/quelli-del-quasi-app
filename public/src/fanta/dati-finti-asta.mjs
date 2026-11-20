@@ -409,8 +409,20 @@ function correctRoster(leagueId,kind,{teamId,playerId,price,toTeamId}){
  const target=kind==='move'?toTeamId:teamId,available=credits(target)+(kind==='price'?p.price:0);if(kind!=='remove'&&price>available)throw Error('Crediti insufficienti');
  if(kind==='remove'){p.soldTo=null;p.price=null;}else if(['add','price','move'].includes(kind)){p.soldTo=target;p.price=price;}else throw Error('Operazione non valida');changed();return {ok:true};
 }
+function correctBatch(leagueId,changes){
+ select(leagueId);
+ const before=structuredClone(A);
+ const order=change=>change.kind==='remove'?0:change.kind==='price'&&change.price<=change.previousPrice?1:change.kind==='add'?2:3;
+ try{
+  for(const change of [...changes].sort((a,b)=>order(a)-order(b))){
+   const player=A.players.find(p=>p.id===change.playerId);
+   if(change.kind!=='add'&&player?.price!==change.previousPrice)throw Error('La rosa è cambiata. Ricarica le rose.');
+   correctRoster(leagueId,change.kind,change);
+  }
+ }catch(error){rooms.set(leagueId,before);A=before;throw error;}
+}
 function drawFake(leagueId){select(leagueId);needAdmin(leagueId);needOpen();if(A.mode!=='manual'||A.config?.nomination!=='random'||A.releasePhase||A.table)throw Error('Estrazione non disponibile');const player=drawPlayer();if(!player)throw Error('Nessun giocatore disponibile');A.table=player.id;changed();return auctionFor(leagueId);}
-return {correctRoster,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,lobbyStartFake,closeFake,cancelLotFake,drawFake,auctionAssigned,release,releaseUndo,releasesDone};
+return {correctRoster,correctBatch,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,lobbyStartFake,closeFake,cancelLotFake,drawFake,auctionAssigned,release,releaseUndo,releasesDone};
 }
 const defaultEngine=createDemoAuctionEngine();
 export const {correctRoster,auctionFor,auctionPlayersFor,bidFake,passFake,nominateFake,setModeFake,setTableFake,assignFake,undoFake,scheduleFake,startFake,closeFake,cancelLotFake,auctionAssigned,release,releaseUndo,releasesDone}=defaultEngine;

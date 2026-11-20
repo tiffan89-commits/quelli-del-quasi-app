@@ -142,6 +142,66 @@ html.os-on body #app>main.os-split .president-operation-body>[data-os-content]:h
 .league-color-controls .field input[type="text"] { font-family:monospace; }
 .league-identity-status { margin:0; }
 .league-identity-status:empty { display:none; }
+.roster-editor-heading { display:flex; align-items:center; gap:10px; }
+.roster-editor-heading h1 { min-width:0; margin:0; overflow-wrap:anywhere; }
+.roster-editor-heading h1:focus { outline:none; }
+html.os-on main.os-split .roster-editor[data-os-content] { overflow-y:auto; padding-bottom:12px!important; }
+.roster-editor-toolbar { display:flex; align-items:center; gap:8px; margin:2px 0 8px; }
+.roster-editor-toolbar button { min-height:44px; }
+.roster-editor-add { flex:none; min-width:44px; padding:0; font-size:1.5rem; }
+.president-operation.roster-editor-team { display:grid; grid-template-columns:38px minmax(0,1fr) auto; gap:10px; }
+.president-operation .roster-editor-team-copy { display:grid; min-width:0; color:var(--white); font-size:inherit; overflow-wrap:anywhere; }
+.roster-editor-team-copy small { color:var(--muted); font-weight:400; }
+.roster-editor .team-logo,.roster-editor-heading .team-logo { width:36px; height:36px; flex:none; }
+.roster-editor .fanta-roster-row { grid-template-columns:30px minmax(0,1fr) auto; }
+.roster-editor .fanta-roster-price { justify-self:end; }
+.roster-price-stepper { display:flex; align-items:center; gap:3px; }
+.roster-price-stepper button { min-width:32px; min-height:38px; padding:3px 6px; white-space:nowrap; }
+.roster-price-stepper [data-roster-edit="toggle-price"] { min-width:52px; font-variant-numeric:tabular-nums; }
+.roster-price-stepper .is-draft-price { border-color:var(--lime); color:var(--lime); }
+.roster-price-range { grid-column:2/-1; min-width:0; padding:2px 5px; }
+.roster-price-range[hidden] { display:none; }
+.roster-price-range input { display:block; width:100%; min-height:32px; margin:0; accent-color:var(--lime); }
+.roster-editor-row-actions { grid-column:2/-1; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:6px; }
+.roster-editor-row-actions button { min-height:36px; padding:4px 10px; font-size:.78rem; }
+.roster-release { background:#a33b3c; color:#fff; border-radius:9px; }
+html.os-on main.os-root .roster-editor .fanta-roster-row:is(.is-removing,.is-adding),
+.roster-editor .fanta-roster-row:is(.is-removing,.is-adding) { margin:4px 0; padding-inline:6px!important; border:1px solid var(--roster-draft-border); border-radius:10px; }
+.roster-editor .fanta-roster-row.is-removing { --roster-draft-border:#f26d72; background:#6e292522; }
+.roster-editor .fanta-roster-row.is-adding { --roster-draft-border:#58d694; background:#2d704326; }
+.roster-editor .is-removing > :not(.roster-editor-row-actions) { opacity:.48; }
+.roster-editor-review-team h2 { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+.roster-editor-review-list { list-style:none; padding:0; margin:0 0 18px; }
+.roster-editor-review-list li { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
+.roster-editor-review-list small { display:block; color:var(--muted); }
+.roster-editor-fixes { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.roster-editor-issues { display:grid; gap:10px; max-height:55dvh; overflow:auto; padding-inline-start:20px; }
+.roster-editor-issues strong { display:block; }
+.roster-editor-sheet[open] {
+  position:fixed; inset:auto 0 0; width:min(100%,640px); max-width:none; max-height:88dvh; margin:0 auto;
+  padding:10px 14px max(14px,env(safe-area-inset-bottom)); border:1px solid var(--line); border-radius:20px 20px 0 0;
+  color:var(--white); background:var(--panel); animation:league-sheet-in 200ms ease-out;
+}
+.roster-editor-sheet::backdrop { background:#06100ddd; }
+.roster-editor-sheet.is-sheet-dragging { transform:translateY(var(--sheet-drag)); }
+.roster-editor-sheet .v2-sheet-handle { touch-action:none; }
+.roster-catalog { display:grid; gap:6px; }
+.roster-catalog .field { margin:0; }
+.roster-catalog [hidden] { display:none; }
+.roster-catalog [aria-pressed="true"] { color:var(--white); border-color:var(--lime); background:var(--bg); }
+.roster-catalog-scroll { max-height:48dvh; overflow-y:auto; overscroll-behavior:contain; }
+.roster-catalog-scroll .fanta-pick-list { margin-top:0; }
+.roster-catalog-row .fanta-choice { min-height:44px; display:grid; grid-template-columns:20px 21px minmax(0,1fr) 42px; gap:7px; align-items:center; margin:0; padding:3px 6px; }
+.roster-catalog-row .fanta-choice > input { width:18px; height:18px; margin:0; }
+.roster-catalog-price { display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:5px 6px; font-size:.8rem; }
+.roster-catalog-price input { width:6ch; min-height:38px; }
+.roster-catalog [data-catalog-status] { margin:2px 0; }
+.roster-catalog [data-catalog-capacity] { margin:0; text-align:center; font-size:.82rem; }
+@media (min-width:370px) {
+  .roster-editor .fanta-roster-row { grid-template-columns:30px minmax(0,1fr) auto auto; }
+  .roster-editor-row-actions { grid-column:4; }
+}
+@media (prefers-reduced-motion:reduce) { .roster-editor-sheet[open] { animation:none; } }
 @media (max-height:650px) {
   .league-identity-form { gap:6px; }
   .league-identity-preview { min-height:48px; padding-block:5px; }

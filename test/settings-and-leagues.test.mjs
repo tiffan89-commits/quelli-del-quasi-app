@@ -24,7 +24,7 @@ test('both modes show only the named league selector and mode control in the hea
  assert.equal(document.querySelector('dialog h2').textContent,'Le tue leghe');
  assert.equal(document.querySelector('[aria-current=true] small').textContent,'Bar 1° · Fanta 4°');
  assert.equal(document.querySelector('[data-league-pending]').hidden,false);
- assert.deepEqual([...document.querySelectorAll('[data-league-entry]')].map(b=>b.dataset.leagueEntry),['create-league','join-code']);
+ assert.deepEqual([...document.querySelectorAll('[data-league-entry]')].map(b=>b.dataset.leagueEntry),['create-league','join-league']);
  assert.equal(document.querySelector('form'),null);
 });
 

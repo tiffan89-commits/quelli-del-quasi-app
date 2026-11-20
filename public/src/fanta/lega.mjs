@@ -120,7 +120,6 @@ export function renderFantaPresident(l,ui={}){
  const bodies={
   ...(ui.identity?{identita:()=>leagueIdentityForm(ui.identity,{standalone:true})}:{}),
   associa:()=>teamAssociations(l,ui),
-  rose:()=>'<nav class="president-operation-list" aria-label="Squadre">'+l.members.map(m=>'<button type="button" class="secondary president-operation" data-team-roster="'+esc(m.team.id)+'">'+esc(m.team.name)+'<span aria-hidden="true">›</span></button>').join('')+'</nav>',
   importazione:()=>l.importReview?.length?'<ul class="fanta-rule-list">'+l.importReview.map(p=>'<li><span>'+esc(p.team)+(p.name?' · '+esc(p.name):'')+'</span><small>'+esc(p.issue)+'</small></li>').join('')+'</ul>':'<p>Nessuna rosa importata da controllare.</p>',
   rimuovi:()=>leagueWorkspace({id:l.league.id,mode:'fanta',view:'manage'}),
  };

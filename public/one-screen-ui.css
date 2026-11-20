@@ -554,11 +554,18 @@ body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11
 .lega-hub .lega-tile-detail>summary::after,.lega-hub .lega-tile-next{right:11px!important;top:50%!important;transform:translateY(-50%)!important}
 .lega-hub .lega-tile:has(.lega-tile-next){position:relative;padding-inline-end:26px}
 .president-panel:has(.screen-back),.fanta-squadra,.auction-wizard{touch-action:pan-y pinch-zoom}
-.support-fields{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,2fr);gap:8px}
+html.os-on main.os-settings-detail .president-heading{display:none}
+html.os-on body #app>main.os-settings-detail .os-track{columns:auto;overflow-y:auto}
+html.os-on main.os-settings-detail [data-president-section="assistenza"].os-drill-target{min-height:calc(var(--os-h) - 6px);margin-bottom:0}
+html.os-on main.os-settings-detail [data-president-section="assistenza"] .president-body{display:flex;flex-direction:column;min-height:calc(var(--os-h) - 8px)}
+#support-form{display:flex;flex:1;flex-direction:column;gap:5px}
 #support-form .field{gap:3px;margin:4px 0;font-size:12px}
 #support-form :is(input,textarea,.quasi-select-button){min-width:0;min-height:38px;padding:5px 8px}
-#support-form textarea{min-height:68px}
-#support-form button[type=submit],#support-form button:not([type]){min-height:38px;padding:6px 12px}
+#support-form .support-message{display:flex;flex:1;flex-direction:column}
+#support-form textarea{min-height:110px;flex:1;resize:vertical}
+#support-form button[type=submit]{align-self:center;min-height:44px;padding:6px 12px}
+#support-status{margin:0;text-align:center}
+#support-status:empty{display:none}
 .fanta-competitions details.competition-tool:not([open]){border:1px solid var(--line);border-radius:12px;padding:7px 9px;margin:6px 0;background:var(--panel)}
 .logo-editor-top [data-logo-close]{width:40px;height:40px;min-height:0;display:grid;place-items:center;padding:0;font-size:21px;line-height:1;border:1px solid var(--lime);color:var(--lime)}
 html.os-on main.os-root .league-dashboard>.dash-hero:has(.dash-numbers){height:148px!important}

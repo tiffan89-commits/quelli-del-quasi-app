@@ -51,7 +51,7 @@ export function renderLeagueSheet(leagues,activeId,uid,esc,{fantas=[],mode='bar'
     <span data-league-pending class="sheet-pending" ${pending||lineupPending?'':'hidden'} role="img" aria-label="${pending&&lineupPending?'Schedina e formazione da consegnare':pending?'Schedina da consegnare':'Formazione da consegnare'}"></span>
     ${id===activeId?'<span aria-hidden="true">✓</span>':''}</span>
   </button>`).join('')}</div>
-  <div class="social-league-actions"><button type="button" class="secondary" data-league-entry="create-league">Crea lega</button><button type="button" class="secondary" data-league-entry="join-code">Entra con codice</button></div>
+  <div class="social-league-actions"><button type="button" class="secondary" data-league-entry="create-league">Crea lega</button><button type="button" class="secondary" data-league-entry="join-league">Leghe disponibili</button></div>
  </dialog>`;
 }
 
