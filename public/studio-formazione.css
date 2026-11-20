@@ -80,7 +80,7 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fs .fs-grid{flex:1;min-width:0;min-height:0;display:grid;grid-template-columns:none;grid-template-rows:minmax(0,1fr);grid-auto-flow:column;grid-auto-columns:clamp(104px,28vw,132px);align-content:stretch;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x;padding:4px 0 6px;scroll-padding-inline:0;scrollbar-width:thin;scrollbar-color:var(--lime) transparent}
 .fs-reserve{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden}
 .fs-tile{position:relative;flex:1;width:100%;min-width:0;min-height:0;display:flex;flex-direction:column;gap:1px;align-items:center;justify-content:center;padding:3px 4px;border:0;border-radius:10px;background:transparent;color:var(--white);text-align:center;touch-action:pan-x;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.fs-tile>*{flex-shrink:0}.fs-tile>.fs-shirt{width:48px;height:48px}.fs-tile>.fs-badge{top:5px;right:5px}.fs-tile-next{color:var(--muted);font-size:9px;line-height:1.1;white-space:nowrap}.fs-tile-foot{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;margin:0}.fs-tile-foot .fs-fm{font-size:10px}.fs-tile>.fanta-role{position:absolute;top:5px;left:5px;width:15px;height:15px;border-radius:4px;font:700 8px 'DM Sans',sans-serif}.fs-tile.is-out>.fs-shirt{opacity:.65}.fs-tile:disabled{cursor:default}
-.fs-reserve-order{display:grid;grid-template-columns:1fr 20px 1fr;align-items:center;gap:1px;padding:0 3px 3px;flex:none}.fs-reserve-order>span{color:var(--fanta-gold);font-size:10px;font-weight:700;text-align:center}.fs-reserve-order button{width:100%;height:30px;min-height:30px;padding:0;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--white);font-size:17px;touch-action:manipulation}.fs-reserve-order button:disabled{opacity:.25}.fs-reserve-order button:focus-visible,.fs-tile:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+.fs-tile:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
 .fs-all-picked{grid-row:1;min-width:200px;margin:0;color:var(--muted);font-size:11px;line-height:1.4;align-self:center}.fs-legend{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;min-height:20px;margin:4px 0 0;color:var(--muted);font-size:9px;line-height:1.3}.fs-legend>span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.fs-legend .fs-badge{position:static;flex:none;min-width:16px;height:14px;margin:0;font-size:8px}.fs-legend .fs-badge.is-sq{width:8px;min-width:8px;height:11px}
 .fs-bar{flex:none;display:flex;align-items:center;gap:8px;padding:7px 12px calc(env(safe-area-inset-bottom,0px) + 7px);border-top:1px solid var(--line);background:var(--bg)}.fs-bar .v2-state{flex:1;min-width:0;margin:0;font-size:10px;line-height:1.3}.fs-bar .v2-save{flex:none;min-height:44px;padding:0 15px;font-size:13px}.fs-bar .v2-save:disabled:not(.is-done){opacity:.4}
 .fs-token.is-droppable .fs-ring,.fs-token.is-droppable .fs-shirt{outline:2px solid var(--lime);outline-offset:3px;border-radius:50%;box-shadow:0 0 18px #d6f77b90}.fs-token.is-over .fs-ring,.fs-token.is-over .fs-shirt{outline:3px solid white;transform:scale(1.1)}.fs-reserve.is-droppable{outline:1px solid #d6f77b66}.fs-reserve.is-over{outline:2px solid var(--lime)}.fs-dock.is-droppable{box-shadow:inset 0 0 0 2px #e7746e66}.fs-dock.is-over{background:#342420}.fs-dock.is-droppable>.fs-hint{font-size:0}.fs-dock.is-droppable>.fs-hint:before{content:'Rilascia qui per spostare il giocatore in panchina';font-size:11px;color:#ffb9b1}.fs-dock.is-droppable>.fs-hint>span{display:none}
@@ -114,7 +114,6 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fs-tabs { margin-inline: -14px; padding-inline: 14px; }
 .fs-hint { min-height: 0; }
 .fs .fs-grid { grid-auto-columns: clamp(94px, 25vw, 118px); }
-.fs-reserve-order button { min-height: 24px; height: 24px; }
 .fs-bar { padding-inline: 16px; }
 
 @media (width >= 620px) {
@@ -164,9 +163,13 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fanta-board.is-readonly .fanta-token,.fanta-board.is-readonly .fanta-slot{cursor:default}.fanta-view-module{margin:8px 0;font-size:12px;color:var(--muted)}.fanta-view-module b{color:var(--white)}.fanta-view-fm{font-size:10px;line-height:1.2;color:var(--white);background:#0c1815c9;padding:1px 4px;border-radius:4px;white-space:nowrap}.fanta-board.is-readonly .fanta-bench-row{grid-template-columns:24px 30px 26px minmax(0,1fr) auto}.fanta-board.is-readonly .fanta-bench-row>.fanta-st{grid-column:4}.fanta-board.is-readonly .fanta-bench-row>.fanta-roster-stats{grid-column:5;grid-row:1}
 
 /* The dragged shirt is appended to body and follows viewport coordinates. */
-.fs-open > .fanta-ghost { position: fixed; inset: 0 auto auto 0; }
+.fs-open > .fanta-ghost { position: fixed; inset: 0 auto auto 0; box-shadow: 0 8px 20px #0008; animation: fs-player-lift .16s ease-out both; }
+@keyframes fs-player-lift { from { scale: .94; } to { scale: 1; } }
 
-.fs-flip-stage { flex: 1; position: relative; min-height: 0; width: 100%; max-width: 1060px; margin: 0 auto; perspective: 1300px; }
+.fs-flip-stage {
+  --fs-bench-stripes: repeating-linear-gradient(90deg,#493527 0 18px,#513b2a 18px 36px);
+  flex: 1; position: relative; min-height: 0; width: 100%; max-width: 1060px; margin: 0 auto; perspective: 1300px;
+}
 .fs-faces { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .26s ease; }
 .fs.is-bench-open .fs-faces { transform: rotateY(180deg); }
 .fanta-dragging .fs-faces { transition: none; }
@@ -174,7 +177,7 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fs-face[inert] { pointer-events: none; }
 .fs-face.fs-dock {
   transform: rotateY(180deg); padding: 10px 10px 49px; border: 1px solid #9b734e;
-  border-radius: 16px; background: repeating-linear-gradient(90deg,#493527 0 18px,#513b2a 18px 36px);
+  border-radius: 16px; background: var(--fs-bench-stripes);
 }
 .fs-bench-head { display: flex; flex: none; justify-content: space-between; align-items: baseline; gap: 8px; color: #fff0ce; }
 .fs-bench-head h2 { margin: 0; font: 700 24px/1 'Barlow Condensed',sans-serif; }
@@ -184,7 +187,7 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fs-dock .fs-tab.is-active { background: var(--lime); }
 .fs .fs-grid {
   grid-template-columns: repeat(auto-fill,minmax(min(92px,100%),1fr)); grid-template-rows: none;
-  grid-auto-flow: row; grid-auto-columns: auto; align-content: start; gap: 5px;
+  grid-auto-flow: row; grid-auto-columns: auto; grid-auto-rows: minmax(88px,auto); align-content: start; gap: 5px;
   overflow: hidden auto; overscroll-behavior: contain; touch-action: pan-y;
 }
 .fs-grid [hidden],.fs-flip-button[hidden] { display: none !important; }
@@ -199,26 +202,38 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fs-availability .fs-badge { position: static; box-shadow: none; }
 .fs-availability .fs-badge.is-inj { background: #ad3029; }
 .fs-reserve-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
-.fs-bench-grip {
-  display: flex; justify-content: center; align-items: center; gap: 4px; width: 100%; min-height: 24px;
-  padding: 2px; border: 0; border-top: 1px solid #fff0ce33; background: #261c16bf; color: #fff0ce;
-  font: 700 10px 'DM Sans',sans-serif; cursor: grab; touch-action: none; user-select: none; -webkit-touch-callout: none;
-}
-.fs-bench-grip:focus-visible, .fs-flip-button:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; }
+.fs-flip-button:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; }
 .fs-dock .fs-legend { color: #fff0ce; gap: 4px 8px; }
 .fs-bench-drop { display: none; align-items: center; justify-content: center; flex: none; min-height: 32px; border: 1px dashed var(--lime); border-radius: 8px; color: var(--lime); font-size: 11px; }
 .fs-bench-drop.is-droppable { display: flex; }
 .fs-bench-drop.is-over { background: var(--lime); color: #0c1815; }
-.fs-flip-control { position: absolute; z-index: 3; right: 6px; bottom: 6px; display: flex; align-items: end; justify-content: end; border-radius: 12px; pointer-events: none; }
-.fs-flip-control.is-droppable {
-  width: clamp(110px,34%,280px); height: 50%; border: 1px dashed var(--lime);
-  background: color-mix(in srgb,var(--lime) 18%,#11241bc9); pointer-events: auto;
+.fs-flip-control {
+  --fs-flip-accent: #ff8582;
+  --fs-flip-background: linear-gradient(#7e252b99,#7e252b99),var(--fs-bench-stripes);
+  --fs-flip-hover: linear-gradient(#b5363dbf,#b5363dbf),var(--fs-bench-stripes);
+  position: absolute; z-index: 3; right: 6px; bottom: 6px; display: flex; align-items: end; justify-content: end;
+  border-radius: 12px; pointer-events: none;
 }
-.fs-flip-control.is-over { background: color-mix(in srgb,var(--lime) 40%,#11241be0); }
+.fs.is-bench-open .fs-flip-control {
+  --fs-flip-accent: #5de895;
+  --fs-flip-background: #194e33ed;
+  --fs-flip-hover: #247749f2;
+}
+.fs-flip-control.is-droppable {
+  width: clamp(104px,35%,280px); height: 25%; border: 1px dashed var(--fs-flip-accent);
+  background: var(--fs-flip-background); pointer-events: auto;
+}
+.fs-flip-control.is-over { background: var(--fs-flip-hover); }
+.fs-flip-watermark { display: none; position: absolute; inset: 0 0 34px; color: var(--fs-flip-accent); opacity: .35; pointer-events: none; }
+.fs-flip-control.is-droppable .fs-flip-watermark { display: grid; place-items: center; }
+.fs-flip-watermark svg { width: min(74%,84px); height: min(82%,84px); }
 .fs-flip-button {
-  display: inline-flex; align-items: center; gap: 5px; min-height: 39px; padding: 0 9px; border: 1px solid #c8e4cf80;
+  position: relative; display: inline-flex; align-items: center; gap: 5px; min-height: 39px; padding: 0 9px; border: 1px solid #c8e4cf80;
   border-radius: 10px; background: #132c23; color: #fff; font: 700 11px 'DM Sans',sans-serif; pointer-events: auto; touch-action: manipulation;
 }
 .fs-flip-button svg { width: 19px; height: 19px; flex: none; }
-.fs-flip-control.is-droppable .fs-flip-button { background: var(--lime); border-color: var(--lime); color: #0c1815; }
-@media (prefers-reduced-motion: reduce) { .fs-faces { transition: none; } }
+.fs-flip-control.is-droppable .fs-flip-button { background: var(--fs-flip-accent); border-color: var(--fs-flip-accent); color: #141b13; }
+@media (prefers-reduced-motion: reduce) {
+  .fs-faces { transition: none; }
+  .fs-open > .fanta-ghost { animation: none; }
+}

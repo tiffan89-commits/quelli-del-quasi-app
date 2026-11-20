@@ -38,8 +38,8 @@ test('the bench preserves reserve order and flips to compatible starters while t
  const root=document.getElementById('root'),controller=new AbortController(),data={roster,round:{number:12,deadline:'2026-11-20'},rules:{formations:['4-4-2']}};
  let draft=studioDraft(draftFrom(null,roster),roster),target;
  root.innerHTML=renderStudio({data,draft},{role:'tutti',benchOpen:true},0);
- const studio=root.querySelector('.fs'),grip=root.querySelector('[data-bench-grip="p1"]'),shirt=root.querySelector('[data-st-player="p1"]');
- shirt.getBoundingClientRect=()=>({left:205,top:110,width:80,height:100});
+ const studio=root.querySelector('.fs'),card=root.querySelector('[data-st-player="p1"]'),shirt=card.querySelector('.fs-shirt');
+ card.getBoundingClientRect=()=>({left:205,top:110,width:80,height:100});
  document.elementFromPoint=()=>target;
  const fire=(el,type,x,y)=>{
   const event=new window.Event(type,{bubbles:true,cancelable:true});
@@ -50,12 +50,12 @@ test('the bench preserves reserve order and flips to compatible starters while t
   assert.equal(root.querySelector('[data-st-bench-panel="open"]').hidden,true);
   target=root.querySelector('[data-drop="bench:2"]');
   enableDrag(root,{signal:controller.signal,canDrop:(item,drop)=>drop==='flip'||canDropOn(draft,roster,item,drop,null),onFlip:()=>flipStudio(studio,false),onDrop:(item,drop)=>{draft=dropOn(draft,item,drop,null,roster);}});
-  fire(grip,'pointerdown',225,200);fire(window,'pointermove',225,250);
+  fire(shirt,'pointerdown',225,150);fire(window,'pointermove',225,250);
   assert.equal(root.querySelectorAll('.fs-token.is-droppable').length,0);
   fire(window,'pointerup',225,250);
   assert.deepEqual(draft.bench,['p0','p2','p1','p3']);
   target=root.querySelector('[data-drop="flip"]');
-  fire(shirt.querySelector('.fs-shirt'),'pointerdown',225,150);fire(window,'pointermove',260,280);
+  fire(shirt,'pointerdown',225,150);fire(window,'pointermove',260,280);
   assert.equal(target.classList.contains('is-droppable'),true);
   await new Promise(resolve=>setTimeout(resolve,240));
   assert.equal(studio.classList.contains('is-bench-open'),false);
@@ -67,7 +67,7 @@ test('the bench preserves reserve order and flips to compatible starters while t
   assert.equal(document.querySelector('.fanta-ghost'),null);
  }finally{controller.abort();Object.assign(globalThis,old);}
 });
-test('touch drag keeps the reserve card scrollable outside its shirt and highlights only matching roles',()=>{
+test('a stationary hold lifts the reserve card, a quick swipe scrolls and only matching roles can receive a drop',async()=>{
  const {window,document}=parseHTML('<html><body><div id="root"><button id="source" data-drag-id="p1" data-drag-from="bench"><span class="fs-shirt">D</span></button>'+['P0','D0','D1','C0','A0'].map(s=>'<button data-drop="slot:'+s+'"></button>').join('')+'</div></body></html>');
  const old={window:globalThis.window,document:globalThis.document};globalThis.window=window;globalThis.document=document;
  const root=document.getElementById('root'),source=document.getElementById('source'),shirt=source.querySelector('.fs-shirt'),controller=new AbortController();let draft=draftFrom(null,roster),calls=0,target=document.querySelector('[data-drop="slot:D0"]');
@@ -75,6 +75,18 @@ test('touch drag keeps the reserve card scrollable outside its shirt and highlig
  const event=(el,type,x,y,id=1,pointerType='touch')=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:x,clientY:y,pointerId:id,pointerType,button:0,isPrimary:true});el.dispatchEvent(e);return e;};
  try{
   enableDrag(root,{signal:controller.signal,canDrop:(d,t)=>canDropOn(draft,roster,d,t,null),onDrop:(d,t)=>{calls++;draft=dropOn(draft,d,t,null,roster);}});
+  event(source,'pointerdown',20,150);event(window,'pointerup',20,150);
+  await new Promise(resolve=>setTimeout(resolve,260));
+  assert.equal(document.querySelector('.fanta-ghost'),null);
+  event(source,'pointerdown',20,150);
+  await new Promise(resolve=>setTimeout(resolve,260));
+  assert.ok(source.classList.contains('is-dragging'));
+  assert.ok(document.querySelector('.fanta-ghost'));
+  assert.ok(target.classList.contains('is-droppable'));
+  assert.ok(!target.classList.contains('is-over'));
+  event(window,'pointerup',20,150);
+  assert.equal(calls,0);assert.equal(document.querySelector('.fanta-ghost'),null);
+  assert.equal(event(source,'click',20,150).defaultPrevented,true);
   for(const [i,role] of [...'PDCA'].entries()){
    source.dataset.dragId='p'+i;event(shirt,'pointerdown',20,150);event(window,'pointermove',20,100);
    assert.ok([...root.querySelectorAll('.is-droppable')].every(t=>t.dataset.drop.startsWith('slot:'+role)));
@@ -137,7 +149,7 @@ test('clear buttons and dragging down remove draft selections only, preserve the
  try{
   const api=createDemoFantaApi({delay:0}),root=document.getElementById('app');let writes=0;instance=mountFanta(root,{api:{...api,saveLineup:(...a)=>{writes++;return api.saveLineup(...a);}},initialTab:'squadra'});
   for(let i=0;i<30&&!root.querySelector('[data-studio="open"]');i++)await pause();click('[data-studio="open"]');assert.equal(document.querySelector('.fs [data-lineup="clear"]').disabled,true);
-  click('.fs [data-lineup="best"]');const occupied=()=>[...document.querySelectorAll('.fs-pitch [data-drag-id]')].map(e=>e.dataset.dragId);const starters=occupied();assert.equal(starters.length,11);assert.equal(document.querySelectorAll('.fs-top .fs-bcell,.fs-bench').length,0);assert.equal(document.querySelectorAll('.fs-reserve').length,14);assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,14);assert.equal(document.querySelectorAll('[data-bench-move]').length,28);
+  click('.fs [data-lineup="best"]');const occupied=()=>[...document.querySelectorAll('.fs-pitch [data-drag-id]')].map(e=>e.dataset.dragId);const starters=occupied();assert.equal(starters.length,11);assert.equal(document.querySelectorAll('.fs-top .fs-bcell,.fs-bench').length,0);assert.equal(document.querySelectorAll('.fs-reserve').length,14);assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,14);assert.equal(document.querySelectorAll('.fs-reserve button').length,14);
   const field=document.querySelector('.fs-pitch [data-drag-id]'),id=field.dataset.dragId,dock=document.querySelector('.fs-bench-drop');field.getBoundingClientRect=()=>({left:0,top:100,width:60,height:40});let target=document.querySelector('[data-drop="flip"]');document.elementFromPoint=()=>target;
   const event=(target,type,y)=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:20,clientY:y,pointerId:7,pointerType:'touch',button:0,isPrimary:true});target.dispatchEvent(e);};
   event(field,'pointerdown',120);event(window,'pointermove',150);await new Promise(resolve=>setTimeout(resolve,240));
@@ -206,9 +218,12 @@ test('one reserve shelf orders the saved bench, swaps by role, and never drops a
  const click=q=>{const el=document.querySelector(q);assert.ok(el,q);assert.equal(el.disabled,false,q);el.dispatchEvent(new window.Event('click',{bubbles:true}));};
  try{
   const api=createDemoFantaApi({delay:0}),data=await api.team('lega-quasi');instance=mountFanta(document.getElementById('app'),{api:{...api,saveLineup:(...a)=>{writes++;return api.saveLineup(...a);}},initialTab:'squadra'});await instance.ready;
-  click('[data-studio="open"]');assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,25);assert.equal(document.querySelectorAll('[data-bench-move]').length,0);click('.fs [data-lineup="best"]');
+  click('[data-studio="open"]');assert.equal(document.querySelectorAll('.fs-grid [data-drag-id]').length,25);assert.equal(document.querySelectorAll('[data-bench-move]').length,0);click('.fs [data-lineup="best"]');click('.fs-flip-button[data-st-bench-panel="open"]');
   const ids=()=>[...document.querySelectorAll('.fs-grid [data-drag-id]')].map(el=>el.dataset.dragId),before=ids(),id=before[0],role=data.roster.find(p=>p.id===id).role;
-  click('[data-bench-move="'+id+'"][data-step="1"]');assert.equal(ids()[1],id);assert.equal(ids()[0],before[1]);assert.equal(document.querySelectorAll('.fs-bench,.fs-blist').length,0);
+  const key=new window.Event('keydown',{bubbles:true,cancelable:true});key.key='ArrowRight';
+  document.querySelector('[data-st-player="'+id+'"]').dispatchEvent(key);
+  assert.equal(key.defaultPrevented,true);assert.equal(ids()[1],id);assert.equal(ids()[0],before[1]);assert.equal(document.querySelectorAll('.fs-bench,.fs-blist').length,0);
+  click('.fs-flip-button[data-st-bench-panel="close"]');
   const slot=role+'0',former=document.querySelector('[data-st-slot="'+slot+'"]').dataset.dragId;
   click('[data-st-slot="'+slot+'"]');click('.fs-grid [data-st-player="'+id+'"]');click('[data-st-role="tutti"]');
   assert.equal(document.querySelector('[data-st-slot="'+slot+'"]').dataset.dragId,id);assert.equal(ids().length,14);assert.equal(ids()[1],former);assert.ok(!ids().includes(id));
