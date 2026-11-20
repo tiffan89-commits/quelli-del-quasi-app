@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.43.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.4...v0.43.5) (2026-11-20)
+
+
+### Bug Fixes
+
+* aggiorna disponibilità e verifica le formazioni ([1c5542d](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/1c5542da26fe8a639a959684988ca8da32455abd))
+
 ## [0.43.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.3...v0.43.4) (2026-11-20)
 
 
