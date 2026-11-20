@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.43.6](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.5...v0.43.6) (2026-11-20)
+
+
+### Bug Fixes
+
+* aggiungi il flip nello studio formazione ([b04d8c8](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/b04d8c851193024c35ca2d4fc709b3539a9acb7b))
+
 ## [0.43.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.43.4...v0.43.5) (2026-11-20)
 
 
