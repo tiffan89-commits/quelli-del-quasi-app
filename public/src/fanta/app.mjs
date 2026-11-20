@@ -13,7 +13,7 @@ import {linkedInvite} from './league-invite.mjs';
 import {watchAuction,auctionClockOffset} from './auction-watch.mjs';
 import {createAuctionSocket} from './auction-socket.mjs';
 import {withHomeVotes} from './home-votes.mjs';
-import {renderStudio,studioTap,studioDraft} from './formazione-studio.mjs';
+import {filterStudioBench,flipStudio,renderStudio,studioTap,studioDraft} from './formazione-studio.mjs';
 import {bestLineup,nextEmptySlot} from './squadra.mjs';
 import {readAppRoute,writeAppRoute} from '../routes.mjs';
 import {createFantaSlips} from './schedine.mjs';
@@ -89,7 +89,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     liveFlips:new Set(),liveFrom:null,liveError:null,
   };
   let timer=null,request=0,openingHomeLineup=false,lastStudioTap=null,studioDrag;
-  const sideBench=window.matchMedia?.('(width < 620px)');
+  let studioBeforeDrag=null;
 
   const slips=createFantaSlips({services:slipServices,redraw:()=>render(),teamResolver:name=>ui.home?.standings?.find(s=>s.team.name===name)?.team,loadMatchup:(context,round,match)=>api.matchup(context.leagueId,round.number,match.nativeId||match.id)});
   const slipContext=()=>({leagueId:league()?.id,competitionId:ui.home?.competition?.id||ui.lega.data?.competition?.id,enabled:league()?.slipsEnabled});
@@ -411,9 +411,10 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(!ui.studio)return false;
     if(d.stBenchPanel){
       ui.studio.benchOpen=d.stBenchPanel==='open';
-      if(!ui.studio.benchOpen)ui.studio.slot=null;
-      renderSheet();
-      document.querySelector('.fs [data-st-bench-panel="'+(ui.studio.benchOpen?'close':'open')+'"]')?.focus({preventScroll:true});
+      const studio=document.querySelector('.fs [data-st-face]')?.closest('.fs');
+      if(!ui.studio.benchOpen&&ui.studio.slot){ui.studio.slot=null;renderSheet();}
+      else if(studio){flipStudio(studio,ui.studio.benchOpen);lastSheetHtml=null;}
+      document.querySelector('.fs-flip-button[data-st-bench-panel="'+(ui.studio.benchOpen?'close':'open')+'"]')?.focus({preventScroll:true});
       return true;
     }
     if(sq.saving)return !!(d.lineup||d.pick||d.pickRole||d.benchPick||d.formation||d.stPlayer||d.stSlot||d.stRole||d.stClear||d.benchMove||d.benchRemove);
@@ -421,10 +422,10 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(d.stBench){
       const player=data.roster.find(p=>p.id===d.stBench),slot=ui.studio?.slot;
       if(player&&slot&&slot[0]===player.role){setDraft(assign(sq.draft,slot,player.id));ui.studio.slot=null;}
-      else ui.studio={...ui.studio,role:'panchina',slot:null,benchFocus:d.stBench};
+      else ui.studio={...ui.studio,role:'panchina',slot:null,benchFocus:d.stBench,benchOpen:true};
       render();return true;
     }
-    if(d.stRole){ui.studio={...ui.studio,role:d.stRole,slot:null};render();return true;}
+    if(d.stRole){ui.studio={...ui.studio,role:d.stRole,slot:null,benchOpen:true};render();return true;}
     if(d.stSlot){
       const player=sq.draft.slots[d.stSlot];
       const tap=player&&d.dragId===player&&(event.detail>0||event.pointerType==='touch');
@@ -433,22 +434,27 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       // The first tap redraws the button, so a native dblclick may never fire.
       if(tap&&previous?.slot===d.stSlot&&previous.player===player&&event.timeStamp-previous.time<=350){
         lastStudioTap=null;
-        if(sideBench?.matches)ui.studio.benchOpen=false;
         return handleSquadra({stClear:d.stSlot},event);
       }
       const slot=ui.studio.slot===d.stSlot?null:d.stSlot;
-      ui.studio={...ui.studio,slot,role:slot?slot[0]:ui.studio.role||'tutti'};
-      if(sideBench?.matches)ui.studio.benchOpen=!!slot;
+      ui.studio={...ui.studio,slot,role:slot?slot[0]:ui.studio.role||'tutti',benchOpen:!!slot};
       render();return true;
     }
-    if(d.stPlayer){const wasIncomplete=missingOf(sq.draft)>0;setDraft(studioTap(sq.draft,data.roster,d.stPlayer,ui.studio?.slot,data.rules.benchMax));ui.studio.slot=null;if(sideBench?.matches&&Object.values(sq.draft.slots).includes(d.stPlayer))ui.studio.benchOpen=false;if(wasIncomplete&&!missingOf(sq.draft))ui.studio.role='tutti';render();return true;}
-    if(d.stClear){setDraft(unassign(sq.draft,d.stClear));ui.studio.slot=null;render();return true;}
-    if(d.lineup==='restore'){if(data.lineup){setDraft(draftFrom(data.lineup,data.roster));ui.sheet=null;if(ui.studio){ui.studio.slot=null;ui.studio.role='tutti';}render();}return true;}
-    if(d.lineup==='best'){setDraft(bestLineup(sq.draft,data.roster,data.rules.benchMax));ui.studio={...ui.studio,role:'tutti',slot:null};render();return true;}
+    if(d.stPlayer){
+      const {slot}=ui.studio,wasIncomplete=missingOf(sq.draft)>0;
+      setDraft(studioTap(sq.draft,data.roster,d.stPlayer,slot,data.rules.benchMax));
+      ui.studio.slot=null;
+      if(slot&&sq.draft.slots[slot]===d.stPlayer)ui.studio.benchOpen=false;
+      if(wasIncomplete&&!missingOf(sq.draft))ui.studio.role='tutti';
+      render();return true;
+    }
+    if(d.stClear){setDraft(unassign(sq.draft,d.stClear));ui.studio.slot=null;ui.studio.benchOpen=false;render();return true;}
+    if(d.lineup==='restore'){if(data.lineup){setDraft(draftFrom(data.lineup,data.roster));ui.sheet=null;ui.studio={role:'tutti',slot:null,benchOpen:false};render();}return true;}
+    if(d.lineup==='best'){setDraft(bestLineup(sq.draft,data.roster,data.rules.benchMax));ui.studio={role:'tutti',slot:null,benchOpen:false};render();return true;}
     if(d.lineup==='guided'){const next=nextEmptySlot(sq.draft);ui.sheet=next?{pick:next,guided:true}:{bench:true};renderSheet();return true;}
     if (d.formation) {
       const { draft, moved, promoted } = withFormation(sq.draft, d.formation, data.roster, data.rules.benchMax);
-      setDraft(draft); sq.moved = moved.length ? moved : null; sq.promoted = promoted.length ? promoted : null; render(); return true;
+      setDraft(draft);ui.studio.slot=null; sq.moved = moved.length ? moved : null; sq.promoted = promoted.length ? promoted : null; render(); return true;
     }
     if (d.slot) { if (!data.round.locked) { ui.sheet = { pick: d.slot }; renderSheet(); } return true; }
     if(d.pickRole){const slots=Object.keys(sq.draft.slots).filter(s=>s[0]===d.pickRole),slot=slots.find(s=>!sq.draft.slots[s])||slots[0];if(slot)ui.sheet={pick:slot,guided:true};renderSheet();return true;}
@@ -463,7 +469,6 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (d.benchPick) {if(!sq.draft.bench.includes(d.benchPick)&&!Object.values(sq.draft.slots).includes(d.benchPick)){setDraft(benchAdd(sq.draft,d.benchPick));}ui.sheet={bench:true};render();return true;}
     if (d.benchRemove) { setDraft(benchRemove(sq.draft, d.benchRemove)); render(); return true; }
     if (d.benchMove) {
-      if(!sideBench?.matches&&missingOf(sq.draft))return true;
       const next=benchMove(sq.draft,d.benchMove,Number(d.step));
       if(next===sq.draft)return true;
       setDraft(next);ui.studio.benchFocus=d.benchMove;ui.studio.benchStep=d.step;ui.studio.benchGrip=!!d.benchGrip;
@@ -473,7 +478,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (d.lineup === 'repeat' && data.previous) { setDraft(draftFrom(data.previous, data.roster)); render(); return true; }
     if (d.lineup === 'bench-all') { setDraft(benchAll(sq.draft, data.roster,data.rules.benchMax)); render(); return true; }
     if(d.lineup==='clear-bench'){setDraft({...sq.draft,bench:[]});if(ui.studio)ui.studio.slot=null;render();return true;}
-    if (d.lineup === 'clear') { setDraft(draftFrom({ formation: sq.draft.formation }, data.roster)); if(ui.studio){ui.studio.slot=null;ui.studio.role='tutti';}render(); return true; }
+    if (d.lineup === 'clear') { setDraft(draftFrom({ formation: sq.draft.formation }, data.roster));ui.studio={role:'tutti',slot:null,benchOpen:false};render(); return true; }
     return false;
   }
 
@@ -856,7 +861,10 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(!ui.studio)lastStudioTap=null;
     const sheetRoot = document.getElementById('v2-sheet-root');
     if (!sheetRoot) return;
-    const html=ui.studio&&ui.squadra.data?renderStudio(ui.squadra,{...ui.studio,sideBench:sideBench?.matches}):ui.sheet?sheet():'';
+    if(ui.studio&&studioDrag?.active()&&!ui.squadra.saving&&!ui.squadra.data?.round.locked)return;
+    const oldStudio=sheetRoot.querySelector('.fs-flip-stage')?.closest('.fs');
+    const wasBench=oldStudio?.classList.contains('is-bench-open');
+    const html=ui.studio&&ui.squadra.data?renderStudio(ui.squadra,ui.studio):ui.sheet?sheet():'';
     document.body.classList.toggle('fs-open',!!ui.studio||ui.tab==='giornata'&&!suspended);
     sheetRoot.classList.toggle('auction-overlay',!!html&&ui.tab==='asta');
     if(html&&html===lastSheetHtml&&!sheetRoot.hidden)return; // Preserve typed amounts and selected refunds during polling.
@@ -866,6 +874,11 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     const studioScroll=['.fs-grid','.fs-blist','.fs-tabs','.fs-bench-row','.fs-formations'].map(selector=>{const el=sheetRoot.querySelector(selector);return {selector,left:el?.scrollLeft||0,top:el?.scrollTop||0,list:el?.dataset.stList};});
     sheetRoot.hidden = !html;
     sheetRoot.innerHTML = html;
+    if(ui.studio&&wasBench!==undefined&&wasBench!==!!ui.studio.benchOpen&&!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches){
+      sheetRoot.querySelector('.fs-faces')?.animate?.([
+        {transform:`rotateY(${wasBench?180:0}deg)`},{transform:`rotateY(${ui.studio.benchOpen?180:0}deg)`},
+      ],{duration:260,easing:'ease'});
+    }
     const playerDialog=sheetRoot.querySelector('.live-player-sheet');
     if(playerDialog){
       if(typeof playerDialog.showModal==='function')playerDialog.showModal();
@@ -884,12 +897,9 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       if(id){
         for(const row of sheetRoot.querySelectorAll('.fs-grid')){
           const cell=[...row.querySelectorAll('[data-drag-id]')].find(el=>el.dataset.dragId===id);
-          if(!cell)continue;const box=cell.getBoundingClientRect(),bounds=row.getBoundingClientRect();
-          if(sideBench?.matches){
-            if(!ui.studio.benchOpen)continue;
-            const card=cell.closest('.fs-reserve').getBoundingClientRect();
-            if(card.top<bounds.top)row.scrollTop+=card.top-bounds.top;else if(card.bottom>bounds.bottom)row.scrollTop+=card.bottom-bounds.bottom;
-          }else if(box.left<bounds.left)row.scrollLeft+=box.left-bounds.left;else if(box.right>bounds.right)row.scrollLeft+=box.right-bounds.right;
+          if(!cell||!ui.studio.benchOpen||cell.closest('[hidden]'))continue;
+          const bounds=row.getBoundingClientRect(),card=cell.closest('.fs-reserve').getBoundingClientRect();
+          if(card.top<bounds.top)row.scrollTop+=card.top-bounds.top;else if(card.bottom>bounds.bottom)row.scrollTop+=card.bottom-bounds.bottom;
         }
         if(ui.studio.benchGrip)[...sheetRoot.querySelectorAll('[data-bench-grip]')].find(el=>el.dataset.benchGrip===id)?.focus({preventScroll:true});
         else if(ui.studio.benchStep)[...sheetRoot.querySelectorAll('[data-bench-move]:not(:disabled)')].find(el=>el.dataset.benchMove===id&&el.dataset.step===ui.studio.benchStep)?.focus({preventScroll:true});
@@ -1202,26 +1212,56 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   // Trascinamento nella formazione: stesse regole del tocco, controllate sulla bozza.
   const dragOptions = {
     signal:lifecycle.signal,
-    onStart:()=>{lastStudioTap=null;},
+    onStart:()=>{lastStudioTap=null;studioBeforeDrag={...ui.studio};},
     canDrop: (drag, target) => {
       const sq = ui.squadra;
-      return !!ui.studio && !sq.saving && !suspended && !!sq.draft && !sq.data?.round.locked && canDropOn(sq.draft, sq.data.roster, drag, target, sq.data.rules.benchMax);
+      if(!ui.studio||sq.saving||suspended||!sq.draft||sq.data?.round.locked)return false;
+      const player=sq.data.roster.find(p=>p.id===drag.id);
+      if(!player)return false;
+      const fromField=drag.from.startsWith('slot:');
+      if(target==='flip')return true;
+      if(target==='bench')return fromField;
+      if(fromField&&target.startsWith('bench:')){
+        const reserve=sq.draft.bench[Number(target.slice(6))];
+        return sq.data.roster.some(p=>p.id===reserve&&p.role===player.role);
+      }
+      return canDropOn(sq.draft,sq.data.roster,drag,target,sq.data.rules.benchMax);
+    },
+    onFlip:drag=>{
+      const studio=document.querySelector('.fs-flip-stage')?.closest('.fs');
+      if(!studio||!ui.studio)return;
+      const toBench=drag.from.startsWith('slot:');
+      ui.studio.benchOpen=toBench;ui.studio.slot=null;
+      if(toBench){
+        ui.studio.role=drag.from[5];
+        filterStudioBench(studio,ui.studio.role);
+        studio.querySelector('.fs-grid').scrollTop=0;
+      }
+      flipStudio(studio,toBench);lastSheetHtml=null;
+    },
+    onCancel:({from,flipped,commit})=>{
+      if(ui.studio&&flipped){
+        if(!commit&&studioBeforeDrag)ui.studio=studioBeforeDrag;
+        else if(from.startsWith('slot:'))ui.studio.slot=from.slice(5);
+        renderSheet();
+      }
+      studioBeforeDrag=null;
     },
     onDrop: (drag, target) => {
+      studioBeforeDrag=null;
       const sq = ui.squadra;
       if(drag.from==='bench'&&target===`bench:${sq.draft.bench.indexOf(drag.id)}`)return;
       const wasIncomplete=missingOf(sq.draft)>0;
       setDraft(dropOn(sq.draft, drag, target, sq.data.rules.benchMax, sq.data.roster));
       if(ui.studio){
         ui.studio.slot=null;
-        if(sideBench?.matches&&drag.from==='bench'&&target.startsWith('slot:'))ui.studio.benchOpen=false;
+        if(target.startsWith('slot:')||drag.from.startsWith('slot:')&&target.startsWith('bench:'))ui.studio.benchOpen=false;
         if(wasIncomplete&&!missingOf(sq.draft))ui.studio.role='tutti';
       }
       render();
     },
   };
   const studioRoot=document.getElementById('v2-sheet-root');if(studioRoot)studioDrag=enableDrag(studioRoot,dragOptions);
-  on(sideBench,'change',()=>{if(ui.studio){ui.studio.benchOpen=false;renderSheet();}});
   on(studioRoot,'keydown',e=>{
     const grip=e.target.closest('[data-bench-grip]');
     if(!grip||!['ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(e.key))return;
@@ -1263,7 +1303,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   on(root,'click', handle);
   on(document,'click',e=>{if(e.target.closest('#app-header'))handle(e);});
   on(document.getElementById('v2-sheet-root'),'click', handle);
-  on(window,'keydown',e=>{if(e.key==='Escape'&&ui.studio){if(sideBench?.matches&&ui.studio.benchOpen)handleSquadra({stBenchPanel:'close'},e);else{closeLineupStudio();renderSheet();}}});
+  on(window,'keydown',e=>{if(e.key==='Escape'&&!e.defaultPrevented&&ui.studio){if(ui.studio.benchOpen)handleSquadra({stBenchPanel:'close'},e);else{closeLineupStudio();renderSheet();}}});
   on(window,'keydown',e=>{if(e.key==='Escape'&&ui.tab==='giornata'&&!ui.sheet){e.preventDefault();closeLiveStudio();}});
   on(window,'keydown', e => { if (e.key === 'Escape' && ui.sheet) { if(ui.sheet.player){e.preventDefault();closePlayerSheet();return;}pendingAuctionNavigation=null;ui.sheet = null; renderSheet(); } });
 

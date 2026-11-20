@@ -2,7 +2,7 @@ import {KITS} from './fanta/maglie.mjs';
 import {esc,fixtureTime} from './fanta/formato.mjs';
 const particles=/^(?:d[aeiou]|de|del|della|di|dos|das|van|von|der|den|el|al|la|le)$/i;
 const abbreviated=word=>/^\p{L}\.$/u.test(word);
-const familiarNames={'386305':'Ramón','288112':'Kambwala'};
+const familiarNames={'386305':'Ramón','288112':'Kambwala','135519':'Isaksen'};
 const entities={amp:'&',apos:"'",quot:'"',lsquo:'‘',rsquo:'’',nbsp:' ',oslash:'ø',Oslash:'Ø',aelig:'æ',AElig:'Æ',szlig:'ß'};
 const accents={acute:'\u0301',grave:'\u0300',circ:'\u0302',tilde:'\u0303',uml:'\u0308',cedil:'\u0327',ring:'\u030a',caron:'\u030c'};
 export function normalizedPlayerLabel(value){
@@ -22,7 +22,10 @@ export function normalizedPlayerLabel(value){
 function familiarName(p){
  const id=String(p.apiId||p.api_id||p.playerId||p.id||'').replace(/^(?:af:|apifootball:|api-football:)/,'');
  const label=normalizedPlayerLabel(p.name);
- return familiarNames[id]||(/^(?:Jacobo|J\.)\s+Ram[oó]n(?: Naveros)?$/iu.test(label)?'Ramón':normalizedPlayerLabel(p.knownAs));
+ if(familiarNames[id])return familiarNames[id];
+ if(/^(?:Jacobo|J\.)\s+Ram[oó]n(?: Naveros)?$/iu.test(label))return 'Ramón';
+ if(/^(?:(?:Gustav|G\.)\s+)?Tang Isaksen$/iu.test(label))return 'Isaksen';
+ return normalizedPlayerLabel(p.knownAs);
 }
 export const playerDisplayName=p=>familiarName(p)||normalizedPlayerLabel(p.name);
 export function playerSurname(player){

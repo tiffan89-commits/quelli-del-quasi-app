@@ -4,6 +4,7 @@ import { shirtBack } from './maglie-portieri.mjs';
 import {availabilityLabel,presenceProbability} from './presence-probability.mjs';
 import { esc, pts, countdown } from './formato.mjs';
 import { assign, unassign, quickAdd, missingOf, countsOf, surname, nextLabel } from './squadra.mjs';
+import {PITCH_FLIP_ICON} from '../lineup-pitch.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const TABS = [['tutti', 'Tutti'], ['P', 'Portieri'], ['D', 'Difensori'], ['C', 'Centrocampisti'], ['A', 'Attaccanti']];
@@ -36,7 +37,8 @@ export function playBadge(p) {
   const play=presenceProbability(p);if(!play)return '';
   if(play.source==='unavailable'){
     const label=availabilityLabel[s]||availabilityLabel.unavailable;
-    return `<i class="fs-badge is-pct is-out" title="${label} · 0%${note}" aria-label="${label} · 0%">0%</i>`;
+    const icon=s==='injured'?'<i class="fs-badge is-inj" aria-hidden="true">✚</i>':s==='suspended'?'<i class="fs-badge is-sq" aria-hidden="true"></i>':'';
+    return `<span class="fs-availability" title="${label} · 0%${note}" aria-label="${label} · 0%${note}">${icon}<i class="fs-badge is-pct is-out" aria-hidden="true">0%</i></span>`;
   }
   const estimated=play.source!=='official',label=estimated?'Stimata':'Probabilità effettiva';
   return `<i class="fs-badge is-pct ${estimated?'is-estimated':'is-actual'}" title="${label}: ${play.pct}%" aria-label="${label}: ${play.pct}%">${play.pct}%</i>`;
@@ -63,15 +65,15 @@ function pitch(d, byId, sel) {
   return `<div class="fs-pitch" style="--fs-max-line:${maxLine}" role="group" aria-label="Campo, modulo ${esc(d.formation)}"><div class="fs-lines" aria-hidden="true"><i></i></div>${cols}</div>`;
 }
 
-function reserveTile(p,d,index,{complete,blocked,sideBench}) {
-  return `<article class="fs-reserve" data-drop="bench:${index}" aria-label="${esc(surname(p))}, riserva ${index+1}">
-    <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" data-drag-axis="${sideBench?'side':'up'}" ${sideBench?`aria-label="Schiera ${esc(p.name)}"`:''} ${blocked?'disabled':''}>
+function reserveTile(p,d,index,{complete,blocked,tab}) {
+  return `<article class="fs-reserve" data-st-reserve-role="${esc(p.role)}" data-drop="bench:${index}" aria-label="${esc(surname(p))}, riserva ${index+1}" ${tab==='tutti'||p.role===tab?'':'hidden'}>
+    <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" aria-label="Schiera ${esc(p.name)}" ${blocked?'disabled':''}>
       <span class="fs-shirt" title="${esc(p.name)}">${studioShirt(p)}</span>${playBadge(p)}
-      ${sideBench?`<strong class="fs-reserve-name">${esc(surname(p))}</strong>`:''}
-      <span class="fs-tile-foot">${fantamedia(p)}${!sideBench||p.next?`<small class="fs-tile-next">${esc(nextLabel(p.next))}</small>`:''}</span>
+      <strong class="fs-reserve-name">${esc(surname(p))}</strong>
+      <span class="fs-tile-foot">${fantamedia(p)}${p.next?`<small class="fs-tile-next">${esc(nextLabel(p.next))}</small>`:''}</span>
       <em class="fanta-role is-${p.role}">${p.role}</em>
     </button>
-    ${sideBench?`<button type="button" class="fs-bench-grip" data-bench-grip="${esc(p.id)}" data-drag-handle aria-label="Ordina ${esc(p.name)} in panchina con le frecce" ${blocked?'disabled':''}><span aria-hidden="true">⠿</span> ${index+1}ª riserva</button>`:''}
+    <button type="button" class="fs-bench-grip" data-bench-grip="${esc(p.id)}" data-drag-handle aria-label="Ordina ${esc(p.name)} in panchina con le frecce" ${blocked?'disabled':''}><span aria-hidden="true">⠿</span> <span>${index+1}</span></button>
     ${complete?`<div class="fs-reserve-order" aria-label="Ordine in panchina">
       <button type="button" data-no-drag data-bench-move="${esc(p.id)}" data-step="-1" ${blocked||index===0?'disabled':''} aria-label="Anticipa ${esc(surname(p))} in panchina">←</button>
       <span aria-label="Posizione ${index+1}">${index+1}</span>
@@ -80,10 +82,38 @@ function reserveTile(p,d,index,{complete,blocked,sideBench}) {
   </article>`;
 }
 
+// Mutate only the faces and their targets, preserving the captured pointer.
+export function flipStudio(studio,benchOpen){
+  studio.classList.toggle('is-bench-open',benchOpen);
+  for(const [face,show] of [['field',!benchOpen],['bench',benchOpen]]){
+    const panel=studio.querySelector(`[data-st-face="${face}"]`);
+    panel.toggleAttribute('inert',!show);
+    panel.setAttribute('aria-hidden',String(!show));
+  }
+  studio.querySelector('[data-st-bench-panel="open"]').hidden=benchOpen;
+  studio.querySelector('.fs-flip-button[data-st-bench-panel="close"]').hidden=!benchOpen;
+}
+
+export function filterStudioBench(studio,role){
+  const list=studio.querySelector('.fs-grid');
+  list.dataset.stList=role;
+  let found=false;
+  for(const card of list.querySelectorAll('[data-st-reserve-role]')){
+    card.hidden=role!=='tutti'&&card.dataset.stReserveRole!==role;
+    found||=!card.hidden;
+  }
+  list.querySelector('.fs-all-picked').hidden=found;
+  for(const tab of studio.querySelectorAll('[data-st-role]')){
+    const selected=tab.dataset.stRole===role;
+    tab.classList.toggle('is-active',selected);
+    tab.setAttribute('aria-pressed',String(selected));
+  }
+}
+
 // ---------- Studio ----------
 export function renderStudio(sq, st, now = Date.now()) {
   const { data } = sq, d=studioDraft(sq.draft,data.roster), byId = new Map(data.roster.map(p => [p.id, p])), r = data.round;
-  const sideBench=Boolean(st.sideBench), benchOpen=sideBench&&Boolean(st.benchOpen);
+  const benchOpen=Boolean(st.benchOpen);
   const sel = st.slot && d.slots[st.slot] !== undefined ? st.slot : null;
   const tab = sel ? sel[0] : st.role==='panchina'?'tutti':st.role || 'tutti', counts = countsOf(d.formation), missing = missingOf(d);
   const filled = role => Object.keys(d.slots).filter(s => s[0] === role && d.slots[s]).length;
@@ -92,15 +122,13 @@ export function renderStudio(sq, st, now = Date.now()) {
     return `<button type="button" class="fs-tab${tab === k ? ' is-active' : ''}" data-st-role="${k}" aria-pressed="${tab === k}">${label}${n !== '' ? ` <small>${n}</small>` : ''}</button>`;
   }).join('');
   const complete=missing===0,blocked=!!sq.saving||r.locked;
-  const available=d.bench.map(id=>byId.get(id)).filter(p=>tab==='tutti'||p.role===tab);
+  const available=d.bench.map(id=>byId.get(id));
   const cur = sel && byId.get(d.slots[sel]);
   const hint = sel ? `<div class="fs-hint is-pick"><span>${cur ? `Al posto di <b>${esc(surname(cur))}</b>:` : `Scegli il <b>${ROLE_NAMES[sel[0]].toLowerCase()}</b>:`}</span>
-      <span>${cur ? `<button type="button" class="fanta-link" data-st-clear="${sel}">Lascia vuoto</button>` : ''}<button type="button" class="fanta-link is-muted" data-st-slot="${sel}">Annulla</button></span></div>`
-    : sideBench?'<p class="fs-hint">Trascina dalla maniglia per ordinare. Supera il bordo sinistro per schierare.</p>'
-    : complete?'<p class="fs-hint">Panchina · Usa le frecce per l’ordine. Tocca due volte un titolare per spostarlo qui.</p>':'<p class="fs-hint">Tocca o trascina per schierare. Tocca due volte un titolare per rimuoverlo.</p>';
+      <span>${cur ? `<button type="button" class="fanta-link" data-st-clear="${sel}">Lascia vuoto</button>` : ''}<button type="button" class="fanta-link is-muted" data-st-bench-panel="close">Annulla</button></span></div>`:'';
   const left = countdown(r.deadline, now);
 
-  return `<div class="fs${complete?' is-complete':''}${sideBench?' is-side-bench':''}${benchOpen?' is-bench-open':''}" role="dialog" aria-modal="true" aria-label="Studio formazione">
+  return `<div class="fs${complete?' is-complete':''}${benchOpen?' is-bench-open':''}" role="dialog" aria-modal="true" aria-label="Studio formazione">
     <header class="fs-head">
       <button type="button" class="fs-close" data-studio="close" aria-label="Chiudi lo studio">×</button>
       <div class="fs-title"><b>Formazione <span>· Giornata ${r.number}</span></b><small>Chiude tra <span data-countdown="${esc(r.deadline)}">${left || 'chiusa'}</span></small></div>
@@ -110,17 +138,27 @@ export function renderStudio(sq, st, now = Date.now()) {
       <div class="fs-top">
         <div class="fs-formations" role="group" aria-label="Modulo">${data.rules.formations.map(f => `<button type="button" class="fs-mod${f === d.formation ? ' is-active' : ''}" data-formation="${f}" aria-pressed="${f === d.formation}">${f}</button>`).join('')}
           ${data.previous ? `<button type="button" class="fs-mod is-soft" data-lineup="repeat">↺ Come la ${data.previous.round}ª</button>` : ''}</div>
-        ${pitch(d, byId, sel)}
-
+        <div class="fs-flip-stage">
+          <div class="fs-faces">
+            <section class="fs-face fs-field-face" id="fs-field-panel" data-st-face="field" aria-hidden="${benchOpen}" ${benchOpen?'inert':''}>${pitch(d, byId, sel)}</section>
+            <section class="fs-face fs-dock" id="fs-bench-panel" data-st-face="bench" aria-hidden="${!benchOpen}" aria-label="Panchina" ${benchOpen?'':'inert'}>
+              <div class="fs-bench-head"><h2>Panchina</h2><span>${d.bench.length} giocatori</span></div>
+              <div class="fs-tabs" role="group" aria-label="Ruolo">${tabs}</div>
+              ${hint}
+              <div class="fs-grid" data-st-list="${tab}" aria-label="Panchina, ordine di ingresso">
+                ${available.map((p,index)=>reserveTile(p,d,index,{complete,blocked,tab})).join('')}
+                <p class="fs-all-picked" ${available.some(p=>tab==='tutti'||p.role===tab)?'hidden':''}>Nessuna riserva per questo ruolo.</p>
+              </div>
+              <div class="fs-bench-drop" data-drop="bench">Sposta in panchina</div>
+              <p class="fs-legend"><span><i class="fs-badge is-pct is-actual">%</i> Probabilità effettiva</span><span><i class="fs-badge is-pct is-estimated">%</i> Stimata</span><span><i class="fs-badge is-inj">✚</i> Infortunato</span><span><i class="fs-badge is-sq"></i> Squalificato</span></p>
+            </section>
+          </div>
+          <div class="fs-flip-control" data-drop="flip">
+            <button type="button" class="fs-flip-button" data-st-bench-panel="open" aria-controls="fs-bench-panel" ${benchOpen?'hidden':''}>${PITCH_FLIP_ICON} Panchina</button>
+            <button type="button" class="fs-flip-button" data-st-bench-panel="close" aria-controls="fs-field-panel" ${benchOpen?'':'hidden'}>${PITCH_FLIP_ICON} Titolari</button>
+          </div>
+        </div>
       </div>
-      ${sideBench?`<button type="button" class="fs-bench-launch" data-st-bench-panel="open" aria-controls="fs-bench-panel" aria-expanded="${benchOpen}"><span aria-hidden="true">‹</span> Panchina <b>${d.bench.length}</b></button>`:''}
-      <section class="fs-dock" data-drop="out" ${sideBench?`id="fs-bench-panel" aria-label="Panchina e riserve" ${benchOpen?'':'inert'}`:'aria-label="Giocatori disponibili: rilascia qui per togliere dal campo"'}>
-        ${sideBench?`<div class="fs-bench-head"><h2>Panchina <small>${d.bench.length}</small></h2><button type="button" data-st-bench-panel="close" aria-label="Chiudi panchina">›</button></div>`:''}
-        <div class="fs-tabs" role="group" aria-label="Ruolo">${tabs}</div>
-        ${hint}
-        <div class="fs-grid${complete?' is-reserve-list':''}" data-st-list="${tab}" aria-label="${complete||sideBench?'Panchina, ordine di ingresso':'Giocatori da schierare'}">${available.length ? available.map(p=>reserveTile(p,d,d.bench.indexOf(p.id),{complete,blocked,sideBench})).join('') : '<p class="fs-all-picked">Tutti i giocatori di questo ruolo sono in campo. Scegli un altro reparto.</p>'}</div>
-        <p class="fs-legend"><span><i class="fs-badge is-pct is-actual">%</i> Probabilità effettiva</span><span><i class="fs-badge is-pct is-estimated">%</i> Stimata</span><span><i class="fs-badge is-pct is-out">0%</i> Indisponibile</span></p>
-      </section>
     </div>
     <div class="fs-bar">
       <p class="v2-state ${missing ? 'is-todo' : sq.dirty ? 'is-warn' : 'is-ok'}">${missing ? `Mancano ${missing} ${missing === 1 ? 'titolare' : 'titolari'}` : sq.dirty ? 'Pronta da salvare' : 'Formazione salvata'} · panchina ${d.bench.length}</p>
