@@ -27,6 +27,9 @@ test('real Fanta API shares concurrent lineup writes, invalidates cached reads, 
 test('weighted lineup respects probability, injury and unique roles; old bench caps cannot discard owned players',()=>{
  const roster='PDCA'.split('').flatMap(role=>Array.from({length:9},(_,i)=>({id:role+i,role,name:role+i,club:'Inter',stats:{avgFanta:i===0?10:6},play:{pct:i===0?25:90},status:i===1?{type:'injured'}:{type:'ok'}})));
  const draft=draftFrom(null,roster),best=bestLineup(draft,roster,7),ids=lineupOf(best);assert.equal(ids.starters.length,11);assert.equal(ids.bench.length,roster.length-11);assert.equal(new Set([...ids.starters,...ids.bench]).size,roster.length);assert.ok(!ids.starters.some(id=>id.endsWith('0')||id.endsWith('1')));assert.ok(byExpected({stats:{avgFanta:6}},{stats:{avgFanta:5},play:{pct:100}})>0);
+ assert.deepEqual(ids.bench.slice(-4),['P1','D1','C1','A1']);
+ const suspended={...roster.find(p=>p.id==='P1'),play:{pct:100,source:'official'},status:{type:'suspended'}},short=bestLineup(draft,[suspended,...roster.filter(p=>p.role!=='P')]);
+ assert.equal(short.slots.P0,null);assert.equal(short.bench[short.bench.length-4],'P1');assert.match(playBadge(suspended),/Squalificato · 0%/);
  const first=best.slots.D0,second=best.slots.D1,next=studioTap(best,roster,second,'D0',7);assert.equal(next.slots.D0,second);assert.equal(next.slots.D1,first);assert.equal(studioTap(best,roster,'A8','D0',7),best);assert.match(playBadge({status:{type:'injured'}}),/Infortunato/);
 });
 test('actual ratings count replacements once and the home live CTA uses the latest own fantapoints',()=>{

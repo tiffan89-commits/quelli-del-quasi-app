@@ -2,6 +2,7 @@ import {playerSurname} from '../player-label.mjs';
 import {playerVisual} from './player-visual.mjs';
 import {teamLogo} from './team-logo.mjs';
 import {renderPitchFlip} from '../lineup-pitch.mjs';
+import {isUnavailable,presenceProbability} from './presence-probability.mjs';
 // Pagina "Squadra": formazione della giornata sul campo (modulo, titolari, panchina, salvataggio) e rosa.
 // La bozza della formazione vive solo nel browser finché non si salva; il server controlla scadenza e regole.
 import { esc, pts, countdown, timeAgo, fixtureTime } from './formato.mjs';
@@ -10,7 +11,7 @@ import { shirt, KITS } from './maglie.mjs';
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const ROLE_PLURAL = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', A: 'Attaccanti' };
 const PICK_TITLE = { P: 'Scegli il portiere', D: 'Scegli il difensore', C: 'Scegli il centrocampista', A: "Scegli l'attaccante" };
-const STATUS = { injured: ['INF', 'Infortunato'], doubtful: ['?', 'In dubbio'], suspended: ['SQ', 'Squalificato'] };
+const STATUS = { injured: ['INF', 'Infortunato'], doubtful: ['?', 'In dubbio'], suspended: ['SQ', 'Squalificato'], unavailable:['0%', 'Indisponibile'] };
 
 // ---------- Bozza della formazione (funzioni pure) ----------
 
@@ -300,7 +301,7 @@ function pickRow(p, d, attr) {
 
 // Resa attesa: fantamedia pesata per la probabilità di giocare (infortunati e squalificati valgono zero).
 // Senza dato sulla probabilità si conta 70%, per non scavalcare chi ha probabili formazioni buone.
-const expected = p => p.status?.type === 'injured' || p.status?.type === 'suspended' ? 0 : ((p.play?.pct ?? 70) / 100) * (p.stats?.avgFanta ?? 5.5);
+const expected = p => ((presenceProbability(p)?.pct ?? p.play?.pct ?? 70) / 100) * (p.stats?.avgFanta ?? 5.5);
 export const byExpected = (a, b) => expected(b) - expected(a);
 
 // Primo posto vuoto in ordine di campo (portiere, difesa, centrocampo, attacco).
@@ -308,12 +309,16 @@ export const nextEmptySlot = draft => Object.keys(draft.slots).sort((a, b) => 'P
 
 // "Schiera i migliori": nel modulo scelto mette chi rende di più tra chi gioca davvero; tutti gli altri in panchina.
 export function bestLineup(draft, roster,benchMax=null) {
-  const slots = Object.fromEntries(Object.keys(draft.slots).map(s => [s, null])), used = new Set(), sorted = [...roster].sort(byExpected);
+  const slots = Object.fromEntries(Object.keys(draft.slots).map(s => [s, null])), used = new Set();
+  const sorted = roster.filter(p => !isUnavailable(p.status?.type)).sort(byExpected);
   for (const s of Object.keys(slots)) {
     const p = sorted.find(x => x.role === s[0] && !used.has(x.id));
     if (p) { slots[s] = p.id; used.add(p.id); }
   }
-  return benchAll({ formation: draft.formation, slots, bench: [] }, roster,benchMax);
+  const result = benchAll({ formation: draft.formation, slots, bench: [] }, roster,benchMax);
+  const unavailable = new Set(roster.filter(p => isUnavailable(p.status?.type)).map(p => p.id));
+  result.bench.sort((a,b) => Number(unavailable.has(a)) - Number(unavailable.has(b)));
+  return result;
 }
 
 

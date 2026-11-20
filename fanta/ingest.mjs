@@ -11,6 +11,8 @@ import {DEFAULT_RULES} from './rules.mjs';
 import {sqlFantaStore} from './store.mjs';
 import {roundView} from './views.mjs';
 import {advanceCup} from './competitions.mjs';
+import {reportedStatus} from '../public/src/fanta/presence-probability.mjs';
+import {availabilityJobId} from './player-availability.mjs';
 const transaction=async(connect,fn)=>{const c=await connect();try{await beginBackgroundWrite(c);const x=await fn(c);await c.query('COMMIT');return x;}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}};
 // The official report confirms the save omitted from the provider event.
 const bolognaMonzaReport="https://www.legaseriea.it/serie-a/news/bologna-monza-2026-2027-2-1-cronaca-risultato-gol";
@@ -72,9 +74,27 @@ export async function dailyCatalog({connect=connection,provider=fantaProvider(),
  return transaction(connect,async c=>{
   for(const t of teams.response)await c.query('INSERT INTO fanta.clubs VALUES($1,$2,$3) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name',['af:'+t.team.id,t.team.id,t.team.name]);
   const ownVotes=(await c.query("SELECT player_id,avg((data->>'vote')::numeric)::float AS vote,avg((data->>'fantavote')::numeric)::float AS fanta,count(*)::int AS played FROM (SELECT DISTINCT ON(fixture_id,player_id) * FROM fanta.votes ORDER BY fixture_id,player_id,id DESC) latest WHERE official AND data->>'vote' IS NOT NULL GROUP BY player_id")).rows;
-  const values=priceList(rosters.flatMap(t=>(t.players||[]).filter(p=>ROLE[p.position]).map(p=>{const stats=seasonal.find(s=>s.player.id===p.id)?.statistics?.find(s=>s.league?.id===135),injury=injuries.response.filter(x=>x.player?.id===p.id&&Date.parse(x.fixture?.date)>=now()-3*86400000&&Date.parse(x.fixture?.date)<=now()+10*86400000).at(-1),own=ownVotes.find(x=>x.player_id==='af:'+p.id),matches=fixtures.response.filter(f=>['FT','AET','PEN'].includes(f.fixture.status.short)&&[f.teams.home.id,f.teams.away.id].includes(t.team.id)).length;return {id:'af:'+p.id,apiId:p.id,name:p.name,jersey:p.number??stats?.games?.number??'',surname:seasonal.find(s=>s.player.id===p.id)?.player?.lastname||null,active:true,role:ROLE[p.position],clubId:'af:'+t.team.id,played:stats?.games?.appearences||0,starts:stats?.games?.lineups||0,matches:Math.max(1,matches),avgFanta:own?.fanta??null,fm:own?.fanta??null,stats:{played:own?.played||0,avgVote:own?.vote??null,avgFanta:own?.fanta??null,goals:stats?.goals?.total||0,assists:stats?.goals?.assists||0},status:injury?{type:injury.player.type==='Questionable'?'doubtful':'injured',note:injury.player.reason||'Indisponibile'}:{type:'ok',note:''},seasonStats:stats||null};})));
+  const stamp=now(),upcoming=fixtures.response.filter(f=>['NS','TBD'].includes(f.fixture.status.short)&&Date.parse(f.fixture.date)>stamp)
+   .sort((a,b)=>Date.parse(a.fixture.date)-Date.parse(b.fixture.date));
+  const values=priceList(rosters.flatMap(t=>{
+   const next=upcoming.find(f=>[f.teams.home.id,f.teams.away.id].includes(t.team.id));
+   const reports=next?injuries.response.filter(x=>x.fixture?.id===next.fixture.id):[];
+   const matches=fixtures.response.filter(f=>['FT','AET','PEN'].includes(f.fixture.status.short)&&[f.teams.home.id,f.teams.away.id].includes(t.team.id)).length;
+   return (t.players||[]).filter(p=>ROLE[p.position]).map(p=>{
+    const profile=seasonal.find(s=>s.player.id===p.id),stats=profile?.statistics?.find(s=>s.league?.id===135);
+    const injury=reports.find(x=>x.player?.id===p.id),status=reportedStatus(injury?.player?.type,injury?.player?.reason)||{type:'ok',note:''};
+    const own=ownVotes.find(x=>x.player_id==='af:'+p.id);
+    return {id:'af:'+p.id,apiId:p.id,name:p.name,jersey:p.number??stats?.games?.number??'',surname:profile?.player?.lastname||null,active:true,role:ROLE[p.position],clubId:'af:'+t.team.id,played:stats?.games?.appearences||0,starts:stats?.games?.lineups||0,matches:Math.max(1,matches),avgFanta:own?.fanta??null,fm:own?.fanta??null,stats:{played:own?.played||0,avgVote:own?.vote??null,avgFanta:own?.fanta??null,goals:stats?.goals?.total||0,assists:stats?.goals?.assists||0},status:next?{...status,fixtureId:'af:'+next.fixture.id}:status,seasonStats:stats||null};
+   });
+  }));
   await c.query("UPDATE fanta.players SET data=jsonb_set(data,'{active}','false') WHERE NOT(id=ANY($1::text[])) AND coalesce((data->>'active')::boolean,true)",[values.map(p=>p.id)]);
-  for(const p of values)await c.query(`INSERT INTO fanta.players(id,api_id,club_id,name,role,data) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET club_id=CASE WHEN fanta.players.data ? 'clubIdentity' THEN fanta.players.club_id ELSE EXCLUDED.club_id END,name=EXCLUDED.name,data=fanta.players.data||(CASE WHEN nullif(EXCLUDED.data->>'jersey','') IS NULL AND fanta.players.club_id=EXCLUDED.club_id THEN EXCLUDED.data-'jersey' ELSE EXCLUDED.data END)`,[p.id,p.apiId,p.clubId,p.name,p.role,JSON.stringify(p)]);
+  for(const p of values)await c.query(`INSERT INTO fanta.players(id,api_id,club_id,name,role,data) VALUES($1,$2,$3,$4,$5,$6)
+   ON CONFLICT(id) DO UPDATE SET club_id=CASE WHEN fanta.players.data ? 'clubIdentity' THEN fanta.players.club_id ELSE EXCLUDED.club_id END,
+    name=EXCLUDED.name,data=fanta.players.data||(EXCLUDED.data - array_remove(ARRAY[
+     CASE WHEN nullif(EXCLUDED.data->>'jersey','') IS NULL AND fanta.players.club_id=EXCLUDED.club_id THEN 'jersey' END,
+     CASE WHEN fanta.players.club_id=EXCLUDED.club_id AND fanta.players.data#>>'{status,fixtureId}'=EXCLUDED.data#>>'{status,fixtureId}'
+      AND EXISTS(SELECT 1 FROM fanta.jobs WHERE id=$7 AND data->>'checkedAt'>=$8) THEN 'status' END
+    ],NULL))`,[p.id,p.apiId,p.clubId,p.name,p.role,JSON.stringify(p),availabilityJobId(season),new Date(stamp-3600000).toISOString()]);
   for(const f of fixtures.response){const round=Number(f.league.round?.match(/(\d+)$/)?.[1]);if(!round||round>38)continue;await c.query('INSERT INTO fanta.fixtures(id,api_id,season,round,kickoff,status,home_id,away_id,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(id) DO UPDATE SET kickoff=EXCLUDED.kickoff WHERE fanta.fixtures.frozen_at IS NULL',['af:'+f.fixture.id,f.fixture.id,season,round,f.fixture.date,f.fixture.status.short,'af:'+f.teams.home.id,'af:'+f.teams.away.id,JSON.stringify(f)]);}
   const stats=(await c.query('SELECT data FROM fanta.player_stats')).rows.map(x=>x.data),baseline=calibrateBaselines(stats,{asOf:new Date(now()).toISOString()});await c.query('INSERT INTO fanta.baselines(id,model,data) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[hashInput(baseline),MODEL,JSON.stringify(baseline)]);
   await c.query('INSERT INTO fanta.jobs(id,data) VALUES($1,$2) ON CONFLICT DO NOTHING',[id,JSON.stringify({players:values.length,calls:provider.calls})]);return {players:values.length,calls:provider.calls};

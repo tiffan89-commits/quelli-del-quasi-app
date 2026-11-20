@@ -1,12 +1,12 @@
 import {normalizeTeam} from '../lib/calendar.mjs';
 import {normalizePersonName} from './player-identities.mjs';
-import {PRESENCE_MODEL} from '../public/src/fanta/presence-probability.mjs';
+import {currentPresenceEstimate,isUnavailable,PRESENCE_MODEL,statusForFixture} from '../public/src/fanta/presence-probability.mjs';
 import {barStorageMode} from '../lib/storage-mode.mjs';
 
 // Reuse only explicit percentages already stored by the Bar. Never infer a
 // percentage from starter/bench flags or associate an ambiguous namesake.
 export function probabilityFor(player,rounds,current){
- const unavailable=/injur|suspend|unavailable|infortun|squalific|indispon/i.test(player.status?.type||'');
+ if(isUnavailable(player.status?.type))return {pct:0,source:'unavailable'};
  for(const number of [current]){
   const candidates=(rounds||[]).filter(r=>Number(r.number)===number).flatMap(r=>r.players||[]);
   const id=String(player.apiId||player.api_id||player.id||'').replace(/^(?:af:|api-football:|apifootball:)/,'');
@@ -15,9 +15,14 @@ export function probabilityFor(player,rounds,current){
   const stored=found.filter(p=>p.kind==='official'||p.method==='minutes-presence-v1'||p.method===PRESENCE_MODEL),confirmed=stored.filter(p=>p.kind==='official');
   const explicit=(confirmed.length?confirmed:stored).filter(p=>typeof p.pct==='number'&&Number.isFinite(p.pct)&&p.pct>=0&&p.pct<=100);
   const values=[...new Set(explicit.map(p=>p.pct))];
-  if(values.length===1&&(!unavailable||explicit[0].kind==='official'))return {pct:values[0],source:explicit[0].kind==='official'?'official':'minutes-estimate'};
+  if(values.length===1)return {pct:values[0],source:explicit[0].kind==='official'?'official':'minutes-estimate'};
  }
  return null;
+}
+
+export function lineupAvailability(player,fixtures,round){
+ const fixture=fixtures.find(f=>f.round===round&&(f.home_id===player.clubId||f.away_id===player.clubId));
+ return {fixture,status:statusForFixture(player.status,fixture?.id)};
 }
 
 const seasonMatches=`coalesce(s.payload#>>'{football,calendar,season}',$2::text)=$2::text`;
@@ -56,7 +61,7 @@ export async function readPlayProbabilities(c,round,season){
 // A small, shared, hourly cache is enough for the minutes-based fallback. No provider
 // call, background task or game-data write is introduced by opening the editor.
 export async function readPresenceMinutes(c,players,season,{cache,now=Date.now()}={}){
- const missing=players.filter(p=>p.clubId&&!(p.presenceEstimate?.model===PRESENCE_MODEL&&p.presenceEstimate.clubId===p.clubId)&&!Number.isFinite(p.seasonStats?.games?.minutes));
+ const missing=players.filter(p=>p.clubId&&!currentPresenceEstimate(p)&&!Number.isFinite(p.seasonStats?.games?.minutes));
  if(!missing.length)return {};
  const ids=[...new Set(missing.map(p=>p.id))].sort(),key=JSON.stringify(['presence-minutes-v1',season,missing.map(p=>[p.id,p.clubId]).sort()]);
  const load=async()=>{

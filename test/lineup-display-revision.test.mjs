@@ -21,7 +21,7 @@ test('jerseys show surnames only, preserve compound family names and recover num
 test('a complete official XI supersedes probable percentages, gives 100/0 and rejects incomplete payloads',()=>{
  const l=officialLineups(raw,'2026-11-03');assert.equal(l.kind,'official');assert.equal(l.teams[0].players[0].jersey,1);assert.equal(l.teams[0].players[0].probability,100);assert.equal(l.teams[1].bench[0].probability,0);
  const incomplete=structuredClone(raw);incomplete.lineups[1].startXI.pop();assert.equal(officialLineups(incomplete),null);
- const p={id:'af:100',name:'Name',club:'Milan',status:{type:'injured'},stats:{minutes:90,teamMatches:10}};
+ const p={id:'af:100',name:'Name',club:'Milan',status:{type:'ok'},stats:{minutes:90,teamMatches:10}};
  const play=probabilityFor(p,[{number:11,players:[{id:'af:100',pct:100,kind:'official'}]}],11);assert.equal(play.source,'official');assert.deepEqual(presenceProbability({...p,play}),{pct:100,source:'official'});
  assert.equal(probabilityFor(p,[{number:10,players:[{id:'af:100',pct:100,kind:'official'}]}],11),null);
 });
@@ -44,7 +44,8 @@ test('available-player panel includes the club roster once, sorted by independen
  const catalog=[['1','Titolare',90],['2','Alternativa',21],['3','Rientrante',53],['4','Indisponibile',50],['5','Inattivo',40],['6','Nessun minuto',0]].map(([id,name,pct])=>({id:'af:'+id,apiId:Number(id),club:'Juventus',name,role:'D',stats:{minutes:pct*9,teamMatches:10},status:{type:id==='4'?'injured':'ok'},active:id!=='5'}));
  const lineup={kind:'probable',teams:[{team:'Juventus',players:[{name:'Titolare',playerId:'af:1'}],bench:[{name:'Alternativa',playerId:'af:2'}],ballots:[{players:[{name:'Titolare'},{name:'Alternativa'}]}]}]};
  const result=enrichPresence(lineup,catalog),team=result.teams[0];assert.deepEqual(team.bench.map(p=>p.playerId),['af:3','af:2','af:6']);assert.deepEqual(team.bench.map(p=>p.probability),[55,25,0]);assert.deepEqual(team.ballots,[]);
- const {document}=parseHTML(renderLineup({lineups:result})),panel=document.querySelector('.lineup-bench');assert.equal(panel.hasAttribute('open'),false);assert.match(panel.textContent,/Altri giocatori a disposizione/);assert.doesNotMatch(document.toString(),/Ballottaggi|duel-donut|Indisponibile|Inattivo/);
+ const {document}=parseHTML(renderLineup({lineups:result})),panel=document.querySelector('.lineup-bench');assert.equal(panel.hasAttribute('open'),false);assert.match(panel.textContent,/Altri giocatori a disposizione/);assert.doesNotMatch(panel.textContent,/Indisponibile|Inattivo/);assert.doesNotMatch(document.toString(),/Ballottaggi|duel-donut|Inattivo/);
+ assert.match(document.querySelector('.lineup-unavailable').textContent,/Indisponibile.*Infortunato.*0%/);
  assert.equal(document.querySelectorAll('.bench-stickers .player-probability.estimated').length,3);
  const official=enrichPresence({...lineup,kind:'official'},catalog);assert.equal(official.teams[0].players[0].probability,100);assert.deepEqual(official.teams[0].bench.map(p=>p.playerId),['af:2']);assert.equal(official.teams[0].bench[0].probability,0);
 });

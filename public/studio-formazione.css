@@ -107,6 +107,7 @@ body:has(.fanta-live-studio) :is(#app-header,#app>.v2-tabbar,#app>.fanta-demo-ba
 .fs-shirt > svg { filter: drop-shadow(0 3px 2px #081d12aa); }
 .fs-stats { display: flex; align-items: center; justify-content: center; gap: 3px; }
 .fs-stats .fs-badge { position: static; height: 14px; box-shadow: none; }
+.fs-badge.is-pct.is-out { background: #ad3029; color: #fff; }
 .fs-token .fs-fm { font-size: 10px; }
 .fs-token .fs-fm > span + span { font-size: 8px; }
 .fs-dock { flex-basis: 196px; padding-inline: 14px; }

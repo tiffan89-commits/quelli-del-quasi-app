@@ -50,7 +50,7 @@ function benchPage(t,kind,label){
 
 function pitchExtras(t,kind){
  if(kind==='fantasy'&&[...t.players,...(t.bench||[])].some(p=>Number.isFinite(p.grade)||Number.isFinite(p.fantagrade)||p.events?.length))return fantasyVotes(t);
- if(kind==='probable'&&t.unavailable?.length)return `<details class="lineup-unavailable"><summary>Indisponibili e in dubbio</summary>${t.unavailable.map(p=>`<p><strong>${esc(p.name)}</strong> · ${esc(p.status)}${p.note?'<small>'+esc(p.note)+'</small>':''}</p>`).join('')}</details>`;
+ if(kind==='probable'&&t.unavailable?.length)return `<details class="lineup-unavailable"><summary>Indisponibili e in dubbio</summary>${t.unavailable.map(p=>`<p><strong>${esc(p.name)}</strong> · ${esc(p.status)}${p.probability===0?' · 0%':''}${p.note?'<small>'+esc(p.note)+'</small>':''}</p>`).join('')}</details>`;
  return '';
 }
 
@@ -59,7 +59,7 @@ export function matchAvailability(data){
  const sections=(data.lineups?.teams||[]).map(team=>{
   const players=(team.unavailable||[]).filter(p=>p.name);
   if(!players.length)return '';
-  return `<section><h4>${esc(team.team)}</h4>${players.map(p=>`<div class="match-availability-row"><strong>${esc(playerSurname(p))}</strong><span>${esc(p.status||'Indisponibile')}</span></div>`).join('')}</section>`;
+  return `<section><h4>${esc(team.team)}</h4>${players.map(p=>`<div class="match-availability-row"><strong>${esc(playerSurname(p))}</strong><span>${esc(p.status||'Indisponibile')}${p.probability===0?' · 0%':''}</span></div>`).join('')}</section>`;
  }).join('');
  return sections?`<section class="match-availability"><h3>Indisponibili e in dubbio</h3>${sections}</section>`:'';
 }

@@ -1,7 +1,7 @@
 import { shirtBack } from './maglie-portieri.mjs';
 // Studio formazione: schermo intero come lo studio del Quasi.
 // Campo verticale su smartphone e orizzontale sugli schermi più larghi.
-import {presenceProbability} from './presence-probability.mjs';
+import {availabilityLabel,presenceProbability} from './presence-probability.mjs';
 import { esc, pts, countdown } from './formato.mjs';
 import { assign, unassign, quickAdd, missingOf, countsOf, surname, nextLabel } from './squadra.mjs';
 
@@ -33,9 +33,11 @@ export function studioTap(draft, roster, id, slot, benchMax) {
 // ---------- Iconcina sulla maglia ----------
 export function playBadge(p) {
   const s = p.status?.type, note = p.status?.note ? ': ' + esc(p.status.note) : '';
-  if (p.play?.source!=='official'&&s === 'injured') return `<i class="fs-badge is-inj" title="Infortunato${note}" aria-label="Infortunato">✚</i>`;
-  if (p.play?.source!=='official'&&s === 'suspended') return `<i class="fs-badge is-sq" title="Squalificato${note}" aria-label="Squalificato"></i>`;
   const play=presenceProbability(p);if(!play)return '';
+  if(play.source==='unavailable'){
+    const label=availabilityLabel[s]||availabilityLabel.unavailable;
+    return `<i class="fs-badge is-pct is-out" title="${label} · 0%${note}" aria-label="${label} · 0%">0%</i>`;
+  }
   const estimated=play.source!=='official',label=estimated?'Stimata':'Probabilità effettiva';
   return `<i class="fs-badge is-pct ${estimated?'is-estimated':'is-actual'}" title="${label}: ${play.pct}%" aria-label="${label}: ${play.pct}%">${play.pct}%</i>`;
 
@@ -117,7 +119,7 @@ export function renderStudio(sq, st, now = Date.now()) {
         <div class="fs-tabs" role="group" aria-label="Ruolo">${tabs}</div>
         ${hint}
         <div class="fs-grid${complete?' is-reserve-list':''}" data-st-list="${tab}" aria-label="${complete||sideBench?'Panchina, ordine di ingresso':'Giocatori da schierare'}">${available.length ? available.map(p=>reserveTile(p,d,d.bench.indexOf(p.id),{complete,blocked,sideBench})).join('') : '<p class="fs-all-picked">Tutti i giocatori di questo ruolo sono in campo. Scegli un altro reparto.</p>'}</div>
-        <p class="fs-legend"><span><i class="fs-badge is-pct is-actual">%</i> Probabilità effettiva</span><span><i class="fs-badge is-pct is-estimated">%</i> Stimata</span><span><i class="fs-badge is-inj">✚</i> INF</span><span><i class="fs-badge is-sq"></i> SQ</span></p>
+        <p class="fs-legend"><span><i class="fs-badge is-pct is-actual">%</i> Probabilità effettiva</span><span><i class="fs-badge is-pct is-estimated">%</i> Stimata</span><span><i class="fs-badge is-pct is-out">0%</i> Indisponibile</span></p>
       </section>
     </div>
     <div class="fs-bar">

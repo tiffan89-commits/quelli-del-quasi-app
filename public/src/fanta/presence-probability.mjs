@@ -1,13 +1,28 @@
-// Official lineups win. Estimates are stored once by the backend, never learnt
+// Estimates are stored once by the backend, never learnt
 // from a previous forecast or from API-Football's rating instead of our base vote.
 export const PRESENCE_MODEL='recent-form-v3';
+export const isUnavailable=type=>/injured|suspended|unavailable|infortun|squalific|indispon/i.test(type||'');
+export const availabilityLabel={injured:'Infortunato',suspended:'Squalificato',unavailable:'Indisponibile',doubtful:'In dubbio'};
+export const availabilityPriority={ok:0,doubtful:1,unavailable:2,injured:3,suspended:4};
+export function reportedStatus(label,note=''){
+ const text=String(label||'');
+ const type=/suspend|squalific|\b(?:yellow|red) cards?\b|\bban\b/i.test(text+' '+note)?'suspended'
+  :/^questionable$|^in dubbio$/i.test(text)?'doubtful'
+  :/injur|infortun/i.test(text)?'injured'
+  :/unavailable|indispon/i.test(text)?'unavailable'
+  :/^missing fixture$/i.test(text)?'injured':null;
+ return type?{type,note}:null;
+}
+export function statusForFixture(status,fixtureId){
+ const id=value=>String(value??'').replace(/^af:/,'');
+ return status&&(!status.fixtureId||id(status.fixtureId)===id(fixtureId))?status:{type:'ok',note:''};
+}
 const numeric=x=>x!==null&&x!==undefined&&x!==''&&Number.isFinite(Number(x))?Number(x):null;
 const clamp=x=>Math.max(0,Math.min(1,x));
 // Estimated presence is deliberately distinct from official selection (100/0).
 export const roundPresenceEstimate=value=>numeric(value)===null?null:Math.min(90,Math.ceil(Math.max(0,Number(value))/5)*5);
 export function currentPresenceEstimate(p){const e=p.presenceEstimate;return e?.model===PRESENCE_MODEL&&(!p.clubId||e.clubId===p.clubId)&&numeric(e.pct)!==null&&e.pct>=0&&e.pct<=100?e:null;}
 export function estimatePresence(p){
- if(/injured|suspended|unavailable|infortun|squalific|indispon/i.test(p.status?.type||''))return null;
  const minutes=numeric(p.stats?.minutes)??numeric(p.seasonStats?.games?.minutes),matches=numeric(p.stats?.teamMatches)??numeric(p.matches);
  const prior=minutes!==null&&minutes>=0&&matches!==null&&matches>0?clamp(minutes/(90*matches)):null;
  const seen=new Set(),recent=(p.stats?.recentPresence||[]).filter((r,i)=>{const id=r.fixtureId||'row:'+i;if(seen.has(id))return false;seen.add(id);return true;}).slice(0,5);
@@ -30,11 +45,10 @@ export function estimatePresence(p){
  return {pct:roundPresenceEstimate(chance*100),evidence:{recentMatches:count,starterStreak:starts,missedStreak:misses,seasonShare:prior,recentShare,recentWeight,goodForm:form}};
 }
 export function presenceProbability(p){
+ if(isUnavailable(p.status?.type))return {pct:0,source:'unavailable'};
  const value=numeric(p.play?.pct);
  if(p.play?.source==='official'&&value!==null&&value>=0&&value<=100)return {pct:Math.round(value),source:'official'};
- if(/injured|suspended|unavailable|infortun|squalific|indispon/i.test(p.status?.type||''))return null;
  const stored=currentPresenceEstimate(p);if(stored)return {pct:roundPresenceEstimate(stored.pct),source:'minutes-estimate'};
- if(p.presenceEstimate?.model===PRESENCE_MODEL&&(!p.clubId||p.presenceEstimate.clubId===p.clubId))return null;
  if(p.stats?.recentPresence?.length){const estimate=estimatePresence(p);return estimate?{pct:estimate.pct,source:'minutes-estimate'}:null;}
  if(p.play?.source==='minutes-estimate'&&value!==null&&value>=0&&value<=100)return {pct:roundPresenceEstimate(value),source:'minutes-estimate'};
  const estimate=estimatePresence(p);return estimate?{pct:estimate.pct,source:'minutes-estimate'}:null;

@@ -2,7 +2,7 @@ import {withFinalVerification} from './final-verification.mjs';
 import {DELIVERY_SQL,queueAuctionNotice} from './notifications.mjs';
 import {lineupRound} from './round-selection.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
-import {probabilityFor,readPlayProbabilities,readPresenceMinutes} from './play-probabilities.mjs';
+import {lineupAvailability,probabilityFor,readPlayProbabilities,readPresenceMinutes} from './play-probabilities.mjs';
 import {queueRandom,randomStatus,claimRandom,setSlips,ensurePilotBars} from './random-leagues.mjs';
 import {dispatchFanta} from './jobs.mjs';
 import {pilotTeams,claimPilot} from './pilot.mjs';
@@ -170,7 +170,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
      await c.query('INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench,saved_at,competition_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(competition_id,round,team_id) DO UPDATE SET formation=EXCLUDED.formation,starters=EXCLUDED.starters,bench=EXCLUDED.bench,saved_at=EXCLUDED.saved_at,inherited_from=NULL,source_data=jsonb_build_object()',[id,p.round,t.id,lineup.formation,JSON.stringify(lineup.starters),JSON.stringify(lineup.bench),savedAt,s.competition.id]);return {...lineup,savedAt};
     }
     if(isWrite)fail('Operazione non trovata',404);
-    if(route==='home')return homeView(s,u.id,now());if(route==='team'){const r=lineupRound(s,now());s.probables=await readPlayProbabilities(c,r?.seriea_round,s.league.season);const target=s.teams.find(t=>url.searchParams.has('team')?t.id===url.searchParams.get('team'):t.userId===u.id);s.presenceMinutes=await readPresenceMinutes(c,(target?.roster||[]).filter(p=>probabilityFor(p,s.probables,r?.seriea_round)?.source!=='official'&&!['injured','suspended'].includes(p.status?.type)),s.league.season,{cache:presenceCache,now:now()});return teamView(s,u.id,now(),url.searchParams.get('team'));}if(route==='league')return leagueView(s,u.id,now());
+    if(route==='home')return homeView(s,u.id,now());if(route==='team'){const r=lineupRound(s,now());s.probables=await readPlayProbabilities(c,r?.seriea_round,s.league.season);const target=s.teams.find(t=>url.searchParams.has('team')?t.id===url.searchParams.get('team'):t.userId===u.id);s.presenceMinutes=await readPresenceMinutes(c,(target?.roster||[]).filter(p=>{const {status}=lineupAvailability(p,s.fixtures,r?.seriea_round),source=probabilityFor({...p,status},s.probables,r?.seriea_round)?.source;return source!=='official'&&source!=='unavailable';}),s.league.season,{cache:presenceCache,now:now()});return teamView(s,u.id,now(),url.searchParams.get('team'));}if(route==='league')return leagueView(s,u.id,now());
     const n=Number(url.searchParams.get('number')),r=s.rounds.find(r=>r.number===n)||(!url.searchParams.has('number')?currentRound(s):null);if(!r)fail('Giornata non trovata',404);
     if(route==='round')return roundView(s,r,u.id,now());if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}fail('Pagina non trovata',404);
    },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players'),detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
