@@ -18,6 +18,13 @@ try{
   print({action:verb,service:name,result:await ps(command+"Get-Service -Name 'QuasiPostgres','QuasiWeb','QuasiWorker','QuasiCaddy'|Select-Object Name,@{N='Status';E={$_.Status.ToString()}}|ConvertTo-Json")});
  }else if(action==='jobs'){
   const p=await plan();print({at:new Date().toISOString(),live:p?.live,jobs:(p?.jobs||[]).filter(j=>j.status!=='cancelled').sort((a,b)=>Date.parse(b.completedAt||b.at)-Date.parse(a.completedAt||a.at)).slice(0,80)});
+ }else if(action==='lineup-quality'){
+  const {connection}=await import('../lib/db.mjs'),c=await connection();
+  try{
+   const season=Number(process.env.FANTA_SEASON||2026);
+   const {rows}=await c.query("SELECT data FROM fanta.jobs WHERE id LIKE 'lineup-quality:issue:%' AND data->>'season'=$1 ORDER BY data->>'lastSeen' DESC LIMIT 500",[String(season)]);
+   print({season,issues:rows.map(r=>r.data)});
+  }finally{c.release();}
  }else if(action==='job'){
   if(process.env.SELFHOST_ALLOW_EXTERNAL!=='true'||process.env.SELFHOST_SCHEDULER_ENABLED!=='true')throw Error('I lavori manuali sono disabilitati nella copia di prova');
   const p=await plan();if(!p)throw Error('Piano operativo assente');const latest=Math.max(...p.fixtures.filter(f=>Date.parse(f.kickoff)<=Date.now()).map(f=>f.round)),spec={results:{kind:'morning',round:latest,fixtureIds:p.fixtures.filter(f=>f.round===latest).map(f=>f.id)},odds:{kind:'odds'},presence:{kind:'maintenance',operation:'refresh-presence-estimates'},lineups:{kind:'auto-lineup'},derived:{kind:'maintenance',operation:'recompute-round-results'},notifications:{kind:'native-notify'}}[args[0]];

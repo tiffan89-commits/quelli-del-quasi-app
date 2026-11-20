@@ -6,7 +6,16 @@ const date=x=>Date.parse(x),start='2026-11-01T17:00:00Z';
 function calendar(matches){return [{number:10,matches:matches.map((m,i)=>({id:'m'+i,apiFootballId:100+i,home:'Home',away:'Away',officialKickoff:start,kickoff:start,status:'NS',...m}))}];}
 const memory=()=>{let data=null,version=0;return {getWithMetadata:async()=>data?{data:structuredClone(data),etag:String(version)}:null,setJSON:async(k,next,options)=>{if(options.onlyIfNew&&data||options.onlyIfMatch&&options.onlyIfMatch!==String(version))return {modified:false};data=structuredClone(next);return {modified:true,etag:String(++version)};}};}
 test('Rome 07:00 verification respects both daylight-saving transitions',()=>{assert.equal(nextRomeMorning('2026-10-24T21:30:00Z'),'2026-10-25T06:00:00.000Z');assert.equal(nextRomeMorning('2026-03-28T21:30:00Z'),'2026-03-29T05:00:00.000Z');assert.throws(()=>nextRomeMorning('invalid'));});
-test('no users and no match: dispatcher never calls database/provider/worker; the persistent calendar is initialized once',async()=>{const now=date('2026-11-01T02:00Z'),bootstrap=newPlan(calendar([{}]),{now}),store=memory();let network=0;const report=await dispatchDue({store,bootstrap,now,fetcher:()=>network++,env:{}});assert.equal(report.claimed,0);assert.equal(report.dbOperations,0);assert.equal(report.providerCalls,0);assert.equal(network,0);assert.ok(await store.getWithMetadata('calendar'));const a=await store.getWithMetadata('calendar');await dispatchDue({store,bootstrap,now,fetcher:()=>network++});assert.equal((await store.getWithMetadata('calendar')).etag,a.etag);});
+test('lineup quality runs daily at 05:20 Rome including the clock change and is claimed once',()=>{
+ const now=date('2026-10-24T06:00Z'),plan=newPlan([],{now});
+ const slot=plan.jobs.find(j=>j.operation==='audit-lineup-quality');
+ assert.equal(slot.at,'2026-10-25T04:20:00.000Z');
+ const claim=claimWork(plan,{now:date(slot.at),nonce:'first'});
+ assert.equal(claim.jobs.filter(j=>j.operation==='audit-lineup-quality').length,1);
+ assert.equal(claimWork(claim.plan,{now:date(slot.at),nonce:'second'}).jobs.length,0);
+ assert.equal(refreshPlan(claim.plan,[],{now:date(slot.at)+3600000}).jobs.find(j=>j.operation==='audit-lineup-quality'&&j.status==='queued').at,'2026-10-26T04:20:00.000Z');
+});
+test('outside the useful windows the dispatcher never calls database/provider/worker; the calendar is initialized once',async()=>{const now=date('2026-10-25T02:00Z'),bootstrap=newPlan(calendar([{}]),{now}),store=memory();let network=0;const report=await dispatchDue({store,bootstrap,now,fetcher:()=>network++,env:{}});assert.equal(report.claimed,0);assert.equal(report.dbOperations,0);assert.equal(report.providerCalls,0);assert.equal(network,0);assert.ok(await store.getWithMetadata('calendar'));const a=await store.getWithMetadata('calendar');await dispatchDue({store,bootstrap,now,fetcher:()=>network++});assert.equal((await store.getWithMetadata('calendar')).etag,a.etag);});
 test('simultaneous matches produce one shared minute job, even if the dispatch is duplicated',()=>{const now=date(start),p=newPlan(calendar([{},{}]),{now}),a=claimWork(p,{now,nonce:'a'});assert.equal(a.jobs.filter(j=>j.kind==='live').length,1);assert.deepEqual(a.jobs[0].fixtureIds,['m0','m1']);assert.equal(claimWork(a.plan,{now,nonce:'b'}).jobs.length,0);});
 test('final status suspends live immediately, does not assume an end at ninety minutes, and creates a single next-morning verification',()=>{let now=date(start),p=newPlan(calendar([{},{}]),{now});p=refreshPlan(p,[{id:'m0',status:'LIVE'},{id:'m1',status:'LIVE'}],{now});assert.equal(dueWork(p,{now:now+110*60000}).live.length,2);now+=120*60000;p=refreshPlan(p,[{id:'m0',status:'FT'},{id:'m1',status:'FT'}],{now});assert.equal(dueWork(p,{now}).live.length,0);const jobs=p.jobs.filter(j=>j.kind==='morning');assert.equal(jobs.length,1);assert.equal(jobs[0].at,'2026-11-02T06:00:00.000Z');assert.equal(refreshPlan(p,[],{now}).jobs.filter(j=>j.kind==='morning').length,1);const claimed=claimWork(p,{now:date(jobs[0].at),nonce:'verify'}),job=claimed.jobs.find(j=>j.kind==='morning'),done=completeWork(claimed.plan,job,{ok:true},{now:date(job.at)});assert.equal(claimWork(done,{now:date(job.at)+60000}).jobs.length,0);});
 test('postponed games remain pending without keeping polling alive; a rescheduled recovery gets only its own verification',()=>{let now=date(start),p=newPlan(calendar([{},{}]),{now});p=refreshPlan(p,[{id:'m0',status:'FT'},{id:'m1',status:'PST'}],{now});const j=p.jobs.find(j=>j.kind==='morning'),c=claimWork(p,{now:date(j.at),nonce:'one'}),done=completeWork(c.plan,c.jobs.find(x=>x.id===j.id),{ok:true},{now:date(j.at)});assert.deepEqual(dueWork(done,{now:now+3*86400000}).live,[]);const resumed=refreshPlan(done,[{id:'m1',status:'LIVE',kickoff:'2026-11-04T17:00:00Z'}],{now:date('2026-11-04T17:00Z')}),final=refreshPlan(resumed,[{id:'m1',status:'FT'}],{now:date('2026-11-04T19:00Z')}),next=final.jobs.filter(x=>x.kind==='morning'&&x.status==='queued');assert.equal(next.length,1);assert.deepEqual(next[0].fixtureIds,['m1']);});
@@ -42,6 +51,22 @@ test('four submission pushes follow the first confirmed kickoff and a reschedule
  const kickoff=new Date(date(start)+hour).toISOString();
  const updated=refreshPlan(plan,[{id:'m0',kickoff}],{now});
  assert.deepEqual(queued(updated).map(j=>date(j.at)),offsets.map(hours=>date(kickoff)-hours*hour));
+});
+test('the 72-hour availability window fires every hour even without a previous closure and follows the first kickoff',()=>{
+ const hour=3600000,now=date(start)-72*hour,previous='2026-10-28T20:00:00Z';
+ const input=[{number:9,matches:[{id:'past',officialKickoff:previous,status:'FT'}]},...calendar([{},{}])];
+ const p=newPlan(input,{now}),queued=plan=>plan.jobs.filter(j=>j.refreshAvailability&&j.status==='queued');
+ assert.equal(queued(p).length,72);
+ assert.deepEqual(queued(p).map(j=>date(j.at)),Array.from({length:72},(_,i)=>now+i*hour));
+ assert.ok(queued(p).every(j=>j.fixtureIds.join(',')==='m0,m1'));
+ assert.equal(claimWork(p,{now:now-1}).jobs.some(j=>j.refreshAvailability),false);
+ const first=claimWork(p,{now,nonce:'one'});
+ assert.equal(first.jobs.filter(j=>j.refreshAvailability).length,1);
+ assert.equal(claimWork(first.plan,{now,nonce:'two'}).jobs.some(j=>j.refreshAvailability),false);
+ assert.equal(queued(refreshPlan(p,[],{now:date(start)})).length,0);
+ const moved=refreshPlan(p,[{id:'m0',kickoff:new Date(date(start)+30*60000).toISOString()},{id:'m1',status:'PST'}],{now});
+ assert.equal(date(queued(moved)[0].at),now+30*60000);
+ assert.ok(queued(moved).every(j=>j.fixtureIds.join(',')==='m0'));
 });
 test('private operational tickets expire, reject tampering and do not contain credentials',()=>{const env={RESEND_API_KEY:'synthetic-only'},t=operationTicket({id:'j',nonce:'n'},env,1000);assert.equal(readOperationTicket(t,env,2000).id,'j');assert.equal(readOperationTicket(t,env,122000),null);assert.equal(readOperationTicket(t+'bad',env,2000),null);assert.ok(!t.includes(env.RESEND_API_KEY));});
 

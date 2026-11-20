@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {runProbableLineups} from '../lib/operations/probable-lineups.mjs';
-import {editorialFor} from '../lib/editorial-lineups.mjs';
+import {refreshPlayerAvailability} from '../fanta/player-availability.mjs';
+import {lineupAvailability,probabilityFor} from '../fanta/play-probabilities.mjs';
+import {probableLineupsDue} from '../lib/lineups.mjs';
 
 const now=Date.parse('2026-11-11T08:00:00Z'),kickoff='2026-11-21T14:00:00.000Z';
 const lineupRow=(side)=>`<tr data-panel-${side}="true">${Array.from({length:11},(_,i)=>
@@ -11,16 +13,57 @@ const skyPage=`<title>Probabili formazioni</title><span class="ftbl__team__name"
  <span class="ftbl__team-formation-number">4-4-2</span><span class="ftbl__team-formation-number">4-4-2</span>
  <h2>Titolari</h2>${lineupRow('left')}${lineupRow('right')}`;
 
-test('a shared editorial page is fetched once per interval even when the source is unavailable',async()=>{
- const game={id:'fixture',home:'Como',away:'Cagliari'};
- const state={football:{calendar:{season:2026,rounds:[{number:12,matches:[game]}]}}};
- let calls=0;
- const blocked=async()=>{calls++;return new Response(null,{status:403});};
- assert.equal(await editorialFor(state,game,blocked,new Date(now)),null);
- assert.equal(await editorialFor(state,game,blocked,new Date(now+60000)),null);
- assert.equal(calls,1);
- await editorialFor(state,game,blocked,new Date(now+3600000));
- assert.equal(calls,2);
+test('scheduled slots tolerate dispatcher jitter without repeating a check in the same slot',()=>{
+ const slot=Date.parse(kickoff)-3600000;
+ const m={kickoff,lineupCheckedAt:new Date(slot-3560000).toISOString()};
+ assert.equal(probableLineupsDue(m,new Date(slot),{scheduledAt:slot}),true);
+ m.lineupCheckedAt=new Date(slot+60000).toISOString();
+ assert.equal(probableLineupsDue(m,new Date(slot+120000),{scheduledAt:slot}),false);
+});
+
+test('availability refresh reconciles fixture-specific feed rows and editorial absences, and clears recovered players',async()=>{
+ const db=new PGlite();
+ const connect=async()=>({query:(sql,args)=>db.query(sql,args),release(){}});
+ try{
+  await db.exec(`CREATE SCHEMA fanta;
+   CREATE TABLE fanta.fixtures(id text,api_id int,season int,kickoff timestamptz,home_id text,away_id text);
+   CREATE TABLE fanta.clubs(id text,name text);
+   CREATE TABLE fanta.players(id text,api_id int,club_id text,name text,data jsonb);
+   CREATE TABLE fanta.jobs(id text primary key,data jsonb);
+   INSERT INTO fanta.fixtures VALUES ('af:321',321,2026,'2026-11-21T14:00:00Z','af:11','af:22');
+   INSERT INTO fanta.clubs VALUES ('af:11','Como'),('af:22','Cagliari');
+   INSERT INTO fanta.players VALUES
+    ('af:1',1,'af:11','Test Player','{"price":42}'),
+    ('af:2',2,'af:22','Other Player','{}'),
+    ('af:3',3,'af:11','Doubtful Player','{}');`);
+  const provider={get:async path=>{
+   assert.equal(path,'injuries?league=135&season=2026');
+   return {response:[
+    {player:{id:1,type:'Questionable',reason:'Thigh Injury'},fixture:{id:321}},
+    {player:{id:3,type:'Questionable',reason:'Knock'},fixture:{id:321}},
+    {player:{id:2,type:'Missing Fixture',reason:'Yellow Cards'},team:{id:22},fixture:{id:321}},
+    {player:{id:3,type:'Missing Fixture',reason:'Injury'},fixture:{id:322}},
+   ]};
+  }};
+  const match={apiFootballId:321,kickoff,status:'NS',lineups:{kind:'probable',teams:[
+   {team:'Como',unavailable:[{name:'T. Player',status:'Infortunato',note:'Problema muscolare'}]},
+  ]}};
+  const read=async()=>(await db.query('SELECT data FROM fanta.players ORDER BY api_id')).rows.map(p=>p.data);
+  assert.deepEqual(await refreshPlayerAvailability([match],{connect,provider,now,season:2026}),{fixtures:1,players:3,changed:3,providerCalls:1});
+  let rows=await read();
+  assert.deepEqual(rows.map(p=>p.status.type),['injured','suspended','doubtful']);
+  assert.equal(rows[0].price,42);
+  const fixtures=[{id:'af:321',round:12,home_id:'af:11',away_id:'af:22'},{id:'af:322',round:13,home_id:'af:11',away_id:'af:22'}];
+  const player={id:'af:1',clubId:'af:11',status:rows[0].status},official=[{number:12,players:[{id:'af:1',kind:'official',pct:100}]}];
+  assert.deepEqual(probabilityFor({...player,...lineupAvailability(player,fixtures,12)},official,12),{pct:0,source:'unavailable'});
+  assert.equal(lineupAvailability(player,fixtures,13).status.type,'ok');
+  assert.equal((await refreshPlayerAvailability([match],{connect,provider,now:now+3600000,season:2026})).changed,0);
+  await assert.rejects(refreshPlayerAvailability([match],{connect,provider:{get:async()=>({response:[],paging:{total:2}})},now:now+7200000,season:2026}),/incompleti/);
+  assert.deepEqual(await read(),rows);
+  await refreshPlayerAvailability([{...match,lineups:null}],{connect,provider:{get:async()=>({response:[]})},now:now+7200000,season:2026});
+  rows=await read();
+  assert.deepEqual(rows.map(p=>p.status.type),['ok','ok','ok']);
+ }finally{await db.close();}
 });
 
 test('forecast batch saves both XIs and keeps lost races and betting state intact',async()=>{

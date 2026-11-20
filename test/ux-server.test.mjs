@@ -50,7 +50,7 @@ test('explicit Bar probabilities project by stable ID or unambiguous club/name, 
   assert.equal(probabilityFor(p,rounds,11),null);assert.deepEqual(probabilityFor(p,rounds,10),{pct:100,source:'official'});
   assert.deepEqual(probabilityFor({...p,id:'af:100',name:'Alias'},rounds,10),{pct:0,source:'official'});
   assert.equal(probabilityFor({...p,club:'Different club'},rounds,11),null);
-  assert.equal(probabilityFor({...p,status:{type:'injured'}},rounds,11),null);
+  assert.deepEqual(probabilityFor({...p,status:{type:'injured'}},rounds,11),{pct:0,source:'unavailable'});
   assert.equal(probabilityFor({...p,name:'No percentage'},rounds,11),null);
   assert.equal(probabilityFor(p,[{number:11,players:[{name:'Ederson',club:p.club,pct:20},{name:'Ederson',club:p.club,pct:80}]}],11),null);
  }finally{await f.close();}

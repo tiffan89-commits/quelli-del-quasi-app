@@ -13,8 +13,8 @@ test('recent starts dominate seasonal history exponentially, good own grades and
  assert.equal(estimatePresence(player(recent(1,{baseVote:6.2}))).pct,normal.pct);
  assert.ok(estimatePresence(player(recent(3,{minutes:0,starter:false}),1530)).pct<10);
  assert.equal(estimatePresence(player(recent(3,{known:false,minutes:null}),900)).pct,50);
- assert.equal(presenceProbability({...player(recent(3)),status:{type:'injured'}}),null);
- assert.deepEqual(presenceProbability({...player(recent(3)),status:{type:'injured'},play:{source:'official',pct:100}}),{source:'official',pct:100});
+ assert.deepEqual(presenceProbability({...player(recent(3)),status:{type:'injured'}}),{source:'unavailable',pct:0});
+ assert.deepEqual(presenceProbability({...player(recent(3)),status:{type:'suspended'},play:{source:'official',pct:100}}),{source:'unavailable',pct:0});
  assert.equal(presenceProbability({...player([]),presenceEstimate:{model:PRESENCE_MODEL,clubId:'old',pct:95}}).pct,15);
 });
 test('presence refresh uses existing own grades and verified evidence, leaves protected tables intact, rerun performs no writes',async()=>{

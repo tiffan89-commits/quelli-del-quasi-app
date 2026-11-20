@@ -121,6 +121,8 @@ Per IP dinamico, `runtime/ddns.mjs` legge l'IPv4 pubblico da due fonti e opera s
 
 Il worker conserva il dispatcher operativo e le finestre già previste nell'app, senza riaggiungere vecchi import da Leghe Fantacalcio o cron dismessi. Cinque handler background sono eseguiti tramite coda locale firmata; i vecchi file Functions rimangono per completezza del sorgente. Non avviare uno scheduler separato per ciascun file.
 
+Il controllo delle formazioni passa ogni giorno alle 05:20, ora di Roma. Registra fonte, partita, calciatori, valori in conflitto e date di rilevamento. Sulla stessa istanza del worker, `node runtime/admin-control.mjs lineup-quality` mostra le segnalazioni della stagione corrente, a partire dalle più recenti.
+
 `SELFHOST_ALLOW_EXTERNAL=false` blocca le chiamate esterne. Lo scheduler richiede anche `SELFHOST_SCHEDULER_ENABLED=true` e il piano operativo importato. Attivarli solo al passaggio definitivo e dopo aver spento i job di produzione Netlify. Prima riattivare provider e invii fare verifiche mirate, mai un ricalcolo massivo non richiesto. Questo trasferimento non cambia formule, voti, crediti o scadenze.
 
 ## Backup e ripristino

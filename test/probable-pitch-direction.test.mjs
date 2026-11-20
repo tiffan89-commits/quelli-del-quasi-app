@@ -14,7 +14,7 @@ const flank=t=>canonicalPitchRows(t)[2].map(p=>p.name);
 const expected=['Cabal','Douglas Luiz','Koopmeiners','McKennie'];
 
 test('legacy editorial directions survive privacy redaction, for both sides and all cached sources',()=>{
- for(const source of ['Confronto probabili','Fantacalcio.it','Sky Sport','SOS Fanta','La Gazzetta dello Sport','Corriere dello Sport']){
+ for(const source of ['Confronto probabili','Sky Sport','SOS Fanta','La Gazzetta dello Sport','Corriere dello Sport']){
   const input=legacy(source),before=structuredClone(input),safe=publicLineups(input);
   assert.equal(safe.source,undefined);assert.equal(safe.sourceUrl,undefined);assert.equal(safe.sources,undefined);
   for(const t of safe.teams){assert.deepEqual(flank(t),expected);assert.equal(t.players.find(p=>p.name==='McKennie').grid,'3:4');assert.equal(t.players.find(p=>p.name==='Cabal').grid,'3:1');assert.ok(t.players.every(p=>p.probability===70));}
@@ -24,7 +24,7 @@ test('legacy editorial directions survive privacy redaction, for both sides and 
 });
 
 test('cached sources are canonical before consensus and repeated estimation does not reverse them again',()=>{
- const a=legacy('Fantacalcio.it'),b=legacy('SOS Fanta');
+ const a=legacy('Sky Sport'),b=legacy('SOS Fanta');
  const out=consensusLineups([a,b]);for(const t of out.teams)assert.deepEqual(flank(t),expected);
  const enriched=enrichPresence(out,[]),again=enrichPresence(publicLineups(enriched),[]);
  assert.deepEqual(enriched.teams,again.teams);assert.deepEqual(flank(again.teams[0]),expected);

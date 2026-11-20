@@ -187,7 +187,7 @@ test("probable lineups parser handles separate home/away tables and refuses miss
   );
 });
 
-test("a forecast retry reads five editorial sources once and keeps the result for two hours", async () => {
+test("a forecast retry reads the four configured sources once and reuses the result within the hour", async () => {
   const { s, m } = setup();
   m.status = "NS";
   m.kickoff = new Date(+now + 12 * 3600000).toISOString();
@@ -209,7 +209,7 @@ test("a forecast retry reads five editorial sources once and keeps the result fo
     },
   );
   assert.equal(summaries, 0);
-  assert.equal(pages, 5);
+  assert.equal(pages, 4);
   assert.equal(m.lineups.kind, "probable");
   await loadMatchDetails(
     s,
@@ -224,5 +224,5 @@ test("a forecast retry reads five editorial sources once and keeps the result fo
       return { ok: true, text: async () => sky() };
     },
   );
-  assert.equal(pages, 5);
+  assert.equal(pages, 4);
 });

@@ -13,7 +13,7 @@ test('incomplete final data retries after one hour, only pending fixtures, once,
  const result={ok:false,error:'Official data incomplete',retryable:true,retryFixtureIds:['m1']},failed=completeWork(claim.plan,job,result,{now:start});assert.equal(dueWork(failed,{now:start+3599999}).jobs.length,0);
  const retry=failed.jobs.find(j=>j.retryOf===job.id);assert.deepEqual(retry.fixtureIds,['m1']);assert.equal(retry.at,'2026-11-03T07:00:00.000Z');assert.equal(completeWork(failed,job,result,{now:start}).jobs.length,failed.jobs.length);
  const c2=claimWork(failed,{now:start+3600000,nonce:'retry'});assert.equal(c2.jobs.length,1);const done=completeWork(c2.plan,c2.jobs[0],{ok:true},{now:start+3600000});assert.ok(done.jobs.find(j=>j.id===job.id).resolvedAt);assert.equal(dueWork(done,{now:start+7200000}).jobs.length,0);
- const expired=completeWork(c2.plan,c2.jobs[0],result,{now:start+49*3600000});assert.equal(expired.jobs.filter(j=>j.status==='queued').length,0);
+ const expired=completeWork(c2.plan,c2.jobs[0],result,{now:start+49*3600000});assert.equal(expired.jobs.filter(j=>j.kind==='morning'&&j.status==='queued').length,0);
  const hard=completeWork(claim.plan,job,{ok:false,error:'Authorization failed'},{now:start});assert.equal(hard.jobs.some(j=>j.retryOf),false);
 });
 
