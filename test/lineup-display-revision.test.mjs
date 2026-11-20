@@ -27,7 +27,7 @@ test('a complete official XI supersedes probable percentages, gives 100/0 and re
 });
 
 test('forecast and available players use the same estimates as the editor; unavailable starters are replaced by role',()=>{
- const catalog=[{id:'af:1',apiId:1,name:'Mario Rossi',team:'Milan',club:'Milan',role:'D',number:4,stats:{minutes:450,teamMatches:10},status:{type:'ok'}},{id:'af:2',apiId:2,name:'Marco Bianchi',team:'Milan',club:'Milan',role:'D',number:5,stats:{minutes:270,teamMatches:10},status:{type:'ok'}}];
+ const catalog=[{id:'af:1',apiId:1,name:'Mario Rossi',team:'Milan',club:'Milan',role:'D',footballPosition:'Defender',number:4,stats:{minutes:450,teamMatches:10},status:{type:'ok'}},{id:'af:2',apiId:2,name:'Marco Bianchi',team:'Milan',club:'Milan',role:'D',footballPosition:'Defender',number:5,stats:{minutes:270,teamMatches:10},status:{type:'ok'}}];
  const l={kind:'probable',teams:[{team:'Milan',players:[{name:'Rossi',probability:100}],bench:[{name:'Bianchi',probability:0}],ballots:[{players:[{name:'Rossi'},{name:'Bianchi'}]}]}]};
  let result=enrichPresence(l,catalog);assert.equal(result.teams[0].players[0].probability,presenceProbability(catalog[0]).pct);assert.equal(result.teams[0].players[0].jersey,'4');assert.deepEqual(result.teams[0].ballots,[]);assert.equal(result.teams[0].bench[0].probability,30);
  catalog[0].status={type:'suspended'};result=enrichPresence(l,catalog);assert.equal(result.teams[0].players[0].playerId,'af:2');assert.equal(result.teams[0].bench.length,0);assert.equal(result.teams[0].players[0].probabilityKind,'minutes-estimate');

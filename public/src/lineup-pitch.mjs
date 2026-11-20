@@ -1,6 +1,6 @@
 import {hasEntered,fantasyGradeText,hasPitchPerformance,pitchPerformance} from './pitch-events.mjs';
 import {roundPresenceEstimate} from './fanta/presence-probability.mjs';
-import {canonicalPitchRows,partialPitchRows,recoverOfficialPitchLayout,normalizePitchLayout} from './pitch-layout.mjs';
+import {canonicalPitchRows,partialPitchRows,pitchPositionRole,recoverOfficialPitchLayout,normalizePitchLayout} from './pitch-layout.mjs';
 import {playerDisplayName,playerSurname,playerJersey,pitchFixture} from './player-label.mjs';
 import {shirtBack} from './fanta/maglie-portieri.mjs';
 import {sameClub} from './fanta/maglie.mjs';
@@ -10,24 +10,25 @@ export function formationRows(team,{allowVacancies=false}={}){
 }
 export const shirtSurname=playerSurname;
 function isGoalkeeper(p,team){
- const role=p.role||p.position;
- return role?/^(p|g|gk|goalkeeper|portiere)$/i.test(role):team.players[0]===p;
+ if(!team.fantasy&&p.grid&&team.players.includes(p))return p.grid==='1:1';
+ const role=team.fantasy?availablePlayerRole(p):availableFootballPlayerRole(p);
+ return role==='other'?team.players[0]===p:role==='P';
 }
 const AVAILABLE_ROLES=[['all','Tutti'],['P','Portieri'],['D','Difensori'],['C','Centrocampisti'],['A','Attaccanti']];
 export function availablePlayerRole(p){
- const role=String(p.role||p.position||'').toUpperCase();
- return /^(P|G|GK|GOALKEEPER|PORTIERE)$/.test(role)?'P':/^(D|DEFENDER|DIFENSORE)$/.test(role)?'D':/^(C|M|MIDFIELDER|CENTROCAMPISTA)$/.test(role)?'C':/^(A|F|FW|ATTACKER|FORWARD|ATTACCANTE)$/.test(role)?'A':'other';
+ return pitchPositionRole(p.role||p.position)||'other';
 }
+const availableFootballPlayerRole=p=>Object.hasOwn(p,'footballPosition')?pitchPositionRole(p.footballPosition)||'other':pitchPositionRole(p.position)||availablePlayerRole(p);
 function availablePlayers(team){
- const players=team.bench||[],roles=[...AVAILABLE_ROLES,...(players.some(p=>availablePlayerRole(p)==='other')?[['other','Altri']]:[])];
- return `<details class="lineup-bench"><summary>Altri giocatori a disposizione · ${players.length}</summary><div class="lineup-role-tabs" role="group" aria-label="Filtra i giocatori disponibili per ruolo">${roles.map(([role,label])=>`<button type="button" data-lineup-role="${role}" aria-pressed="${role==='all'}">${label} <small>${role==='all'?players.length:players.filter(p=>availablePlayerRole(p)===role).length}</small></button>`).join('')}</div><div class="bench-stickers">${players.map(p=>sticker(p,team,true)).join('')}</div><p class="lineup-role-empty muted" data-lineup-role-empty hidden>Non ci sono altri giocatori disponibili in questo ruolo.</p></details>`;
+ const players=team.bench||[],roles=[...AVAILABLE_ROLES,...(players.some(p=>availableFootballPlayerRole(p)==='other')?[['other','Altri']]:[])];
+ return `<details class="lineup-bench"><summary>Altri giocatori a disposizione · ${players.length}</summary><div class="lineup-role-tabs" role="group" aria-label="Filtra i giocatori disponibili per ruolo">${roles.map(([role,label])=>`<button type="button" data-lineup-role="${role}" aria-pressed="${role==='all'}">${label} <small>${role==='all'?players.length:players.filter(p=>availableFootballPlayerRole(p)===role).length}</small></button>`).join('')}</div><div class="bench-stickers">${players.map(p=>sticker(p,team,true)).join('')}</div><p class="lineup-role-empty muted" data-lineup-role-empty hidden>Non ci sono altri giocatori disponibili in questo ruolo.</p></details>`;
 }
 function sticker(p,team,available=false,bench=false){
  const started=(!team.fantasy&&!!team.started)||hasPitchPerformance(p);
  const probability=!started&&Number.isFinite(p.probability)&&p.probability>=0&&p.probability<=100?(p.probabilityKind==='official'?p.probability:roundPresenceEstimate(p.probability)):null;
  const club=!started&&!team.fantasy&&p.club&&!sameClub(p.club,team.team)?'<small class="pitch-player-club">'+esc(p.club)+'</small>':'';
  const kit=team.fantasy?{vs:p.next?.opponent??p.opponent,home:p.next?.home??p.home}:team.kit;
- return `<div class="pitch-player" ${available?`data-available-role="${availablePlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:6.2,...kit})}</div>${bench?`<span class="bench-player-surname" aria-hidden="true">${esc(shirtSurname(p))}</span>`:''}${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(playerDisplayName(p))}</span>${started?'':pitchFixture(p)}${club}${pitchPerformance(p,started)}</div>`;
+ return `<div class="pitch-player" ${available?`data-available-role="${availableFootballPlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:6.2,...kit})}</div>${bench?`<span class="bench-player-surname" aria-hidden="true">${esc(shirtSurname(p))}</span>`:''}${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(playerDisplayName(p))}</span>${started?'':pitchFixture(p)}${club}${pitchPerformance(p,started)}</div>`;
 }
 function benchSections(t,kind){
  const entered=t.started?(t.bench||[]).filter(hasEntered):[],rest=(t.bench||[]).filter(p=>!entered.includes(p));
@@ -44,7 +45,7 @@ function pitchField(t,kind){
 function benchPage(t,kind,label){
  const bench=t.bench||[],players=t.started?[...bench.filter(hasEntered),...bench.filter(p=>!hasEntered(p))]:bench;
  const filter=kind==='probable'&&!t.started&&players.length>0;
- const roles=[...AVAILABLE_ROLES,...(players.some(p=>availablePlayerRole(p)==='other')?[['other','Altri']]:[])];
+ const roles=[...AVAILABLE_ROLES,...(players.some(p=>availableFootballPlayerRole(p)==='other')?[['other','Altri']]:[])];
  return `<div class="pitch-bench-room lineup-bench"><div class="bench-room-label"><b>${label}</b><span>${players.length} giocatori</span></div>${filter?`<div class="lineup-role-tabs" role="group" aria-label="Filtra la panchina per ruolo">${roles.map(([role,label])=>`<button type="button" data-lineup-role="${role}" aria-pressed="${role==='all'}">${label}</button>`).join('')}</div>`:''}<div class="bench-stickers" style="--bench-rows:${Math.max(1,Math.ceil(players.length/5))};--bench-rows-short:${Math.max(1,Math.ceil(players.length/7))}">${players.map(p=>sticker(p,t,filter,true)).join('')}</div><p class="lineup-role-empty muted" data-lineup-role-empty ${players.length?'hidden':''}>${players.length?'Nessun giocatore disponibile in questo ruolo.':'Panchina non disponibile.'}</p></div>`;
 }
 
