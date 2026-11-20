@@ -1,7 +1,8 @@
 import {createHash} from 'node:crypto';
 import {connection} from '../lib/db.mjs';
 import {beginBackgroundWrite} from '../lib/operations/background-db.mjs';
-import {matchPortrait} from '../lib/player-media.mjs';
+import {resolveLineupPlayer} from '../lib/lineup-quality.mjs';
+import {normalizeTeam} from '../lib/calendar.mjs';
 import {availabilityPriority,reportedStatus} from '../public/src/fanta/presence-probability.mjs';
 import {fantaProvider} from './provider.mjs';
 
@@ -30,8 +31,9 @@ export function collectAvailability(fixtures,players,injuries,forecasts){
   if(!fixture||match.lineups?.kind!=='probable')continue;
   const clubs=players.filter(p=>p.club_id===fixture.home_id||p.club_id===fixture.away_id);
   for(const team of match.lineups.teams){
+   const roster=clubs.filter(p=>normalizeTeam(p.team)===normalizeTeam(team.team));
    for(const row of team.reportedUnavailable??team.unavailable??[]){
-    const player=matchPortrait(row,team.team,clubs);
+    const {record:player}=resolveLineupPlayer(row,roster);
     if(player)set(player.api_id,fixture,reportedStatus(row.status,row.note||''));
    }
   }

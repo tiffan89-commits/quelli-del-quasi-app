@@ -7,7 +7,7 @@ Scritto il 31/10/2026 dalla chat di progettazione con Francesco (proprietario). 
 - **Cosa**: fantacalcio vero e proprio (Classic) dentro Quelli del Quasi, accanto alle scommesse virtuali («Bar»). Una sola app, un solo account, due modalità con interruttore in alto (Bar | Fanta). Una sola PWA. Store più avanti (Capacitor).
 - **Lancio**: **beta in primavera 2027 sulle giornate rimaste del 2026/27** con le leghe di Francesco; lancio pieno per l'asta di agosto 2027 (stagione 2027/28).
 - **Principi non negoziabili** (valgono anche per il Fanta): sempre gratuita; mai pubblicità, mai pay per use, mai banner o video per sbloccare funzioni; tutti gli utenti uguali (stessa interfaccia, stesse probabilità); crediti virtuali, nessun denaro reale. Monetizzazione futura prevista: licenza annuale per lega (indicativamente 20 € fino a 6 partecipanti, 30 fino a 8, 40 fino a 10). Alcune funzioni potrebbero stare in un premium futuro: da decidere, non ora.
-- **Idea distintiva**: una lega, due giochi. Gli stessi amici giocano al fantacalcio e al Bar scommettono sulle sfide del fantacalcio, con i punteggi che arrivano dal motore interno (oggi arrivano da scraping di leghe.fantacalcio.it). Quasi, premi e chat sono condivisi.
+- **Idea distintiva**: una lega, due giochi. Gli stessi amici giocano al fantacalcio e al Bar scommettono sulle sfide del fantacalcio, con i punteggi che arrivano dal motore interno. Quasi, premi e chat sono condivisi.
 - **Marchio**: «Quelli del Quasi» è il marchio. Il termine «Fantacalcio» nel nome è un rischio legale da far verificare a un consulente prima di spendere in grafica/store (non bloccante per lo sviluppo).
 
 ## 2. Vincoli di lavoro (da rispettare sempre)
@@ -67,7 +67,7 @@ Il set di regole è un oggetto per lega (`rules` versionato), con questi valori 
 
 ## 6. Listone e quotazioni (nostri)
 
-Decisione: **listone nostro**, costruito dai dati del fornitore; **quotazioni nostre**. L'import da leghe.fantacalcio.it resta solo come strumento di migrazione per chi porta una propria lega (ruoli, quotazioni e listone di Fantacalcio.it sono loro contenuti: non costruirci sopra il prodotto).
+Decisione: **listone nostro**, costruito dai dati del fornitore, e **quotazioni nostre**. La migrazione delle leghe usa i dati conservati dall’app.
 
 - Ruolo Classic: derivato dalla posizione reale + tabella di correzioni manuali.
 - Modello di valore (valore sopra la sostituzione):

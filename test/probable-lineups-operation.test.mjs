@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {runProbableLineups} from '../lib/operations/probable-lineups.mjs';
-import {editorialFor} from '../lib/editorial-lineups.mjs';
 import {refreshPlayerAvailability} from '../fanta/player-availability.mjs';
 import {lineupAvailability,probabilityFor} from '../fanta/play-probabilities.mjs';
 import {probableLineupsDue} from '../lib/lineups.mjs';
@@ -65,18 +64,6 @@ test('availability refresh reconciles fixture-specific feed rows and editorial a
   rows=await read();
   assert.deepEqual(rows.map(p=>p.status.type),['ok','ok','ok']);
  }finally{await db.close();}
-});
-
-test('a shared editorial page is fetched once per interval even when the source is unavailable',async()=>{
- const game={id:'fixture',home:'Como',away:'Cagliari'};
- const state={football:{calendar:{season:2026,rounds:[{number:12,matches:[game]}]}}};
- let calls=0;
- const blocked=async()=>{calls++;return new Response(null,{status:403});};
- assert.equal(await editorialFor(state,game,blocked,new Date(now)),null);
- assert.equal(await editorialFor(state,game,blocked,new Date(now+60000)),null);
- assert.equal(calls,1);
- await editorialFor(state,game,blocked,new Date(now+3600000));
- assert.equal(calls,2);
 });
 
 test('forecast batch saves both XIs and keeps lost races and betting state intact',async()=>{

@@ -1,7 +1,7 @@
 import {hasEntered,fantasyGradeText,hasPitchPerformance,pitchPerformance} from './pitch-events.mjs';
 import {roundPresenceEstimate} from './fanta/presence-probability.mjs';
 import {canonicalPitchRows,recoverOfficialPitchLayout,normalizePitchLayout} from './pitch-layout.mjs';
-import {playerSurname,playerJersey,pitchFixture} from './player-label.mjs';
+import {playerDisplayName,playerSurname,playerJersey,pitchFixture} from './player-label.mjs';
 import {shirtBack} from './fanta/maglie-portieri.mjs';
 import {sameClub} from './fanta/maglie.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -27,7 +27,7 @@ function sticker(p,team,available=false,bench=false){
  const probability=!started&&Number.isFinite(p.probability)&&p.probability>=0&&p.probability<=100?(p.probabilityKind==='official'?p.probability:roundPresenceEstimate(p.probability)):null;
  const club=!started&&!team.fantasy&&p.club&&!sameClub(p.club,team.team)?'<small class="pitch-player-club">'+esc(p.club)+'</small>':'';
  const kit=team.fantasy?{vs:p.next?.opponent??p.opponent,home:p.next?.home??p.home}:team.kit;
- return `<div class="pitch-player" ${available?`data-available-role="${availablePlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:6.2,...kit})}</div>${bench?`<span class="bench-player-surname" aria-hidden="true">${esc(shirtSurname(p))}</span>`:''}${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(p.name)}</span>${started?'':pitchFixture(p)}${club}${pitchPerformance(p,started)}</div>`;
+ return `<div class="pitch-player" ${available?`data-available-role="${availablePlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:6.2,...kit})}</div>${bench?`<span class="bench-player-surname" aria-hidden="true">${esc(shirtSurname(p))}</span>`:''}${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(playerDisplayName(p))}</span>${started?'':pitchFixture(p)}${club}${pitchPerformance(p,started)}</div>`;
 }
 function benchSections(t,kind){
  const entered=t.started?(t.bench||[]).filter(hasEntered):[],rest=(t.bench||[]).filter(p=>!entered.includes(p));

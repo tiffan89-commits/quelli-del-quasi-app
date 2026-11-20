@@ -36,7 +36,7 @@ Tolte le relative configurazioni e le dipendenze Chromium/Puppeteer. Gli strumen
 
 I vecchi identificatori `source: fantacalcio`, chiavi dei portafogli e riferimenti storici restano compatibili con i dati già salvati. Non sono collegamenti esterni. Le altre competizioni importate rimangono consultabili nello storico, ma non accettano nuove schedine: eventuali schedine precedenti ancora da liquidare vengono segnalate dal controllo preventivo, senza cancellarle o assegnare rimborsi arbitrari.
 
-Il live Serie A e il motore dei voti rimangono quelli esistenti. Rimane anche la fonte pubblica delle probabili Serie A: è separata dall’accesso alle leghe private. Quindi una ricerca generica di `fantacalcio.it` trova ancora quella fonte editoriale, oltre ai documenti storici; una ricerca del dominio **leghe.fantacalcio.it nel codice attivo** non trova più integrazioni.
+Il live Serie A e il motore dei voti usano i fornitori dell’app. Le fonti delle probabili Serie A sono definite nel codice e nei processi di aggiornamento.
 
 ## Grafica e testi
 
