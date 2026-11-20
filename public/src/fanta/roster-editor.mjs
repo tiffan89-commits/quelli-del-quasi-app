@@ -8,6 +8,7 @@ const emptyLineup={slots:{},bench:[]};
 const keyOf=(team,player)=>JSON.stringify([team,player]);
 const normalize=value=>String(value??'').normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase('it');
 const labels={remove:'Svincolo',price:'Correzione prezzo',add:'Aggiunta'};
+const orderDate=new Intl.DateTimeFormat('it-IT',{dateStyle:'medium',timeStyle:'short'});
 const valueOf=p=>Number(p.value)||0;
 const indexCatalog=players=>players.map(p=>({...p,search:normalize(`${p.name} ${p.club||''}`)}))
  .sort((a,b)=>valueOf(b)-valueOf(a)||a.name.localeCompare(b.name,'it'));
@@ -78,11 +79,12 @@ export function createRosterEditor({api,context,render,navigate,onSaved}){
  }
  function sync(){
   const info=current();
-  if(openDialog&&(openDialog.session!==info?.session||openDialog.teamId!==info?.teamId||info.review))close();
+  if(openDialog&&(openDialog.session!==info?.session||openDialog.teamId!==info?.teamId||openDialog.orders!==info?.orders||info.review))close();
   if(!info)return;
-  const {session,teamId,review}=info;
+  const {session,teamId,review,orders}=info;
   if(!session.snapshot&&!session.error)read(info);
-  if(teamId&&!review&&session.snapshot&&!session.loading&&!session.snapshot.locked&&!session.catalog&&!session.catalogRead&&!session.prefetched){
+  if(orders&&!session.orders&&!session.ordersError)void loadOrders(info);
+  if(teamId&&!review&&!orders&&session.snapshot&&!session.loading&&!session.snapshot.locked&&!session.catalog&&!session.catalogRead&&!session.prefetched){
    session.prefetched=true;
    void catalog(info).catch(()=>{});
   }
@@ -96,17 +98,48 @@ export function createRosterEditor({api,context,render,navigate,onSaved}){
   session.rejected=session.rejected?.filter(issue=>issue.teamId!==teamId||issue.playerId!==player.id);
  }
 
+ async function loadOrders({session,id},more=false){
+  if(session.ordersLoading||session.undoing)return;
+  session.ordersLoading=true;session.ordersError=null;
+  try{
+   const page=await api.rosterOrders(id,more?session.nextOrder:null);
+   session.orders=more?[...session.orders,...page.orders]:page.orders;
+   session.nextOrder=page.next;
+  }catch(error){session.ordersError=error.message;}
+  finally{session.ordersLoading=false;refresh(session);}
+ }
+
+ function ordersPage(session){
+  const {snapshot,orders,ordersError,ordersLoading,ordersMessage,nextOrder}=session;
+  const cards=(orders||[]).map(order=>{
+   const items=order.changes.map(change=>{
+    const player=change.after||change.before;
+    const team=teamOf(snapshot,change.teamId)?.team.name;
+    const price=change.kind==='price'?`${change.before.price} → ${change.after.price} cr`:`${player.price} cr`;
+    return `<li><div><b>${esc(player.name)}</b><small>${esc([team,labels[change.kind],price].filter(Boolean).join(' · '))}</small></div></li>`;
+   }).join('');
+   return `<article class="roster-order"><h2>Ordine ${esc(order.id)}</h2><small class="muted">${esc(orderDate.format(new Date(order.createdAt)))}</small>
+    <ul class="roster-editor-review-list">${items}</ul>${action('undo-order','Annulla','',`class="secondary" data-order-id="${esc(order.id)}" aria-label="Annulla ordine ${esc(order.id)}" ${!snapshot||snapshot.locked||ordersLoading?'disabled':''}`)}</article>`;
+  }).join('');
+  return `${ordersMessage?`<p class="fanta-note" role="status">${esc(ordersMessage)}</p>`:''}
+  ${snapshot?.locked?`<p class="fanta-note">${esc(snapshot.lockMessage)}</p>`:''}${cards}${orders&&!orders.length&&!nextOrder?'<p class="fanta-note">Nessuna correzione da mostrare.</p>':''}
+  ${ordersLoading||!orders&&!ordersError?'<p class="fanta-loading" role="status">Caricamento correzioni…</p>':''}
+  ${ordersError?`<p class="fanta-note is-alert" role="alert">${esc(ordersError)}</p>`:''}
+  ${!ordersLoading&&(nextOrder||ordersError)?action(orders?'more-orders':'retry-orders',ordersError?'Riprova':'Correzioni precedenti','','class="secondary"'):''}`;
+ }
+
  function page(){
   const info=current();if(!info)return '';
-  const {session,teamId,review,back}=info,{snapshot,changes,error,saving,checking,loading,saved}=session;
+  const {session,teamId,review,orders,back}=info,{snapshot,changes,error,saving,checking,loading,saved}=session;
   const row=teamOf(snapshot,teamId);
-  const title=review?'Riepilogo correzioni':row?.team.name||'Correggi rose';
-  const backAttrs=review?'data-roster-edit="back-review"':teamId?'data-roster-edit="back-teams"':back;
-  const header=`<header class="participants-heading roster-editor-heading" data-os-header>${backButton(backAttrs,review?'Torna alla rosa':teamId?'Torna alle squadre':'Torna al pannello del presidente')}${!review&&row?teamLogo(row.team):''}<h1 tabindex="-1">${esc(title)}</h1></header>`;
+  const title=orders?'Ordini di correzione':review?'Riepilogo correzioni':row?.team.name||'Correggi rose';
+  const backAttrs=orders||teamId&&!review?'data-roster-edit="back-teams"':review?'data-roster-edit="back-review"':back;
+  const header=`<header class="participants-heading roster-editor-heading" data-os-header>${backButton(backAttrs,orders||teamId&&!review?'Torna alle squadre':review?'Torna alla rosa':'Torna al pannello del presidente')}${!review&&!orders&&row?teamLogo(row.team):''}<h1 id="roster-editor-title" tabindex="-1">${esc(title)}</h1></header>`;
   const status=error?`<p class="fanta-note is-alert" role="alert">${esc(error)}</p>${action('reload','Ricarica le rose','','class="secondary"'+(loading?' disabled':''))}`:'';
-  const recap=action('review',checking?'Verifica in corso…':recapLabel(changes),'',`class="secondary" ${checking||loading||!changes.size?'disabled':''}${checking?' aria-busy="true"':''}`);
+  const recap=action('review',checking?'Verifica in corso…':recapLabel(changes),'',`class="secondary roster-editor-recap" ${checking||loading||!changes.size?'disabled':''}${checking?' aria-busy="true"':''}`);
   let body;
-  if(!snapshot)body=status||'<p class="fanta-loading" role="status">Caricamento rose…</p>';
+  if(orders)body=ordersPage(session);
+  else if(!snapshot)body=status||'<p class="fanta-loading" role="status">Caricamento rose…</p>';
   else if(review){
    const groups=snapshot.teams.filter(t=>[...changes.values()].some(c=>c.teamId===t.team.id));
    const details=groups.map(team=>{
@@ -137,8 +170,8 @@ export function createRosterEditor({api,context,render,navigate,onSaved}){
    body=`<div class="roster-editor-toolbar">${action('add','<span aria-hidden="true">+</span>', '',`class="primary roster-editor-add" ${availability||(!totals.slots||checking?'disabled':'')} aria-label="Aggiungi calciatori liberi"`)}${recap}</div>
     <p class="muted" data-roster-balance>${balanceLabel(totals)}</p>${status}${snapshot.locked?`<p class="fanta-note">${esc(snapshot.lockMessage)}</p>`:!totals.slots?'<p class="fanta-note">Rosa al completo. Svincola un calciatore per liberare un posto.</p>':''}${fixes}${rosterView({roster},emptyLineup,controls)}`;
   }else if(teamId)body='<p class="fanta-note" role="alert">Squadra non trovata.</p>';
-  else body=`${status}<div class="roster-editor-toolbar">${recap}</div><nav class="president-operation-list" aria-label="Squadre">${snapshot.teams.map(({team,roster})=>action('team',`${teamLogo(team)}<span class="roster-editor-team-copy"><strong>${esc(team.name)}</strong><small>${roster.length} in rosa</small></span><span aria-hidden="true">›</span>`,'',`class="secondary president-operation roster-editor-team" data-roster-team="${esc(team.id)}"`)).join('')}</nav>`;
-  return `${header}<div class="roster-editor" data-os-content data-os-flow>${body}</div>`;
+  else body=`${status}${saved?'<p class="fanta-note" role="status">Modifiche salvate.</p>':''}<div class="roster-editor-toolbar">${recap}${action('orders','Ordini di correzione','','class="secondary"')}</div><nav class="president-operation-list" aria-label="Squadre">${snapshot.teams.map(({team,roster})=>action('team',`${teamLogo(team)}<span class="roster-editor-team-copy"><strong>${esc(team.name)}</strong><small>${roster.length} in rosa</small></span><span aria-hidden="true">›</span>`,'',`class="secondary president-operation roster-editor-team" data-roster-team="${esc(team.id)}"`)).join('')}</nav>`;
+  return `${header}<div class="roster-editor" data-os-content data-os-flow role="region" aria-labelledby="roster-editor-title" tabindex="0">${body}</div>`;
  }
 
  function showDialog(info,trigger,title,content){
@@ -148,7 +181,7 @@ export function createRosterEditor({api,context,render,navigate,onSaved}){
   dialog.setAttribute('aria-labelledby','roster-editor-sheet-title');
   dialog.innerHTML=`<div class="v2-sheet-handle" data-sheet-grip aria-hidden="true"></div><div class="fanta-ps-head"><h2 id="roster-editor-sheet-title">${title}</h2><button type="button" class="fanta-close" data-roster-close aria-label="Chiudi">×</button></div>${content}`;
   const dismiss=openSiteOverlay(dialog,trigger);
-  openDialog={close:dismiss,session:info.session,teamId:info.teamId};
+  openDialog={close:dismiss,session:info.session,teamId:info.teamId,orders:info.orders};
   dialog.querySelector('[data-roster-close]').onclick=dismiss;
   dialog.addEventListener('close',()=>{if(openDialog?.close===dismiss)openDialog=null;});
   return {dialog,dismiss};
@@ -249,7 +282,7 @@ export function createRosterEditor({api,context,render,navigate,onSaved}){
  }
 
  const samePage=info=>{
-  const active=current();return active?.session===info.session&&active.teamId===info.teamId&&active.review===info.review;
+  const active=current();return active?.session===info.session&&active.teamId===info.teamId&&active.review===info.review&&active.orders===info.orders;
  };
  function batch(session){
   session.receipt??=crypto.randomUUID();
@@ -298,16 +331,43 @@ export function createRosterEditor({api,context,render,navigate,onSaved}){
   try{
    session.snapshot=await api.saveRosterBatch(id,input);
    session.changes.clear();invalidateCatalog(session);session.receipt=null;session.saved=true;session.rejected=null;
+   session.orders=null;session.ordersError=null;session.ordersMessage=null;session.nextOrder=null;
    onSaved(id);
   }catch(failure){error=failure;}
   finally{session.saving=false;}
   if(error)showIssues(info,root,error);
+  else if(samePage(info))navigate({replace:true});
   else refresh(session);
+ }
+ function confirmUndo(info,trigger,orderId){
+  const {session,id}=info,order=session.orders?.find(entry=>entry.id===orderId);
+  if(!order||session.undoing||session.ordersLoading||!session.snapshot||session.snapshot.locked)return;
+  const {dialog,dismiss}=showDialog(info,trigger,'Annullare la correzione?',`<p>Verranno ripristinate tutte le modifiche dell’ordine ${esc(orderId)}.</p>
+   <div class="roster-order-confirm"><button type="button" class="secondary" data-close-order>Indietro</button><button type="button" class="primary" data-confirm-undo>Conferma annullamento</button></div><p role="alert" data-undo-error></p>`);
+  dialog.querySelector('[data-close-order]').onclick=dismiss;
+  const confirm=dialog.querySelector('[data-confirm-undo]');
+  confirm.onclick=async()=>{
+   if(session.undoing)return;
+   session.undoing=true;confirm.disabled=true;confirm.setAttribute('aria-busy','true');
+   const status=dialog.querySelector('[data-undo-error]');status.textContent='';
+   try{
+    session.snapshot=await api.undoRosterOrder(id,orderId);
+    session.orders=session.orders.filter(entry=>entry.id!==orderId);
+    session.ordersMessage=`Ordine ${orderId} annullato.`;
+    invalidateCatalog(session);onSaved(id);dismiss();refresh(session);
+   }catch(error){
+    const messages=error.issues?.map(issue=>issue.message);
+    status.textContent=messages?.join(' ')||error.message;
+   }finally{session.undoing=false;confirm.disabled=false;confirm.removeAttribute('aria-busy');}
+  };
  }
  function handle(event){
   const button=event.target.closest('[data-roster-edit]'),info=current();
   if(!button||button.disabled||!info)return;
-  const {session,teamId,review}=info,{rosterEdit,rosterPlayer,rosterTeam,reviewTeam}=button.dataset;
+  const {session,teamId,review}=info,{rosterEdit,rosterPlayer,rosterTeam,reviewTeam,orderId}=button.dataset;
+  if(rosterEdit==='orders'){navigate({orders:true});return;}
+  if(rosterEdit==='more-orders'||rosterEdit==='retry-orders'){void loadOrders(info,rosterEdit==='more-orders');refresh(session);return;}
+  if(rosterEdit==='undo-order'){confirmUndo(info,button,orderId);return;}
   if(rosterEdit==='team'){navigate({teamId:rosterTeam});return;}
   if(rosterEdit==='review'){void verify(info,event.currentTarget);return;}
   if(rosterEdit==='back-review'||rosterEdit==='back-teams'){navigate({teamId:review?teamId:null,back:true});return;}

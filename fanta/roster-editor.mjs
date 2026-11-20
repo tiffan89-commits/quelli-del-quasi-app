@@ -34,7 +34,7 @@ export function rosterEditorView(state){
  }))};
 }
 
-export function applyRosterBatch(state,changes,{validateLimits=true}={}){
+export function applyRosterBatch(state,changes,{validateLimits=true,restoreSales=[]}={}){
  if(rosterLocked(state))fail(lockMessage(state),409);
  const teams=state.teams.map(team=>({...team,roster:[...team.roster]}));
  const byTeam=new Map(teams.map(team=>[team.id,team]));
@@ -42,7 +42,8 @@ export function applyRosterBatch(state,changes,{validateLimits=true}={}){
  const touched=new Set();
  const audit=[],issues=[];
  // Release players first, so a valid batch can free both credits and slots.
- for(const change of [...changes.filter(c=>c.kind!=='add'),...changes.filter(c=>c.kind==='add')]){
+ const inserting=change=>change.kind==='add'||change.kind==='restore';
+ for(const change of [...changes.filter(c=>!inserting(c)),...changes.filter(inserting)]){
   const {teamId,playerId,kind,price,previousPrice}=change,team=byTeam.get(teamId);
   const issue=message=>issues.push({teamId,playerId,message});
   if(!team){issue('La squadra non è più disponibile.');continue;}
@@ -50,9 +51,10 @@ export function applyRosterBatch(state,changes,{validateLimits=true}={}){
   if(kind!=='remove'&&price>state.rules.budget){issue(`Il prezzo massimo è ${state.rules.budget} crediti.`);continue;}
   const index=team.roster.findIndex(p=>p.id===playerId),before=team.roster[index];
   let after=null;
-  if(kind==='add'){
-   const player=catalog.get(playerId);
-   if(!player||player.active===false||teams.some(t=>t.roster.some(p=>p.id===playerId&&!p.unmapped))){issue('Il calciatore non è più disponibile tra i liberi.');continue;}
+  if(inserting(change)){
+   const player=kind==='restore'?change.player:catalog.get(playerId);
+   const assigned=!!before||!player?.unmapped&&teams.some(t=>t.roster.some(p=>p.id===playerId&&!p.unmapped));
+   if(!player||kind==='add'&&player.active===false||assigned){issue('Il calciatore non è più disponibile tra i liberi.');continue;}
    after={...player,price};team.roster.push(after);
   }else{
    if(!before){issue('Il calciatore non è più in questa rosa.');continue;}
@@ -71,7 +73,33 @@ export function applyRosterBatch(state,changes,{validateLimits=true}={}){
   for(const [role,{have,max}] of Object.entries(budget.roles))if(have>max)issue(`${roleLabels[role]} in rosa: ${have} su ${max} consentiti.`);
  }
  rejectIssues(issues);
- const ids=new Set(audit.filter(change=>!change.before?.unmapped).map(change=>change.playerId));
- const log=state.auction.log.map(sale=>ids.has(sale.player.id)&&!sale.undone?{...sale,released:true}:sale);
+ const ids=new Set(audit.filter(change=>!(change.before||change.after)?.unmapped).map(change=>change.playerId));
+ const restored=new Set(restoreSales);
+ const log=state.auction.log.map(sale=>!sale.undone&&ids.has(sale.player.id)?{...sale,released:!restored.has(sale.id)}:sale);
  return {state:{...state,teams,auction:{...state.auction,log,version:state.auction.version+1}},audit};
+}
+
+export const rosterOrderId=id=>typeof id==='string'&&/^[1-9]\d{0,18}$/u.test(id)&&BigInt(id)<=9223372036854775807n;
+
+export function inverseRosterOrder(state,order){
+ const catalog=new Map(state.players.map(player=>[player.id,player]));
+ const entries=order.restore?.entries||[],rosters=order.restore?.rosters||[];
+ const changes=order.changes.map(({kind,teamId,before,after})=>{
+  if(kind==='add')return {kind:'remove',teamId,playerId:after.id,previousPrice:after.price};
+  if(kind==='price')return {kind:'price',teamId,playerId:after.id,previousPrice:after.price,price:before.price};
+  const original=catalog.get(before.id);
+  const saved=entries.find(e=>e.team_id===teamId&&(e.player_id===before.id||!e.player_id&&e.source_id===before.id));
+  const wasMapped=before.unmapped===false||before.unmapped===undefined&&!!original;
+  const role=order.restore?(saved?.role||original?.role||before.role):before.role;
+  const player={...original,...before,role,unmapped:!wasMapped,club:original?.club||saved?.data?.club||before.club||''};
+  if(!order.restore){
+   const playerId=wasMapped?before.id:null;
+   if(wasMapped)rosters.push({team_id:teamId,player_id:playerId,price:before.price});
+   entries.push({team_id:teamId,player_id:playerId,source_id:wasMapped?'native:'+playerId:before.id,name:before.name,role:before.role,price:before.price,data:{club:player.club,originalName:before.name,aliases:[]}});
+  }
+  return {kind:'restore',teamId,playerId:before.id,player,price:before.price};
+ });
+ const restore={entries,rosters,sales:order.restore?.sales||[]};
+ const result=applyRosterBatch(state,changes,{restoreSales:restore.sales});
+ return {...result,restore};
 }

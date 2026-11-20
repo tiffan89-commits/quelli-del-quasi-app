@@ -8,18 +8,19 @@ async function repairLineups(c,league,team,player,now){
   ))`,[league,team,player,new Date(now).toISOString()]);
 }
 
-export async function persistRosterBatch(c,league,actor,input,audit,now){
+export async function applyRosterRows(c,league,audit,now,restore){
  const rows=audit.map(change=>({team_id:change.teamId,player_id:change.playerId,kind:change.kind,
-  mapped:!change.before?.unmapped,price:change.after?.price,name:change.after?.name,role:change.after?.role,club:change.after?.club||''}));
+  mapped:!(change.before||change.after)?.unmapped,price:change.after?.price,name:change.after?.name,role:change.after?.role,club:change.after?.club||''}));
  const changes=`jsonb_to_recordset($2::jsonb) AS x(team_id text,player_id text,kind text,mapped boolean,price integer,name text,role text,club text)`;
  const entry=`e.league_id=$1 AND e.team_id=x.team_id AND ((x.mapped AND e.player_id=x.player_id) OR (NOT x.mapped AND e.player_id IS NULL AND e.source_id=x.player_id))`;
  const roster=`r.league_id=$1 AND r.team_id=x.team_id AND x.mapped AND r.player_id=x.player_id`;
  const params=[league,JSON.stringify(rows)];
- await c.query(`UPDATE fanta.sales SET released=true WHERE league_id=$1 AND NOT undone AND NOT released
-  AND player_id IN (SELECT x.player_id FROM ${changes} WHERE x.mapped)`,params);
+ const {rows:sales}=await c.query(`UPDATE fanta.sales SET released=true WHERE league_id=$1 AND NOT undone AND NOT released
+  AND player_id IN (SELECT x.player_id FROM ${changes} WHERE x.mapped) RETURNING id`,params);
+ const removed={entries:[],rosters:[],sales:sales.map(row=>row.id)};
  if(rows.some(x=>x.kind==='remove')){
-  await c.query(`DELETE FROM fanta.roster_entries e USING ${changes} WHERE ${entry} AND x.kind='remove'`,params);
-  await c.query(`DELETE FROM fanta.rosters r USING ${changes} WHERE ${roster} AND x.kind='remove'`,params);
+  removed.entries=(await c.query(`DELETE FROM fanta.roster_entries e USING ${changes} WHERE ${entry} AND x.kind='remove' RETURNING e.*`,params)).rows;
+  removed.rosters=(await c.query(`DELETE FROM fanta.rosters r USING ${changes} WHERE ${roster} AND x.kind='remove' RETURNING r.*`,params)).rows;
   await c.query(`UPDATE fanta.lineups l SET source_data=jsonb_set(source_data,'{needsRepair}','true')
    FROM fanta.rounds r WHERE l.competition_id=r.competition_id AND l.round=r.number AND l.league_id=$1 AND r.deadline>$3
    AND EXISTS(SELECT 1 FROM ${changes} WHERE x.kind='remove' AND x.team_id=l.team_id AND
@@ -38,8 +39,19 @@ export async function persistRosterBatch(c,league,actor,input,audit,now){
    SELECT $1,x.team_id,'native:'||x.player_id,x.name,x.role,x.price,x.player_id,
     jsonb_build_object('club',x.club,'originalName',x.name,'aliases','[]'::jsonb) FROM ${changes} WHERE x.kind='add'`,params);
  }
- const player=p=>p?{id:p.id,name:p.name,price:p.price,role:p.role}:null;
- await c.query(`INSERT INTO fanta.roster_changes(league_id,actor,kind,data) VALUES($1,$2,'batch',$3)`,[league,actor,JSON.stringify({input,changes:audit.map(change=>({teamId:change.teamId,kind:change.kind,before:player(change.before),after:player(change.after)}))})]);
+ if(restore?.rosters.length)await c.query(`INSERT INTO fanta.rosters(league_id,team_id,player_id,price)
+  SELECT $1,team_id,player_id,price FROM jsonb_populate_recordset(NULL::fanta.rosters,$2::jsonb)`,[league,JSON.stringify(restore.rosters)]);
+ if(restore?.entries.length)await c.query(`INSERT INTO fanta.roster_entries(league_id,team_id,source_id,name,role,price,player_id,data)
+  SELECT $1,team_id,source_id,name,role,price,player_id,data FROM jsonb_populate_recordset(NULL::fanta.roster_entries,$2::jsonb)`,[league,JSON.stringify(restore.entries)]);
+ if(restore?.sales.length)await c.query('UPDATE fanta.sales SET released=false WHERE league_id=$1 AND id=ANY($2::text[]) AND NOT undone',[league,restore.sales]);
+ return removed;
+}
+
+export async function persistRosterBatch(c,league,actor,input,audit,now){
+ const restore=await applyRosterRows(c,league,audit,now);
+ const player=p=>p?{id:p.id,name:p.name,price:p.price,role:p.role,club:p.club,unmapped:!!p.unmapped}:null;
+ const changes=audit.map(change=>({teamId:change.teamId,kind:change.kind,before:player(change.before),after:player(change.after)}));
+ await c.query(`INSERT INTO fanta.roster_changes(league_id,actor,kind,data) VALUES($1,$2,'batch',$3)`,[league,actor,JSON.stringify({input,changes,restore})]);
 }
 
 async function moveTradePlayers(c,league,moves,now){

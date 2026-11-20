@@ -7,7 +7,7 @@ import {queueRandom,randomStatus,claimRandom,setSlips,ensurePilotBars} from './r
 import {dispatchFanta} from './jobs.mjs';
 import {pilotTeams,claimPilot} from './pilot.mjs';
 import {rosterAction} from './roster-market.mjs';
-import {rosterBatch} from './roster-editor.mjs';
+import {rosterBatch,rosterOrderId} from './roster-editor.mjs';
 import {tradeAction,tradeView,tradeWindow} from './trades.mjs';
 import {saveCompetitionSummary} from './summaries.mjs';
 import {sqlFantaStore} from './store.mjs';
@@ -62,6 +62,14 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(route==='roster/players'&&request.method==='GET')return reply(await store.rosterPlayers(u.id,id));
    if(route==='roster/check'&&request.method==='POST')return reply(await store.checkRosterBatch(u.id,id,rosterBatch(p)));
    if(route==='roster/batch'&&request.method==='POST')return reply(await store.saveRosterBatch(u.id,id,rosterBatch(p),now()));
+   if(route==='roster/orders'&&request.method==='GET'){
+    const before=url.searchParams.get('before');if(before!==null&&!rosterOrderId(before))fail('Pagina dello storico non valida');
+    return reply(await store.rosterOrders(u.id,id,before));
+   }
+   if(route==='roster/orders/undo'&&request.method==='POST'){
+    if(!rosterOrderId(p.order))fail('Ordine di correzione non valido');
+    return reply(await store.undoRosterOrder(u.id,id,p.order,now()));
+   }
    if(route==='league/reminder'&&request.method==='POST'){
     validateSubmissionChannel(p.channel);
     if(allowed.find(l=>l.id===id).role!=='admin')fail('Serve il presidente di lega',403);

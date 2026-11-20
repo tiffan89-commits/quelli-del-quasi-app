@@ -9,7 +9,7 @@ const NOTIFY_DEFAULTS={lineupReminder:true,roundStart:true,liveEvents:true,resul
 // Same contracts as the real adapter. No fetch, storage, provider, email or push calls.
 export function createDemoFantaApi({state=()=> 'da-schierare',delay=0,user={id:'demo-user',username:'ospite',name:'Il Quasi di prova'},access='demo',onSlips=()=>{},onScenario=()=>{},fullRosters=true}={}){
  const engine=createDemoAuctionEngine({fullRosters}),rooms=new Map();let selected=null,scenario=null,settings={notify:{...NOTIFY_DEFAULTS}};
- const room=id=>{if(!LEAGUES.some(l=>l.id===id))throw Error('Lega non disponibile');if(!rooms.has(id))rooms.set(id,{competitions:[{id:'demo-main',name:'Campionato del bar',kind:'league',status:'active',start_round:1}],lineups:new Map(),branding:{},teamName:TEAMS[MY_TEAM].name,audit:[],slipsEnabled:true,links:{}});return rooms.get(id);};
+ const room=id=>{if(!LEAGUES.some(l=>l.id===id))throw Error('Lega non disponibile');if(!rooms.has(id))rooms.set(id,{competitions:[{id:'demo-main',name:'Campionato del bar',kind:'league',status:'active',start_round:1}],lineups:new Map(),branding:{},teamName:TEAMS[MY_TEAM].name,audit:[],orders:[],nextOrder:1,slipsEnabled:true,links:{}});return rooms.get(id);};
  const competition=id=>room(id).competitions.find(c=>c.id===selected)||room(id).competitions[0];
  const phase=id=>(scenario||state())==='da-schierare'&&room(id).lineups.has(CURRENT_ROUND)?'schierata':scenario||state();
  const nameDeadline=id=>['in-corso','calcolata'].includes(phase(id))?new Date(0).toISOString():null;
@@ -75,7 +75,36 @@ export function createDemoFantaApi({state=()=> 'da-schierare',delay=0,user={id:'
    }
    return {ok:true};
   }),
-  saveRosterBatch:(id,{changes})=>write(()=>{admin(id);engine.correctBatch(id,changes);return rosterEditor(id);}),
+  saveRosterBatch:(id,{changes,requestId})=>write(()=>{
+   const before=rosterEditor(id),r=room(id);
+   if(r.orders.some(order=>order.requestId===requestId))return before;
+   engine.correctBatch(id,changes);
+   const after=rosterEditor(id);
+   const find=(view,change)=>view.teams.find(t=>t.team.id===change.teamId)?.roster.find(p=>p.id===change.playerId)||null;
+   r.orders.unshift({id:String(r.nextOrder++),createdAt:new Date().toISOString(),requestId,changes:changes.map(change=>({
+    kind:change.kind,teamId:change.teamId,before:find(before,change),after:find(after,change),
+   }))});
+   return after;
+  }),
+  rosterOrders:(id,before)=>read(()=>{
+   admin(id);
+   const available=room(id).orders.filter(order=>!order.reversed&&(!before||Number(order.id)<Number(before)));
+   const orders=available.slice(0,20);
+   return {orders,next:available.length>20?orders.at(-1).id:null};
+  }),
+  undoRosterOrder:(id,orderId)=>write(()=>{
+   admin(id);
+   const ledger=room(id).orders,order=ledger.find(entry=>entry.id===orderId);
+   if(!order)throw Error('Ordine di correzione non trovato');
+   if(order.reversed)return rosterEditor(id);
+   const players=new Set(order.changes.map(change=>(change.before||change.after).id));
+   if(ledger.some(entry=>!entry.reversed&&Number(entry.id)>Number(orderId)&&entry.changes.some(change=>players.has((change.before||change.after).id))))throw Error('Annulla prima le correzioni successive coinvolte.');
+   engine.correctBatch(id,order.changes.map(({teamId,kind,before,after})=>({teamId,playerId:(before||after).id,
+    kind:kind==='add'?'remove':kind==='remove'?'add':'price',price:before?.price,previousPrice:after?.price,
+   })));
+   order.reversed=true;
+   return rosterEditor(id);
+  }),
   auction:id=>write(()=>engine.auctionFor(id)),auctionPlayers:id=>read(()=>engine.auctionPlayersFor(id)),
   auctionAssigned:(id,q)=>read(()=>engine.auctionAssigned(id,q)),auctionRelease:(id,p,r)=>write(()=>engine.release(id,p,r)),auctionReleaseUndo:(id,p)=>write(()=>engine.releaseUndo(id,p)),auctionReleasesDone:id=>write(()=>engine.releasesDone(id)),
   bid:(id,lotId,amount)=>write(()=>engine.bidFake(id,{lotId,amount})),pass:(id,lotId)=>write(()=>engine.passFake(id,{lotId})),nominate:(id,playerId,amount)=>write(()=>engine.nominateFake(id,{playerId,amount})),

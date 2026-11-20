@@ -179,12 +179,12 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   const inPresidentTool=tool=>isPresident()&&ui.adminTool===tool;
   const rosterEditor=createRosterEditor({api,context:()=>{
     if(destroyed||suspended||ui.tab!=='presidente'||!inPresidentTool('rose')||!api.rosterEditor)return null;
-    const route=readAppRoute(),id=league().id;
-    return {id,teamId:route?.section==='rose'&&route.league===id?route.rosterTeam:null,review:route?.section==='rose'&&route.league===id&&!!route.rosterReview,back:presidentBack(ownsLinkedBar())};
-  },render:refreshRosterEditor,navigate:({teamId,review,back,replace})=>{
-    const route={mode:'fanta',page:'presidente',section:'rose',league:league()?.id,rosterTeam:teamId,rosterReview:review};
+    const route=readAppRoute(),id=league().id,active=route?.section==='rose'&&route.league===id;
+    return {id,teamId:active?route.rosterTeam:null,review:active&&!!route.rosterReview,orders:active&&!!route.rosterOrders,back:presidentBack(ownsLinkedBar())};
+  },render:refreshRosterEditor,navigate:({teamId,review,orders,back,replace})=>{
+    const route={mode:'fanta',page:'presidente',section:'rose',league:league()?.id,rosterTeam:teamId,rosterReview:review,rosterOrders:orders};
     const previous=readAppRoute(history.state?.qdqPreviousRoute||'');
-    if(back&&previous?.mode==='fanta'&&previous.section==='rose'&&previous.league===route.league&&(previous.rosterTeam||null)===(teamId||null)&&!previous.rosterReview){history.back();return;}
+    if(back&&previous?.mode==='fanta'&&previous.section==='rose'&&previous.league===route.league&&(previous.rosterTeam||null)===(teamId||null)&&!previous.rosterReview&&!previous.rosterOrders){history.back();return;}
     writeAppRoute(route,{replace:!!(back||replace)});render();scrollTo(0,0);
     root.querySelector('.roster-editor-heading h1')?.focus({preventScroll:true});
   },onSaved:id=>{
