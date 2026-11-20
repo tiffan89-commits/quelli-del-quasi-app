@@ -224,23 +224,24 @@ function formationView(data, sq, now) {
   return studio+deadlineCard(data,d,{...sq,dirty:false},now)+note+renderPitchFlip(savedPitch(d,byId),savedBench(d,byId),'Panchina',!!sq.benchFlipped);
 }
 
-function rosterView(data, d) {
+export function rosterView(data, d, actions) {
   const where = id => Object.values(d.slots).includes(id) ? 'campo' : d.bench.includes(id) ? 'panchina' : '';
+  const draftGroups=actions?[
+    ['Da svincolare',data.roster.filter(p=>p.removing)],['Da aggiungere',data.roster.filter(p=>p.adding)],
+  ].filter(([,players])=>players.length):[];
+  const groups=[...draftGroups,...'PDCA'.split('').map(role=>[ROLE_PLURAL[role],data.roster.filter(p=>p.role===role&&!p.removing&&!p.adding)])];
   return `<div class="fanta-roster">
-    <div class="fanta-roster-legend"><span>FM fantamedia</span><span>MV media voto</span><span>Pr presenze</span></div>
-    ${'PDCA'.split('').map(role => {
-      const list = data.roster.filter(p => p.role === role);
-      return `<section class="fanta-group"><h4>${ROLE_PLURAL[role]} <span>${list.length}</span></h4>${list.map(p => `
-        <div class="fanta-roster-row">
+    ${actions?'':'<div class="fanta-roster-legend"><span>FM fantamedia</span><span>MV media voto</span><span>Pr presenze</span></div>'}
+    ${groups.map(([label,list])=>`<section class="fanta-group"><h4>${label} <span>${list.length}</span></h4>${list.map(p => `
+        <div class="fanta-roster-row${p.removing?' is-removing':p.adding?' is-adding':''}">
           <span class="fanta-mini-shirt">${playerVisual(p)}</span>
-          <span class="fanta-p-name"><b>${esc(p.name)} ${statusBadge(p.status)}</b><small>${esc(p.club)} · ${esc(nextLabel(p.next))}${where(p.id) ? ` · <em class="is-${where(p.id)}">in ${where(p.id)}</em>` : ''}</small>
-            ${p.status?.type && p.status.type !== 'ok' ? `<small class="fanta-st-note">${esc(p.status.note)}</small>` : ''}</span>
-          <span class="fanta-roster-stats"><b>${avg(p.stats.avgFanta)}</b><small>FM</small></span>
+          <span class="fanta-p-name"><b>${esc(p.name)} ${actions?'':statusBadge(p.status)}</b><small>${p.removing||p.adding?`${esc(p.role)} · `:''}${esc(p.club)}${!actions&&p.next?` · ${esc(nextLabel(p.next))}`:''}${where(p.id) ? ` · <em class="is-${where(p.id)}">in ${where(p.id)}</em>` : ''}</small>
+            ${!actions&&p.status?.type && p.status.type !== 'ok' ? `<small class="fanta-st-note">${esc(p.status.note)}</small>` : ''}</span>
+          ${actions?actions(p):`<span class="fanta-roster-stats"><b>${avg(p.stats.avgFanta)}</b><small>FM</small></span>
           <span class="fanta-roster-stats"><b>${avg(p.stats.avgVote)}</b><small>MV</small></span>
           <span class="fanta-roster-stats"><b>${p.stats.played??'–'}</b><small>Pr</small></span>
-          <span class="fanta-roster-price">${p.price}<small>cr</small></span>
-        </div>`).join('')}</section>`;
-    }).join('')}
+          <span class="fanta-roster-price">${p.price}<small>cr</small></span>`}
+        </div>`).join('')}</section>`).join('')}
   </div>`;
 }
 

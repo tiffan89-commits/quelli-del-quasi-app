@@ -7,6 +7,7 @@ import {queueRandom,randomStatus,claimRandom,setSlips,ensurePilotBars} from './r
 import {dispatchFanta} from './jobs.mjs';
 import {pilotTeams,claimPilot} from './pilot.mjs';
 import {rosterAction} from './roster-market.mjs';
+import {rosterBatch} from './roster-editor.mjs';
 import {tradeAction,tradeView,tradeWindow} from './trades.mjs';
 import {saveCompetitionSummary} from './summaries.mjs';
 import {sqlFantaStore} from './store.mjs';
@@ -44,7 +45,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     const initial=selected?await store.league(u.id,selected.id,s=>{const r=currentRound(s,now());if(url.searchParams.get('lite')==='1')return {home:homeView(s,u.id,now())};const mine=s.teams.find(t=>t.userId===u.id)?.id,m=r&&s.matchups.find(m=>m.round===r.number&&(m.home_id===mine||m.away_id===mine));return {home:homeView(s,u.id,now()),team:teamView(s,u.id,now()),league:leagueView(s,u.id,now()),round:r?roundView(s,r,u.id,now()):null,matchup:m?matchupView(s,r,m.id,u.id,now()):null};},{competition:url.searchParams.get('competition'),catalog:false,detailedVotes:url.searchParams.get('lite')!=='1'}):{};
     if(initial.home)initial.home=await withFinalVerification(initial.home,{now:now()});return reply({me:await me(),leagues,teamChoices:choices,choiceLeagueId:choice?.id||null,...initial});
    }
-   let p={};if(request.method==='POST'){const body=await request.text();if(body.length>(route==='team/logo'?350000:16384))fail('Richiesta troppo grande',413);try{p=JSON.parse(body);}catch{fail('Richiesta non valida');}}
+   let p={};if(request.method==='POST'){const body=await request.text();if(body.length>(route==='team/logo'?350000:['roster/batch','roster/check'].includes(route)?262144:16384))fail('Richiesta troppo grande',413);try{p=JSON.parse(body);if(!p||typeof p!=='object'||Array.isArray(p))throw Error();}catch{fail('Richiesta non valida');}}
    if(route==='entry/claim'&&request.method==='POST'){if(env.FANTA_ACQUISITION_ENABLED!=='true')fail('Le iscrizioni alla prova sono in pausa.',403);return reply(await claimEntry(u,{connect:store.connect}));}
    if(route==='pilot/claim')fail('Le iscrizioni pubbliche alla lega pilota sono chiuse',410);
    if(route==='settings'&&request.method==='POST'){const keys=['lineupReminder','roundStart','liveEvents','results','auction'];if(!p.notify||keys.some(k=>typeof p.notify[k]!=='boolean')||Object.keys(p.notify).some(k=>!keys.includes(k)))fail('Impostazioni non valide');return reply(await store.settings(u.id,{notify:Object.fromEntries(keys.map(k=>[k,p.notify[k]]))}));}
@@ -57,6 +58,10 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(route==='league/slips'&&request.method==='POST'){if(!allowed.some(l=>l.id===p.league))fail('Lega non accessibile',403);return reply(await setSlips(u,p.league,p.enabled,{connect:store.connect}));}
    if(route==='leagues'&&request.method==='GET')return reply(allowed);
    const id=request.method==='GET'?url.searchParams.get('league'):p.league;if(!allowed.some(l=>l.id===id))fail('Lega non accessibile',403);
+   if(route==='roster/editor'&&request.method==='GET')return reply(await store.rosterEditor(u.id,id));
+   if(route==='roster/players'&&request.method==='GET')return reply(await store.rosterPlayers(u.id,id));
+   if(route==='roster/check'&&request.method==='POST')return reply(await store.checkRosterBatch(u.id,id,rosterBatch(p)));
+   if(route==='roster/batch'&&request.method==='POST')return reply(await store.saveRosterBatch(u.id,id,rosterBatch(p),now()));
    if(route==='league/reminder'&&request.method==='POST'){
     validateSubmissionChannel(p.channel);
     if(allowed.find(l=>l.id===id).role!=='admin')fail('Serve il presidente di lega',403);
@@ -121,7 +126,6 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
      leagueUpdate={league:id,change:'fanta-members',recipients:s.teams.map(t=>t.userId).filter(Boolean)};
      return {ok:true};
     }
-    if(route==='roster/players'&&!isWrite){if(s.league.adminUid!==u.id)fail('Serve il presidente',403);return s.players.filter(p=>p.active!==false&&!s.teams.some(t=>t.roster.some(x=>x.id===p.id)));}
     if(route==='roster/audit'&&!isWrite){if(s.league.adminUid!==u.id)fail('Serve il presidente',403);return (await c.query(`SELECT a.actor,a.kind,a.data,a.created_at,coalesce((SELECT u->>'username' FROM fanta_state CROSS JOIN LATERAL jsonb_array_elements(payload->'users') u WHERE u->>'id'=a.actor),'Utente rimosso') AS username FROM fanta.roster_changes a WHERE a.league_id=$1 ORDER BY a.id DESC LIMIT 100`,[id])).rows;}
     if(route.startsWith('roster/')&&isWrite){const after=rosterAction(s,route.slice(7),p,u.id);await store.persistRoster(c,s,after,{actor:u.id,kind:route.slice(7),input:p,now:now()});return teamView(after,u.id,now(),p.toTeamId||p.teamId);}
     if(route==='league/configure'&&isWrite)return competitionAction(s,c,p,u.id,'configure',now());
@@ -161,7 +165,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(route==='home')return homeView(s,u.id,now());if(route==='team'){const r=lineupRound(s,now());s.probables=await readPlayProbabilities(c,r?.seriea_round,s.league.season);const target=s.teams.find(t=>url.searchParams.has('team')?t.id===url.searchParams.get('team'):t.userId===u.id);s.presenceMinutes=await readPresenceMinutes(c,(target?.roster||[]).filter(p=>probabilityFor(p,s.probables,r?.seriea_round)?.source!=='official'&&!['injured','suspended'].includes(p.status?.type)),s.league.season,{cache:presenceCache,now:now()});return teamView(s,u.id,now(),url.searchParams.get('team'));}if(route==='league')return leagueView(s,u.id,now());
     const n=Number(url.searchParams.get('number')),r=s.rounds.find(r=>r.number===n)||(!url.searchParams.has('number')?currentRound(s):null);if(!r)fail('Giornata non trovata',404);
     if(route==='round')return roundView(s,r,u.id,now());if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}fail('Pagina non trovata',404);
-   },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players')||route==='roster/players',detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
+   },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players'),detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
    if(leagueUpdate)context.leagueUpdate?.(leagueUpdate);
    if(isTrade&&isWrite){
     const {notice,update,...response}=result;
@@ -171,6 +175,6 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    }
    if(auctionNotice)try{await dispatchFanta('auction-notify:'+auctionNotice,env);}catch{/* Durable notifications remain queued if dispatch needs a retry. */}
    return reply(route==='home'?await withFinalVerification(result,{now:now()}):result);
-  }catch(e){return reply({error:e.status?e.message:'Il Fanta non è temporaneamente disponibile. Riprova tra poco.'},e.status||503);}
+  }catch(e){return reply({error:e.status?e.message:'Il Fanta non è temporaneamente disponibile. Riprova tra poco.',...(e.issues?{issues:e.issues}:{})},e.status||503);}
  };
 }

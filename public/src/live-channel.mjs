@@ -22,7 +22,7 @@ async function requestTransport(url, {fetcher = fetch, timeoutMs = 10000, signal
       const response = await fetcher(url, {...options, signal: controller.signal});
       if (response.status === 304) return {notModified: true, etag: response.headers.get('etag')};
       const data = await response.json().catch(()=>{throw Object.assign(Error('Il servizio non ha risposto correttamente. Riprova tra poco.'),{status:response.status});});
-      if (!response.ok) throw Object.assign(new Error(data.error || 'Operazione non riuscita'), {status: response.status});
+      if (!response.ok) throw Object.assign(new Error(data.error || 'Operazione non riuscita'), {status: response.status,...(Array.isArray(data.issues)?{issues:data.issues}:{})});
       return meta ? {data, etag: response.headers.get('etag')} : data;
     })()]);
   } finally {

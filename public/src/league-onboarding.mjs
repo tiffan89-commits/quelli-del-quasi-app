@@ -3,7 +3,7 @@ import {quasiBanner} from './quasi-scene.mjs';
 import {esc} from './fanta/formato.mjs';
 import {backButton} from './back-navigation.mjs';
 
-export const isLeagueEntryPage=page=>['join-league','join-code','create-league','activate-fanta'].includes(page);
+export const isLeagueEntryPage=page=>['join-league','create-league','activate-fanta'].includes(page);
 
 export function renderLeagueOnboarding({user}){
  return `<section class="league-onboarding" aria-label="Scegli come entrare in una lega">
@@ -16,13 +16,13 @@ export function renderLeagueOnboarding({user}){
 }
 
 export function renderLeagueEntry({page,verified,league}){
- const join=page==='join-league',code=page==='join-code',attach=page==='activate-fanta'&&!!league;
- const title=join?'Entra in una lega':code?'Entra con codice':attach?'Attiva il Fanta':'Crea lega · Bar + Fanta';
+ const join=page==='join-league',attach=page==='activate-fanta'&&!!league;
+ const title=join?'Leghe disponibili':attach?'Attiva il Fanta':'Crea lega · Bar + Fanta';
  const back=attach?'admin':league?'barleague':'lega';
  const verification='<p class="notice">Conferma l’email per continuare. <button type="button" class="secondary" data-bar-page="profilo">Impostazioni account</button></p>';
  return `<section class="league-onboarding league-entry">
    <header class="league-entry-heading">${backButton(`data-bar-page="${back}"`)}<h1 tabindex="-1">${title}</h1></header>
-   ${!verified?verification:join?'<div class="card league-onboarding-card" data-league-directory></div>':code?'<form class="card league-onboarding-card" data-join-code><label class="field">Codice della lega<input name="code" required maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false"></label><button type="submit" class="primary">Entra</button><p role="alert"></p></form>':`<form class="card league-onboarding-card" id="create">
+   ${!verified?verification:join?'<div class="card league-onboarding-card" data-league-directory></div>':`<form class="card league-onboarding-card" id="create">
      ${leagueCreationFields(attach?{name:league.name,size:Math.max(2,league.members.length),locked:true}:{})}
      <button type="submit" class="primary">${attach?'Attiva Fanta':'Crea Bar e Fanta'}</button>
    </form>`}

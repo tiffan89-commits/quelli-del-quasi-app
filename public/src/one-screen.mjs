@@ -80,9 +80,10 @@ export function startOneScreen(doc = globalThis.document) {
   const round=el.querySelector('#round-switch,[data-fanta-slip-round]')?.value||'';
   return (win.location?.hash || '') + '|' + picked.join('|')+'|'+round;
  }
- const flow=()=>!drill.length&&main?.hasAttribute('data-os-flow');
+ const flow=()=>drill.length?drill.at(-1).el.matches('[data-president-section]'):main?.hasAttribute('data-os-flow');
  const detailTitle = summary => (summary?.querySelector('b,strong')||summary)?.textContent?.trim()||'Dettaglio';
  function clearDrillView(removeNav=true){
+  host?.classList.remove('os-settings-detail');
   if(removeNav)drillNav?.remove();
   main?.classList.remove('os-drill','os-drill-parent');
   for(const el of main?.querySelectorAll('.os-drill-parent,.os-drill-path,.os-drill-target')||[])el.classList.remove('os-drill-parent','os-drill-path','os-drill-target');
@@ -91,6 +92,7 @@ export function startOneScreen(doc = globalThis.document) {
   clearDrillView(false);
   const detail=drill.at(-1)?.el;
   if(!detail)return;
+  host.classList.toggle('os-settings-detail',detail.matches('[data-president-section]'));
   main.classList.add('os-drill');
   detail.classList.add('os-drill-target');
   for(let el=detail;el&&el!==main;el=el.parentElement){

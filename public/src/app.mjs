@@ -356,7 +356,7 @@ function me() {
   };
 }
 const barRoutePages={solleciti:'solleciti',seriea:'seriea',partecipanti:'partecipanti',oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'};
-const barPageFor=route=>isLeagueEntryPage(route?.page)?route.page:barRoutePages[route?.page]||'lega';
+const barPageFor=route=>route?.page==='join-code'?'join-league':isLeagueEntryPage(route?.page)?route.page:barRoutePages[route?.page]||'lega';
 const deletedLeagues=new Set();
 let leagueRefreshQueued=false,leagueWorkspaceView=null,presidentOperation=null,presidentNative=null;
 let finishSnapshotRefresh=null,activeSnapshotRefresh=null;
@@ -793,14 +793,6 @@ function render() {
   leagueWorkspaceView=workspace&&l?bindLeagueWorkspace(workspace,{load:state.user.demo?()=>Promise.resolve(barLeagueFallback(barDemo?.state.leagues.find(item=>item.id===l.id)||l,state.user.id)):loadLeagueWorkspace,remove:removeLeagueParticipant,initial:barLeagueFallback(l,state.user.id),onRemoved:refreshMembershipAfterWrite,onPaint:chatBadge}):null;
   const directory=$('[data-league-directory]');
   if(directory)void bindLeagueDirectory(directory,{api,onJoined:enterAccessLeague,onSupport:openLeagueAccessSupport})();
-  const codeForm=$('[data-join-code]');
-  if(codeForm)codeForm.onsubmit=async event=>{
-   event.preventDefault();const button=codeForm.querySelector('button'),alert=codeForm.querySelector('[role=alert]');
-   if(button.disabled)return;button.disabled=true;alert.textContent='';
-   try{const joined=await api('join',{code:new FormData(codeForm).get('code').trim()});await enterAccessLeague(joined.league);}
-   catch(error){alert.textContent=error.message;}
-   finally{button.disabled=false;}
-  };
   bindPresidentPanel($('#app'));
   bindScreenBack($('#app > main'));
   const presidentWizard=$('.president-workspace');
@@ -2119,7 +2111,7 @@ async function openMatch(id, quiet = false, trigger) {
 }
 
 function supportSection() {
-  return '<p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><div class="support-fields"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label></div><label class="field">Messaggio<textarea name="message" rows="3" minlength="10" maxlength="4000" required></textarea></label><button class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form>';
+  return '<p class="muted">Scrivici un’idea o descrivi cosa non funziona. Risponderemo alla tua email verificata.</p><form id="support-form"><label class="field">Tipo<select name="kind"><option value="suggestion">Suggerimento</option><option value="bug">Bug</option></select></label><label class="field">Titolo<input name="subject" minlength="3" maxlength="100" required></label><label class="field support-message">Messaggio<textarea name="message" rows="5" minlength="10" maxlength="4000" required></textarea></label><button type="submit" class="primary">Invia messaggio</button><p id="support-status" role="status"></p></form>';
 }
 function bindSupportInline() {
   const form = $("#support-form");
@@ -2127,7 +2119,8 @@ function bindSupportInline() {
   form.dataset.request = crypto.randomUUID();
   form.onsubmit = async (e) => {
     e.preventDefault();
-    const b = form.querySelector("button");
+    const b = form.querySelector('button[type="submit"]');
+    if(b.disabled)return;
     b.disabled = true;
     try {
       const result = await api("support", {
