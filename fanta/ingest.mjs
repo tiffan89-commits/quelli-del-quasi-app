@@ -84,7 +84,7 @@ export async function dailyCatalog({connect=connection,provider=fantaProvider(),
     const profile=seasonal.find(s=>s.player.id===p.id),stats=profile?.statistics?.find(s=>s.league?.id===135);
     const injury=reports.find(x=>x.player?.id===p.id),status=reportedStatus(injury?.player?.type,injury?.player?.reason)||{type:'ok',note:''};
     const own=ownVotes.find(x=>x.player_id==='af:'+p.id);
-    return {id:'af:'+p.id,apiId:p.id,name:p.name,jersey:p.number??stats?.games?.number??'',surname:profile?.player?.lastname||null,active:true,role:ROLE[p.position],clubId:'af:'+t.team.id,played:stats?.games?.appearences||0,starts:stats?.games?.lineups||0,matches:Math.max(1,matches),avgFanta:own?.fanta??null,fm:own?.fanta??null,stats:{played:own?.played||0,avgVote:own?.vote??null,avgFanta:own?.fanta??null,goals:stats?.goals?.total||0,assists:stats?.goals?.assists||0},status:next?{...status,fixtureId:'af:'+next.fixture.id}:status,seasonStats:stats||null};
+    return {id:'af:'+p.id,apiId:p.id,name:p.name,jersey:p.number??stats?.games?.number??'',surname:profile?.player?.lastname||null,active:true,role:ROLE[p.position],footballPosition:p.position,clubId:'af:'+t.team.id,played:stats?.games?.appearences||0,starts:stats?.games?.lineups||0,matches:Math.max(1,matches),avgFanta:own?.fanta??null,fm:own?.fanta??null,stats:{played:own?.played||0,avgVote:own?.vote??null,avgFanta:own?.fanta??null,goals:stats?.goals?.total||0,assists:stats?.goals?.assists||0},status:next?{...status,fixtureId:'af:'+next.fixture.id}:status,seasonStats:stats||null};
    });
   }));
   await c.query("UPDATE fanta.players SET data=jsonb_set(data,'{active}','false') WHERE NOT(id=ANY($1::text[])) AND coalesce((data->>'active')::boolean,true)",[values.map(p=>p.id)]);

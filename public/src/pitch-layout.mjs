@@ -1,4 +1,6 @@
 export const PITCH_LAYOUT_VERSION=1;
+const footballPositions={P:'P',G:'P',GK:'P',GOALKEEPER:'P',PORTIERE:'P',D:'D',DF:'D',DEFENDER:'D',DIFENSORE:'D',C:'C',M:'C',MF:'C',MIDFIELDER:'C',CENTROCAMPISTA:'C',A:'A',F:'A',FW:'A',ATTACKER:'A',FORWARD:'A',ATTACCANTE:'A'};
+export const pitchPositionRole=position=>footballPositions[String(position||'').toUpperCase()]||null;
 const parts=formation=>{const p=String(formation||'').split('-').map(Number);return p.length&&p.every(n=>Number.isInteger(n)&&n>0&&n<=5)&&p.reduce((a,b)=>a+b,0)===10?[1,...p]:null;};
 // Canonical view: goalkeeper below, attacking upwards; every line is left→right.
 // Provider grid coordinates take precedence over the ordering of its JSON array.
