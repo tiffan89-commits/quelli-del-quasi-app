@@ -1,4 +1,5 @@
 import {playerSurname} from './player-label.mjs';
+import {sameClub} from './fanta/maglie.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=v=>v==null?'—':esc(v);
 const labels={'Shots on Goal':'Tiri in porta','Shots off Goal':'Tiri fuori','Total Shots':'Tiri totali','Blocked Shots':'Tiri respinti','Shots insidebox':'Tiri in area','Shots outsidebox':'Tiri da fuori','Fouls':'Falli','Corner Kicks':'Calci d’angolo','Offsides':'Fuorigioco','Ball Possession':'Possesso palla','Yellow Cards':'Ammonizioni','Red Cards':'Espulsioni','Goalkeeper Saves':'Parate','Total passes':'Passaggi','Passes accurate':'Passaggi riusciti','Passes %':'Precisione passaggi','expected_goals':'Gol attesi','goals_prevented':'Gol evitati'};
@@ -59,16 +60,28 @@ export function footballComparison(match,{summary=false}={}){
  return `<div class="live-stat-comparison"><div class="live-stat-teams" aria-hidden="true"><span>${esc(match.home)}</span><span>${esc(match.away)}</span></div>${rows.join('')}</div>`;
 }
 
-export function footballPlayerTable(match){
- const stats=match.details?.playerStats||[];
- const sections=['home','away'].map(side=>{
-  const players=stats.filter(p=>p.name&&(p.side?p.side===side:p.team===match[side])&&
-   (Number(p.minutes)>0||numeric(p.rating)!==null||[p.goals,p.assists,p.saves,p.yellow,p.red].some(value=>Number(value)>0)))
-   .sort((a,b)=>(Number(b.minutes)||0)-(Number(a.minutes)||0));
-  if(!players.length)return '';
-  return `<table class="live-player-table"><caption>${esc(match[side])}</caption><thead>
-   <tr><th scope="col">Giocatore</th><th scope="col">Min</th><th scope="col">Gol</th><th scope="col">Assist</th><th scope="col">Voto</th></tr>
-   </thead><tbody>${players.map(p=>`<tr><th scope="row">${esc(playerSurname(p)||p.name)}</th><td>${number(p.minutes)}</td><td>${number(p.goals)}</td><td>${number(p.assists)}</td><td>${displayNumber(numeric(p.rating))}</td></tr>`).join('')}</tbody></table>`;
- }).join('');
- return sections?`<details class="match-statistics live-player-stats"><summary>Statistiche dei giocatori</summary>${sections}<p class="muted">Voti del fornitore</p></details>`:'';
+const providerId=value=>String(value??'').replace(/^af:/,'');
+const playerNameKey=value=>String(value??'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,'').trim();
+function statsForPlayer(match,player){
+ const team=match[player.side],id=providerId(player.id),name=playerNameKey(player.name);
+ const players=(match.details?.playerStats||[]).filter(row=>row.side?row.side===player.side:row.team&&sameClub(row.team,team));
+ const byId=id?players.find(row=>providerId(row.id)===id):null;
+ if(byId||!name)return byId;
+ const matches=players.filter(row=>playerNameKey(row.name)===name);
+ return matches.length===1?matches[0]:null;
+}
+
+export function footballPlayerStats(match,player){
+ const p=statsForPlayer(match,player);
+ if(!p||!(Number(p.minutes)>0||numeric(p.rating)!==null||[p.goals,p.assists,p.saves,p.yellow,p.red].some(value=>Number(value)>0))){
+  return '<p class="live-match-empty muted">Statistiche non ancora disponibili per questo giocatore.</p>';
+ }
+ const values=[
+  ['Minuti',p.minutes],['Gol',p.goals],['Assist',p.assists],['Voto del fornitore',p.rating],
+  ['Parate',p.saves,true],['Ammonizioni',p.yellow,true],['Espulsioni',p.red,true],
+  ...[['Rigori segnati',p.penalty?.scored],['Rigori sbagliati',p.penalty?.missed],['Rigori parati',p.penalty?.saved]]
+   .filter(([,value])=>Number(value)>0)
+ ];
+ return `<dl class="live-player-figures">${values.filter(([,value,optional])=>!optional||numeric(value)!==null)
+  .map(([label,value])=>`<div><dt>${label}</dt><dd>${displayNumber(numeric(value))}</dd></div>`).join('')}</dl>`;
 }

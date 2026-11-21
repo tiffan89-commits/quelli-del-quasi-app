@@ -1,9 +1,10 @@
 import {isMatchEvent} from '../match-events.mjs';
 import {clubShirt} from './club-crest.mjs';
 import {sameClub} from './fanta/maglie.mjs';
-import {footballComparison,footballPenalties,footballPlayerTable} from './football-statistics.mjs';
+import {footballComparison,footballPenalties,footballPlayerStats} from './football-statistics.mjs';
 import {bindLineupPitch,matchAvailability,renderLineup} from './lineup-pitch.mjs';
 import {patchRegion} from './live-channel.mjs';
+import {bindPullDown} from './match-page.mjs';
 import {assistBootIcon,ballIcon,substitutionMark} from './pitch-events.mjs';
 import {playerSurname} from './player-label.mjs';
 
@@ -115,16 +116,16 @@ function chronology(match,events){
 }
 
 function statistics(match){
- const teams=footballComparison(match),players=footballPlayerTable(match),penalties=footballPenalties(match,{compact:true});
+ const teams=footballComparison(match),penalties=footballPenalties(match,{compact:true});
  return `<div data-live-match-region="statistics">
   ${teams?' <h2>Confronto squadre</h2>'+teams:''}
-  ${players}${penalties}
-  ${teams||players||penalties?'':'<p class="live-match-empty muted">Statistiche non ancora disponibili.</p>'}
+  ${penalties}
+  ${teams||penalties?'':'<p class="live-match-empty muted">Statistiche non ancora disponibili.</p>'}
  </div>`;
 }
 
 function matchLineup(match){
- return renderLineup(match,{paged:true,showExtras:false})+matchAvailability(match);
+ return renderLineup(match,{paged:true,showExtras:false,playerDetails:true})+matchAvailability(match);
 }
 
 function regions(match){
@@ -142,7 +143,86 @@ function bindPitch(root,view){
  bindLineupPitch(root,{fitViewport:false});
 }
 
-export function mountFootballMatch(root,match,{roundNumber}={}){
+function bindMatchTabSwipe(panel,step){
+ let start=null;
+ panel.addEventListener('touchstart',event=>{
+  const target=event.target.closest?.('.pitch-slides,input,select,textarea,[contenteditable]');
+  start=event.touches.length===1&&!target?event.touches[0]:null;
+ },{passive:true});
+ panel.addEventListener('touchmove',event=>{
+  if(!start)return;
+  const point=event.touches[0];
+  if(event.touches.length!==1||!point){start=null;return;}
+  const dx=Math.abs(point.clientX-start.clientX),dy=Math.abs(point.clientY-start.clientY);
+  if(dy>12&&dy>dx*1.4)start=null;
+ },{passive:true});
+ panel.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+ panel.addEventListener('touchend',event=>{
+  const first=start,point=event.changedTouches[0];
+  start=null;
+  if(!first||!point||event.touches.length)return;
+  const dx=point.clientX-first.clientX,dy=point.clientY-first.clientY;
+  if(Math.abs(dx)>=45&&Math.abs(dx)>Math.abs(dy)*1.4)step(dx<0?1:-1);
+ },{passive:true});
+}
+
+function paintPlayerStats(view){
+ if(!view.player)return;
+ const html=footballPlayerStats(view.match,view.player);
+ if(html!==view.playerHTML){
+  view.sheet.querySelector('[data-live-player-values]').innerHTML=html;
+  view.playerHTML=html;
+ }
+}
+
+function bindPlayerStats(view){
+ const sheet=view.sheet;
+ const close=()=>{
+  view.player=null;
+  if(typeof sheet.close==='function')sheet.close();
+  else sheet.removeAttribute('open');
+ };
+ sheet.onclick=event=>{
+  if(event.target===sheet||event.target.closest?.('[data-close-live-player]'))close();
+ };
+ sheet.addEventListener('cancel',event=>{event.preventDefault();close();});
+ bindPullDown(sheet,close);
+}
+
+function openPlayerStats(view,trigger){
+ const sheet=view.sheet;
+ if(sheet.hasAttribute('open'))return;
+ const {playerId:id,playerName:name,playerSide:side}=trigger.dataset;
+ view.player={id,name,side};
+ sheet.querySelector('#live-player-name').textContent=trigger.parentElement.querySelector('.pitch-player-name').textContent;
+ sheet.querySelector('[data-live-player-team]').textContent=view.match[side];
+ paintPlayerStats(view);
+ trigger.focus({preventScroll:true});
+ if(typeof sheet.showModal==='function')sheet.showModal();
+ else sheet.setAttribute('open','');
+}
+
+function bindPlayerTap(panel,view){
+ let tap=null;
+ const distance=point=>Math.hypot(point.clientX-tap.x,point.clientY-tap.y);
+ panel.addEventListener('touchstart',event=>{
+  const trigger=event.target.closest?.('[data-pitch-player-detail]'),point=event.touches[0];
+  tap=trigger&&event.touches.length===1?{trigger,x:point.clientX,y:point.clientY}:null;
+ },{passive:true});
+ panel.addEventListener('touchmove',event=>{
+  if(tap&&(event.touches.length!==1||distance(event.touches[0])>10))tap=null;
+ },{passive:true});
+ panel.addEventListener('touchcancel',()=>{tap=null;},{passive:true});
+ panel.addEventListener('touchend',event=>{
+  const point=event.changedTouches[0],trigger=tap&&!event.touches.length&&point&&distance(point)<=10?tap.trigger:null;
+  tap=null;
+  if(!trigger?.isConnected)return;
+  event.preventDefault();
+  openPlayerStats(view,trigger);
+ },{passive:false});
+}
+
+export function mountFootballMatch(root,match){
  root._pitchCleanup?.();
  const selected=started(match)?'cronaca':'formazioni';
  const parts=regions(match),view={match,parts,pitchBound:false};
@@ -150,11 +230,8 @@ export function mountFootballMatch(root,match,{roundNumber}={}){
  root.classList.add('live-match-page');
  root.innerHTML=`<div class="live-match-top">
   <header class="live-match-header">
-   <div class="live-match-competition">
-    <button type="button" class="secondary match-nav-button match-close" id="close-modal" aria-label="Chiudi partita">×</button>
-    <span>Serie A</span>${roundNumber!=null?`<span class="muted">Giornata ${esc(roundNumber)}</span>`:''}
-   </div>
    <div class="live-match-scoreboard">
+    <button type="button" class="secondary match-nav-button match-close" id="close-modal" aria-label="Chiudi partita">×</button>
     <div class="live-match-team home">${clubShirt(match.home,{home:true,vs:match.away})}<span>${esc(match.home)}</span></div>
     ${parts.score}
     <div class="live-match-team away">${clubShirt(match.away,{home:false,vs:match.home})}<span>${esc(match.away)}</span></div>
@@ -167,17 +244,38 @@ export function mountFootballMatch(root,match,{roundNumber}={}){
  </div>
  <section class="live-match-panel" id="live-match-cronaca" data-live-match-panel="cronaca" aria-label="Cronaca"${selected==='cronaca'?'':' hidden'}>${parts.chronology}</section>
  <section class="live-match-panel" id="live-match-statistiche" data-live-match-panel="statistiche" aria-label="Statistiche" hidden>${parts.statistics}</section>
- <section class="live-match-panel" id="live-match-formazioni" data-live-match-panel="formazioni" aria-label="Formazioni"${selected==='formazioni'?'':' hidden'}>${matchLineup(match)}</section>`;
+ <section class="live-match-panel" id="live-match-formazioni" data-live-match-panel="formazioni" aria-label="Formazioni"${selected==='formazioni'?'':' hidden'}>${matchLineup(match)}</section>
+ <dialog class="live-player-dialog" aria-labelledby="live-player-name">
+  <div class="live-player-dialog-body">
+   <div class="v2-sheet-handle" aria-hidden="true"></div>
+   <div class="live-player-heading">
+    <div><h2 id="live-player-name"></h2><p class="muted" data-live-player-team></p></div>
+    <button type="button" class="secondary match-nav-button" data-close-live-player aria-label="Chiudi statistiche giocatore" autofocus>×</button>
+   </div>
+   <div data-live-player-values></div>
+  </div>
+ </dialog>`;
  root.querySelector('#close-modal').onclick=()=>root.close();
+ view.sheet=root.querySelector('.live-player-dialog');
+ bindPlayerStats(view);
+ bindPlayerTap(root.querySelector('#live-match-formazioni'),view);
  const controls=[...root.querySelectorAll('[data-live-match-tab]')],panels=[...root.querySelectorAll('[data-live-match-panel]')];
- root.onclick=event=>{
-  const button=event.target.closest?.('[data-live-match-tab],[data-open-match-stats]');
-  if(!button)return;
-  const target=button.dataset.liveMatchTab||'statistiche';
+ const select=target=>{
   for(const control of controls)control.setAttribute('aria-pressed',String(control.dataset.liveMatchTab===target));
   for(const panel of panels)panel.hidden=panel.dataset.liveMatchPanel!==target;
   root.scrollTop=0;
   if(target==='formazioni')bindPitch(root,view);
+ };
+ panels.forEach((panel,index)=>bindMatchTabSwipe(panel,direction=>{
+  const next=panels[index+direction];
+  if(next)select(next.dataset.liveMatchPanel);
+ }));
+ root.onclick=event=>{
+  const button=event.target.closest?.('[data-live-match-tab],[data-open-match-stats],[data-pitch-player-detail]');
+  if(!button)return;
+  if(button.hasAttribute('data-pitch-player-detail')){openPlayerStats(view,button);return;}
+  const target=button.dataset.liveMatchTab||'statistiche';
+  select(target);
   if(button.hasAttribute('data-open-match-stats'))controls.find(control=>control.dataset.liveMatchTab===target)?.focus({preventScroll:true});
  };
  if(selected==='formazioni')bindPitch(root,view);
@@ -206,4 +304,5 @@ export function updateFootballMatch(root,incoming,{refreshLineup=false}={}){
  }
  view.match=match;
  view.parts=parts;
+ paintPlayerStats(view);
 }

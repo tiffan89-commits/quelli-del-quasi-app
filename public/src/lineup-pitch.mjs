@@ -25,10 +25,12 @@ function availablePlayers(team){
 }
 function sticker(p,team,available=false,bench=false){
  const started=(!team.fantasy&&!!team.started)||hasPitchPerformance(p);
+ const name=playerDisplayName(p);
  const probability=!started&&Number.isFinite(p.probability)&&p.probability>=0&&p.probability<=100?(p.probabilityKind==='official'?p.probability:roundPresenceEstimate(p.probability)):null;
  const club=!started&&!team.fantasy&&p.club&&!sameClub(p.club,team.team)?'<small class="pitch-player-club">'+esc(p.club)+'</small>':'';
  const kit=team.fantasy?{vs:p.next?.opponent??p.opponent,home:p.next?.home??p.home}:team.kit;
- return `<div class="pitch-player" ${available?`data-available-role="${availableFootballPlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:6.2,...kit})}</div>${bench?`<span class="bench-player-surname" aria-hidden="true">${esc(shirtSurname(p))}</span>`:''}${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(playerDisplayName(p))}</span>${started?'':pitchFixture(p)}${club}${pitchPerformance(p,started)}</div>`;
+ const detail=team.playerDetails?`<button type="button" class="pitch-player-detail" data-pitch-player-detail data-player-id="${esc(p.apiId??p.id)}" data-player-name="${esc(p.name||name)}" data-player-side="${team.kit.home?'home':'away'}" aria-label="Statistiche di ${esc(name)}" aria-haspopup="dialog"></button>`:'';
+ return `<div class="pitch-player" ${available?`data-available-role="${availableFootballPlayerRole(p)}"`:''} data-fantasy-player="${esc(p.id||'')}"><div class="player-sticker">${shirtBack(p.club||team.team,playerJersey(p),shirtSurname(p),{goalkeeper:isGoalkeeper(p,team),nameSize:6.2,...kit})}</div>${bench?`<span class="bench-player-surname" aria-hidden="true">${esc(shirtSurname(p))}</span>`:''}${probability!==null?`<span class="player-probability ${p.probabilityKind==='official'?'':'estimated'}" title="${p.probabilityKind==='official'?'Probabilità effettiva':'Probabilità stimata'}">${probability}%</span>`:''}<span class="pitch-player-name sr-only">${esc(name)}</span>${started?'':pitchFixture(p)}${club}${pitchPerformance(p,started)}${detail}</div>`;
 }
 function benchSections(t,kind){
  const entered=t.started?(t.bench||[]).filter(hasEntered):[],rest=(t.bench||[]).filter(p=>!entered.includes(p));
@@ -104,12 +106,12 @@ function pagedLineup(l,title,notes,details,detailsAvailable,showExtras=true){
  </section>`;
 }
 
-export function renderLineup(data,{paged=false,details=null,detailsAvailable=true,showExtras=true}={}){
+export function renderLineup(data,{paged=false,details=null,detailsAvailable=true,showExtras=true,playerDetails=false}={}){
  const source=recoverOfficialPitchLayout(data.lineups,data.details?.sourceLineups),started=['1H','HT','2H','LIVE','FT','AET','PEN','ET'].includes(data.status)||source?.started;
  const homeTeam=data.home??source?.teams[0]?.team,awayTeam=data.away??source?.teams[1]?.team;
  const l=source?{...source,teams:source.teams.map((t,i)=>{
   const home=sameClub(t.team,homeTeam)||(!sameClub(t.team,awayTeam)&&i===0);
-  return {...t,fantasy:source.kind==='fantasy',started:started||t.started,kit:{home,vs:home?awayTeam:homeTeam}};
+  return {...t,fantasy:source.kind==='fantasy',started:started||t.started,kit:{home,vs:home?awayTeam:homeTeam},playerDetails};
  })}:null;
  if(!l)return paged&&details!==null?pagedLineup({teams:[]},'','',details,detailsAvailable):'<section class="card"><h3>Probabili formazioni</h3><p class="muted">Formazioni non ancora disponibili.</p></section>';
  const title=l.kind==='fantasy'?'Le formazioni':l.kind==='official'?'Formazioni ufficiali':'Probabili formazioni';

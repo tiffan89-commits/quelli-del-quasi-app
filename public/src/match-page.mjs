@@ -30,6 +30,8 @@ export function bindPullDown(surface,close){
  };
  surface.addEventListener('touchstart',event=>{
   clear();
+  const modal=event.target.closest?.('dialog[open]');
+  if(modal&&modal!==surface)return;
   if(event.touches.length!==1||surface.ownerDocument.defaultView?.scrollY>0||event.target.closest?.('input,select,textarea,[contenteditable]'))return;
   for(let node=event.target;node;node=node.parentElement){
    if(node.scrollTop>0)return;
@@ -88,4 +90,4 @@ globalThis.window?.addEventListener('popstate',event=>{
 },{capture:true});
 globalThis.window?.addEventListener('quasi:navigation',()=>closeMatchPage({back:false}));
 globalThis.document?.addEventListener('click',event=>{if(event.target.closest?.('[data-app-mode],[data-mode],nav.v2-tabbar button'))closeMatchPage({back:false});},{capture:true});
-globalThis.document?.addEventListener('keydown',event=>{if(active&&event.key==='Escape'){event.preventDefault();closeMatchPage();}});
+globalThis.document?.addEventListener('keydown',event=>{if(active&&event.key==='Escape'&&!active.root.querySelector('dialog[open]')){event.preventDefault();closeMatchPage();}});
