@@ -30,10 +30,7 @@ import {retainAppHeader} from './mode-switch.mjs';
 import {barModeSwitch,enterFanta,leaveFanta,preferredFanta,clearFantaSessions,refreshFantaMembership} from './fanta-mode.mjs';
 import {createLiveChannel,requestJson,mergeLiveSnapshot,patchRegion} from "./live-channel.mjs";
 import {withButtonFeedback} from './action-feedback.mjs';
-import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
-import {playerSurname} from './player-label.mjs';
-import {ballIcon,substitutionMark} from './pitch-events.mjs';
-import {footballPenalties} from './football-statistics.mjs';
+import {mountFootballMatch,updateFootballMatch} from './live-match-view.mjs';
 import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, patchSlipBar, bindSlipV2 } from "./v2/slip-v2.mjs";
 import { quasiScene, bindQuasiZoom } from "./quasi-scene.mjs";
@@ -56,7 +53,7 @@ const initialPublicMode=Object.keys(PUBLIC_AUTH_HASHES).find(k=>PUBLIC_AUTH_HASH
 let v2Invite = pendingInvite(), landingDismissed = !!v2Invite||!!initialPublicMode, forceDemo = initialPublicMode==='demo';
 let initialDemoRequested=initialPublicMode==='demo';
 import {inlineResultView,patchSlipResults} from './slip-results.mjs';
-import {renderLineup,bindLineupPitch,matchAvailability,setPitchFlip} from './lineup-pitch.mjs';
+import {bindLineupPitch,setPitchFlip} from './lineup-pitch.mjs';
 let studioModule;const loadStudio=()=>studioModule??=import('./quasi-studio.mjs');
 window.addEventListener?.('quasi:idle',()=>{if(state.user&&!studioModule)loadStudio().catch(()=>{studioModule=null;});});
 
@@ -1936,38 +1933,6 @@ async function flipAnalysis(button) {
     back.dataset.profileState='error';
   }
 }
-function eventColumns(data, events) {
-  const norm = (s) =>
-      String(s || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, ""),
-    aliases = {
-      acmilan: "milan",
-      internazionale: "inter",
-      intermilan: "inter",
-      asroma: "roma",
-      ssclazio: "lazio",
-      sscnapoli: "napoli",
-      hellasverona: "verona",
-    };
-  const key = (s) => aliases[norm(s)] || norm(s);
-  const home = [],
-    away = [],
-    unknown = [];
-  for (const e of events) {
-    if (e.side === "home" || key(e.team) === key(data.home)) home.push(e);
-    else if (e.side === "away" || key(e.team) === key(data.away)) away.push(e);
-    else unknown.push(e);
-  }
-  const event=e=>{
-    const icon=e.kind==='goal'||e.kind==='own-goal'?ballIcon(e.kind==='own-goal'):e.kind==='substitution'?substitutionMark():({yellow:'🟨',red:'🟥','penalty-missed':'✕','penalty-saved':'🧤',var:'▣'})[e.kind];
-    const names=[(e.players||[]).map(playerSurname).filter(Boolean).join(', '),playerSurname(e.incoming)].filter(Boolean).join(' → ');
-    const description=[names,e.kind==='var'?e.detail:''].filter(Boolean).join(' · ');
-    return `<div class="event-item match-event-row"><b class="green">${esc(e.minute)}</b><span role="img" aria-label="${esc(matchEventLabel(e))}">${icon}</span><strong title="${esc(description)}">${esc(description)}</strong></div>`;
-  };
-  return `<div class="events-columns"><section><h3>${esc(data.home)}</h3>${home.length ? home.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section><section><h3>${esc(data.away)}</h3>${away.length ? away.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section></div>${unknown.length ? '<div class="notice">Squadra non indicata dalla fonte</div>' + unknown.map(event).join("") : ""}`;
-}
-
 const detailCache=new Map(),detailPending=new Map();
 async function matchSnapshot(match,round=null){
  if(!state.compact)return match;
@@ -1977,12 +1942,18 @@ async function matchSnapshot(match,round=null){
  if(!detailPending.has(key))detailPending.set(key,api('match?'+params).then(data=>{detailCache.set(key,{data,revision,at:Date.now()});if(state.user?.id===key.split(':')[0])displayCache('bar:'+state.user.id).set(key,{data,revision,at:Date.now()});if(detailCache.size>60)detailCache.delete(detailCache.keys().next().value);return data;}).finally(()=>detailPending.delete(key)));
  return {...match,...await detailPending.get(key)};
 }
-const liveMatchStatus=status=>['LIVE','1H','HT','2H','ET','BT','P'].includes(status);
-const matchDetailScore=match=>(liveMatchStatus(match.status)?match.liveScore||match.score:match.score)?.join('–')||'—';
-function matchDetailStatus(match){
-  if(['FT','AET','PEN'].includes(match.status))return 'Finale';
-  if(liveMatchStatus(match.status))return match.clock?'Live · '+match.clock:'Live';
-  return 'Da giocare';
+function updateSerieAMatchPage(dialog,match){
+ if(!dialog.classList.contains('live-match-page'))return;
+ updateFootballMatch(dialog,match);
+ const revision=match.lineupRevision;
+ if(!revision||revision===dialog.dataset.lineupRevision||revision===dialog.dataset.pendingLineupRevision)return;
+ dialog.dataset.pendingLineupRevision=revision;
+ const active=()=>dialog.open&&dialog.dataset.match===match.id&&dialog.dataset.pendingLineupRevision===revision;
+ void matchSnapshot(match).then(fresh=>{
+  if(!active())return;
+  updateFootballMatch(dialog,fresh,{refreshLineup:true});
+  dialog.dataset.lineupRevision=revision;
+ }).catch(()=>{}).finally(()=>{if(active())delete dialog.dataset.pendingLineupRevision;});
 }
 async function openMatch(id, quiet = false, trigger) {
   const fantasyRound = L()?.rounds.find(
@@ -2031,15 +2002,10 @@ async function openMatch(id, quiet = false, trigger) {
   }
   const content=dialog;
   try {
-    const scroll = dialog.scrollTop,
-      baseData = structuredClone(
-        state.calendar?.rounds
-          .flatMap((r) => r.matches)
-          .find((m) => m.id === id) ||
-          L()
-            ?.rounds.flatMap((r) => r.matches)
-            .find((m) => m.id === id),
-      );
+    const scroll=dialog.scrollTop;
+    const matchRound=(state.calendar?.rounds||[]).find(round=>round.matches.some(m=>m.id===id))
+      ||L()?.rounds.find(round=>round.matches.some(m=>m.id===id));
+    const baseData=structuredClone(matchRound?.matches.find(m=>m.id===id));
     if (!baseData) throw Error("Partita non presente nel calendario salvato.");
     const data=await matchSnapshot(baseData).catch(error=>{
       if(error.status===404)return baseData;
@@ -2047,51 +2013,14 @@ async function openMatch(id, quiet = false, trigger) {
     });
     if (!dialog.open || dialog.dataset.match !== id) return;
 
-    const events = (data.details?.events || []).filter(isMatchEvent);
-    const availability=matchAvailability(data),kickoff=Date.parse(data.officialKickoff||data.kickoff);
-    const scheduled=Number.isFinite(kickoff);
-    const hasDetails=scheduled||!!(events.length||availability);
-    const details=`<div class="match-details-body">
-      <h3>Dettagli della partita</h3>
-      ${scheduled?`<p class="match-detail-kickoff"><time datetime="${new Date(kickoff).toISOString()}">${esc(new Intl.DateTimeFormat('it-IT',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Rome'}).format(kickoff))}</time></p>`:''}
-      <div data-match-availability ${availability?'':'hidden'}>${availability}</div>
-      <div data-live-detail-events ${events.length?'':'hidden'}>${events.length?eventColumns(data,events):''}</div>
-      <div data-live-detail-penalties ${events.length?'':'hidden'}>${footballPenalties(data,{compact:true})}</div>
-    </div>`;
     const moveFocus=content.contains(document.activeElement);
-    content.innerHTML = `<div class="match-headline">
-      <button type="button" class="secondary match-nav-button match-close" id="close-modal" aria-label="Chiudi partita">×</button>
-      <h2 class="match-page-title">${teamLabel(data.home,{home:true,vs:data.away,fantasy:false})}<b class="match-page-score" data-live-detail-score>${matchDetailScore(data)}</b>${teamLabel(data.away,{home:false,vs:data.home,shirtAfter:true,fantasy:false})}</h2>
-      <p class="muted" data-live-detail-status>${esc(matchDetailStatus(data))}</p>
-      <button type="button" class="secondary match-nav-button" data-match-details-button aria-label="Dettagli della partita" ${hasDetails?'':'hidden'}>›</button>
-    </div>${renderLineup(data,{paged:true,details,detailsAvailable:hasDetails})}`;
-    const close=dialog.querySelector('#close-modal');
-    close.onclick=()=>dialog.close();
-    if(moveFocus)close.focus({preventScroll:true});
-    const arrow=dialog.querySelector('[data-match-details-button]');
-    let returnPage=null;
-    const carousel=bindLineupPitch(dialog,{onPage:showing=>{
-      if(!showing&&arrow.textContent==='‹')returnPage=null;
-      if(arrow.textContent===(showing?'‹':'›'))return;
-      arrow.textContent=showing?'‹':'›';
-      arrow.setAttribute('aria-label',showing?'Torna alle formazioni':'Dettagli della partita');
-    }});
-    if(!carousel)return;
-    arrow.onclick=()=>{
-      if(dialog._pitchPage===carousel.teamCount){carousel.go(returnPage??carousel.teamCount-1);return;}
-      returnPage=dialog._pitchPage;
-      carousel.go(carousel.teamCount);
-    };
-    const headline=dialog.querySelector('.match-headline');
-    let start=null;
-    headline.addEventListener('touchstart',event=>{start=event.touches.length===1?event.touches[0]:null;},{passive:true});
-    headline.addEventListener('touchcancel',()=>{start=null;},{passive:true});
-    headline.addEventListener('touchend',event=>{
-      const first=start,point=event.changedTouches[0];start=null;
-      if(!first||!point)return;
-      const dx=point.clientX-first.clientX,dy=point.clientY-first.clientY;
-      if(Math.abs(dx)>=22&&Math.abs(dx)>Math.abs(dy)*1.4)carousel.go(dialog._pitchPage+(dx<0?1:-1));
-    },{passive:true});
+    mountFootballMatch(dialog,data,{roundNumber:matchRound.number});
+    dialog.dataset.lineupRevision=data.lineups?.updatedAt||data.lineupRevision||'';
+    const latest=matchRound.matches.find(m=>m.id===id);
+    const newerScore=latest?.scoreUpdatedAt&&(!data.scoreUpdatedAt||Date.parse(latest.scoreUpdatedAt)>Date.parse(data.scoreUpdatedAt));
+    const newerLineup=latest?.lineupRevision&&latest.lineupRevision!==baseData.lineupRevision&&latest.lineupRevision!==dialog.dataset.lineupRevision;
+    if(newerScore||newerLineup)updateSerieAMatchPage(dialog,latest);
+    if(moveFocus)dialog.querySelector('#close-modal').focus({preventScroll:true});
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
     if (!quiet&&dialog.open) {
@@ -2542,30 +2471,7 @@ function applyLive(data){
         }).catch(()=>{});
         return;
       }
-      const score=dialog.querySelector('[data-live-detail-score]'),value=matchDetailScore(m);
-      if(score&&score.textContent!==value)score.textContent=value;
-      const status=dialog.querySelector('[data-live-detail-status]'),label=matchDetailStatus(m);
-      if(status&&status.textContent!==label)status.textContent=label;
-      const events=dialog.querySelector('[data-live-detail-events]');
-      const availability=dialog.querySelector('[data-match-availability]');
-      if(events&&Array.isArray(m.details?.events)){
-        const items=m.details.events.filter(isMatchEvent),html=items.length?eventColumns(m,items):'';
-        if(events.dataset.revision!==html){patchRegion(events,'<div data-live-detail-events'+(items.length?'':' hidden')+'>'+html+'</div>');events.dataset.revision=html;}
-      }
-      if(availability&&(m.lineups||matchDetailStatus(m)!=='Da giocare')){
-        const html=matchAvailability(m);
-        if(availability.dataset.revision!==html){patchRegion(availability,'<div data-match-availability'+(html?'':' hidden')+'>'+html+'</div>');availability.dataset.revision=html;}
-      }
-      if(events&&availability){
-        const hidden=events.hidden&&availability.hidden;
-        dialog.querySelector('.pitch-details-panel').hidden=hidden;
-        dialog.querySelector('[data-match-details-button]').hidden=hidden;
-      }
-      const penalties=dialog.querySelector('[data-live-detail-penalties]');
-      if(penalties&&events){
-        if(m.details?.penalties!==undefined){const html=footballPenalties(m,{compact:true});if(penalties.dataset.revision!==html){patchRegion(penalties,'<div data-live-detail-penalties>'+html+'</div>');penalties.dataset.revision=html;}}
-        penalties.hidden=events.hidden;
-      }
+      updateSerieAMatchPage(dialog,m);
     }
   }
 }

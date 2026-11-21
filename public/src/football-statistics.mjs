@@ -24,3 +24,51 @@ export function footballPenalties(match,{compact=false}={}){
 export function bindFootballStatistics(root){
  root.querySelectorAll('[data-stats-team]').forEach(button=>button.onclick=()=>{const section=button.closest('.player-statistics');section.querySelectorAll('[data-stats-team]').forEach(b=>b.setAttribute('aria-selected',String(b===button)));section.querySelectorAll('[data-stats-panel]').forEach(p=>p.hidden=p.dataset.statsPanel!==button.dataset.statsTeam);});
 }
+
+const featured=['Ball Possession','Shots on Goal','expected_goals'];
+const comparisonOrder=[...featured,'Total Shots','Corner Kicks','Goalkeeper Saves','Passes accurate','Total passes','Passes %','Fouls','Free Kicks','Yellow Cards','Red Cards','Offsides','Shots off Goal','Blocked Shots','Shots insidebox','Shots outsidebox','goals_prevented'];
+const comparisonLabels={...labels,'Free Kicks':'Calci di punizione',expected_goals:'xG · Gol attesi'};
+const decimals=new Intl.NumberFormat('it-IT',{maximumFractionDigits:2});
+const numeric=value=>{
+ if(typeof value!=='number'&&typeof value!=='string')return null;
+ const normalized=String(value).trim().replace(/%$/,'').replace(',','.');
+ return /^-?\d+(?:\.\d+)?$/.test(normalized)&&Number.isFinite(Number(normalized))?Number(normalized):null;
+};
+const displayNumber=(value,suffix='')=>value===null?'—':decimals.format(value)+suffix;
+
+export function footballComparison(match,{summary=false}={}){
+ const stats=match.details?.statistics||[],homeId=match.details?.matchInfo?.teams?.home?.id;
+ const home=stats.find(t=>t.side==='home'||homeId!=null&&t.team?.id===homeId)
+  ||stats.find(t=>!t.side&&t.team?.name===match.home)||stats.find(t=>!t.side);
+ const away=stats.find(t=>t.side==='away')||stats.find(t=>!t.side&&t!==home);
+ const values=team=>new Map((team?.statistics||[]).map(row=>[row.type,numeric(row.value)]));
+ const sides=[values(home),values(away)];
+ const rows=(summary?featured:comparisonOrder).flatMap(type=>{
+  const [a,b]=sides.map(side=>side.get(type)??null);
+  if(a===null&&b===null)return [];
+  const suffix=type==='Ball Possession'||type==='Passes %'?'%':'';
+  const left=displayNumber(a,suffix),right=displayNumber(b,suffix),label=comparisonLabels[type];
+  const shares=a!==null&&b!==null&&a>=0&&b>=0&&a+b>0
+   ?[a,b].map(value=>Math.round(10000*(value/(a+b)))/100):null;
+  return [`<div class="live-stat" role="group" aria-label="${esc(label+'. '+match.home+' '+left+', '+match.away+' '+right)}">
+   <div class="live-stat-values" aria-hidden="true"><b>${left}</b><span>${label}</span><b>${right}</b></div>
+   ${shares?`<div class="live-stat-bar" aria-hidden="true">${shares.map((share,i)=>share?`<span class="${i?'away':'home'}" style="--stat-share:${share}%"></span>`:'').join('')}</div>`:''}
+  </div>`];
+ });
+ if(!rows.length)return '';
+ return `<div class="live-stat-comparison"><div class="live-stat-teams" aria-hidden="true"><span>${esc(match.home)}</span><span>${esc(match.away)}</span></div>${rows.join('')}</div>`;
+}
+
+export function footballPlayerTable(match){
+ const stats=match.details?.playerStats||[];
+ const sections=['home','away'].map(side=>{
+  const players=stats.filter(p=>p.name&&(p.side?p.side===side:p.team===match[side])&&
+   (Number(p.minutes)>0||numeric(p.rating)!==null||[p.goals,p.assists,p.saves,p.yellow,p.red].some(value=>Number(value)>0)))
+   .sort((a,b)=>(Number(b.minutes)||0)-(Number(a.minutes)||0));
+  if(!players.length)return '';
+  return `<table class="live-player-table"><caption>${esc(match[side])}</caption><thead>
+   <tr><th scope="col">Giocatore</th><th scope="col">Min</th><th scope="col">Gol</th><th scope="col">Assist</th><th scope="col">Voto</th></tr>
+   </thead><tbody>${players.map(p=>`<tr><th scope="row">${esc(playerSurname(p)||p.name)}</th><td>${number(p.minutes)}</td><td>${number(p.goals)}</td><td>${number(p.assists)}</td><td>${displayNumber(numeric(p.rating))}</td></tr>`).join('')}</tbody></table>`;
+ }).join('');
+ return sections?`<details class="match-statistics live-player-stats"><summary>Statistiche dei giocatori</summary>${sections}<p class="muted">Voti del fornitore</p></details>`:'';
+}
