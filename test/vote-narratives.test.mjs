@@ -4,6 +4,7 @@ import {normalizeFixture,calculateVote} from '../fanta/votes.mjs';
 import {roundByBands} from '../fanta/statistical-votes/math.mjs';
 import {DEFAULT_CONFIG,MODEL,voteConfig} from '../fanta/statistical-votes/config.mjs';
 import {evaluateGoalSupport} from '../fanta/statistical-votes/goal-impact.mjs';
+import {describePerformance,NARRATIVE_VERSION} from '../fanta/statistical-votes/narrative.mjs';
 import {mergeInstallations,bootstrapPlan} from '../lib/operations/store.mjs';
 import {apiFixture} from './fanta/helpers.mjs';
 
@@ -26,7 +27,7 @@ test('first verified equalizer or winner supports the technical vote by half a p
  for(const seq of [[['away',8,12],['home',3,80]],[['home',3,25]],[['home',9,12],['home',3,45],['away',8,70]]]){
   const {input}=scorer(seq),v=calculateVote(input),without=calculateVote({...input,events:{...input.events,goals:0},goalImpact:null});
   assert.equal(v.goalSupport.first,.5);assert.ok(v.rawVote>=without.rawVote+.5);assert.equal(v.goalSupport.delta,.5);
-  assert.equal(v.fantavote-v.vote,3);assert.match(v.why,/Isaksen/);assert.match(v.why,/Lazio/);assert.match(v.why,/Bologna/);assert.doesNotMatch(v.why,/mezzo punto|voto base/);assert.match(v.why,/sostanza/);
+  assert.equal(v.fantavote-v.vote,3);assert.match(v.why,/Isaksen/);assert.match(v.why,/Lazio/);assert.match(v.why,/Bologna/);assert.doesNotMatch(v.why,/mezzo punto|voto base/);assert.match(v.why,/Segna il pareggio|Firma il gol partita|Va a segno/);
   assert.ok(Math.abs(6+v.breakdown.lines.reduce((n,l)=>n+l.delta,0)-v.vote)<1e-6);
  }
 });
@@ -49,7 +50,7 @@ test('documented scorer statistics work without a timeline; cancelled, missed an
  const statistics=scorer([]).input;statistics.events.goals=2;assert.ok(support(statistics).delta>.5);
 });
 test('match reports explain the observed game without numerical stat lists or public experimental labels',()=>{
- const {input}=scorer([['home',3,25]]),a=calculateVote(input),b=calculateVote(input);assert.equal(a.why,b.why);assert.match(a.why,/Lazio–Bologna 1–0/);assert.doesNotMatch(a.why,/media del ruolo|86\.486|contrasti:|sperimentale|voto base|mezzo punto/);assert.equal(a.narrativeVersion,'quasi-match-report-v5-short');assert.equal(a.model,MODEL);
+ const {input}=scorer([['home',3,25]]),a=calculateVote(input),b=calculateVote(input);assert.equal(a.why,b.why);assert.match(a.why,/Lazio–Bologna 1–0/);assert.doesNotMatch(a.why,/media del ruolo|86\.486|contrasti:|sperimentale|voto base|mezzo punto/);assert.equal(a.narrativeVersion,NARRATIVE_VERSION);assert.equal(a.model,MODEL);
  const live=scorer([['home',3,20],['away',8,25],['away',8,28]],{status:'1H',minutes:30}).input;assert.doesNotMatch(calculateVote(live).why,/non evita la sconfitta/);
 });
 test('new model installation merges once into an existing calendar without reviving old jobs or changing live leases',()=>{
@@ -78,4 +79,39 @@ test('each missed penalty subtracts half a technical point in addition to its fa
 test('documented scorer statistics establish an appearance even when minutes and the event timeline are missing',()=>{
  const {raw}=scorer([['home',3,20]]);raw.events=[];raw.players[0].players[1].statistics[0].games={minutes:null,position:'M',substitute:true};raw.lineups[0].startXI=raw.lineups[0].startXI.filter(x=>x.player.id!==3);
  const p=normalizeFixture(raw).find(p=>p.apiId===3),v=calculateVote(p);assert.equal(p.onField,true);assert.equal(v.vote,6.5);assert.equal(v.fantavote,9.5);
+});
+
+test('a brace and hat trick reward the goals and still allow distinct votes for distinct performances',()=>{
+ for(const [goals,target] of [[2,8],[3,9]]){
+  const sequence=Array.from({length:goals},(_,i)=>['home',3,15+i*16]);
+  const {input}=scorer(sequence);
+  const reference=calculateVote({...input,minutes:null,metrics:{}});
+  const strong=calculateVote({...input,metrics:{passesTotal:84,passAccuracy:100,keyPasses:9,shotsTotal:9,shotsOn:9,tackles:8,interceptions:8,duelsTotal:26,duelsWon:26,dribblesAttempts:12,dribbles:12,foulsDrawn:9},ratingRanks:{matchBest:1}});
+  const weak=calculateVote({...input,events:{...input.events,penMissed:2},metrics:{passesTotal:8,passAccuracy:8,shotsTotal:15,shotsOn:2,duelsTotal:18,duelsWon:0,dribblesAttempts:12,dribbles:0}});
+  assert.equal(reference.vote,target);
+  assert.ok(strong.vote>target&&strong.vote<=10);
+  assert.equal(weak.vote,target-.5);
+  for(const v of [reference,strong,weak]){
+   assert.equal(v.eventImpact.multiGoal.target,target);
+   assert.ok(Math.abs(6+v.breakdown.lines.reduce((sum,line)=>sum+line.delta,0)-v.vote)<1e-6);
+  }
+ }
+});
+
+test('four and more goals mean ten even with sparse or poor evidence and the goals remain fantasy bonuses',()=>{
+ for(const goals of [4,5])for(const status of ['2H','FT']){
+  const {input}=scorer(Array.from({length:goals},(_,i)=>['home',3,10+i*10]),{status,minutes:80});
+  const v=calculateVote({...input,name:'D. Malen',role:'A',minutes:null,metrics:{}});
+  assert.equal(v.vote,10);assert.equal(v.fantavote,10+3*goals);
+  assert.match(v.why,new RegExp(goals+' gol'));
+  assert.equal(v.breakdown.lines.find(line=>line.key==='event-minimum').label,'Quattro o più gol');
+  assert.ok(Math.abs(6+v.breakdown.lines.reduce((sum,line)=>sum+line.delta,0)-10)<1e-6);
+ }
+});
+
+test('match commentary has several punchlines for the same grade and names the observed decisive event',()=>{
+ const {input}=scorer([['away',8,10],['home',3,80]]);
+ const variants=new Set(Array.from({length:12},(_,i)=>describePerformance({...input,id:'p'+i},{vote:7,goalSupport:{count:1,anchor:{types:['equalizer']}}})));
+ assert.ok(variants.size>=2);
+ for(const text of variants){assert.match(text,/Segna il pareggio/);assert.match(text,/Lazio–Bologna 1–1/);}
 });
