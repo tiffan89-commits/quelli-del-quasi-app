@@ -4,6 +4,7 @@ import {DEFAULT_CONFIG,MODEL,configDigest,voteConfig} from './config.mjs';
 import {prematchSnapshot} from './context.mjs';
 import {calibrateBaselines} from './individual.mjs';
 import {digest,validTimestamp} from './math.mjs';
+import {MULTI_GOAL_VOTE_POLICY} from './goal-impact.mjs';
 export const currentModelKey=(config=DEFAULT_CONFIG)=>MODEL+':'+configDigest(config);
 export function configuredVotes(env=process.env){if(!env.FANTA_VOTE_CONFIG)return voteConfig();let x;try{x=JSON.parse(env.FANTA_VOTE_CONFIG);}catch{throw Error('FANTA_VOTE_CONFIG deve contenere JSON valido');}return voteConfig(x);}
 // Read only already-acquired pre-match quotes. No odds service, pricing or slip is modified.
@@ -20,7 +21,12 @@ export async function fixtureBaseline(c,raw,config){
  const rows=(await c.query(`SELECT jsonb_build_object('id',data->'id','fixtureId',data->'fixtureId','role',data->'role','minutes',data->'minutes','final',data->'final','metrics',data->'metrics','fixture',data->'fixture') AS data FROM fanta.player_stats WHERE data->>'final'='true' AND data#>>'{fixture,kickoff}' IS NOT NULL AND data#>>'{fixture,kickoff}'<$1`,[asOf])).rows;
  const baseline=calibrateBaselines(rows.map(r=>r.data),{asOf,config});await c.query('INSERT INTO fanta.baselines(id,model,data) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[id,MODEL,JSON.stringify(baseline)]);return {id,data:baseline};
 }
-export function calculationFingerprint(input,{config,baseline,rules}={}){const clone=structuredClone(input);if(clone.provenance)delete clone.provenance.observedAt;return digest({model:MODEL,config:configDigest(config),input:clone,baseline:baseline?.id||null,rules});}
+export function calculationFingerprint(input,{config,baseline,rules}={}){
+ const clone=structuredClone(input);
+ if(clone.provenance)delete clone.provenance.observedAt;
+ const goals=input.events?.goals,goalPolicy=Number.isInteger(goals)&&goals>=2?MULTI_GOAL_VOTE_POLICY:null;
+ return digest({model:MODEL,config:configDigest(config),input:clone,baseline:baseline?.id||null,rules,...(goalPolicy?{goalPolicy}:null)});
+}
 export async function appendVote(c,{fixtureId,input,vote,hash,official,modelKey,at}){return appendVotes(c,{fixtureId,votes:[{p:input,vote,hash}],official,modelKey,at});}
 export async function appendVotes(c,{fixtureId,votes,official,modelKey,at}){
  const rows=votes.map(({p,vote,hash})=>({player_id:p.id,input_hash:hash,input:p,data:vote}));if(!rows.length)return 0;

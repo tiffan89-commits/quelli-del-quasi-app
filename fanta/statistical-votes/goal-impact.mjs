@@ -1,5 +1,18 @@
 import {clamp,round} from './math.mjs';
 
+export const MULTI_GOAL_VOTE_POLICY='multi-goal-performance-v1';
+
+export function multiGoalVote(goalSupport,preFloorVote,{base,coverage,penMissed}){
+ const goals=goalSupport.count;
+ if(goals<2)return null;
+ if(goals>=4)return {goals,target:10,minimum:10,maximum:10,performance:0};
+ const target=goals===3?9:8,maximum=goals===3?10:9.5;
+ const evidence=preFloorVote-base-goalSupport.first;
+ const seriousNegative=evidence<-.85&&(coverage>=.45||penMissed>=2);
+ const performance=round(clamp(evidence*.65,seriousNegative?-.5:0,maximum-target));
+ return {goals,target,minimum:round(target+performance),maximum,performance};
+}
+
 // Describe observed goals, never infer a scorer or the order of same-minute goals.
 export function playerGoalImpact(raw,playerId,teamId,timeline){
  const side=teamId===raw.teams?.home?.id?'home':'away',other=side==='home'?'away':'home';

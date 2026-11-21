@@ -6,7 +6,7 @@ import {MODEL,voteConfig,configDigest} from './config.mjs';
 import {round,clamp,roundByBands,digest} from './math.mjs';
 import {evaluateIndividual,LABELS} from './individual.mjs';
 import {evaluateContext} from './context.mjs';
-import {evaluateGoalSupport} from './goal-impact.mjs';
+import {evaluateGoalSupport,multiGoalVote,MULTI_GOAL_VOTE_POLICY} from './goal-impact.mjs';
 import {evaluateRatingImpact} from './rating-impact.mjs';
 import {describePerformance,NARRATIVE_VERSION} from './narrative.mjs';
 export function calculateStatisticalVote(input,{rules=DEFAULT_RULES,config:overrides={},baselines=null,baselineVersion=null}={}){
@@ -23,9 +23,13 @@ export function calculateStatisticalVote(input,{rules=DEFAULT_RULES,config:overr
  const shortFinal=input.final&&input.minutes!=null&&input.minutes<config.minMinutes;if(shortFinal&&!keyEvent&&(!config.eventExceptions||!bonus.length))return empty('sv','Meno di '+config.minMinutes+' minuti giocati.');
  const referenceOnly=shortFinal||eventOnly,penaltyMissedDelta=-config.eventVotes.penaltyMiss*penMissed,performanceVote=referenceOnly?config.base:individual.value+context.delta;
  const ratingImpact=evaluateRatingImpact(input,{config});ratingImpact.delta=statNumber(ratingImpact.delta);
- const preFloorVote=performanceVote+goalSupport.delta+penaltyMissedDelta+ratingImpact.delta+marquee.delta+keeperPerformance.resultDelta,minimumVote=Math.max(goalSupport.count>0?config.eventVotes.scorerMinimum:config.minVote,penSaved>0?config.eventVotes.penaltySaveMinimum:config.minVote),floorAdjustment=round(Math.max(0,minimumVote-preFloorVote));
- const rawVote=statNumber(preFloorVote+floorAdjustment),bounded=round(clamp(rawVote,config.minVote,config.maxVote)),vote=roundByBands(bounded,config.rounding.bands);
- const eventImpact={performanceVote:round(performanceVote),penSaved,penMissed,penaltyMissedDelta,minimumVote,floorAdjustment};
+ const preFloorVote=performanceVote+goalSupport.delta+penaltyMissedDelta+ratingImpact.delta+marquee.delta+keeperPerformance.resultDelta;
+ const multiGoal=multiGoalVote(goalSupport,preFloorVote,{base:config.base,coverage:referenceOnly?0:individual.coverage,penMissed});
+ const minimumVote=Math.max(goalSupport.count>0?config.eventVotes.scorerMinimum:config.minVote,penSaved>0?config.eventVotes.penaltySaveMinimum:config.minVote,multiGoal?.minimum??config.minVote);
+ const floorAdjustment=round(Math.max(0,minimumVote-preFloorVote));
+ const rawVote=statNumber(preFloorVote+floorAdjustment),bounded=round(clamp(rawVote,config.minVote,multiGoal?.maximum??config.maxVote));
+ const vote=multiGoal&&bounded>=9?(bounded>9.75?10:bounded>9.25?9.5:9):roundByBands(bounded,config.rounding.bands);
+ const eventImpact={performanceVote:round(performanceVote),penSaved,penMissed,penaltyMissedDelta,minimumVote,floorAdjustment,...(multiGoal?{multiGoal}:null)};
  const lines=referenceOnly?[]:individual.blocks.filter(b=>b.observed).map(b=>({kind:'individual',key:b.key,label:b.label,delta:b.delta,why:b.metrics.map(m=>LABELS[m.key]||m.key).join(', ')}));
  if(!referenceOnly&&context.available)lines.push({kind:'context',key:'match-context',label:'Contesto della partita',delta:context.delta,why:context.underdogWin?.eligible?'Vittoria contro pronostico verificata sulle quote archiviate prima della gara; contributo da 0 a +0,3, ponderato per presenza, prestazione e attendibilità. Non si somma un secondo premio per la vittoria.':'Aspettative prepartita e qualità collettiva, attenuate per presenza ed efficacia individuale; contributo positivo massimo +0,3.'});
  if(keeperPerformance.resultDelta)lines.push({kind:'impact',key:'keeper-result',label:keeperPerformance.resultKind==='clean-sheet'?'Porta inviolata e interventi':'Parate che sostengono la vittoria',delta:keeperPerformance.resultDelta,why:'Fino a +0,5, ponderato per interventi e presenza. Porta inviolata e contributo alla vittoria sono alternativi, mai sommati.'});
@@ -33,10 +37,11 @@ export function calculateStatisticalVote(input,{rules=DEFAULT_RULES,config:overr
  if(goalSupport.delta)lines.push({kind:'impact',key:'goals',label:'Incisività sotto porta',delta:goalSupport.delta,why:'Prima rete +0,5; altre reti ponderate per prestazione, difficoltà e risultato, anche nella sconfitta.'});
  if(ratingImpact.delta)lines.push({kind:'impact',key:'provider-rating-rank',label:ratingImpact.selected.label+' · '+ratingImpact.selected.rank+'°',delta:ratingImpact.delta,why:'Piazzamento per rating API-FOOTBALL. Un solo contributo, il maggiore in valore assoluto; nessuna somma tra partita e squadra.'});
  if(penaltyMissedDelta)lines.push({kind:'impact',key:'penalty-missed',label:'Errore dal dischetto',delta:penaltyMissedDelta,why:'−0,5 alla prestazione per ogni rigore sbagliato; il malus fantacalcio resta separato.'});
- if(floorAdjustment)lines.push({kind:'impact',key:'event-minimum',label:penSaved?'Rigore parato: soglia minima':'Gol: soglia della sufficienza',delta:floorAdjustment,why:penSaved?'Voto tecnico non inferiore a 6,5 dopo un rigore parato.':'Voto tecnico non inferiore a 6 dopo un gol.'});
+ if(floorAdjustment)lines.push({kind:'impact',key:'event-minimum',label:multiGoal?(multiGoal.goals>=4?'Quattro o più gol':multiGoal.goals===3?'Tripletta':'Doppietta'):penSaved?'Rigore parato: soglia minima':'Gol: soglia della sufficienza',delta:floorAdjustment,
+  why:multiGoal?(multiGoal.goals>=4?'Dieci di base da quattro gol segnati.':'Il valore delle reti si combina con rendimento, contesto ed episodi della partita.'):penSaved?'Voto tecnico non inferiore a 6,5 dopo un rigore parato.':'Voto tecnico non inferiore a 6 dopo un gol.'});
  const accounted=config.base+lines.reduce((n,x)=>n+x.delta,0),rounding=round(vote-accounted);if(rounding)lines.push({kind:'rounding',key:'rounding',label:'Arrotondamento e limiti',delta:rounding,why:'Soglie strette sul grezzo: oltre 5,6 → 6; oltre 6,2 → 6,5; oltre 6,65 → 7; oltre 7,25 → 7,5. Un solo arrotondamento finale.'});
  const stats=Object.values(individual.features).map(f=>{const rate=f.key==='passAccuracy'||f.key.endsWith('Efficiency'),factor=rate?100:1;return {key:f.key,label:f.label,value:statNumber(rate?f.value*100:f.value),avg:statNumber(rate?f.reference*100:f.expected),unit:rate?'%':'',comparison:f.comparison,neutralBand:round(f.neutralBand*factor),score:f.score,attempts:f.attempts,successes:f.key==='passAccuracy'?input.metrics?.passesCompleted:null,referenceLabel:individual.historical?'mediana del ruolo':'riferimento del ruolo',source:f.source};});
  const why=describePerformance(input,{individual,context,goalSupport,eventImpact,ratingImpact,keeperPerformance,vote,shortFinal,eventOnly});
  return {...base,status:input.final?'voted':'playing',rawVote:round(rawVote),boundedVote:round(bounded),vote,fantavote:round2(vote+bonus.reduce((n,b)=>n+b.delta,0)),why,narrativeVersion:NARRATIVE_VERSION,keeperPerformance,goalSupport,eventImpact,ratingImpact,breakdown:{start:config.base,lines,bonus},stats,
- calculation:{version:MODEL,configHash:configDigest(config),rounding:'strict-progressive-bands-v2',signature:digest({model:MODEL,config:configDigest(config),input,baseline:individual.baselineUsed,rules:rules.bonus})}};
+ calculation:{version:MODEL,configHash:configDigest(config),rounding:'strict-progressive-bands-v2',...(multiGoal?{goalPolicy:MULTI_GOAL_VOTE_POLICY}:null),signature:digest({model:MODEL,config:configDigest(config),input,baseline:individual.baselineUsed,rules:rules.bonus,...(multiGoal?{goalPolicy:MULTI_GOAL_VOTE_POLICY}:null)})}};
 }
