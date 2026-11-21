@@ -6,6 +6,7 @@ import {runFootballFullRefresh,fullFootballDue,footballRefreshTicket,validFootba
 import {runFootballSync} from '../netlify/functions/sync-football.mjs';
 import {applyMatchSummary} from '../lib/match-data.mjs';
 import {footballStatistics} from '../public/src/football-statistics.mjs';
+import {mountFootballMatch,updateFootballMatch} from '../public/src/live-match-view.mjs';
 import {matchEventLabel} from '../public/match-events.mjs';
 import {liveSnapshot} from '../lib/live-snapshot.mjs';
 import {mergeLiveSnapshot,patchRegion} from '../public/src/live-channel.mjs';
@@ -96,4 +97,59 @@ test('DB live snapshot exposes compact statistics and penalties but never the fu
  const{s,m}=setup();applyApiFootball(s,[fixture(m)],new Date().toISOString());const user={id:'u',demo:true};s.users=[user];s.leagues=[{id:'l',demo:true,members:[{uid:'u',points:0,credits:500}]}];
  const snapshot=liveSnapshot(s,user,'l'),live=snapshot.calendar.find(x=>x.id===m.id);assert.equal(live.statistics.length,2);assert.equal(live.penalties[1].saved,1);assert.equal(live.playerStats.length,2);assert.equal(live.players,undefined);
  const formations={teams:[{players:[{name:'Old'}]}]},state={leagues:[{id:'l',members:[],rounds:[{id:'r',matches:[{id:m.id,lineups:formations}]}]}]};mergeLiveSnapshot(state,{league:'l',rounds:[{id:'r',matches:[live]}]});const target=state.leagues[0].rounds[0].matches[0];assert.equal(target.lineups,formations);assert.equal(target.details.penalties[1].saved,1);assert.equal(target.detailRevision,m.details.updatedAt);
+});
+
+test('the live match keeps the selected statistics and the open player table through a minute and assist update',()=>{
+ const {s,m}=setup(),user={id:'u',demo:true};
+ const feed=fixture(m);
+ feed.events[0].player={id:10,name:'R. Leão'};
+ feed.events[0].time={elapsed:22,extra:null};
+ feed.events[3].time={elapsed:45,extra:3};
+ feed.events[4].time={elapsed:46,extra:null};
+ applyApiFootball(s,[feed],now.toISOString());
+ s.users=[user];s.leagues=[{id:'l',demo:true,members:[{uid:'u',points:0,credits:500}]}];
+ const {document}=parseHTML('<main id="match-page-root"></main>'),root=document.querySelector('main');
+ mountFootballMatch(root,m,{roundNumber:12});
+ assert.equal(root.querySelector('[data-live-match-tab="cronaca"]').getAttribute('aria-pressed'),'true');
+ assert.equal(root.querySelectorAll('.live-event-assist').length,0);
+ assert.match(root.querySelector('.live-stat-teams').textContent,/MilanInter/);
+ root.querySelector('[data-open-match-stats]').click();
+ const panel=root.querySelector('#live-match-statistiche'),players=panel.querySelector('.live-player-stats');
+ players.setAttribute('open','');
+ feed.fixture.status.elapsed=66;
+ feed.events[0].assist={id:11,name:'C. Pulišić'};
+ feed.statistics[0].statistics[0].value='61%';
+ applyApiFootball(s,[feed],new Date(+now+60000).toISOString());
+ const snapshot=liveSnapshot(s,user,'l'),copy={id:m.id,home:m.home,away:m.away};
+ const state={leagues:[{id:'l',members:[],rounds:[{id:'r',matches:[copy]}]}]};
+ mergeLiveSnapshot(state,{league:'l',rounds:[{id:'r',matches:[snapshot.calendar.find(x=>x.id===m.id)]}]});
+ updateFootballMatch(root,copy);
+ assert.equal(panel.hidden,false);
+ assert.equal(panel.querySelector('.live-player-stats'),players);
+ assert.ok(players.hasAttribute('open'));
+ assert.match(panel.textContent,/61%/);
+ assert.match(root.querySelector('.live-match-badge').textContent,/66′/);
+ assert.equal(root.querySelector('.live-event-assist').textContent.trim(),'Assist di Pulišić');
+ assert.ok(root.querySelector('.live-event-assist svg'));
+ const minutes=[...root.querySelectorAll('.live-event-minute')].map(el=>el.textContent);
+ assert.ok(minutes.indexOf("46'")<minutes.indexOf("45+3'"));
+});
+
+test('finals open the same chronology without a live badge and keep the existing lineup flip and grades',()=>{
+ const {s,m}=setup();
+ applyApiFootball(s,[fixture(m,{status:'FT'})],now.toISOString());
+ m.lineups={kind:'official',teams:[{team:'Milan',formation:'4-4-2',players:[{name:'Leão',role:'A',fantagrade:7}],bench:[{name:'Pulišić',role:'C',fantagrade:6}]}]};
+ const {document}=parseHTML('<main id="match-page-root"></main>'),root=document.querySelector('main');
+ mountFootballMatch(root,m);
+ assert.equal(root.querySelector('#live-match-cronaca').hidden,false);
+ assert.equal(root.querySelector('.live-match-badge'),null);
+ assert.equal(root.querySelector('.live-match-finished').textContent,'Finale');
+ assert.equal(root.querySelector('[data-live-detail-score]').textContent,'2 – 1');
+ root.querySelector('[data-live-match-tab="formazioni"]').click();
+ const lineup=root.querySelector('#live-match-formazioni');
+ assert.match(lineup.querySelector('.pitch-flip-front [data-fantasy-grade]').textContent,/7/);
+ const flip=lineup.querySelector('[data-pitch-flip]');
+ flip.click();
+ assert.equal(flip.getAttribute('aria-pressed'),'true');
+ assert.match(lineup.querySelector('.pitch-flip-back [data-fantasy-grade]').textContent,/6/);
 });

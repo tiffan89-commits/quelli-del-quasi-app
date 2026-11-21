@@ -117,7 +117,7 @@ export function renderLineup(data,{paged=false,details=null,detailsAvailable=tru
  if(paged)return pagedLineup(l,details!==null&&l.kind==='official'?'':title,notes,details,detailsAvailable,showExtras);
  return `<section class="lineup-section"><h3>${title}</h3><div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t,l.kind)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
 }
-export function bindLineupPitch(root,{onPage,autoHeight=true}={}){
+export function bindLineupPitch(root,{onPage,autoHeight=true,fitViewport=true}={}){
  root._pitchCleanup?.();
  const slides=root.querySelector('.pitch-slides');if(!slides)return;
  const tabs=[...root.querySelectorAll('[data-pitch-tab]')],teams=[...root.querySelectorAll('.pitch-team')];
@@ -128,7 +128,7 @@ export function bindLineupPitch(root,{onPage,autoHeight=true}={}){
  if(!teams.length)return;
  const flipped=paged?(root._pitchFlips??=new Set()):null;
  const size=()=>{const team=teams[Math.min(current,teams.length-1)];if(autoHeight&&team)slides.style.height=Math.ceil(team.getBoundingClientRect().height)+'px';};
- const fit=()=>{const page=root.closest?.('#match-page-root');if(!page||!slides.clientWidth||!Number.isFinite(globalThis.window?.innerHeight))return;const pitch=slides.querySelector('.football-pitch');if(!pitch&&!paged)return;
+ const fit=()=>{if(!fitViewport)return;const page=root.closest?.('#match-page-root');if(!page||!slides.clientWidth||!Number.isFinite(globalThis.window?.innerHeight))return;const pitch=slides.querySelector('.football-pitch');if(!pitch&&!paged)return;
   if(paged){
    const nav=page.ownerDocument.querySelector('nav.v2-tabbar'),navRect=nav?.getBoundingClientRect();
    const bottom=navRect?.top>window.innerHeight/2?navRect.top:window.innerHeight;
