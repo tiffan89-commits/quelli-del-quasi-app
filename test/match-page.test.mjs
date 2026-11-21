@@ -1,6 +1,17 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
 import {openMatchPage,closeMatchPage} from '../public/src/match-page.mjs';
+import {mountFootballMatch} from '../public/src/live-match-view.mjs';
 import {quasiBanner} from '../public/src/quasi-scene.mjs';
+
+function gesture(Event,target,from,to){
+ for(const [type,point] of [['touchstart',from],['touchmove',to],['touchend',to]]){
+  const event=new Event(type,{bubbles:true,cancelable:true});
+  const touch={clientX:point[0],clientY:point[1]};
+  event.touches=type==='touchend'?[]:[touch];
+  event.changedTouches=[touch];
+  target.dispatchEvent(event);
+ }
+}
 test('match page preserves slip DOM and draft, retains app chrome and releases pitch listeners on close',()=>{
  const {document}=parseHTML('<html><body><div id="app-header"><header>Bar Fanta</header></div><div id="app"><main><input value="draft"></main><nav>Oggi</nav></div></body></html>');const input=document.querySelector('input');let cleaned=0,closed=0;
  const page=openMatchPage({document,onClose:()=>closed++});page._pitchCleanup=()=>cleaned++;page.innerHTML='<h2>Venezia – Udinese</h2>';assert.equal(page.tagName,'MAIN');assert.equal(page.previousElementSibling.id,'app');assert.equal(document.querySelector('dialog'),null);assert.equal(document.querySelector('#app input'),input);assert.ok(document.body.classList.contains('match-page-active'));assert.equal(document.querySelector('nav').textContent,'Oggi');
@@ -15,24 +26,57 @@ test('full-page match detail preserves the schedina and dismisses on a vertical 
  page.innerHTML='<header>Squadre e risultato</header><p>Formazioni</p>';
  assert.equal(page.tagName,'MAIN');
  assert.ok(document.body.classList.contains('match-page-active'));
- const gesture=(target,from,to)=>{
-  for(const [type,key,point] of [['touchstart','touches',from],['touchend','changedTouches',to]]){
-   const event=new Event(type,{bubbles:true});event[key]=[{clientX:point[0],clientY:point[1]}];target.dispatchEvent(event);
-  }
- };
  const heading=page.querySelector('header');
- gesture(heading,[170,48],[43,60]);
+ gesture(Event,heading,[170,48],[43,60]);
  assert.equal(page.open,true);
  page.scrollTop=90;
- gesture(page.querySelector('p'),[170,48],[180,154]);
+ gesture(Event,page.querySelector('p'),[170,48],[180,154]);
  assert.equal(page.open,true);
  page.scrollTop=0;
- gesture(heading,[170,48],[180,154]);
+ gesture(Event,heading,[170,48],[180,154]);
  assert.equal(page.open,false);
  assert.equal(document.querySelector('#match-page-root'),null);
  assert.equal(document.querySelector('input'),draft);
  assert.equal(draft.value,'draft');
  assert.equal(focused,true);
+});
+test('swiping below the score switches match tabs and leaves pitch swipes and pull-to-close independent',()=>{
+ const {document,Event}=parseHTML('<html><body><div id="app"></div></body></html>');
+ const page=openMatchPage({document});
+ try{
+  const teams=['Parma','Roma'].map(team=>({team,formation:'4-4-2',players:[{name:team+' Giocatore',role:'A'}],bench:[]}));
+  mountFootballMatch(page,{home:'Parma',away:'Roma',status:'LIVE',liveScore:[0,0],lineups:{kind:'official',teams}});
+  const active=()=>page.querySelector('[data-live-match-panel]:not([hidden])');
+  const close=page.querySelector('#close-modal');
+  assert.equal(close.parentElement.className,'live-match-scoreboard');
+  assert.doesNotMatch(page.querySelector('.live-match-header').textContent,/Giornata|Serie A/);
+  gesture(Event,active(),[220,310],[75,315]);
+  assert.equal(active().dataset.liveMatchPanel,'statistiche');
+  gesture(Event,active(),[220,310],[75,315]);
+  assert.equal(active().dataset.liveMatchPanel,'formazioni');
+  gesture(Event,page.querySelector('.pitch-slides'),[75,310],[220,315]);
+  assert.equal(active().dataset.liveMatchPanel,'formazioni');
+  const player=page.querySelector('[data-pitch-player-detail]'),popup=page.querySelector('.live-player-dialog');
+  gesture(Event,player,[130,350],[220,354]);
+  assert.equal(popup.hasAttribute('open'),false);
+  gesture(Event,player,[130,350],[132,352]);
+  assert.equal(popup.hasAttribute('open'),true);
+  gesture(Event,popup.querySelector('.live-player-heading'),[140,410],[142,535]);
+  assert.equal(popup.hasAttribute('open'),false);
+  assert.equal(page.open,true);
+  gesture(Event,active().querySelector('.pitch-tabs'),[75,310],[220,315]);
+  assert.equal(active().dataset.liveMatchPanel,'statistiche');
+  gesture(Event,active(),[75,310],[220,315]);
+  assert.equal(active().dataset.liveMatchPanel,'cronaca');
+  gesture(Event,active(),[175,310],[170,225]);
+  assert.equal(active().dataset.liveMatchPanel,'cronaca');
+  page.scrollTop=90;
+  gesture(Event,active(),[170,310],[175,440]);
+  assert.ok(page.open);
+  page.scrollTop=0;
+  gesture(Event,active(),[170,310],[175,440]);
+  assert.equal(page.open,false);
+ }finally{closeMatchPage();}
 });
 test('home character links directly to the Quasi studio rather than account settings',()=>{const html=quasiBanner({},'Mister');assert.match(html,/data-open-quasi-studio/);assert.doesNotMatch(html,/data-page="profilo"/);});
 

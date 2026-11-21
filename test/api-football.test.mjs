@@ -99,7 +99,7 @@ test('DB live snapshot exposes compact statistics and penalties but never the fu
  const formations={teams:[{players:[{name:'Old'}]}]},state={leagues:[{id:'l',members:[],rounds:[{id:'r',matches:[{id:m.id,lineups:formations}]}]}]};mergeLiveSnapshot(state,{league:'l',rounds:[{id:'r',matches:[live]}]});const target=state.leagues[0].rounds[0].matches[0];assert.equal(target.lineups,formations);assert.equal(target.details.penalties[1].saved,1);assert.equal(target.detailRevision,m.details.updatedAt);
 });
 
-test('the live match keeps the selected statistics and the open player table through a minute and assist update',()=>{
+test('the live match keeps the selected team statistics through a minute and assist update',()=>{
  const {s,m}=setup(),user={id:'u',demo:true};
  const feed=fixture(m);
  feed.events[0].player={id:10,name:'R. Leão'};
@@ -109,13 +109,12 @@ test('the live match keeps the selected statistics and the open player table thr
  applyApiFootball(s,[feed],now.toISOString());
  s.users=[user];s.leagues=[{id:'l',demo:true,members:[{uid:'u',points:0,credits:500}]}];
  const {document}=parseHTML('<main id="match-page-root"></main>'),root=document.querySelector('main');
- mountFootballMatch(root,m,{roundNumber:12});
+ mountFootballMatch(root,m);
  assert.equal(root.querySelector('[data-live-match-tab="cronaca"]').getAttribute('aria-pressed'),'true');
  assert.equal(root.querySelectorAll('.live-event-assist').length,0);
  assert.match(root.querySelector('.live-stat-teams').textContent,/MilanInter/);
  root.querySelector('[data-open-match-stats]').click();
- const panel=root.querySelector('#live-match-statistiche'),players=panel.querySelector('.live-player-stats');
- players.setAttribute('open','');
+ const panel=root.querySelector('#live-match-statistiche');
  feed.fixture.status.elapsed=66;
  feed.events[0].assist={id:11,name:'C. Pulišić'};
  feed.statistics[0].statistics[0].value='61%';
@@ -125,8 +124,7 @@ test('the live match keeps the selected statistics and the open player table thr
  mergeLiveSnapshot(state,{league:'l',rounds:[{id:'r',matches:[snapshot.calendar.find(x=>x.id===m.id)]}]});
  updateFootballMatch(root,copy);
  assert.equal(panel.hidden,false);
- assert.equal(panel.querySelector('.live-player-stats'),players);
- assert.ok(players.hasAttribute('open'));
+ assert.equal(panel.querySelector('table'),null);
  assert.match(panel.textContent,/61%/);
  assert.match(root.querySelector('.live-match-badge').textContent,/66′/);
  assert.equal(root.querySelector('.live-event-assist').textContent.trim(),'Assist di Pulišić');
@@ -135,10 +133,10 @@ test('the live match keeps the selected statistics and the open player table thr
  assert.ok(minutes.indexOf("46'")<minutes.indexOf("45+3'"));
 });
 
-test('finals open the same chronology without a live badge and keep the existing lineup flip and grades',()=>{
+test('finals keep the pitch grades and flip and show live player statistics in a popup',()=>{
  const {s,m}=setup();
  applyApiFootball(s,[fixture(m,{status:'FT'})],now.toISOString());
- m.lineups={kind:'official',teams:[{team:'Milan',formation:'4-4-2',players:[{name:'Leão',role:'A',fantagrade:7}],bench:[{name:'Pulišić',role:'C',fantagrade:6}]}]};
+ m.lineups={kind:'official',teams:[{team:'Milan',formation:'4-4-2',players:[{id:'af:10',name:'Leão',role:'A',fantagrade:7}],bench:[{id:'11',name:'Pulišić',role:'C',fantagrade:6}]}]};
  const {document}=parseHTML('<main id="match-page-root"></main>'),root=document.querySelector('main');
  mountFootballMatch(root,m);
  assert.equal(root.querySelector('#live-match-cronaca').hidden,false);
@@ -152,4 +150,21 @@ test('finals open the same chronology without a live badge and keep the existing
  flip.click();
  assert.equal(flip.getAttribute('aria-pressed'),'true');
  assert.match(lineup.querySelector('.pitch-flip-back [data-fantasy-grade]').textContent,/6/);
+ const sheet=root.querySelector('.live-player-dialog');
+ lineup.querySelector('.pitch-flip-back [data-pitch-player-detail]').click();
+ assert.ok(sheet.hasAttribute('open'));
+ assert.match(sheet.textContent,/Pulišić/);
+ assert.match(sheet.textContent,/Statistiche non ancora disponibili/);
+ sheet.querySelector('[data-close-live-player]').click();
+ flip.click();
+ lineup.querySelector('.pitch-flip-front [data-pitch-player-detail]').click();
+ assert.ok(sheet.hasAttribute('open'));
+ assert.match(sheet.textContent,/Leão/);
+ assert.match(sheet.textContent,/Minuti65/);
+ assert.match(sheet.textContent,/Voto del fornitore7,2/);
+ updateFootballMatch(root,{details:{playerStats:[{id:10,name:'Leão',side:'away',minutes:96,rating:'9.8'},{id:10,name:'Leão',side:'home',minutes:77,rating:'7.5',goals:1}]}});
+ assert.ok(sheet.hasAttribute('open'));
+ assert.match(sheet.textContent,/Minuti77/);
+ assert.match(sheet.textContent,/Voto del fornitore7,5/);
+ assert.doesNotMatch(sheet.textContent,/9,8/);
 });
