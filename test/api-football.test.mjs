@@ -5,7 +5,7 @@ import {apiFootballClient,apiFootballMatch,apiFootballTimeline,apiFootballPenalt
 import {runFootballFullRefresh,fullFootballDue,footballRefreshTicket,validFootballRefreshTicket} from '../lib/api-football-refresh.mjs';
 import {runFootballSync} from '../netlify/functions/sync-football.mjs';
 import {applyMatchSummary} from '../lib/match-data.mjs';
-import {footballStatistics} from '../public/src/football-statistics.mjs';
+import {eventColumns,footballStatistics} from '../public/src/football-statistics.mjs';
 import {matchEventLabel} from '../public/match-events.mjs';
 import {liveSnapshot} from '../lib/live-snapshot.mjs';
 import {mergeLiveSnapshot,patchRegion} from '../public/src/live-channel.mjs';
@@ -96,4 +96,30 @@ test('DB live snapshot exposes compact statistics and penalties but never the fu
  const{s,m}=setup();applyApiFootball(s,[fixture(m)],new Date().toISOString());const user={id:'u',demo:true};s.users=[user];s.leagues=[{id:'l',demo:true,members:[{uid:'u',points:0,credits:500}]}];
  const snapshot=liveSnapshot(s,user,'l'),live=snapshot.calendar.find(x=>x.id===m.id);assert.equal(live.statistics.length,2);assert.equal(live.penalties[1].saved,1);assert.equal(live.playerStats.length,2);assert.equal(live.players,undefined);
  const formations={teams:[{players:[{name:'Old'}]}]},state={leagues:[{id:'l',members:[],rounds:[{id:'r',matches:[{id:m.id,lineups:formations}]}]}]};mergeLiveSnapshot(state,{league:'l',rounds:[{id:'r',matches:[live]}]});const target=state.leagues[0].rounds[0].matches[0];assert.equal(target.lineups,formations);assert.equal(target.details.penalties[1].saved,1);assert.equal(target.detailRevision,m.details.updatedAt);
+});
+
+test('the live timeline adds the boot and assist provider beside the scorer when the feed supplies it',()=>{
+ const {s,m}=setup(),user={id:'u',demo:true};
+ s.users=[user];s.leagues=[{id:'l',demo:true,members:[{uid:'u',points:0,credits:500}]}];
+ const target={id:m.id,home:m.home,away:m.away},state={leagues:[{id:'l',members:[],rounds:[{id:'r',matches:[target]}]}]};
+ const feed=fixture(m,{events:[
+  event('Goal','Normal Goal','away',{player:{id:20,name:'L. Martínez'}}),
+  event('Goal','Penalty','home',{assist:{id:12,name:'Rigore'}}),
+  event('Goal','Own Goal','home',{assist:{id:13,name:'Autogol'}}),
+  event('subst','Substitution 1','home',{assist:{id:11,name:'Entrante'}}),
+ ]});
+ const render=at=>{
+  applyApiFootball(s,[feed],at.toISOString());
+  const live=liveSnapshot(s,user,'l').calendar.find(match=>match.id===m.id);
+  mergeLiveSnapshot(state,{league:'l',rounds:[{id:'r',matches:[live]}]});
+  return parseHTML(eventColumns(target,target.details.events)).document;
+ };
+ assert.equal(render(now).querySelector('.match-event-assist'),null);
+ feed.events[0].assist={id:21,name:'H. Çalhanoğlu'};
+ const updated=render(new Date(+now+60000)),assist=updated.querySelector('.match-event-assist');
+ assert.equal(updated.querySelectorAll('.match-event-assist').length,1);
+ assert.equal(assist.closest('.match-event-row').querySelector('strong').textContent,'Martínez');
+ assert.equal(assist.getAttribute('title'),'Assist di Çalhanoğlu');
+ assert.ok(assist.querySelector('svg'));
+ assert.match(updated.querySelector('.events-columns').textContent,/→ Entrante/);
 });

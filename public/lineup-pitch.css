@@ -113,6 +113,9 @@ img[data-deferred-src]{opacity:0}img:not([data-deferred-src]){transition:opacity
 .match-page .match-event-row{display:grid;grid-template-columns:28px 22px minmax(0,1fr);gap:5px;align-items:center;min-height:25px;padding:2px 5px;margin:0}
 .match-page .match-event-row svg{width:17px;height:17px;vertical-align:middle}
 .match-page .match-event-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.match-event-names{display:flex;align-items:center;flex-wrap:wrap;min-width:0;gap:0 8px}
+.match-event-assist{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%;color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.match-event-assist svg{flex:none}
 .match-page .match-details-body .event-item.compact-penalty{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
 .match-page .match-details-body .compact-penalty strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .match-page .match-details-body .compact-penalty p{margin:0;font-size:11px}

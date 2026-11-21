@@ -30,10 +30,8 @@ import {retainAppHeader} from './mode-switch.mjs';
 import {barModeSwitch,enterFanta,leaveFanta,preferredFanta,clearFantaSessions,refreshFantaMembership} from './fanta-mode.mjs';
 import {createLiveChannel,requestJson,mergeLiveSnapshot,patchRegion} from "./live-channel.mjs";
 import {withButtonFeedback} from './action-feedback.mjs';
-import {isMatchEvent,matchEventLabel} from '../match-events.mjs';
-import {playerSurname} from './player-label.mjs';
-import {ballIcon,substitutionMark} from './pitch-events.mjs';
-import {footballPenalties} from './football-statistics.mjs';
+import {isMatchEvent} from '../match-events.mjs';
+import {eventColumns,footballPenalties} from './football-statistics.mjs';
 import {clubShirt} from './club-crest.mjs';
 import { renderSlipV2, patchSlipV2, patchSlipBar, bindSlipV2 } from "./v2/slip-v2.mjs";
 import { quasiScene, bindQuasiZoom } from "./quasi-scene.mjs";
@@ -1935,37 +1933,6 @@ async function flipAnalysis(button) {
     back.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
     back.dataset.profileState='error';
   }
-}
-function eventColumns(data, events) {
-  const norm = (s) =>
-      String(s || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, ""),
-    aliases = {
-      acmilan: "milan",
-      internazionale: "inter",
-      intermilan: "inter",
-      asroma: "roma",
-      ssclazio: "lazio",
-      sscnapoli: "napoli",
-      hellasverona: "verona",
-    };
-  const key = (s) => aliases[norm(s)] || norm(s);
-  const home = [],
-    away = [],
-    unknown = [];
-  for (const e of events) {
-    if (e.side === "home" || key(e.team) === key(data.home)) home.push(e);
-    else if (e.side === "away" || key(e.team) === key(data.away)) away.push(e);
-    else unknown.push(e);
-  }
-  const event=e=>{
-    const icon=e.kind==='goal'||e.kind==='own-goal'?ballIcon(e.kind==='own-goal'):e.kind==='substitution'?substitutionMark():({yellow:'🟨',red:'🟥','penalty-missed':'✕','penalty-saved':'🧤',var:'▣'})[e.kind];
-    const names=[(e.players||[]).map(playerSurname).filter(Boolean).join(', '),playerSurname(e.incoming)].filter(Boolean).join(' → ');
-    const description=[names,e.kind==='var'?e.detail:''].filter(Boolean).join(' · ');
-    return `<div class="event-item match-event-row"><b class="green">${esc(e.minute)}</b><span role="img" aria-label="${esc(matchEventLabel(e))}">${icon}</span><strong title="${esc(description)}">${esc(description)}</strong></div>`;
-  };
-  return `<div class="events-columns"><section><h3>${esc(data.home)}</h3>${home.length ? home.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section><section><h3>${esc(data.away)}</h3>${away.length ? away.map(event).join("") : '<p class="tiny muted">Nessun evento disponibile.</p>'}</section></div>${unknown.length ? '<div class="notice">Squadra non indicata dalla fonte</div>' + unknown.map(event).join("") : ""}`;
 }
 
 const detailCache=new Map(),detailPending=new Map();

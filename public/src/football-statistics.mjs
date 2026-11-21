@@ -1,7 +1,30 @@
 import {playerSurname} from './player-label.mjs';
+import {matchEventLabel} from '../match-events.mjs';
+import {assistBootIcon,ballIcon,substitutionMark} from './pitch-events.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number=v=>v==null?'—':esc(v);
 const labels={'Shots on Goal':'Tiri in porta','Shots off Goal':'Tiri fuori','Total Shots':'Tiri totali','Blocked Shots':'Tiri respinti','Shots insidebox':'Tiri in area','Shots outsidebox':'Tiri da fuori','Fouls':'Falli','Corner Kicks':'Calci d’angolo','Offsides':'Fuorigioco','Ball Possession':'Possesso palla','Yellow Cards':'Ammonizioni','Red Cards':'Espulsioni','Goalkeeper Saves':'Parate','Total passes':'Passaggi','Passes accurate':'Passaggi riusciti','Passes %':'Precisione passaggi','expected_goals':'Gol attesi','goals_prevented':'Gol evitati'};
+export function eventColumns(match, events){
+ const aliases={acmilan:'milan',internazionale:'inter',intermilan:'inter',asroma:'roma',ssclazio:'lazio',sscnapoli:'napoli',hellasverona:'verona'};
+ const key=name=>{const k=String(name||'').toLowerCase().replace(/[^a-z0-9]/g,'');return aliases[k]||k;};
+ const home=[],away=[],unknown=[];
+ for(const e of events){
+  if(e.side==='home'||key(e.team)===key(match.home))home.push(e);
+  else if(e.side==='away'||key(e.team)===key(match.away))away.push(e);
+  else unknown.push(e);
+ }
+ const event=e=>{
+  const icon=e.kind==='goal'||e.kind==='own-goal'?ballIcon(e.kind==='own-goal'):e.kind==='substitution'?substitutionMark():({yellow:'🟨',red:'🟥','penalty-missed':'✕','penalty-saved':'🧤',var:'▣'})[e.kind];
+  const names=[(e.players||[]).map(playerSurname).filter(Boolean).join(', '),playerSurname(e.incoming)].filter(Boolean).join(' → ');
+  const description=[names,e.kind==='var'?e.detail:''].filter(Boolean).join(' · ');
+  const assist=e.kind==='goal'&&!e.penalty&&typeof e.assist==='string'?playerSurname(e.assist):'';
+  const credit=assist?`<span class="match-event-assist" title="Assist di ${esc(assist)}">${assistBootIcon()}<span><span class="sr-only">Assist di </span>${esc(assist)}</span></span>`:'';
+  return `<div class="event-item match-event-row"><b class="green">${esc(e.minute)}</b><span role="img" aria-label="${esc(matchEventLabel(e))}">${icon}</span><div class="match-event-names"><strong title="${esc(description)}">${esc(description)}</strong>${credit}</div></div>`;
+ };
+ const section=(team,rows)=>`<section><h3>${esc(team)}</h3>${rows.length?rows.map(event).join(''):'<p class="tiny muted">Nessun evento disponibile.</p>'}</section>`;
+ return `<div class="events-columns">${section(match.home,home)}${section(match.away,away)}</div>${unknown.length?'<div class="notice">Squadra non indicata dalla fonte</div>'+unknown.map(event).join(''):''}`;
+}
+
 export function footballStatistics(match,{compact=false}={}){
   const d=match.details||{},stats=d.statistics||[],homeId=d.matchInfo?.teams?.home?.id;
   const home=stats.find(t=>t.side==='home')||stats.find(t=>t.team?.id===homeId)||stats[0],away=stats.find(t=>t!==home),types=[...new Set(stats.flatMap(t=>(t.statistics||[]).map(x=>x.type)))];
