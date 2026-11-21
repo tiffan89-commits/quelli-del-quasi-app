@@ -653,6 +653,11 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
   min-height:60px;margin:0;padding:2px 0;
   background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;min-width:0;
 }
+.bar-ticket .ticket-match:has(.inline-live){
+  background:#2b201f;border-bottom-color:transparent;border-radius:9px;
+  box-shadow:inset 0 0 0 1px #75453b;padding-inline-start:6px;
+}
+.bar-ticket .ticket-match:has(.inline-live) .ticket-time{display:none}
 .bar-ticket .ticket-match .v2-match-head{
   display:grid;grid-template-columns:minmax(0,1fr) minmax(30px,auto);gap:3px;
   align-items:center;min-height:44px;padding:0;min-width:0;text-align:left;
@@ -667,10 +672,16 @@ body.match-page-active:has(#app>main .bar-ticket) #match-page-root{
 .ticket-match .ticket-time[hidden]{display:none}
 .ticket-match .inline-result{gap:0;line-height:1.1}
 .ticket-match .inline-result:empty{display:none}
-.ticket-match .inline-result :is(small,.inline-live){font-size:9px;color:var(--ticket-muted)}
+.ticket-match .inline-result small{font-size:10px;font-weight:700;color:#ffc2b0}
+.ticket-match .inline-result:has(.inline-live){gap:2px}
+.ticket-match .inline-live{
+  gap:4px;padding:2px 5px;border-radius:999px;
+  background:#63342d;color:#ffcfbf;font-size:9px;line-height:1.2;
+}
+.ticket-match .inline-live i{width:5px;height:5px}
 .ticket-match .inline-score{font-size:13px;white-space:nowrap}
+.ticket-match .inline-live+.inline-score{font-size:17px;line-height:1}
 html.os-on main.os-root .v2-match .inline-score.is-final,.v2-match .inline-score.is-final{font-size:clamp(15px,4.5vw,20px);font-weight:850;line-height:1}
-.ticket-match .inline-live i{display:none}
 .bar-ticket .ticket-match .v2-odds-main{display:grid;grid-auto-flow:column;grid-auto-columns:44px;grid-template-columns:none;gap:3px;padding:0}
 .bar-ticket :is(.ticket-match,.ticket-extra) :is(.v2-odd,.v2-more){
   box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
