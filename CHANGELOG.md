@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.44.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.44.1...v0.44.2) (2026-11-21)
+
+
+### Bug Fixes
+
+* valorizza le marcature multiple e varia le pagelle ([422a106](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/422a10655d7107d0ba8225923a4b1b2d144f057e))
+
 ## [0.44.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.44.0...v0.44.1) (2026-11-21)
 
 
