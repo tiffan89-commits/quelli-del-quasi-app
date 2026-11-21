@@ -2014,7 +2014,7 @@ async function openMatch(id, quiet = false, trigger) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const moveFocus=content.contains(document.activeElement);
-    mountFootballMatch(dialog,data,{roundNumber:matchRound.number});
+    mountFootballMatch(dialog,data);
     dialog.dataset.lineupRevision=data.lineups?.updatedAt||data.lineupRevision||'';
     const latest=matchRound.matches.find(m=>m.id===id);
     const newerScore=latest?.scoreUpdatedAt&&(!data.scoreUpdatedAt||Date.parse(latest.scoreUpdatedAt)>Date.parse(data.scoreUpdatedAt));

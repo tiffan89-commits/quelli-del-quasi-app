@@ -633,17 +633,13 @@ body.match-page-active main.match-page.live-match-page{
 .live-match-page [hidden]{display:none}
 .live-match-top{position:sticky;top:0;z-index:3;background:var(--bg);padding-bottom:4px}
 .live-match-header{
-  display:block;border-radius:15px;overflow:hidden;padding:8px 13px 10px;border:1px solid var(--line);
+  display:block;border-radius:15px;overflow:hidden;padding:5px 10px 8px;border:1px solid var(--line);
   background:radial-gradient(ellipse at 50% 100%,#213c2c,transparent 72%),var(--panel);
 }
-.live-match-competition{
-  display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:7px;padding-bottom:6px;
-  border-bottom:1px solid var(--line);font-size:12px;font-weight:750;
-}
-.live-match-competition .match-close{width:44px;min-height:44px;padding:0;margin:0}
+.live-match-scoreboard .match-close{width:44px;min-height:44px;padding:0;margin:0}
 .live-match-scoreboard{
-  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:4px;align-items:center;
-  text-align:center;padding:10px 0 13px;
+  display:grid;grid-template-columns:44px minmax(0,1fr) auto minmax(0,1fr) 26px;
+  gap:4px;align-items:center;text-align:center;padding:4px 0 11px;
 }
 .live-match-team{display:grid;justify-items:center;gap:4px;min-width:0;font-size:13px;font-weight:750;overflow-wrap:anywhere}
 .live-match-team.home{--team-tone:var(--match-home)}
@@ -685,6 +681,8 @@ body.match-page-active main.match-page.live-match-page{
 .live-match-tabs>button{margin:0;padding:4px 2px;min-height:44px;border:0;border-radius:99px;background:none;color:var(--muted);font-size:12px;font-weight:750}
 .live-match-tabs>button[aria-pressed=true]{background:var(--lime);color:#102219}
 .live-match-panel{padding:9px 2px 6px;min-width:0}
+.live-match-panel:not([data-live-match-panel=formazioni]),
+.live-match-panel :is(.lineup-section>h3,.pitch-tabs,.match-availability){touch-action:pan-y pinch-zoom}
 .live-match-panel h2{margin:0;font-size:22px;line-height:1.15}
 .live-match-empty{margin:12px 0;font-size:13px}
 .live-match-events{display:grid;gap:5px;margin:9px 0 13px;padding:0;list-style:none}
@@ -725,11 +723,27 @@ body.match-page-active main.match-page.live-match-page{
 .live-stat-bar .away{background:var(--match-away)}
 .live-match-page .live-match-panel .match-statistics{margin-top:12px}
 .live-match-page .live-match-panel .match-statistics>summary{min-height:44px;line-height:44px;font-size:13px}
-.live-player-table{border-collapse:collapse;table-layout:auto;width:100%;font-size:11px;font-variant-numeric:tabular-nums}
-.live-player-table caption{margin:8px 0 2px;text-align:left;color:var(--lime);font-weight:750}
-.live-player-table th,.live-player-table td{padding:5px 2px;text-align:right;border-bottom:1px solid var(--line)}
-.live-player-table th:first-child{text-align:left;overflow-wrap:anywhere}
-.live-player-stats p{margin:8px 0 0;font-size:11px}
+.live-match-page .pitch-player:has(>.pitch-player-detail){position:relative}
+.live-match-page .pitch-player-detail{
+  position:absolute;inset:0;z-index:3;min-width:0;min-height:0;padding:0;margin:0;border:0;border-radius:9px;background:none;
+}
+.live-match-page .pitch-player-detail:focus-visible{outline:2px solid var(--lime);outline-offset:0}
+.live-player-dialog{
+  position:fixed;inset:auto 0 0;width:min(100%,520px);max-width:none;max-height:80dvh;overflow:auto;
+  margin:0 auto;padding:0;border:1px solid var(--line);border-radius:20px 20px 0 0;
+  color:var(--white);background:var(--panel);overscroll-behavior:contain;transform:translateY(var(--match-drag,0px));
+}
+.live-player-dialog::backdrop{background:#000a}
+.live-player-dialog-body{padding:10px 14px max(16px,env(safe-area-inset-bottom))}
+.live-player-dialog-body>.v2-sheet-handle{margin:0 auto 6px}
+.live-player-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:5px 0 12px}
+.live-player-heading :is(h2,p){margin:0;overflow-wrap:anywhere}
+.live-player-heading p{font-size:12px}
+.live-player-heading button{flex:none;width:44px;min-height:44px;padding:0}
+.live-player-figures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0}
+.live-player-figures div{display:grid;align-content:center;gap:3px;padding:8px 4px;border:1px solid var(--line);border-radius:9px;text-align:center;background:var(--bg)}
+.live-player-figures dt{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.live-player-figures dd{margin:0;font-size:19px;font-weight:750;font-variant-numeric:tabular-nums}
 .live-match-page .match-availability{margin-top:9px}
 .live-match-page .match-availability h3{font-size:17px}
 @media(max-width:360px){
