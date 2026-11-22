@@ -13,7 +13,7 @@ import {renderSlipV2,patchSlipV2,patchSlipBar,bindSlipV2,tickSlipEventClocks} fr
 import {barSlipsView} from '../bar-slips.mjs';
 import {fantasyAccount} from '../fantasy-accounts.mjs';
 import {patchSlipResults} from '../slip-results.mjs';
-import {sourceOf,isClosed,editingClosed,editingEventLocked,editablePicks,roundAvailability,defaultSlipRound,selectableSlipRounds,draftKey,loadDraft,saveDraft,fingerprint,slipSummary} from '../slip-state.mjs';
+import {sourceOf,isClosed,editingClosed,editingEventLocked,editablePicks,roundAvailability,defaultSlipRound,selectableSlipRounds,draftKey,loadDraft,saveDraft,fingerprint,slipSummary,slipWaitingForPrevious} from '../slip-state.mjs';
 
 // Lega e competizione appartengono alla cornice Fanta. Leggiamo solo lo snapshot
 // autorizzato già caricato dal Bar: nessuna nuova lettura al cambio di schermata.
@@ -44,8 +44,9 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   const key=context.leagueId+':'+context.competitionId;if(scope!==key){scope=key;selection=null;expanded=null;message='';detail=null;}
   const route=readAppRoute();if(route?.mode==='fanta'&&route.page==='schedine'){if(['mine','league'].includes(route.section))sub=route.section;if(route.round)selection=route.round;}
   const snapshot=services?.snapshot?.(),data=fantaSlipContext(snapshot,context.leagueId,context.competitionId);
-  const eligible=selectableSlipRounds(data.rounds,now(),data.calendar);
-  const round=eligible.find(r=>r.id===selection||String(r.number)===selection)||defaultSlipRound(data.rounds,now(),data.calendar);
+  const rounds=data.rounds.map(r=>({...r,waitingForOpen:slipWaitingForPrevious(r,data.calendar?.rounds,now())}));
+  const eligible=selectableSlipRounds(rounds,now(),data.calendar);
+  const round=eligible.find(r=>r.id===selection||String(r.number)===selection)||defaultSlipRound(rounds,now(),data.calendar);
   return {...data,round:round?{...round,stakeReserve:slipCreditReserve(round,data.league.rounds,data.league,data.uid)}:round,eligible};
  }
  function draft(data){

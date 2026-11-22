@@ -1,6 +1,7 @@
 import {eventLocked,noOpenEvents,stakeLocked,slipStakeLimit} from '../slip-events.mjs';
 import {slipPointTerms} from '../scoring.mjs';
 export function roundAvailability(round,now=Date.now()){
+ if(round?.waitingForOpen)return 'non ancora aperta';
  if(round?.eventBetting){
   if(noOpenEvents(round,now))return 'chiusa';
   const priced=round.matches.some(m=>!eventLocked(round,m,now)&&['1','X','2'].some(k=>Number.isFinite(m.odds?.[k])&&m.odds[k]>1));
@@ -13,6 +14,13 @@ export function roundAvailability(round,now=Date.now()){
 const byRound=(a,b)=>(Number(a.number)-Number(b.number))||((Date.parse(deadlineOf(a))||Infinity)-(Date.parse(deadlineOf(b))||Infinity));
 export const sourceOf = (round) => round?.source === 'fantacalcio' || round?.provider === 'Leghe Fantacalcio' ? 'fantacalcio' : 'seriea';
 export const deadlineOf = (round) => round?.deadline || round?.kickoff;
+const finishedSerieAStatuses=new Set(['FT','AET','PEN','PST','CANC','ABD','AWD','WO']);
+export function slipWaitingForPrevious(round,calendarRounds,now=Date.now()){
+ const number=Number(sourceOf(round)==='fantacalcio'?round.serieARound:round.number);
+ if(!Number.isInteger(number)||number<=1||Date.parse(deadlineOf(round))<=now)return false;
+ const previous=calendarRounds?.find(r=>Number(r.number)===number-1);
+ return !!previous?.matches?.length&&!previous.matches.every(m=>m.void||finishedSerieAStatuses.has(m.status)||Array.isArray(m.score)&&m.status!=='LIVE');
+}
 export function alignSerieASlipKickoffs(round,calendar){
  if(!round||sourceOf(round)!=='seriea')return;
  const official=calendar?.rounds?.find(r=>Number(r.number)===Number(round.number));

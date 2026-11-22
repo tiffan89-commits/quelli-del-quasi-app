@@ -1,3 +1,5 @@
+import {serieASubmissionWindow} from '../lib/seriea-round-window.mjs';
+
 export function currentRound(s,now=Date.now()){
  const rounds=s.rounds.filter(r=>!r.data?.archivedWithoutResults).sort((a,b)=>Date.parse(a.deadline)-Date.parse(b.deadline)||a.number-b.number),started=rounds.filter(r=>Date.parse(r.deadline)<=now);
  const live=started.filter(r=>!r.official&&(s.fixtures||[]).some(f=>f.round===r.seriea_round&&['1H','HT','2H','ET','BT','P','LIVE'].includes(f.status)&&(!f.kickoff||Date.parse(f.kickoff)>=now-210*60000))).at(-1);
@@ -13,3 +15,8 @@ export const currentRoundNumberSQL=`coalesce($3::int,
 
 // Editing a future lineup is independent of final verification of prior results.
 export function lineupRound(s,now=Date.now()){return [...s.rounds].filter(r=>!r.official&&Date.parse(r.deadline)>now).sort((a,b)=>Date.parse(a.deadline)-Date.parse(b.deadline)||a.number-b.number)[0]||currentRound(s,now);}
+
+export function lineupWindow(state,round,now){
+ if(!round||round.official||round.data?.archivedWithoutResults)return {deadline:round?.deadline??null,started:!!round?.official,open:false};
+ return serieASubmissionWindow(state.submissionWindows??new Map(),round.seriea_round,round.deadline,now);
+}

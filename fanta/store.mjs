@@ -1,4 +1,5 @@
 import {barStorageRoot} from '../lib/storage-mode.mjs';
+import {readSerieARoundWindows} from '../lib/seriea-round-window.mjs';
 import {saveLineup} from './lineup-save.mjs';
 import {activateCompletedLeague} from './competition-activation.mjs';
 import {readyRosters} from './competitions.mjs';
@@ -182,12 +183,14 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
     WHERE league_id=$1 AND id=$2`,[id,orderId,new Date(now).toISOString(),uid]);
    return rosterEditorView(state);
   })),
-  async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,roundOnly=false,teamIdentity=false,calculation=false}={}){return use(async c=>{
+  async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,roundOnly=false,teamIdentity=false,calculation=false,submissionWindows=false}={}){return use(async c=>{
    if(!write&&!auction&&!market){
     const scope=roundOnly&&!!number;
     const load=async()=>(await c.query(scope?READ_ROUND_SQL:READ_LEAGUE_SQL,[id,uid,number?Number(number):null,competition||null,catalog,detailedVotes])).rows[0];let l;
     if(readCache){const access=(await c.query(`SELECT l.admin_uid,r.revision::text AS revision FROM fanta.leagues l CROSS JOIN fanta.cache_revision r WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND r.id=1 AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`,[id,uid])).rows[0];if(!access)fail('Lega non accessibile',403);l=await readCache.read(JSON.stringify([scope?'fanta-round-v1':'fanta-read-v3',id,number||null,competition||null,catalog,detailedVotes]),access.revision,load,{ttl:60000});}
-    else l=await load();if(!l)fail('Lega non accessibile',403);const s=resolveLeagueBindings({...readState(l),bindings:l.bindings||[]});if(s.league.adminUid!==uid)s.importReview=[];return fn(s,c);
+    else l=await load();if(!l)fail('Lega non accessibile',403);const s=resolveLeagueBindings({...readState(l),bindings:l.bindings||[]});if(s.league.adminUid!==uid)s.importReview=[];
+    if(submissionWindows)s.submissionWindows=await readSerieARoundWindows(c,{season:s.league.season});
+    return fn(s,c);
    }
    await c.query('BEGIN');try{
     const l=(await c.query(`SELECT l.* FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)${write?' FOR UPDATE':market?' FOR SHARE':''}`,[id,uid])).rows[0];if(!l)fail('Lega non accessibile',403);

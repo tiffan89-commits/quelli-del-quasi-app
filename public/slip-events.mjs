@@ -1,13 +1,13 @@
 import {fantasyWalletKey} from './src/fantasy-accounts.mjs';
 const beforeKickoff=new Set(['NS','TBD','SCHEDULED']);
 export function eventDeadline(round,match){
- const exact=match?.kickoff||match?.officialKickoff;
+ const exact=round?.source==='fantacalcio'?match?.kickoff:match?.officialKickoff||match?.kickoff;
  if(exact)return Date.parse(exact);
  if(match&&(Object.hasOwn(match,'kickoff')||Object.hasOwn(match,'officialKickoff')))return NaN;
  return Date.parse(round?.deadline||round?.kickoff);
 }
 export function eventLocked(round,match,now=Date.now()){
- if(!match||match.void||round?.archived||round?.settled||round?.sourceConflict||round?.calculated&&round?.source==='fantacalcio')return true;
+ if(!match||match.void||round?.waitingForOpen||round?.archived||round?.settled||round?.sourceConflict||round?.calculated&&round?.source==='fantacalcio')return true;
  const at=eventDeadline(round,match);
  return !!(match.score||match.liveScore||match.status&&!beforeKickoff.has(match.status)||!Number.isFinite(at)||now>=at);
 }
