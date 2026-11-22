@@ -634,43 +634,53 @@
       "matches": [
         {
           "home": "Cagliari",
-          "away": "Milan"
+          "away": "Milan",
+          "officialKickoff": "2026-11-30T20:45:00+01:00"
         },
         {
           "home": "Como",
-          "away": "Juventus"
+          "away": "Juventus",
+          "officialKickoff": "2026-11-29T20:45:00+01:00"
         },
         {
           "home": "Frosinone",
-          "away": "Parma"
+          "away": "Parma",
+          "officialKickoff": "2026-11-28T15:00:00+01:00"
         },
         {
           "home": "Inter",
-          "away": "Genoa"
+          "away": "Genoa",
+          "officialKickoff": "2026-11-28T20:45:00+01:00"
         },
         {
           "home": "Lecce",
-          "away": "Atalanta"
+          "away": "Atalanta",
+          "officialKickoff": "2026-11-30T18:30:00+01:00"
         },
         {
           "home": "Roma",
-          "away": "Monza"
+          "away": "Monza",
+          "officialKickoff": "2026-11-29T18:00:00+01:00"
         },
         {
           "home": "Sassuolo",
-          "away": "Napoli"
+          "away": "Napoli",
+          "officialKickoff": "2026-11-29T15:00:00+01:00"
         },
         {
           "home": "Torino",
-          "away": "Lazio"
+          "away": "Lazio",
+          "officialKickoff": "2026-11-28T18:00:00+01:00"
         },
         {
           "home": "Udinese",
-          "away": "Fiorentina"
+          "away": "Fiorentina",
+          "officialKickoff": "2026-11-29T12:30:00+01:00"
         },
         {
           "home": "Venezia",
-          "away": "Bologna"
+          "away": "Bologna",
+          "officialKickoff": "2026-11-27T20:45:00+01:00"
         }
       ]
     },
@@ -680,43 +690,53 @@
       "matches": [
         {
           "home": "Bologna",
-          "away": "Roma"
+          "away": "Roma",
+          "officialKickoff": "2026-12-04T20:45:00+01:00"
         },
         {
           "home": "Fiorentina",
-          "away": "Cagliari"
+          "away": "Cagliari",
+          "officialKickoff": "2026-12-07T20:45:00+01:00"
         },
         {
           "home": "Frosinone",
-          "away": "Inter"
+          "away": "Inter",
+          "officialKickoff": "2026-12-05T18:00:00+01:00"
         },
         {
           "home": "Genoa",
-          "away": "Torino"
+          "away": "Torino",
+          "officialKickoff": "2026-12-06T12:30:00+01:00"
         },
         {
           "home": "Juventus",
-          "away": "Udinese"
+          "away": "Udinese",
+          "officialKickoff": "2026-12-06T18:00:00+01:00"
         },
         {
           "home": "Lazio",
-          "away": "Atalanta"
+          "away": "Atalanta",
+          "officialKickoff": "2026-12-06T15:00:00+01:00"
         },
         {
           "home": "Milan",
-          "away": "Parma"
+          "away": "Parma",
+          "officialKickoff": "2026-12-06T20:45:00+01:00"
         },
         {
           "home": "Monza",
-          "away": "Como"
+          "away": "Como",
+          "officialKickoff": "2026-12-05T15:00:00+01:00"
         },
         {
           "home": "Napoli",
-          "away": "Lecce"
+          "away": "Lecce",
+          "officialKickoff": "2026-12-05T20:45:00+01:00"
         },
         {
           "home": "Venezia",
-          "away": "Sassuolo"
+          "away": "Sassuolo",
+          "officialKickoff": "2026-12-07T18:30:00+01:00"
         }
       ]
     },
@@ -726,43 +746,53 @@
       "matches": [
         {
           "home": "Atalanta",
-          "away": "Genoa"
+          "away": "Genoa",
+          "officialKickoff": "2026-12-14T18:30:00+01:00"
         },
         {
           "home": "Cagliari",
-          "away": "Venezia"
+          "away": "Venezia",
+          "officialKickoff": "2026-12-12T15:00:00+01:00"
         },
         {
           "home": "Como",
-          "away": "Bologna"
+          "away": "Bologna",
+          "officialKickoff": "2026-12-12T20:45:00+01:00"
         },
         {
           "home": "Inter",
-          "away": "Torino"
+          "away": "Torino",
+          "officialKickoff": "2026-12-13T15:00:00+01:00"
         },
         {
           "home": "Juventus",
-          "away": "Monza"
+          "away": "Monza",
+          "officialKickoff": "2026-12-14T20:45:00+01:00"
         },
         {
           "home": "Lazio",
-          "away": "Roma"
+          "away": "Roma",
+          "officialKickoff": "2026-12-13T12:30:00+01:00"
         },
         {
           "home": "Lecce",
-          "away": "Sassuolo"
+          "away": "Sassuolo",
+          "officialKickoff": "2026-12-12T18:00:00+01:00"
         },
         {
           "home": "Napoli",
-          "away": "Milan"
+          "away": "Milan",
+          "officialKickoff": "2026-12-13T20:45:00+01:00"
         },
         {
           "home": "Parma",
-          "away": "Fiorentina"
+          "away": "Fiorentina",
+          "officialKickoff": "2026-12-13T18:00:00+01:00"
         },
         {
           "home": "Udinese",
-          "away": "Frosinone"
+          "away": "Frosinone",
+          "officialKickoff": "2026-12-11T20:45:00+01:00"
         }
       ]
     },
@@ -772,43 +802,53 @@
       "matches": [
         {
           "home": "Atalanta",
-          "away": "Napoli"
+          "away": "Napoli",
+          "officialKickoff": "2026-12-20T20:45:00+01:00"
         },
         {
           "home": "Fiorentina",
-          "away": "Bologna"
+          "away": "Bologna",
+          "officialKickoff": "2026-12-20T12:30:00+01:00"
         },
         {
           "home": "Frosinone",
-          "away": "Lazio"
+          "away": "Lazio",
+          "officialKickoff": "2026-12-18T18:30:00+01:00"
         },
         {
           "home": "Genoa",
-          "away": "Udinese"
+          "away": "Udinese",
+          "officialKickoff": "2026-12-20T18:00:00+01:00"
         },
         {
           "home": "Lecce",
-          "away": "Inter"
+          "away": "Inter",
+          "officialKickoff": "2026-12-18T20:45:00+01:00"
         },
         {
           "home": "Milan",
-          "away": "Como"
+          "away": "Como",
+          "officialKickoff": "2026-12-19T18:00:00+01:00"
         },
         {
           "home": "Roma",
-          "away": "Juventus"
+          "away": "Juventus",
+          "officialKickoff": "2026-12-19T20:45:00+01:00"
         },
         {
           "home": "Sassuolo",
-          "away": "Parma"
+          "away": "Parma",
+          "officialKickoff": "2026-12-19T15:00:00+01:00"
         },
         {
           "home": "Torino",
-          "away": "Cagliari"
+          "away": "Cagliari",
+          "officialKickoff": "2026-12-20T15:00:00+01:00"
         },
         {
           "home": "Venezia",
-          "away": "Monza"
+          "away": "Monza",
+          "officialKickoff": "2026-12-20T15:00:00+01:00"
         }
       ]
     },
@@ -818,43 +858,53 @@
       "matches": [
         {
           "home": "Bologna",
-          "away": "Juventus"
+          "away": "Juventus",
+          "officialKickoff": "2027-01-03T20:45:00+01:00"
         },
         {
           "home": "Cagliari",
-          "away": "Genoa"
+          "away": "Genoa",
+          "officialKickoff": "2027-01-02T12:30:00+01:00"
         },
         {
           "home": "Como",
-          "away": "Lecce"
+          "away": "Lecce",
+          "officialKickoff": "2027-01-03T15:00:00+01:00"
         },
         {
           "home": "Fiorentina",
-          "away": "Lazio"
+          "away": "Lazio",
+          "officialKickoff": "2027-01-02T15:00:00+01:00"
         },
         {
           "home": "Inter",
-          "away": "Sassuolo"
+          "away": "Sassuolo",
+          "officialKickoff": "2027-01-03T12:30:00+01:00"
         },
         {
           "home": "Monza",
-          "away": "Milan"
+          "away": "Milan",
+          "officialKickoff": "2027-01-02T20:45:00+01:00"
         },
         {
           "home": "Parma",
-          "away": "Napoli"
+          "away": "Napoli",
+          "officialKickoff": "2027-01-03T18:00:00+01:00"
         },
         {
           "home": "Roma",
-          "away": "Frosinone"
+          "away": "Frosinone",
+          "officialKickoff": "2027-01-02T18:00:00+01:00"
         },
         {
           "home": "Torino",
-          "away": "Venezia"
+          "away": "Venezia",
+          "officialKickoff": "2027-01-02T15:00:00+01:00"
         },
         {
           "home": "Udinese",
-          "away": "Atalanta"
+          "away": "Atalanta",
+          "officialKickoff": "2027-01-03T15:00:00+01:00"
         }
       ]
     },
@@ -864,43 +914,53 @@
       "matches": [
         {
           "home": "Atalanta",
-          "away": "Como"
+          "away": "Como",
+          "officialKickoff": "2027-01-06T18:00:00+01:00"
         },
         {
           "home": "Frosinone",
-          "away": "Bologna"
+          "away": "Bologna",
+          "officialKickoff": "2027-01-06T15:00:00+01:00"
         },
         {
           "home": "Genoa",
-          "away": "Monza"
+          "away": "Monza",
+          "officialKickoff": "2027-01-05T18:30:00+01:00"
         },
         {
           "home": "Juventus",
-          "away": "Torino"
+          "away": "Torino",
+          "officialKickoff": "2027-01-06T12:30:00+01:00"
         },
         {
           "home": "Lazio",
-          "away": "Inter"
+          "away": "Inter",
+          "officialKickoff": "2027-01-06T20:45:00+01:00"
         },
         {
           "home": "Lecce",
-          "away": "Parma"
+          "away": "Parma",
+          "officialKickoff": "2027-01-06T15:00:00+01:00"
         },
         {
           "home": "Milan",
-          "away": "Fiorentina"
+          "away": "Fiorentina",
+          "officialKickoff": "2027-01-05T20:45:00+01:00"
         },
         {
           "home": "Napoli",
-          "away": "Cagliari"
+          "away": "Cagliari",
+          "officialKickoff": "2027-01-07T20:45:00+01:00"
         },
         {
           "home": "Sassuolo",
-          "away": "Udinese"
+          "away": "Udinese",
+          "officialKickoff": "2027-01-07T18:30:00+01:00"
         },
         {
           "home": "Venezia",
-          "away": "Roma"
+          "away": "Roma",
+          "officialKickoff": "2027-01-05T18:30:00+01:00"
         }
       ]
     },
@@ -910,43 +970,53 @@
       "matches": [
         {
           "home": "Bologna",
-          "away": "Genoa"
+          "away": "Genoa",
+          "officialKickoff": "2027-01-09T20:45:00+01:00"
         },
         {
           "home": "Cagliari",
-          "away": "Sassuolo"
+          "away": "Sassuolo",
+          "officialKickoff": "2027-01-11T18:30:00+01:00"
         },
         {
           "home": "Como",
-          "away": "Lazio"
+          "away": "Lazio",
+          "officialKickoff": "2027-01-10T12:30:00+01:00"
         },
         {
           "home": "Fiorentina",
-          "away": "Lecce"
+          "away": "Lecce",
+          "officialKickoff": "2027-01-10T15:00:00+01:00"
         },
         {
           "home": "Inter",
-          "away": "Juventus"
+          "away": "Juventus",
+          "officialKickoff": "2027-01-10T20:45:00+01:00"
         },
         {
           "home": "Monza",
-          "away": "Frosinone"
+          "away": "Frosinone",
+          "officialKickoff": "2027-01-09T15:00:00+01:00"
         },
         {
           "home": "Parma",
-          "away": "Venezia"
+          "away": "Venezia",
+          "officialKickoff": "2027-01-10T15:00:00+01:00"
         },
         {
           "home": "Roma",
-          "away": "Milan"
+          "away": "Milan",
+          "officialKickoff": "2027-01-09T18:00:00+01:00"
         },
         {
           "home": "Torino",
-          "away": "Atalanta"
+          "away": "Atalanta",
+          "officialKickoff": "2027-01-10T18:00:00+01:00"
         },
         {
           "home": "Udinese",
-          "away": "Napoli"
+          "away": "Napoli",
+          "officialKickoff": "2027-01-11T20:45:00+01:00"
         }
       ]
     },

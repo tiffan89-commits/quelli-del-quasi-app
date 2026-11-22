@@ -123,6 +123,13 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   assert.deepEqual(await rewards(),awards);
   const newKickoff='2026-11-08T20:00:00.000Z';
   const future={fixture:{id:1550189,date:newKickoff,status:{short:'NS'}}};
+  const placeholderFixtures=Array.from({length:10},(_,i)=>({id:'placeholder:'+i,apiId:i+1,round:20}));
+  const placeholderFeed={response:placeholderFixtures.map(({apiId})=>({
+   fixture:{id:apiId,date:'2026-11-08T17:30:00Z',status:{short:'NS'}}
+  }))};
+  assert.deepEqual(await refreshFutureCalendar({get:async()=>placeholderFeed},{
+   ...oddsOptions,fixtures:placeholderFixtures,connect:()=>assert.fail('Provisional schedules must not write')
+  }),[]);
   await db.exec("CREATE TABLE fanta.fixtures(api_id int, kickoff timestamptz, status text, frozen_at timestamptz, data jsonb)");
   await db.query("INSERT INTO fanta.fixtures(api_id,kickoff,status,data) VALUES(1550189,$1,'NS',$2::jsonb)",[kickoff,JSON.stringify({fixture:{date:kickoff},metadata:'keep'})]);
   const refresh=await refreshFutureCalendar({get:async()=>({response:[future]})},oddsOptions);

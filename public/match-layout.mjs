@@ -6,9 +6,9 @@ export function orderSlipMatches(matches=[]) {
     .map(x=>x.match);
 }
 
-export function groupMatches(matches) {
+export function groupMatches(matches, getKickoff = m => m.kickoff) {
   const sorted = matches
-    .map((m, i) => ({ m, i, t: m.kickoff ? Date.parse(m.kickoff) : NaN }))
+    .map((m, i) => ({ m, i, t: Date.parse(getKickoff(m)) }))
     .sort(
       (a, b) =>
         (Number.isFinite(a.t) ? a.t : Infinity) -
