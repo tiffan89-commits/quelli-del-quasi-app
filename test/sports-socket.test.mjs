@@ -100,3 +100,45 @@ test('official XI save reaches open Bar clients over Socket.IO without refreshin
   assert.equal(reads,1);
  }finally{peers.forEach(peer=>peer.disconnect());await listener.close();await hub.close();await new Promise(resolve=>io.close(resolve));}
 });
+
+test('a Bar kickoff committed during an in-flight snapshot is pushed immediately with a fresh read',async()=>{
+ const server=http.createServer(),io=new Server(server,{transports:['websocket']});
+ const id='seriea:2026:12:4',uid='viewer',match={id,status:'NS',kickoff:'2026-11-22T11:30:00Z'};
+ const state={users:[{id:uid,emailVerified:true}],
+  sessions:[{uid,token:createHash('sha256').update(uid).digest('hex'),expires:Date.now()+60000}],
+  leagues:[{id:'l',members:[{uid,credits:100}]}],rounds:[],football:{calendar:{rounds:[{matches:[match]}]}}};
+ let reads=0;
+ const {promise:firstRead,resolve:reading}=Promise.withResolvers();
+ const {promise:resume,resolve:finish}=Promise.withResolvers();
+ const hub=attachSportsSocket(io,{
+  identify:async token=>({id:token,expires:Date.now()+60000}),
+  async read(fn,options){
+   assert.deepEqual(options,{kind:'live',league:'l',fresh:true});
+   const snapshot=structuredClone(state);
+   if(++reads===1){reading();await resume;}
+   return fn(snapshot);
+  },
+ });
+ const receiver=Object.assign(new EventEmitter(),{query:async()=>{},release(){}});
+ const listener=listenSportsSaved(hub.refresh,{lineupsSaved:hub.lineupsSaved,connect:async()=>receiver});
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const peer=client('http://127.0.0.1:'+server.address().port+'/sports',{
+  transports:['websocket'],auth:{mode:'bar',league:'l'},extraHeaders:{cookie:'sid='+uid},reconnection:false,
+ });
+ try{
+  const notified=new Promise((resolve,reject)=>{
+   const timeout=setTimeout(()=>reject(Error('Kickoff not received over Socket.IO')),3000);
+   peer.on('sports:update',({data})=>{const update=data.calendar[0];if(update.status==='LIVE'){clearTimeout(timeout);resolve(update);}});
+  });
+  await firstRead;
+  Object.assign(match,{status:'LIVE',liveScore:[0,0],clock:"1'"});
+  await notifySportsSaved({barOnly:true,connect:async()=>({
+   query:async(_sql,[payload])=>receiver.emit('notification',{channel:'quasi_sports_saved',payload}),release(){},
+  })});
+  finish();
+  const update=await notified;
+  assert.deepEqual(update.liveScore,[0,0]);
+  assert.equal(update.clock,"1'");
+  assert.equal(reads,2);
+ }finally{finish();peer.disconnect();await listener.close();await hub.close();await new Promise(resolve=>io.close(resolve));}
+});
