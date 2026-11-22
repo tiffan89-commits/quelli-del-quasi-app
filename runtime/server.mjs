@@ -58,7 +58,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const maintenance=process.env.SELFHOST_MAINTENANCE==='true';
  auctionHub=maintenance?{close:async()=>{}}:await attachAuctionSocket(server,{origin,allowedOrigins:[origin,...aliases]});
  const {attachSportsSocket}=await import('./sports-socket.mjs');const sportsHub=maintenance?{close:async()=>{}}:attachSportsSocket(auctionHub.io);
- const {listenSportsSaved}=await import('./sports-notifications.mjs');const sportsListener=maintenance?{close:async()=>{}}:listenSportsSaved(()=>sportsHub.refresh());
+ const {listenSportsSaved}=await import('./sports-notifications.mjs');const sportsListener=maintenance?{close:async()=>{}}:listenSportsSaved(sportsHub.refresh,{lineupsSaved:sportsHub.lineupsSaved});
  server.listen(Number(process.env.PORT)||3000,process.env.HOST||'127.0.0.1',()=>console.info('QUASI_HTTP_READY'));
  let ending=false;const stop=async()=>{if(ending)return;ending=true;await sportsListener.close();await sportsHub.close();await auctionHub.close();await closeDatabase();};process.once('SIGTERM',stop);process.once('SIGINT',stop);
 }
