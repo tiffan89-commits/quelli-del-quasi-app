@@ -8,7 +8,7 @@ export function homeCountdown(deadline,now=Date.now()){
  return days?days+'g '+hours+'h':hours?hours+'h '+minutes%60+'m':minutes+'m';
 }
 
-export function socialHome({mode,stories,hero,last,cta,now,reminder=''}){
+export function socialHome({mode,stories,hero,last,cta,now,reminder='',secondary=''}){
  return `<section class="bar-home-social${mode==='fanta'?' fanta-home fanta-social-home':''}" aria-label="Home ${mode==='bar'?'del Bar':'Fanta'}">
   ${stories}
   <section class="bar-home-hero">${hero.background||''}
@@ -22,6 +22,7 @@ export function socialHome({mode,stories,hero,last,cta,now,reminder=''}){
   ${last.footer||''}</button>`:''}
   <button type="button" class="bar-home-cta primary" ${cta.disabled?'disabled':cta.action||''}${cta.busy?' aria-busy="true"':''}><span>${cta.warning?'<i class="home-cta-warning" aria-hidden="true"></i>':''}${esc(cta.label)}</span>
    <span>${cta.deadline?`<span data-dashboard-countdown data-deadline="${esc(cta.deadline)}"${cta.waiting?' data-waiting':''}>${cta.waiting?'tra ':''}${homeCountdown(cta.deadline,now)}</span>`:''}${cta.disabled?'':' <span aria-hidden="true">→</span>'}</span></button>
+  ${secondary}
   ${reminder}
  </section>`;
 }

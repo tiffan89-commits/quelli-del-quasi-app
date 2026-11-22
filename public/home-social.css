@@ -250,6 +250,20 @@ html.os-on body #app>main.os-split .president-reminder-scroll { overflow-y:auto;
 .classification-tabs { display:flex; gap:4px; margin:0 14px 8px; padding:3px; background:var(--panel); border-radius:999px; }
 .classification-tabs button { flex:1; min-height:44px; border:0; border-radius:999px; background:transparent; color:var(--white); }
 .classification-tabs button[aria-pressed=true] { background:var(--mode-accent); color:var(--mode-ink); }
+.bar-home-calendar{
+ display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:9px;width:100%;min-height:44px;
+ border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--white);
+ padding:8px 13px;text-align:left;font-size:13px;font-weight:750;
+}
+.bar-home-calendar svg{width:20px;height:20px;color:var(--mode-accent,var(--lime))}
+.bar-home-calendar i{color:var(--mode-accent,var(--lime));font:700 21px/1 sans-serif}
+.bar-seriea-calendar .fanta-cal-team>.team-logo{width:22px;height:24px}
+.bar-seriea-calendar .fanta-cal-team>.team-logo svg{width:100%;height:100%}
+.bar-seriea-calendar .fanta-cal-score{min-width:52px}
+.bar-seriea-calendar .fanta-cal-match.is-live{background:color-mix(in srgb,var(--panel) 92%,#ff8068);box-shadow:inset 0 0 0 1px #d071594a;border-radius:10px}
+.bar-seriea-calendar .fanta-cal-score .inline-live{display:inline-flex;align-items:center;gap:3px;color:#ffb49e;font-size:9px;line-height:1.15}
+.bar-seriea-calendar .fanta-cal-score .inline-live i{width:4px;height:4px;border-radius:50%;background:currentColor}
+.bar-seriea-calendar .fanta-cal-score .inline-score{font:700 20px/1 'Barlow Condensed',sans-serif}
 body[data-game-mode="fanta"] .fanta-hero-balances { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; padding-inline-end:24%; }
 .fanta-hero-balances span { border-radius:999px; background:var(--bg); color:var(--white); padding:3px 8px; border:0; font-size:11px; }
 .fanta-hero-balances b { color:var(--mode-accent); }

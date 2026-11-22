@@ -25,6 +25,7 @@ import {fantaReminder,bindPresidentReminders,renderPresidentReminders} from '../
 import { topBar, tabBar, FANTA_TABS } from './shell.mjs';
 import {fantaHomeStatus,openLeagueSheet} from '../v2/league-switcher.mjs';
 import {renderHome,renderFantaStories,homeTeam,tickCountdowns} from './home.mjs';
+import {restoreRoundCalendarScroll} from '../round-calendar.mjs';
 import {openHomeStory} from '../home-stories.mjs';
 import {tickHomeCountdowns} from '../home-social.mjs';
 import { renderGiornata, renderPlayerSheet, findPlayer } from './giornata.mjs';
@@ -508,17 +509,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   }
 
   function restoreCalendarScroll() {
-    const track=root.querySelector('.fanta-calendar-scroll');
-    if(!track)return;
-    // The shared layout measures the scroll area after the DOM changes.
-    window.requestAnimationFrame?.(()=>window.requestAnimationFrame(()=>{
-      if(!track.isConnected)return;
-      const current=track.querySelector('.fanta-cal-round.is-current');
-      if(ui.lega.calendarScroll!==null)track.scrollTop=ui.lega.calendarScroll;
-      else if(current)track.scrollTop+=current.getBoundingClientRect().top-track.getBoundingClientRect().top-4;
-      ui.lega.calendarScroll=track.scrollTop;
-      track.addEventListener('scroll',()=>{if(track.isConnected)ui.lega.calendarScroll=track.scrollTop;},{passive:true});
-    }));
+    restoreRoundCalendarScroll(root.querySelector('.fanta-calendar-scroll'),ui.lega);
   }
 
   function refreshRosterEditor(){

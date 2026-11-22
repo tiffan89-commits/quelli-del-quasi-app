@@ -46,7 +46,10 @@ test('match availability belongs to the details page and is limited to matches y
  ];
  const data={status:'NS',lineups:{...lineup,teams}};
  const {document}=parseHTML(matchAvailability(data));
- const groups=[...document.querySelectorAll('.match-availability > section')];
+ const details=document.querySelector('details.match-availability');
+ assert.equal(details.hasAttribute('open'),false);
+ assert.equal(details.querySelector('summary').textContent,'Indisponibili e in dubbio');
+ const groups=[...details.querySelectorAll('.match-availability-body > section')];
  assert.deepEqual(groups.map(group=>group.querySelector('h4').textContent),['Juventus','Inter']);
  assert.deepEqual(groups.map(group=>group.querySelector('strong').textContent),['Yıldız','Lautaro']);
  assert.deepEqual(groups.map(group=>group.querySelector('span').textContent),['In dubbio','Squalificato']);

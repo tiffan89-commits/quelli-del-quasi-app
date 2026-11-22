@@ -3,6 +3,7 @@ import {presidentOperationButtons,presidentWorkspace} from '../president-workspa
 import {backButton} from '../back-navigation.mjs';
 import {leagueIdentityForm} from '../league-identity-form.mjs';
 import {leagueName} from '../league-theme.mjs';
+import {roundCalendar} from '../round-calendar.mjs';
 // Pagina "Lega": classifica completa, calendario, asta (stato, ingresso e comandi dell'admin),
 // regolamento, partecipanti con invito (massimo 12). Funzioni pure: dati di GET /fanta-api/league → HTML.
 import { esc, pts, dayTime, OUTCOME, extremeClass } from './formato.mjs';
@@ -38,27 +39,19 @@ function standings(l) {
 
 function calendar(l, ui) {
   const {current}=l.calendar;
-  const rounds=[...l.calendar.rounds].sort((a,b)=>a.number-b.number);
+  const {rounds}=l.calendar;
   const open=ui.openRound??rounds.find(round=>round.number===current&&round.state!=='calcolata')?.number;
+  const mine=l.members?.find(member=>member.isMe)?.team.id;
   return `<section class="fanta-block is-first">
     <p class="fanta-note">Giornata ${l.calendar.current} di ${l.calendar.last}. Tocca una sfida per vedere formazioni e voti.</p>
-    <div class="fanta-cal">${rounds.map(r => {
-      const label = { calcolata: 'Calcolata', 'in-corso': 'In corso', 'schierata': 'Si gioca', 'da-schierare': 'Si gioca', futura: 'Da giocare' }[r.state];
-      const isOpen = r.number === open;
-      return `<div class="fanta-cal-round${isOpen ? ' is-open' : ''}${r.number === current ? ' is-current' : ''}">
-        <button type="button" class="fanta-cal-head" data-lega-round="${r.number}" aria-expanded="${isOpen}">
-          <b>${esc(r.label||'Giornata '+r.number)}</b><span class="fanta-cal-state is-${r.state}">${label}</span><i aria-hidden="true">${isOpen ? '▴' : '▾'}</i></button>
-        ${isOpen ? `<ul>${r.matchups.map(m => {
-          const played = m.home.goals != null;
-          const row = `<span class="fanta-cal-team${m.home.team.id === l.members.find(x => x.isMe)?.team.id ? ' is-me' : ''}">${teamLogo(m.home.team)}${fitTeamName(m.home.team.name)}</span>
-            <span class="fanta-cal-score">${played ? `<strong>${m.home.goals}–${m.away.goals}</strong><small>${pts(m.home.points)} · ${pts(m.away.points)}</small>` : '<small>vs</small>'}</span>
-            <span class="fanta-cal-team is-away${m.away.team.id === l.members.find(x => x.isMe)?.team.id ? ' is-me' : ''}">${fitTeamName(m.away.team.name)}${teamLogo(m.away.team)}</span>`;
-          return r.state === 'futura'
-            ? `<li class="fanta-cal-match${m.isMine ? ' is-mine' : ''}">${row}</li>`
-            : `<li><button type="button" class="fanta-cal-match${m.isMine ? ' is-mine' : ''}" data-go="giornata" data-round="${r.number}" data-mu="${esc(m.id)}">${row}</button></li>`;
-        }).join('')}</ul>${r.byes?.length?`<p class="fanta-note">Passano il turno: ${r.byes.map(t=>esc(t.name)).join(', ')}</p>`:''}` : ''}
-      </div>`;
-    }).join('')}</div>
+    ${roundCalendar(rounds,{current,open,rows:r=>r.matchups.map(m=>{
+      const row=`<span class="fanta-cal-team${m.home.team.id===mine?' is-me':''}">${teamLogo(m.home.team)}${fitTeamName(m.home.team.name)}</span>
+       <span class="fanta-cal-score">${m.home.goals!=null?`<strong>${m.home.goals}–${m.away.goals}</strong><small>${pts(m.home.points)} · ${pts(m.away.points)}</small>`:'<small>vs</small>'}</span>
+       <span class="fanta-cal-team is-away${m.away.team.id===mine?' is-me':''}">${fitTeamName(m.away.team.name)}${teamLogo(m.away.team)}</span>`;
+      const classes='fanta-cal-match'+(m.isMine?' is-mine':'');
+      return r.state==='futura'?`<li class="${classes}">${row}</li>`:
+       `<li><button type="button" class="${classes}" data-go="giornata" data-round="${r.number}" data-mu="${esc(m.id)}">${row}</button></li>`;
+    }).join(''),after:r=>r.byes?.length?`<p class="fanta-note">Passano il turno: ${r.byes.map(t=>esc(t.name)).join(', ')}</p>`:''})}
   </section>`;
 }
 

@@ -7,7 +7,7 @@ export const TABS=[{id:'schedina',label:'Schedina',icon:'<rect x="5" y="3" width
 export const PAGE_TO_TAB = {
   lega: 'oggi',
   schedina: 'fanta',      // la sorgente decide fanta/seriea, vedi tabForPage
-  calendario: 'fanta',
+  calendario: 'classifica',
   seriea: 'seriea',
   altri: 'fanta',
   classifiche: 'lega', quasi: 'lega', chat: 'lega', regolamento: 'lega', admin: 'lega',
@@ -15,7 +15,7 @@ export const PAGE_TO_TAB = {
   profilo: 'io',
 };
 
-export function tabForPage(page){if(page==='impostazioni')return 'legainfo';if(page==='admin')return 'legainfo';return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'schedina',seriea:'classifica',classifiche:'classifica',quasi:'quasi',barleague:'legainfo',partecipanti:'legainfo',regolamento:'legainfo',profilo:'profilo'})[page]||'oggi';}
+export function tabForPage(page){if(page==='impostazioni')return 'legainfo';if(page==='admin')return 'legainfo';return ({lega:'oggi',schedina:'schedina',altri:'schedina',calendario:'classifica',seriea:'classifica',classifiche:'classifica',quasi:'quasi',barleague:'legainfo',partecipanti:'legainfo',regolamento:'legainfo',profilo:'profilo'})[page]||'oggi';}
 export function defaultSource(){return 'seriea';}
 export function routeForTab(tab){return {page:({oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',legainfo:'barleague',profilo:'profilo'})[tab]||'lega',sourceScope:'seriea'};}
 export function renderTabBar(active, { hasFanta = true } = {}) {

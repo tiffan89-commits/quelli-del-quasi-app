@@ -63,7 +63,7 @@ export function closeMatchPage({back=true}={}){
  doc.body.classList.remove('match-page-active');onClose?.();
  globalThis.scrollTo?.(0,scroll);
  const target=focus?.isConnected?focus:root.dataset.match
-  ?[...doc.querySelectorAll('button[data-detail]')].find(button=>button.dataset.detail===root.dataset.match):null;
+  ?[...doc.querySelectorAll('button[data-detail],button[data-bar-calendar-match]')].find(button=>(button.dataset.detail??button.dataset.barCalendarMatch)===root.dataset.match):null;
  target?.focus?.({preventScroll:true});
  if(back&&globalThis.history?.state?.qdqMatchPage){skipPop=true;globalThis.history.back();}
  else if(!back&&globalThis.history?.state?.qdqMatchPage){const {qdqMatchPage,...state}=history.state;history.replaceState(state,'',location.href);}

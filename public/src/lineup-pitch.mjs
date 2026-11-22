@@ -57,14 +57,14 @@ function pitchExtras(t,kind){
  return '';
 }
 
-export function matchAvailability(data){
+export function matchAvailability(data,{open=false}={}){
  if(!['NS','TBD','PST',''].includes(data.status||'')||data.lineups?.started)return '';
  const sections=(data.lineups?.teams||[]).map(team=>{
   const players=(team.unavailable||[]).filter(p=>p.name);
   if(!players.length)return '';
   return `<section><h4>${esc(team.team)}</h4>${players.map(p=>`<div class="match-availability-row"><strong>${esc(playerSurname(p))}</strong><span>${esc(p.status||'Indisponibile')}${p.probability===0?' · 0%':''}</span></div>`).join('')}</section>`;
  }).join('');
- return sections?`<section class="match-availability"><h3>Indisponibili e in dubbio</h3>${sections}</section>`:'';
+ return sections?`<details class="match-availability"${open?' open':''}><summary>Indisponibili e in dubbio</summary><div class="match-availability-body">${sections}</div></details>`:'';
 }
 
 export const PITCH_FLIP_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a9 9 0 0 1 15-5l3 3m0-5v5h-5M21 14a9 9 0 0 1-15 5l-3-3m0 5v-5h5"/></svg>';
@@ -106,18 +106,18 @@ function pagedLineup(l,title,notes,details,detailsAvailable,showExtras=true){
  </section>`;
 }
 
-export function renderLineup(data,{paged=false,details=null,detailsAvailable=true,showExtras=true,playerDetails=false}={}){
+export function renderLineup(data,{paged=false,details=null,detailsAvailable=true,showExtras=true,showTitle=true,playerDetails=false}={}){
  const source=recoverOfficialPitchLayout(data.lineups,data.details?.sourceLineups),started=['1H','HT','2H','LIVE','FT','AET','PEN','ET'].includes(data.status)||source?.started;
  const homeTeam=data.home??source?.teams[0]?.team,awayTeam=data.away??source?.teams[1]?.team;
  const l=source?{...source,teams:source.teams.map((t,i)=>{
   const home=sameClub(t.team,homeTeam)||(!sameClub(t.team,awayTeam)&&i===0);
   return {...t,fantasy:source.kind==='fantasy',started:started||t.started,kit:{home,vs:home?awayTeam:homeTeam},playerDetails};
  })}:null;
- if(!l)return paged&&details!==null?pagedLineup({teams:[]},'','',details,detailsAvailable):'<section class="card"><h3>Probabili formazioni</h3><p class="muted">Formazioni non ancora disponibili.</p></section>';
- const title=l.kind==='fantasy'?'Le formazioni':l.kind==='official'?'Formazioni ufficiali':'Probabili formazioni';
+ if(!l)return paged&&details!==null?pagedLineup({teams:[]},'','',details,detailsAvailable):`<section class="card">${showTitle?'<h3>Probabili formazioni</h3>':''}<p class="muted">Formazioni non ancora disponibili.</p></section>`;
+ const title=showTitle?(l.kind==='fantasy'?'Le formazioni':l.kind==='official'?'Formazioni ufficiali':'Probabili formazioni'):'';
  const notes=`<p class="lineup-source">${l.kind==='fantasy'?(l.complete?'Definitive':l.teams.some(t=>t.players.length)?'Formazioni consegnate':'In attesa delle formazioni'):l.kind==='official'?'Formazione confermata':['minutes-presence-v1','recent-form-v2','recent-form-v3'].includes(l.method)?'Presenza stimata':'Stima basata su '+(l.sourceCount||1)+' fonti'+((l.sourceCount||1)<5?' · copertura parziale':'')}${l.updatedAt?' · '+new Date(l.updatedAt).toLocaleString('it-IT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):''}</p>${l.kind==='probable'?'<small class="lineup-method">Presenza stimata da minuti, titolarità e forma recente. Verde: formazione ufficiale.</small>':''}${l.kind==='probable'&&Number(l.accuracy?.validMatches)>=10&&Number.isFinite(l.accuracy?.accuracyPct)?'<p class="lineup-accuracy">Accuratezza degli 11: <strong>'+Number(l.accuracy.accuracyPct).toLocaleString('it-IT',{maximumFractionDigits:1})+'%</strong> · su '+Math.floor(l.accuracy.validMatches)+' partite</p>':''}`;
  if(paged)return pagedLineup(l,details!==null&&l.kind==='official'?'':title,notes,details,detailsAvailable,showExtras);
- return `<section class="lineup-section"><h3>${title}</h3><div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t,l.kind)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
+ return `<section class="lineup-section">${title?`<h3>${title}</h3>`:''}<div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t,l.kind)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
 }
 export function bindLineupPitch(root,{onPage,autoHeight=true,fitViewport=true}={}){
  root._pitchCleanup?.();
