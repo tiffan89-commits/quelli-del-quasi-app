@@ -140,7 +140,7 @@ function bindPitch(root,view){
   return;
  }
  view.pitchBound=true;
- bindLineupPitch(root,{fitViewport:false,autoHeight:false});
+ bindLineupPitch(root,{fitViewport:false,autoHeight:false,animateTabs:false});
 }
 
 function bindMatchTabSwipe(panel,step){
