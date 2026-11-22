@@ -12,7 +12,7 @@ import {tradeAction,tradeView,tradeWindow} from './trades.mjs';
 import {saveCompetitionSummary} from './summaries.mjs';
 import {sqlFantaStore} from './store.mjs';
 import {fail,validateLineup} from './rules.mjs';
-import {currentRound,homeView,teamView,roundView,matchupView,leagueView} from './views.mjs';
+import {currentRound,homeView,teamView,roundView,matchupView,leagueView,liveStudioView} from './views.mjs';
 import {auctionAction,auctionView,auctionTickDue} from './auction.mjs';
 import {LAMPO} from '../public/src/auction-formats.mjs';
 import {saveTeamIdentity} from './team-logo.mjs';
@@ -172,8 +172,11 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(isWrite)fail('Operazione non trovata',404);
     if(route==='home')return homeView(s,u.id,now());if(route==='team'){const r=lineupRound(s,now());s.probables=await readPlayProbabilities(c,r?.seriea_round,s.league.season);const target=s.teams.find(t=>url.searchParams.has('team')?t.id===url.searchParams.get('team'):t.userId===u.id);s.presenceMinutes=await readPresenceMinutes(c,(target?.roster||[]).filter(p=>{const {status}=lineupAvailability(p,s.fixtures,r?.seriea_round),source=probabilityFor({...p,status},s.probables,r?.seriea_round)?.source;return source!=='official'&&source!=='unavailable';}),s.league.season,{cache:presenceCache,now:now()});return teamView(s,u.id,now(),url.searchParams.get('team'));}if(route==='league')return leagueView(s,u.id,now());
     const n=Number(url.searchParams.get('number')),r=s.rounds.find(r=>r.number===n)||(!url.searchParams.has('number')?currentRound(s):null);if(!r)fail('Giornata non trovata',404);
-    if(route==='round')return roundView(s,r,u.id,now());if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}fail('Pagina non trovata',404);
-   },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players'),detailedVotes:route==='matchup',teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
+    if(route==='round')return roundView(s,r,u.id,now());
+    if(route==='studio')return liveStudioView(s,r,u.id,now(),url.searchParams.get('id'));
+    if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}
+    fail('Pagina non trovata',404);
+   },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players'),detailedVotes:route==='matchup'||route==='studio',roundOnly:['round','matchup','studio'].includes(route),teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
    if(leagueUpdate)context.leagueUpdate?.(leagueUpdate);
    if(isTrade&&isWrite){
     const {notice,update,...response}=result;

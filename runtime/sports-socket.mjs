@@ -19,7 +19,7 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
  async function load(room){
   try{
    const peer=[...room.sockets].find(s=>s.connected);if(!peer)return;
-   const c=room.context,state=c.mode==='bar'?await read(s=>s,{kind:'live',league:c.league}):await store.league(peer.data.user.id,c.league,s=>s,{number:c.round,competition:c.competition,catalog:false,detailedVotes:true});
+   const c=room.context,state=c.mode==='bar'?await read(s=>s,{kind:'live',league:c.league}):await store.league(peer.data.user.id,c.league,s=>s,{number:c.round,competition:c.competition,catalog:false,detailedVotes:true,roundOnly:true});
    if(closed||!room.sockets.size)return;
    room.state=state;room.loadedAt=now();for(const s of room.sockets)send(s,room);
   }catch{for(const s of room.sockets)s.emit('sports:unavailable');}
@@ -39,7 +39,7 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
  }
  function send(s,room){try{const c=s.data.context;if(s.data.user.expires<=now())throw Error('Sessione scaduta');let data;
   if(c.mode==='bar')data=liveSnapshot(room.state,userFor(room.state,s.data.token),c.league);
-  else{if(!room.state.teams.some(t=>t.userId===s.data.user.id)||room.state.league.sourceKey&&s.data.user.username!=='frankwood')throw Error('Lega non accessibile');const r=room.state.rounds.find(r=>r.number===c.round);if(!r)throw Error('Giornata assente');data={round:roundView(room.state,r,s.data.user.id,room.loadedAt),matchup:matchupView(room.state,r,c.matchup,s.data.user.id,room.loadedAt)};}
+  else{if(!room.state.teams.some(t=>t.userId===s.data.user.id)||room.state.league.sourceKey&&s.data.user.username!=='frankwood')throw Error('Lega non accessibile');const r=room.state.rounds.find(r=>r.number===c.round);if(!r)throw Error('Giornata assente');const matchup=matchupView(room.state,r,c.matchup,s.data.user.id,room.loadedAt);data={round:roundView(room.state,r,s.data.user.id,room.loadedAt,false,matchup),matchup};}
   // The snapshot timestamp changes on every poll, even when the score and votes are identical.
   const stable=data.round?.round?{...data,round:{...data.round,round:{...data.round.round,updatedAt:null}}}:data;
   const version=digest(stable);if(version===s.data.sent)return;s.data.sent=version;s.emit('sports:update',{context:c,revision:version,data,at:room.loadedAt});

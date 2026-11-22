@@ -5,6 +5,7 @@ import {prematchSnapshot} from './context.mjs';
 import {calibrateBaselines} from './individual.mjs';
 import {digest,validTimestamp} from './math.mjs';
 import {MULTI_GOAL_VOTE_POLICY} from './goal-impact.mjs';
+import {hasMultipleAssists,MULTI_ASSIST_VOTE_POLICY} from './assist-impact.mjs';
 export const currentModelKey=(config=DEFAULT_CONFIG)=>MODEL+':'+configDigest(config);
 export function configuredVotes(env=process.env){if(!env.FANTA_VOTE_CONFIG)return voteConfig();let x;try{x=JSON.parse(env.FANTA_VOTE_CONFIG);}catch{throw Error('FANTA_VOTE_CONFIG deve contenere JSON valido');}return voteConfig(x);}
 // Read only already-acquired pre-match quotes. No odds service, pricing or slip is modified.
@@ -25,7 +26,8 @@ export function calculationFingerprint(input,{config,baseline,rules}={}){
  const clone=structuredClone(input);
  if(clone.provenance)delete clone.provenance.observedAt;
  const goals=input.events?.goals,goalPolicy=Number.isInteger(goals)&&goals>=2?MULTI_GOAL_VOTE_POLICY:null;
- return digest({model:MODEL,config:configDigest(config),input:clone,baseline:baseline?.id||null,rules,...(goalPolicy?{goalPolicy}:null)});
+ return digest({model:MODEL,config:configDigest(config),input:clone,baseline:baseline?.id||null,rules,...(goalPolicy?{goalPolicy}:null),
+  ...(hasMultipleAssists(input.events)?{assistPolicy:MULTI_ASSIST_VOTE_POLICY}:null)});
 }
 export async function appendVote(c,{fixtureId,input,vote,hash,official,modelKey,at}){return appendVotes(c,{fixtureId,votes:[{p:input,vote,hash}],official,modelKey,at});}
 export async function appendVotes(c,{fixtureId,votes,official,modelKey,at}){

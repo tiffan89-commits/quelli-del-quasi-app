@@ -946,7 +946,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     context:()=>{if(demo||destroyed||suspended||ui.mode!=='fanta')return null;if(ui.tab==='schedine'){const d=slips.context(slipContext());return d.league?{mode:'bar',league:d.league.id}:null;}if(ui.tab==='oggi'&&ui.home?.round?.state==='in-corso'){
       const matchup=ui.home.match?.id||ui.home.match?.matchupId||(matchStories.key===storyKey()?matchStories.liveMatchup:null);
       if(matchup)return {mode:'fanta',league:league()?.id,competition:ui.home.competition?.id,round:ui.home.round.number,matchup};
-    }return ui.tab==='giornata'&&ui.roundNumber&&ui.matchupId&&league()?{mode:'fanta',league:league().id,competition:ui.competitionId||ui.home?.competition?.id||ui.lega.data?.competition?.id,round:Number(ui.roundNumber),matchup:ui.matchupId}:null;},
+    }return ui.tab==='giornata'&&ui.roundNumber&&ui.matchupId&&league()&&!ui.round?.round.official&&ui.round?.round.state!=='archiviata'?{mode:'fanta',league:league().id,competition:ui.competitionId||ui.home?.competition?.id||ui.lega.data?.competition?.id,round:Number(ui.roundNumber),matchup:ui.matchupId}:null;},
     apply:data=>{
       if(destroyed||suspended)return;
       if(data.round){
@@ -1112,12 +1112,19 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     const wantedMatchup = matchup || (keepMatchup ? ui.matchupId : null);
     ui.round = null;ui.matchup=null;ui.matchupId=null;ui.liveError=null;ui.liveFlips.clear();render();
     try {
-      const round = await api.round(id, number ?? ui.home?.round.number);
+      const roundNumber=number??ui.home?.round.number;
+      const snapshot=api.studio?await api.studio(id,roundNumber,wantedMatchup):null;
+      const round=snapshot?.round??await api.round(id,roundNumber);
       if (mine !== request) return;
       ui.round = round; ui.roundNumber = round.round.number;
       const selected=round.matchups.find(m=>m.id===wantedMatchup);
       if(matchup&&!selected){ui.liveError='Questa sfida non è disponibile nella giornata.';render();return;}
       const pick=selected||round.matchups.find(m=>m.isMine)||round.matchups[0];
+      if(snapshot&&(!pick||snapshot.matchup?.id===pick.id)){
+        ui.matchupId=pick?.id||null;
+        if(snapshot.matchup)showLiveMatchup(snapshot.matchup,keepMatchup&&!matchup);
+        render();return;
+      }
       await loadMatchup(pick?.id, mine, keepMatchup && !matchup);
     } catch {
       if (mine === request) { ui.liveError = 'Non riusciamo a leggere la giornata.'; render(); }
@@ -1133,10 +1140,14 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     try{matchup=await api.matchup(league()?.id,ui.roundNumber,matchupId);}
     catch{if(mine===request){ui.liveError='Non riusciamo a leggere la sfida.';render();}return;}
     if (mine !== request) return;
+    showLiveMatchup(matchup,keepSide,side);
+    render();
+  }
+
+  function showLiveMatchup(matchup,keepSide,side){
     ui.matchup = matchup;if(ui.home?.round.number===ui.roundNumber)ui.home=withHomeVotes(ui.home,matchup);
     const myTeam = ui.home?.me.teamId;
     if (!keepSide&&!side) ui.side = matchup.away.team.id === myTeam ? 'away' : 'home';
-    render();
   }
 
   function selectLeague(id){
