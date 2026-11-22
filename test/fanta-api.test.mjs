@@ -21,6 +21,31 @@ test('Fanta: real SQL schema enforces membership cap; all routes enforce server 
  await assert.rejects(f.db.query("INSERT INTO fanta.teams(id,league_id,name,manager) VALUES('t13','fanta-lucas-a','13','13')"),/completo/);
  }finally{await f.close();}
 });
+test('Studio Live returns the chosen matchup and the whole round in one scoped read',async t=>{
+ const f=await fixtureDb();t.after(f.close);
+ const base=sqlFantaStore(f),reads=[];
+ const store={...base,league:(uid,id,fn,options)=>base.league(uid,id,(state,c)=>{
+  if(options.roundOnly)reads.push({number:options.number,lineups:state.lineups,matchups:state.matchups});
+  return fn(state,c);
+ },options)};
+ const api=createFantaApi({store,env,now:()=>Date.parse('2026-11-22')});
+ const league='fanta-lucas-a',query='league='+league+'&number=1';
+ const call=(route,token='token1')=>api(new Request('https://example.test/fanta-api/'+route,{headers:{cookie:'sid='+token}}));
+ const get=async route=>{const response=await call(route);assert.equal(response.status,200,await response.clone().text());return response.json();};
+ await f.db.query("INSERT INTO fanta.rounds(league_id,number,seriea_round,deadline) VALUES($1,2,2,'2099-01-08')",[league]);
+ await f.db.query("INSERT INTO fanta.matchups(id,league_id,round,home_id,away_id) VALUES('m2',$1,2,'t2','t1')",[league]);
+ const {formation,starters,bench}=f.lineup('t1');
+ for(const number of [1,2])await f.db.query("INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench) VALUES($1,$2,'t1',$3,$4,$5)",[league,number,formation,JSON.stringify(starters),JSON.stringify(bench)]);
+ const studio=await get('studio?'+query);
+ assert.equal(reads.length,1);
+ assert.deepEqual(reads[0].matchups.map(m=>m.id),['m1']);
+ assert.equal(reads[0].lineups.find(l=>l.round===2).starters.length,0);
+ assert.equal(studio.round.rounds.find(r=>r.number===2).state,'schierata');
+ assert.equal(studio.matchup.home.starters.length,11);
+ assert.deepEqual(studio,{round:await get('round?'+query),matchup:await get('matchup?'+query+'&id=m1')});
+ assert.equal((await get('studio?'+query+'&id=m2')).matchup,null);
+ assert.equal((await call('studio?'+query,'invalid')).status,403);
+});
 test('standalone Fanta identity updates the shared league without allowing members to edit',async t=>{
  const f=await fixtureDb();t.after(f.close);
  const updates=[],api=createFantaApi({store:sqlFantaStore(f),env}),league='fanta-lucas-a';

@@ -37,6 +37,38 @@ test('demo scenarios align live/final sheets and Bar snapshots; no remote servic
  }finally{globalThis.fetch=prior;}
 });
 import {parseHTML} from 'linkedom';import {mountFanta} from '../public/src/fanta/app.mjs';import {renderHome} from '../public/src/fanta/home.mjs';
+test('Studio Live paints the pitch from a single request and uses the same path when changing round',async()=>{
+ const api=createDemoFantaApi({delay:0});await api.setScenario('in-corso');
+ const league='lega-quasi',leagues=await api.leagues(),home=await api.home(league),number=home.round.number;
+ const current=await api.round(league,number),mine=current.matchups.find(m=>m.isMine);
+ home.match.id=mine.id;home.nextLineup=null;home.lastResult=null;
+ for(const side of ['home','away'])home.match.live[side].withVote=mine[side].withVote??0;
+ const {document,window}=parseHTML('<html><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');
+ const globals={document,window,navigator:{onLine:true},localStorage:{getItem:()=>null,setItem(){}},scrollTo(){},setInterval(){return 1;},clearInterval(){}};
+ const previous=Object.keys(globals).map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]);
+ for(const [k,value]of Object.entries(globals))Object.defineProperty(globalThis,k,{value,configurable:true});
+ const root=document.getElementById('app'),click=el=>el.dispatchEvent(new window.Event('click',{bubbles:true}));
+ const requests=[];let app;
+ const waitFor=async predicate=>{for(let i=0;i<80&&!predicate();i++)await new Promise(resolve=>setTimeout(resolve,5));assert.ok(predicate());};
+ try{
+  app=mountFanta(root,{api:{...api,
+   round:(...args)=>{requests.push(['round',args[1]]);return api.round(...args);},
+   matchup:(...args)=>{requests.push(['matchup',args[1]]);return api.matchup(...args);},
+   studio:async(id,n,requested)=>{
+    requests.push(['studio',n]);const round=await api.round(id,n);
+    const matchupId=requested||round.matchups.find(m=>m.isMine)?.id||round.matchups[0]?.id;
+    return {round,matchup:matchupId?await api.matchup(id,n,matchupId):null};
+   },
+  },bootstrap:{me:{access:'demo'},leagues,home}});
+  click(root.querySelector('[data-go="giornata"][data-round="'+number+'"]'));
+  await waitFor(()=>root.querySelector('.fanta-live-studio .fanta-pitch'));
+  assert.deepEqual(requests.filter(([,n])=>n===number),[['studio',number]]);
+  const previousRound=number-1;
+  requests.length=0;click(root.querySelector('.fanta-live-studio [data-round="'+previousRound+'"]'));
+  await waitFor(()=>root.querySelector('.fanta-live-studio h1')?.textContent.includes(String(previousRound))&&root.querySelector('.fanta-live-studio .studio-live-lineup'));
+  assert.deepEqual(requests.filter(([,n])=>n===previousRound),[['studio',previousRound]]);
+ }finally{app?.destroy();for(const[k,d]of previous)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
+});
 test('calculated demo Oggi retains last result and opens the new round in the full-screen studio without changing tabs',async()=>{
  const api=createDemoFantaApi({delay:0});await api.setScenario('calcolata');const leagues=await api.leagues(),home=await api.home('lega-quasi'),team=await api.team('lega-quasi');assert.equal(team.round.number,12);assert.equal(team.round.locked,false);assert.equal(home.lastResult.round,11);assert.equal(home.nextLineup.round,12);const html=renderHome(home);assert.match(html,/Schiera la formazione/);assert.match(html,/data-round="11"/);assert.match(html,/Schiera la formazione · Giornata 12/);
  const {document,window}=parseHTML('<html><body><div id="app"></div><div id="v2-sheet-root" hidden></div></body></html>');const keys=['document','window','navigator','localStorage','scrollTo','setInterval','clearInterval'],previous=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));let app,teamCalls=0,release;const gate=new Promise(resolve=>{release=resolve;});

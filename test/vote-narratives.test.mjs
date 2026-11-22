@@ -4,6 +4,7 @@ import {normalizeFixture,calculateVote} from '../fanta/votes.mjs';
 import {roundByBands} from '../fanta/statistical-votes/math.mjs';
 import {DEFAULT_CONFIG,MODEL,voteConfig} from '../fanta/statistical-votes/config.mjs';
 import {evaluateGoalSupport} from '../fanta/statistical-votes/goal-impact.mjs';
+import {multiAssistAdjustment,MULTI_ASSIST_VOTE_POLICY} from '../fanta/statistical-votes/assist-impact.mjs';
 import {describePerformance,NARRATIVE_VERSION} from '../fanta/statistical-votes/narrative.mjs';
 import {mergeInstallations,bootstrapPlan} from '../lib/operations/store.mjs';
 import {apiFixture} from './fanta/helpers.mjs';
@@ -107,6 +108,26 @@ test('four and more goals mean ten even with sparse or poor evidence and the goa
   assert.equal(v.breakdown.lines.find(line=>line.key==='event-minimum').label,'Quattro o più gol');
   assert.ok(Math.abs(6+v.breakdown.lines.reduce((sum,line)=>sum+line.delta,0)-10)<1e-6);
  }
+});
+
+test('multiple assists supply the missing technical fraction only after a sufficiently good performance',()=>{
+ const {input}=scorer([]),metrics={passesTotal:45,passesCompleted:38,keyPasses:2,tackles:2,interceptions:1,
+  duelsTotal:10,duelsWon:6,shotsTotal:2,shotsOn:1,foulsDrawn:1,dribblesAttempts:1,dribbles:1};
+ const player={...input,role:'D',providerRating:8,ratingRanks:{matchBest:1},metrics};
+ const voteFor=(assists,extra={})=>calculateVote({...player,...extra,events:{...input.events,assists}});
+ const one=voteFor(1),two=voteFor(2),weak=voteFor(2,{metrics:{...metrics,keyPasses:1}});
+ assert.deepEqual([one.rawVote,one.vote,one.fantavote],[6.65,6.5,7.5]);
+ assert.deepEqual([two.rawVote,two.vote,two.fantavote],[6.7,7,9]);
+ assert.equal(two.calculation.assistPolicy,MULTI_ASSIST_VOTE_POLICY);
+ assert.equal(two.breakdown.lines.find(line=>line.key==='multi-assist').delta,.05);
+ assert.equal(two.breakdown.bonus.find(line=>line.key==='assists').delta,2);
+ assert.match(two.why,/2 assist/);
+ assert.equal(weak.vote,6.5);
+ const events={assists:2},individual={coverage:.8,value:6.1},opts={config:DEFAULT_CONFIG};
+ assert.equal(multiAssistAdjustment(events,6.6,individual,opts),.1);
+ assert.equal(multiAssistAdjustment(events,6.65,{...individual,value:5.9},opts),0);
+ assert.equal(multiAssistAdjustment({...events,red:1},6.65,individual,opts),0);
+ assert.equal(multiAssistAdjustment(events,6.65,individual,{...opts,referenceOnly:true}),0);
 });
 
 test('match commentary has several punchlines for the same grade and names the observed decisive event',()=>{
