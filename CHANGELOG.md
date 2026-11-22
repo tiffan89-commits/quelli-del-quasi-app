@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.44.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.44.2...v0.44.3) (2026-11-22)
+
+
+### Bug Fixes
+
+* valorizza gli assist e velocizza Studio Live ([661d2af](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/661d2af3da4439031db846f65cf3b86f02e5588f))
+
 ## [0.44.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.44.1...v0.44.2) (2026-11-21)
 
 
