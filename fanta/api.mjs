@@ -1,6 +1,6 @@
 import {withFinalVerification} from './final-verification.mjs';
 import {DELIVERY_SQL,queueAuctionNotice} from './notifications.mjs';
-import {lineupRound} from './round-selection.mjs';
+import {lineupRound,lineupWindow} from './round-selection.mjs';
 import {databaseReadCache} from '../lib/read-cache.mjs';
 import {lineupAvailability,probabilityFor,readPlayProbabilities,readPresenceMinutes} from './play-probabilities.mjs';
 import {queueRandom,randomStatus,claimRandom,setSlips,ensurePilotBars} from './random-leagues.mjs';
@@ -42,7 +42,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(route==='pilot/teams')fail('Entra nel Bar della tua lega per scegliere una squadra',410);
    if(route==='bootstrap'&&request.method==='GET'){
     const leagues=allowed,requested=url.searchParams.get('league'),needsChoice=!leagues.length||requested&&!leagues.some(l=>l.id===requested),choices=needsChoice&&store.connect?await teamChoices(u.id,{connect:store.connect}):[],choice=choices.find(l=>l.id===requested)||(!leagues.length?choices[0]:null),selected=choice?null:leagues.find(l=>l.id===requested)||leagues[0];
-    const initial=selected?await store.league(u.id,selected.id,s=>{const r=currentRound(s,now());if(url.searchParams.get('lite')==='1')return {home:homeView(s,u.id,now())};const mine=s.teams.find(t=>t.userId===u.id)?.id,m=r&&s.matchups.find(m=>m.round===r.number&&(m.home_id===mine||m.away_id===mine));return {home:homeView(s,u.id,now()),team:teamView(s,u.id,now()),league:leagueView(s,u.id,now()),round:r?roundView(s,r,u.id,now()):null,matchup:m?matchupView(s,r,m.id,u.id,now()):null};},{competition:url.searchParams.get('competition'),catalog:false,detailedVotes:url.searchParams.get('lite')!=='1'}):{};
+    const initial=selected?await store.league(u.id,selected.id,s=>{const r=currentRound(s,now());if(url.searchParams.get('lite')==='1')return {home:homeView(s,u.id,now())};const mine=s.teams.find(t=>t.userId===u.id)?.id,m=r&&s.matchups.find(m=>m.round===r.number&&(m.home_id===mine||m.away_id===mine));return {home:homeView(s,u.id,now()),team:teamView(s,u.id,now()),league:leagueView(s,u.id,now()),round:r?roundView(s,r,u.id,now()):null,matchup:m?matchupView(s,r,m.id,u.id,now()):null};},{competition:url.searchParams.get('competition'),catalog:false,detailedVotes:url.searchParams.get('lite')!=='1',submissionWindows:true}):{};
     if(initial.home)initial.home=await withFinalVerification(initial.home,{now:now()});return reply({me:await me(),leagues,teamChoices:choices,choiceLeagueId:choice?.id||null,...initial});
    }
    let p={};if(request.method==='POST'){const body=await request.text();if(body.length>(route==='team/logo'?350000:['roster/batch','roster/check'].includes(route)?262144:16384))fail('Richiesta troppo grande',413);try{p=JSON.parse(body);if(!p||typeof p!=='object'||Array.isArray(p))throw Error();}catch{fail('Richiesta non valida');}}
@@ -166,7 +166,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
      if(next.auction.version!==s.auction.version)await store.persistAuction(c,s,next,u.id,kind,p);
      return auctionView(next,u.id,now());
     }
-    if(route==='lineup'&&isWrite){const r=s.rounds.find(r=>r.number===p.round);if(!r)fail('Giornata non trovata',404);if(Date.parse(r.deadline)<=now())fail('Il termine per schierare la formazione è scaduto',409);const t=s.teams.find(t=>t.userId===u.id),lineup=validateLineup(p,t.roster,s.rules),savedAt=new Date(now()).toISOString();
+    if(route==='lineup'&&isWrite){const r=s.rounds.find(r=>r.number===p.round);if(!r)fail('Giornata non trovata',404);const instant=now(),window=lineupWindow(s,r,instant);if(window.started)fail('Il termine per schierare la formazione è scaduto',409);if(!window.open)fail('Le formazioni per questa giornata non sono ancora aperte.',409);const t=s.teams.find(t=>t.userId===u.id),lineup=validateLineup(p,t.roster,s.rules),savedAt=new Date(instant).toISOString();
      await c.query('INSERT INTO fanta.lineups(league_id,round,team_id,formation,starters,bench,saved_at,competition_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(competition_id,round,team_id) DO UPDATE SET formation=EXCLUDED.formation,starters=EXCLUDED.starters,bench=EXCLUDED.bench,saved_at=EXCLUDED.saved_at,inherited_from=NULL,source_data=jsonb_build_object()',[id,p.round,t.id,lineup.formation,JSON.stringify(lineup.starters),JSON.stringify(lineup.bench),savedAt,s.competition.id]);return {...lineup,savedAt};
     }
     if(isWrite)fail('Operazione non trovata',404);
@@ -176,7 +176,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
     if(route==='studio')return liveStudioView(s,r,u.id,now(),url.searchParams.get('id'));
     if(route==='matchup'){const m=matchupView(s,r,url.searchParams.get('id'),u.id,now());if(!m)fail('Sfida non trovata',404);return m;}
     fail('Pagina non trovata',404);
-   },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players'),detailedVotes:route==='matchup'||route==='studio',roundOnly:['round','matchup','studio'].includes(route),teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
+   },{write:isWrite,market:isTrade,auction:isAuction&&isWrite,catalog:isAuction&&(isWrite||kind==='players'),detailedVotes:route==='matchup'||route==='studio',roundOnly:['round','matchup','studio'].includes(route),submissionWindows:['home','team'].includes(route),teamIdentity:route==='team/logo'&&isWrite&&Object.hasOwn(p,'name'),number:url.searchParams.get('number'),competition:request.method==='GET'?url.searchParams.get('competition'):p.competition});
    if(leagueUpdate)context.leagueUpdate?.(leagueUpdate);
    if(isTrade&&isWrite){
     const {notice,update,...response}=result;

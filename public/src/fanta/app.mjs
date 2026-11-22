@@ -1391,7 +1391,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (action === 'demo-ok') { store.set('qdq:fantaDemoSeen', '1'); ui.sheet = null; renderSheet(); return; }
     if(action==='leagues')openLeagueSheet({leagues:barLeagues,fantas:ui.leagues,mode:'fanta',activeId:league()?.id,uid:viewerId,esc,trigger:el,
      onSelect:row=>row.fantaId&&ui.leagues.some(item=>item.id===row.fantaId)?selectLeague(row.fantaId):setMode('bar',{page:'lega',league:row.barId}),
-     onEntry:page=>setMode('bar',page),readFanta:async id=>fantaHomeStatus(id===league()?.id&&ui.home?ui.home:await api.home(id))});
+     onEntry:page=>setMode('bar',page),readFanta:async id=>fantaHomeStatus(await api.home(id,{fresh:true}))});
     else if (action === 'close-sheet') { if(ui.sheet?.player){closePlayerSheet();return;}pendingAuctionNavigation=null;ui.sheet = null; renderSheet(); }
     else if (action === 'retry') load();
   }

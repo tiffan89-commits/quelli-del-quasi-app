@@ -83,7 +83,7 @@ import {restoreRoundCalendarScroll} from './round-calendar.mjs';
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
-  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,alignSerieASlipKickoffs,
+  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,alignSerieASlipKickoffs,slipWaitingForPrevious,
   deadlineOf,
   isClosed,editingClosed,editingEventLocked,editablePicks,
   slipSummary,
@@ -319,7 +319,9 @@ let activeMarketId=null,refreshBarTicket=null;
 const publicSlipView=()=>slipScope==='bar'||slipScope==='community';
 function availableRounds() {
  const all=(L()?.rounds||[]).filter(r=>!r.archived&&sourceOf(r)===sourceScope&&(sourceScope!=='fantacalcio'||!competitionScope||r.competitionKey===competitionScope));
- return selectableSlipRounds(all,Date.now(),state.calendar).sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
+ const now=Date.now();
+ for(const round of all)round.waitingForOpen=slipWaitingForPrevious(round,state.calendar?.rounds,now);
+ return selectableSlipRounds(all,now,state.calendar).sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
 }
 
 function R() {
@@ -1650,7 +1652,7 @@ function bind(l, r) {
   if (state.user) bindLeagueSwitcher({ leagues: state.leagues, activeId: L()?.id, uid: state.user.id, esc,
     onEntry:page=>openBarTarget({page}),
     readLeagues:state.user.demo?null:()=>createFantaApi({userId:state.user.id}).leagues(),
-    readFanta:state.user.demo?null:async id=>fantaHomeStatus(await createFantaApi({userId:state.user.id}).home(id)),
+    readFanta:state.user.demo?null:async id=>fantaHomeStatus(await createFantaApi({userId:state.user.id}).home(id,{fresh:true})),
     onFanta:id=>{persistDraft();closeLeagueChat();void enterFanta($('#app'),{user:state.user,barLeagues:state.leagues,slipServices:nativeSlipServices(),leagueId:id,onBar:openBarTarget});},
     onSelect: (id) => { try { persistDraft(); } catch {} leagueId = id; page='lega';writeAppRoute({mode:'bar',page:'oggi',league:id}); sourceScope = defaultSource(L()); selectedRoundId = null; competitionScope = null; hydrateDraft(); try { localStorage.setItem("quasi-active-league:" + state.user.id, id); } catch {} render(); window.scrollTo(0, 0); liveChannel.wake(); },
   });

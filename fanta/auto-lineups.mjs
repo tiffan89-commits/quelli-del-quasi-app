@@ -4,10 +4,17 @@ import {chooseAutoLineup,applyMatchDifficulty,applyStoredForecasts} from './auto
 import {hashInput} from './votes.mjs';
 import {DEFAULT_RULES} from './rules.mjs';
 import {barCalendarRows,barStorageMode} from '../lib/storage-mode.mjs';
+import {readSerieARoundWindows,serieASubmissionWindow} from '../lib/seriea-round-window.mjs';
 export async function writeAutoLineups(c,{now=Date.now(),leagueIds=null,initial=false,lookaheadHours=24,sportsStorage=barStorageMode()}={}){
  const stamp=new Date(now).toISOString(),leagues=(await c.query(`SELECT * FROM fanta.leagues WHERE rules->>'disabledAt' IS NULL AND (kind='pilot' OR auto_lineups_from IS NOT NULL) AND ($1::text[] IS NULL OR id=ANY($1::text[])) ORDER BY id FOR UPDATE`,[leagueIds])).rows;
  if(!leagues.length)return {saved:0,unchanged:0,manual:0,unavailable:[]};const ids=leagues.map(l=>l.id),teams=(await c.query('SELECT * FROM fanta.teams WHERE league_id=ANY($1::text[]) ORDER BY id',[ids])).rows;
- const rounds=(await c.query(`SELECT * FROM fanta.rounds WHERE league_id=ANY($1::text[]) AND (deadline>$2 AND deadline<=$3 OR $4 AND number=1) ORDER BY league_id,number`,[ids,stamp,new Date(now+lookaheadHours*3600000).toISOString(),initial])).rows;
+ const candidates=(await c.query(`SELECT * FROM fanta.rounds WHERE league_id=ANY($1::text[]) AND NOT official AND deadline>$2 AND (deadline<=$3 OR $4 AND number=1) ORDER BY league_id,number`,[ids,stamp,new Date(now+lookaheadHours*3600000).toISOString(),initial])).rows;
+ const windowsBySeason=new Map();
+ for(const [season,group] of Map.groupBy(candidates,r=>leagues.find(l=>l.id===r.league_id).season)){
+  const rounds=[...new Set(group.flatMap(r=>[r.seriea_round-1,r.seriea_round]))];
+  windowsBySeason.set(season,await readSerieARoundWindows(c,{season,rounds,sportsStorage}));
+ }
+ const rounds=candidates.filter(r=>serieASubmissionWindow(windowsBySeason.get(leagues.find(l=>l.id===r.league_id).season),r.seriea_round,r.deadline,now).open);
  if(!rounds.length)return {saved:0,unchanged:0,manual:0,unavailable:[]};
  const calendar=barCalendarRows(sportsStorage,{round:true});
  const coachedIds=leagues.filter(l=>l.rules?.computerCoachMatchDifficulty===true).map(l=>l.id);
@@ -18,7 +25,6 @@ export async function writeAutoLineups(c,{now=Date.now(),leagueIds=null,initial=
  const difficultyFixtures=coachedRounds.length?(await c.query(`SELECT (r->>'number')::int AS round,m->>'home' AS home,m->>'away' AS away,m->>'status' AS status,m->'score' AS score,m->'odds' AS odds FROM ${calendar} WHERE (r->>'number')::int BETWEEN $1 AND $2`,[Math.min(...coachedRounds)-5,Math.max(...coachedRounds)])).rows:[];
  for(const r of rounds){const l=leagues.find(l=>l.id===r.league_id);if(l.kind!=='pilot'&&Date.parse(r.deadline)<=Date.parse(l.auto_lineups_from))continue;
   const matchDifficulty=coachedIds.includes(l.id);
-  if(matchDifficulty&&(r.official||Date.parse(r.deadline)<=now))continue;
   for(const t of teams.filter(t=>t.league_id===l.id)){
    if(t.user_id&&(matchDifficulty||['pilot','random'].includes(l.kind)&&!initial))continue;
    const old=lineups.find(x=>x.competition_id===r.competition_id&&x.round===r.number&&x.team_id===t.id),manual=old&&!old.source_data?.autoCoach&&old.source_data?.origin!=='leghe-import';if(manual){report.manual++;continue;}

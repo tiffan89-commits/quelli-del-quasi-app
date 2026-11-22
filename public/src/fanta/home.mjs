@@ -54,7 +54,7 @@ export function renderHome(h,now=Date.now()){
  const last=number(h.lastResult?.round)?h.lastResult:null,team=homeTeam(h),round=h.round,live=round.state==='in-corso';
  const next=h.nextLineup??{round:round.number,deadline:round.deadline,savedAt:h.lineup?.savedAt};
  const hasLineup=!!next.savedAt||(!h.nextLineup&&round.state==='schierata');
- const open=Date.parse(next.deadline)>now&&['da-schierare','schierata','calcolata','in-corso'].includes(round.state)&&(h.nextLineup||round.state==='da-schierare'||round.state==='schierata');
+ const open=next.open!==false&&Date.parse(next.deadline)>now&&['da-schierare','schierata','calcolata','in-corso'].includes(round.state)&&(h.nextLineup||round.state==='da-schierare'||round.state==='schierata');
  const liveKey=h.match?.home?.id===h.me.teamId?'home':'away';
  const liveOwn=h.match?.live?.[liveKey];
  const rival=otherTeam(last,h.me.teamId);

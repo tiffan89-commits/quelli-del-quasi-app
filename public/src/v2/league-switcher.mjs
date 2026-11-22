@@ -1,5 +1,5 @@
 import {leagueEmblem,leagueName,linkedLeagueIdentity} from '../league-theme.mjs';
-import {roundAvailability,sourceOf} from '../slip-state.mjs';
+import {roundAvailability,slipWaitingForPrevious,sourceOf} from '../slip-state.mjs';
 import {paintAuctionBadges} from '../auction-index.mjs';
 import {openSiteOverlay} from '../site-overlay.mjs';
 import {unreadLabel} from '../chat-badges.mjs';
@@ -9,7 +9,8 @@ export const isLeagueAdmin=(league,uid)=>league?.admin===uid||(Array.isArray(lea
 export function attentionOf(league,uid,now=Date.now()){
  const broken=league.fantasyConnections?.some(c=>c.server&&c.status&&c.status!=='connected');
  if(broken&&isLeagueAdmin(league,uid))return {level:'warn',text:'Collegamento da rinnovare'};
- const next=league.rounds?.find(r=>sourceOf(r)==='seriea'&&roundAvailability(r,now)==='aperta');
+ const rounds=(league.rounds||[]).filter(r=>sourceOf(r)==='seriea'&&!r.archived);
+ const next=rounds.find(r=>roundAvailability(r,now)==='aperta'&&!slipWaitingForPrevious(r,rounds,now));
  if(!next)return {level:'ok',text:'Nessuna schedina aperta'};
  return next.slip?{level:'ok',text:'Schedina campionato salvata'}:{level:'todo',text:'Schedina campionato da compilare'};
 }
@@ -57,7 +58,7 @@ export function renderLeagueSheet(leagues,activeId,uid,esc,{fantas=[],mode='bar'
 
 export function fantaHomeStatus(home,now=Date.now()){
  const phase=home?.nextLineup||home?.round;
- return {fantaRank:home?.me?.position,lineupPending:!!phase&&Date.parse(phase.deadline)>now&&(home.nextLineup?!phase.savedAt:phase.state==='da-schierare')};
+ return {fantaRank:home?.me?.position,lineupPending:!!phase&&phase.open!==false&&Date.parse(phase.deadline)>now&&(home.nextLineup?!phase.savedAt:phase.state==='da-schierare')};
 }
 
 export function openLeagueSheet({leagues,fantas=[],mode='bar',activeId,uid,esc,onSelect,onEntry,readFanta,readLeagues,trigger}){
