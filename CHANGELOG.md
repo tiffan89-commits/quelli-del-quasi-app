@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.45.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.0...v0.45.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* raggruppa per data il calendario di Serie A ([#136](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/136)) ([c0be11e](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/c0be11e9df01c5f97efc0e1af32113ad1b27ebf7))
+
 ## [0.45.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.44.3...v0.45.0) (2026-11-22)
 
 
