@@ -43,7 +43,8 @@ import {
   playerRanking,
   fantasyTableView,
 } from "../public/src/bar-fanta-rankings.mjs";
-import { calendarSections } from "../public/src/calendar-order.mjs";
+import {serieACalendar} from '../public/src/bar-calendar.mjs';
+import {restoreRoundCalendarScroll} from '../public/src/round-calendar.mjs';
 import { leagueDashboard, countdownLabel } from '../public/src/league-dashboard.mjs';
 import { avatarSvg, AVATAR_OPTIONS } from '../public/src/avatar.mjs';
 import {quasiScene,bindQuasiZoom} from '../public/src/quasi-scene.mjs';
@@ -132,7 +133,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     Intl,
     applyLeagueTheme(){},paintLeagueIdentity(){},leagueIdentityKey,leagueIdentityForm,bindLeagueIdentityForm(){},bindPresidentReminders(){},bindFootballStatistics(){},
     clearAdminState() {},
-    calendarSections,
+    serieACalendar,restoreRoundCalendarScroll,
     hubHead,hubTile,appWhatsappInvite,signupShareData,
     leagueDashboard, countdownLabel, quasiScene, rosterView, achievementBoard, avatarSvg, AVATAR_OPTIONS, whatsappInvite,renderAppInvite,bindAppInvites,
     fantaQuasiTeaser,fantaQuasiPage,bindFantaQuasi(){},bindQuasiZoom,barSlipsView,barVerdictPatch,barProfileView,bindBarSlipPages,
@@ -239,8 +240,9 @@ test("live results render inside the slip, calendar remains clickable, standings
   assert.match(html, /Le schedine del bar/i);
   vm.runInContext("slipScope='mine';render()", ctx);
   assert.match(nav, /data-v2-tab="schedina"/);
-  vm.runInContext("page='calendario';render()", ctx);
-  assert.match(html, /data-detail=/);
+  vm.runInContext("page='calendario';barCalendar.openRound=state.calendar.rounds[0].number;render()", ctx);
+  assert.match(html, /data-bar-calendar-match=/);
+  assert.match(html, /data-page="calendario" aria-pressed="true"/);
   assert.equal(html.includes("Il Marcatore"), false);
   vm.runInContext("page='profilo';render()", ctx);
   assert.doesNotMatch(html, /Movimenti e giornate archiviate/);
@@ -302,7 +304,7 @@ test("live results render inside the slip, calendar remains clickable, standings
     "state.leagues[0].rounds.push({...state.leagues[0].rounds[0],id:'fantasy-imported',source:'fantacalcio',competitionKey:'fc:test',competitionName:'Fantalega',serieARound:state.leagues[0].rounds[0].number,number:1});render()",
     ctx,
   );
-  assert.match(html, /Date, partite e risultati/);
+  assert.match(html, /aria-label="Calendario di Serie A"/);
   assert.doesNotMatch(html, /data-calendar-source="fantacalcio"/);
   barTab('schedina');
   assert.equal(fantaEntries,0,'Bar tabs stay inside the Bar; the header opens Fanta');

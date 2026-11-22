@@ -74,7 +74,7 @@ import vm from 'node:vm';import {createBarDemo} from '../public/src/bar-demo.mjs
 import {presidentWorkspace,presidentOperationButtons} from '../public/src/president-workspace.mjs';
 import {LEAGUE_COLORS} from '../public/src/league-theme.mjs';
 test('the Bar president panel keeps league rules separate from participants and the personal settings',()=>{
- const text=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=text.slice(text.indexOf('let presidentGroup='),text.indexOf('function calendarStatus('));
+ const text=fs.readFileSync(new URL('../public/src/app.mjs',import.meta.url),'utf8'),body=text.slice(text.indexOf('let presidentGroup='),text.indexOf('function openBarRules('));
  const {state}=createBarDemo({admin:true}),context={state,esc:String,LEAGUE_COLORS,presidentOperation:null,presidentNative:null,presidentWorkspace,presidentOperationButtons,brandingForm:()=>'',adminBudget:()=>'',whatsappInvite:()=>'',barLeagueInfo:()=>'<p>Lega</p>'};
  vm.createContext(context);vm.runInContext(body+'\nresult=leagueAdmin(state.leagues[0]);',context);
  assert.match(context.result,/data-president-operation="regole"/);assert.match(context.result,/data-president-operation="rimuovi"/);

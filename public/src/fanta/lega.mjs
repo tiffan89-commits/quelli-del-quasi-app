@@ -41,7 +41,7 @@ function calendar(l, ui) {
   const {current}=l.calendar;
   const {rounds}=l.calendar;
   const open=ui.openRound??rounds.find(round=>round.number===current&&round.state!=='calcolata')?.number;
-  const mine=l.members.find(member=>member.isMe)?.team.id;
+  const mine=l.members?.find(member=>member.isMe)?.team.id;
   return `<section class="fanta-block is-first">
     <p class="fanta-note">Giornata ${l.calendar.current} di ${l.calendar.last}. Tocca una sfida per vedere formazioni e voti.</p>
     ${roundCalendar(rounds,{current,open,rows:r=>r.matchups.map(m=>{
