@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.45.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.1...v0.45.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* anticipa le formazioni ufficiali e aggiorna via Socket.IO ([#138](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/138)) ([7ed7ae3](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/7ed7ae32622136777f1aee0981932eab8a0633af))
+
 ## [0.45.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.0...v0.45.1) (2026-11-22)
 
 
