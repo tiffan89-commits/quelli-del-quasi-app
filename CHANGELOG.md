@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.45.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.3...v0.45.4) (2026-11-22)
+
+
+### Bug Fixes
+
+* mostra subito il campo della squadra selezionata ([#142](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/142)) ([7675f92](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/7675f92d15a1f0e4740acd8eb647bde420ecf141))
+
 ## [0.45.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.2...v0.45.3) (2026-11-22)
 
 
