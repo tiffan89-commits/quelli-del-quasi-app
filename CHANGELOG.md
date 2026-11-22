@@ -268,6 +268,18 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.45.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.44.3...v0.45.0) (2026-11-22)
+
+
+### Features
+
+* aggiungi il calendario live di Serie A al Bar ([692c3c9](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/692c3c98314dbd93de4d48e1ee24ffce2e5ea738))
+
+
+### Bug Fixes
+
+* rendi leggibili i nomi sulle maglie ([37171e7](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/37171e7d17c68c45fa216786812dab764ebed399))
+
 ## [0.44.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.44.2...v0.44.3) (2026-11-22)
 
 
