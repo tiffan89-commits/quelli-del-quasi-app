@@ -5,6 +5,7 @@ import {availabilityLabel,presenceProbability} from './presence-probability.mjs'
 import { esc, pts, countdown } from './formato.mjs';
 import { assign, unassign, quickAdd, missingOf, countsOf, surname, nextLabel } from './squadra.mjs';
 import {PITCH_FLIP_ICON} from '../lineup-pitch.mjs';
+import {playerShirtName} from '../player-label.mjs';
 
 const ROLE_NAMES = { P: 'Portiere', D: 'Difensore', C: 'Centrocampista', A: 'Attaccante' };
 const TABS = [['tutti', 'Tutti'], ['P', 'Portieri'], ['D', 'Difensori'], ['C', 'Centrocampisti'], ['A', 'Attaccanti']];
@@ -51,7 +52,7 @@ function playerFooter(p){
   return `<span class="fs-tile-foot">${fantamedia(p)}${p.next?`<small class="fs-tile-next">${esc(nextLabel(p.next))}</small>`:''}</span>`;
 }
 function studioShirt(p) {
-  return shirtBack(p.club, p.jersey, surname(p), { goalkeeper: p.role === 'P', wideName: true, vs: p.next?.opponent, home: p.next?.home });
+  return shirtBack(p.club, p.jersey, playerShirtName(p), { goalkeeper: p.role === 'P', wideName: true, vs: p.next?.opponent, home: p.next?.home });
 }
 function token(slot, p, selected) {
   const cls = `fs-token${selected ? ' is-selected' : ''}${p ? '' : ' is-empty'}`;
