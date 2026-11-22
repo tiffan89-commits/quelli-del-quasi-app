@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.46.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.4...v0.46.0) (2026-11-22)
+
+
+### Features
+
+* aggiungi lo stratega del Bar e allinea le scadenze ufficiali ([#145](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/145)) ([80540bd](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/80540bd31db82d38d6d5fee1ea4ad0d7b65b125f))
+
 ## [0.45.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.3...v0.45.4) (2026-11-22)
 
 
