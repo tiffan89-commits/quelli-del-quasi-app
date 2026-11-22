@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.45.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.2...v0.45.3) (2026-11-22)
+
+
+### Bug Fixes
+
+* stabilizza la Schedina Bar durante la diretta ([#140](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/140)) ([f7228ba](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/f7228baf361f7133da260b9babdb653cd4792563))
+
 ## [0.45.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.1...v0.45.2) (2026-11-22)
 
 
