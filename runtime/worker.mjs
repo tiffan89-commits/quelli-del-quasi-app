@@ -31,10 +31,11 @@ async function pulse(){
 }
 const isLive=job=>job.name==='operational-worker-background'&&String(job.payload?.id||'').startsWith('live:');
 const isForecast=job=>job.name==='operational-worker-background'&&String(job.payload?.id||'').startsWith('probable-lineups:');
+const isOfficialLineup=job=>job.name==='operational-worker-background'&&String(job.payload?.id||'').startsWith('official-lineups:');
 const isInstant=job=>job.name==='fanta-worker-background'&&/^(auction|trade)-notify:/.test(job.payload?.kind||'');
 async function consume(accept){while(!stopping){let result;try{result=await processOne(executeJob,{accept});if(result)console.info('LOCAL_JOB',JSON.stringify(result));}catch(e){console.error('LOCAL_QUEUE_FAILED',e.code||e.name);}
  if(!result)await new Promise(r=>setTimeout(r,1000));
 }}
 // A long catalog/rebuild job cannot block the minute dispatcher or the live lane.
 const clock=setInterval(()=>pulse().catch(e=>console.error('LOCAL_PULSE_FAILED',e.code||e.name)),1000);
-try{await pulse();await Promise.all([consume(isLive),consume(isInstant),consume(isForecast),consume(job=>!isLive(job)&&!isInstant(job)&&!isForecast(job))]);}finally{clearInterval(clock);await dispatchPending;await dnsPending;await insightsPending;await closeDatabase();}
+try{await pulse();await Promise.all([consume(isLive),consume(isInstant),consume(isForecast),consume(isOfficialLineup),consume(job=>!isLive(job)&&!isInstant(job)&&!isForecast(job)&&!isOfficialLineup(job))]);}finally{clearInterval(clock);await dispatchPending;await dnsPending;await insightsPending;await closeDatabase();}

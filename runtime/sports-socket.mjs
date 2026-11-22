@@ -86,9 +86,11 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
  function lineupsSaved(updates){
   const lineups=updates.filter(m=>serieAMatchId(m?.id)&&typeof m.revision==='string'&&Number.isFinite(Date.parse(m.revision)));
   if(!lineups.length)return;
-  for(const room of rooms.values())if(room.context.mode==='bar')for(const s of room.sockets){
+  const barRooms=[...rooms.values()].filter(room=>room.context.mode==='bar');
+  for(const room of barRooms)for(const s of room.sockets){
    if(s.connected&&s.data.user.expires>now())s.emit('sports:lineup-saved',lineups);
   }
+  void refresh(barRooms,true);
  }
  return {refresh:scope=>refresh([...rooms.values()].filter(room=>!scope||room.context.mode===scope),true),lineupsSaved,stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
 }

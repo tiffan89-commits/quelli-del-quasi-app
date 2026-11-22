@@ -62,7 +62,7 @@ test('sports room refreshes use one database connection at a time',async()=>{
  }finally{peers.forEach(peer=>peer.disconnect());await hub.close();await new Promise(resolve=>io.close(resolve));}
 });
 
-test('official XI save reaches open Bar clients over Socket.IO without refreshing the shared sports snapshot',async()=>{
+test('official XI save reaches open Bar clients immediately and the shared snapshot catches up reconnects',async()=>{
  const server=http.createServer(),io=new Server(server,{transports:['websocket']});
  const id='seriea:2026:12:4',revision='2026-11-22T11:06:01.000Z';
  const lineup={id,lineupRevision:revision,lineups:{kind:'official',updatedAt:revision,teams:[]}};
@@ -82,22 +82,30 @@ test('official XI save reaches open Bar clients over Socket.IO without refreshin
  const receiver=Object.assign(new EventEmitter(),{query:async()=>{},release(){}});
  const listener=listenSportsSaved(hub.refresh,{lineupsSaved:hub.lineupsSaved,connect:async()=>receiver});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- const peers=users.map(({id})=>client('http://127.0.0.1:'+server.address().port+'/sports',{
+ const open=id=>client('http://127.0.0.1:'+server.address().port+'/sports',{
   transports:['websocket'],auth:{mode:'bar',league:'l'},extraHeaders:{cookie:'sid='+id},reconnection:false,
- }));
+ });
+ const peers=users.map(({id})=>open(id));
  try{
   await Promise.all(peers.map(peer=>once(peer,'sports:update')));
   const pending=peers.map(peer=>once(peer,'sports:lineup-saved'));
+  const refreshed=peers.map(peer=>once(peer,'sports:update'));
+  state.football.calendar.rounds[0].matches[0].lineups=lineup.lineups;
   await notifySportsSaved({lineups:[{id,revision}],connect:async()=>({
    query:async(_sql,[payload])=>receiver.emit('notification',{channel:'quasi_sports_saved',payload}),release(){},
   })});
   assert.deepEqual(await Promise.all(pending),peers.map(()=>[{id,revision}]));
-  assert.equal(snapshots,1);
+  for(const message of await Promise.all(refreshed))assert.equal(message.data.calendar[0].lineupRevision,revision);
+  assert.equal(snapshots,2);
   const acks=peers.map(peer=>peer.timeout(2000).emitWithAck('sports:lineup',{id,revision}));
   assert.deepEqual(await Promise.all(peers.map(peer=>peer.timeout(2000).emitWithAck('sports:lineup',{id:'unrelated'}))),[null,null]);
   finishRead();
   assert.deepEqual(await Promise.all(acks),[lineup,lineup]);
   assert.equal(reads,1);
+  peers[0].disconnect();
+  const reconnected=open(users[0].id);peers.push(reconnected);
+  assert.equal((await once(reconnected,'sports:update')).data.calendar[0].lineupRevision,revision);
+  assert.equal(snapshots,2);
  }finally{peers.forEach(peer=>peer.disconnect());await listener.close();await hub.close();await new Promise(resolve=>io.close(resolve));}
 });
 
