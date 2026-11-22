@@ -13,6 +13,17 @@ export function roundAvailability(round,now=Date.now()){
 const byRound=(a,b)=>(Number(a.number)-Number(b.number))||((Date.parse(deadlineOf(a))||Infinity)-(Date.parse(deadlineOf(b))||Infinity));
 export const sourceOf = (round) => round?.source === 'fantacalcio' || round?.provider === 'Leghe Fantacalcio' ? 'fantacalcio' : 'seriea';
 export const deadlineOf = (round) => round?.deadline || round?.kickoff;
+export function alignSerieASlipKickoffs(round,calendar){
+ if(!round||sourceOf(round)!=='seriea')return;
+ const official=calendar?.rounds?.find(r=>Number(r.number)===Number(round.number));
+ if(!official?.matches?.length)return;
+ const byId=new Map(official.matches.map(m=>[m.id,m]));
+ for(const match of round.matches||[]){
+  const source=byId.get(match.id);
+  const kickoff=source?.kickoff||source?.officialKickoff;
+  if(Number.isFinite(Date.parse(kickoff)))match.kickoff=match.officialKickoff=kickoff;
+ }
+}
 const dayFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Rome'});
 export const slipRomeDay=(now=Date.now())=>dayFormatter.format(new Date(now));
 export function slipRoundLastDay(round,calendar){

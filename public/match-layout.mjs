@@ -1,7 +1,7 @@
 // Slip presentation only: LIVE first, then chronological; never mutate stored fixtures or picks.
-export function orderSlipMatches(matches=[]) {
-  return matches.map((match,index)=>({match,index,time:Date.parse(match.kickoff)}))
-    .sort((a,b)=>Number(b.match.status==='LIVE')-Number(a.match.status==='LIVE')||
+export function orderSlipMatches(matches=[],{liveFirst=true}={}) {
+  return matches.map((match,index)=>({match,index,time:Date.parse(match.kickoff||match.officialKickoff)}))
+    .sort((a,b)=>(liveFirst?Number(b.match.status==='LIVE')-Number(a.match.status==='LIVE'):0)||
       (Number.isFinite(a.time)?a.time:Infinity)-(Number.isFinite(b.time)?b.time:Infinity)||a.index-b.index)
     .map(x=>x.match);
 }

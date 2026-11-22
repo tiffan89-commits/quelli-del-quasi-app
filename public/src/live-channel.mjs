@@ -163,10 +163,11 @@ export function mergeLiveSnapshot(state,data) {
   for(const round of [...(league.rounds||[]),...(state.calendar?.rounds||[])])for(const m of round.matches){
     if(!byId.has(m.id))byId.set(m.id,[]);byId.get(m.id).push(m);
   }
-  const update=incoming=>{
+  const update=(incoming,canonical=false)=>{
     for(const m of byId.get(incoming.id)||[]){
       const {events,eventsAt,statistics,penalties,playerStats,kickoff,lineupRevision,...fields}=incoming;
       if(lineupRevision&&!(Date.parse(lineupRevision)<Date.parse(m.lineupRevision)))m.lineupRevision=lineupRevision;
+      if(canonical&&kickoff)m.kickoff=m.officialKickoff=kickoff;
       if(incoming.scoreUpdatedAt&&m.scoreUpdatedAt&&Date.parse(incoming.scoreUpdatedAt)<Date.parse(m.scoreUpdatedAt))continue;
       Object.assign(m,fields);if(kickoff)m.kickoff=kickoff;
       if(events){m.details={...m.details,events,updatedAt:eventsAt};if(eventsAt)m.detailRevision=eventsAt;}
@@ -178,8 +179,8 @@ export function mergeLiveSnapshot(state,data) {
     r.closed=incoming.closed;r.settled=incoming.settled;r.publicChoicesAvailable=!!incoming.closed&&Array.isArray(incoming.publicSlips);
     if(incoming.slip&&r.slip)Object.assign(r.slip,incoming.slip);
     if(incoming.publicSlips)r.publicSlips=incoming.publicSlips.map(x=>({...r.publicSlips?.find(old=>old.uid===x.uid),...x}));
-    incoming.matches.forEach(update);
+    incoming.matches.forEach(m=>update(m));
   }
-  (data.calendar||[]).forEach(update);
+  (data.calendar||[]).forEach(m=>update(m,true));
   if(data.standings)state.standings=data.standings;
 }

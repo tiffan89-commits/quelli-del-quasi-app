@@ -44,20 +44,20 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
  async function load(room){
   try{
    const peer=[...room.sockets].find(s=>s.connected);if(!peer)return;
-   const c=room.context,state=c.mode==='bar'?await read(s=>s,{kind:'live',league:c.league}):await store.league(peer.data.user.id,c.league,s=>s,{number:c.round,competition:c.competition,catalog:false,detailedVotes:true,roundOnly:true});
+   const c=room.context,state=c.mode==='bar'?await read(s=>s,{kind:'live',league:c.league,fresh:true}):await store.league(peer.data.user.id,c.league,s=>s,{number:c.round,competition:c.competition,catalog:false,detailedVotes:true,roundOnly:true});
    if(closed||!room.sockets.size)return;
    room.state=state;room.loadedAt=now();for(const s of room.sockets)send(s,room);
   }catch{for(const s of room.sockets)s.emit('sports:unavailable');}
   finally{if(!closed&&room.sockets.size){clearTimeout(room.timer);room.timer=setTimeout(()=>void refresh([room]),intervalMs);room.timer.unref?.();}}
  }
- function refresh(watched){
+ function refresh(watched,afterCommit=false){
   if(closed)return;
-  for(const room of watched)if(room.sockets.size&&!room.loading){room.loading=true;pending.add(room);}
+  for(const room of watched)if(room.sockets.size&&(!room.loading||afterCommit)){room.loading=true;pending.add(room);}
   if(!draining)draining=Promise.resolve().then(async()=>{
    for(const room of pending){
     pending.delete(room);
     if(closed)break;
-    try{await load(room);}finally{room.loading=false;}
+    try{await load(room);}finally{room.loading=pending.has(room);}
    }
   }).finally(()=>{draining=null;if(!closed&&pending.size)return refresh([]);});
   return draining;
@@ -90,5 +90,5 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
    if(s.connected&&s.data.user.expires>now())s.emit('sports:lineup-saved',lineups);
   }
  }
- return {refresh:()=>refresh(rooms.values()),lineupsSaved,stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
+ return {refresh:scope=>refresh([...rooms.values()].filter(room=>!scope||room.context.mode===scope),true),lineupsSaved,stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
 }
