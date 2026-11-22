@@ -28,13 +28,30 @@ export function recapForRound(data,round){
  });
  return {round:round.id,title:round.title,points,winners:players.filter(p=>Number(p.points)===points).map(p=>p.uid),participants:players.length,almost,surprise:null};
 }
+
+function creditLeaders(data,round){
+ if(!round?.settled||round.pointsOnly)return null;
+ const players=settledPlayers(data,round).filter(player=>
+  player.creditsSettled!==false&&Number.isFinite(player.prize)&&Number.isFinite(player.stake));
+ const net=player=>Math.round((player.prize-player.stake)*100);
+ const best=Math.max(0,...players.map(net));
+ return best>0?{credits:best/100,winners:players.filter(player=>net(player)===best).map(player=>player.uid)}:null;
+}
+
 export function communityView(league,source,esc,fmt,competitionKey,round) {
   const data=source==='fantacalcio'?league.community?.competitions?.[competitionKey]:league.community?.seriea, recap=recapForRound(data,round),waiting=round&&isClosed(round)&&!recap;
   const name=id=>league.members.find(m=>m.uid===id)?.name || 'Giocatore';
   const badge=league.branding?.emblem || 'Q';
+  const bar=source==='seriea';
+  const strategy=bar&&recap?creditLeaders(data,round??league.rounds?.find(r=>r.id===recap.round)):null;
+  const award=strategy?`<section class="verdict-strategy" aria-labelledby="verdict-strategy-title">
+    <h3 id="verdict-strategy-title">${strategy.winners.length===1?'Lo stratega':'Gli strateghi'} di Wall Street</h3>
+    <p><strong>${strategy.winners.map(id=>esc(name(id))).join(' · ')}</strong> <span>+${fmt(strategy.credits)} cr netti</span></p>
+    <p class="muted">Analisi da broker, bonus immaginario.</p>
+  </section>`:'';
   const almost=recap?.almost?.length?`<div class="verdict-almost"><h3>Mancava solo quella</h3>${recap.almost.map(a=>`<div class="almost-row"><strong>${esc(name(a.uid))}</strong><span>${a.correct}/${a.total} esiti corretti</span><p class="muted">${esc(a.match)} · scelta ${esc(a.pick)}</p>${a.potential!==null?`<small>Ritorno virtuale sfiorato: ${fmt(a.potential)} crediti</small>`:''}</div>`).join('')}</div>`:'';
   return `<section class="bar-intro"><div class="league-emblem" aria-hidden="true">${esc(badge)}</div><div><div class="eyebrow">LA MEMORIA DEL BAR</div><h1>Le prove restano.</h1><p class="muted">${esc(league.branding?.motto || 'Il “la sapevo” vale soltanto se lo hai scritto prima.')}</p></div></section>
-  <div class="community-grid"><article class="card verdict">${recap ? `<h2>${esc(recap.title)}</h2><p class="verdict-winner">${recap.winners.map(id=>esc(name(id))).join(' · ')}</p><p>${fmt(recap.points)} punti · ${recap.participants} schedine a confronto</p>${recap.surprise?`<div class="notice"><b>La sorpresa della giornata</b><br>${esc(recap.surprise.match)} · ${recap.surprise.score.join('–')}<br>${recap.surprise.correct} su ${recap.surprise.total} hanno previsto l’esito.${recap.surprise.heroes.length===1?` Solo ${esc(name(recap.surprise.heroes[0]))} l’aveva vista arrivare.`:''}</div>`:''}<button class="secondary" id="share-verdict">Apri la cartolina ↗</button>${almost}` : waiting?`<h2>${esc(round.title)} · in corso</h2><p class="muted">Il verdetto arriva dopo i risultati.</p>`:'<h2>Il primo verdetto arriverà.</h2><p class="muted">Serve una giornata conclusa con schedine salvate.</p>'}</article></div>
+  <div class="community-grid"><article class="card verdict">${recap ? `<h2>${esc(recap.title)}</h2>${bar?`<h3 class="verdict-points-label">${recap.winners.length===1?'Vincitore':'Vincitori'} ai punti</h3>`:''}<p class="verdict-winner">${recap.winners.map(id=>esc(name(id))).join(' · ')}</p><p>${fmt(recap.points)} punti · ${recap.participants} schedine a confronto</p>${award}${recap.surprise?`<div class="notice"><b>La sorpresa della giornata</b><br>${esc(recap.surprise.match)} · ${recap.surprise.score.join('–')}<br>${recap.surprise.correct} su ${recap.surprise.total} hanno previsto l’esito.${recap.surprise.heroes.length===1?` Solo ${esc(name(recap.surprise.heroes[0]))} l’aveva vista arrivare.`:''}</div>`:''}<button class="secondary" id="share-verdict">Apri la cartolina ↗</button>${almost}` : waiting?`<h2>${esc(round.title)} · in corso</h2><p class="muted">Il verdetto arriva dopo i risultati.</p>`:'<h2>Il primo verdetto arriverà.</h2><p class="muted">Serve una giornata conclusa con schedine salvate.</p>'}</article></div>
   <details class="card verdict-honours"><summary>Albo del Bar</summary><div class="honours-grid">${(data?.honours||[]).map(p=>`<div class="honour"><strong>${esc(name(p.uid))}</strong><span>${p.total ? Math.round(p.correct/p.total*100) : 0}% esiti corretti · ${p.days} giornate</span><div class="risk-history">${p.perfect?`<span>✦ ${p.perfect} schedine perfette</span>`:''}${p.almost?`<span>↗ ${p.almost} volte “quasi”</span>`:''}</div></div>`).join('')||'<p class="muted">I riconoscimenti si basano sui risultati delle giornate concluse.</p>'}</div></details>`;
 }
 export function createVerdictCard(league,source,competitionKey,selected,roundId,{embedded=false}={}){

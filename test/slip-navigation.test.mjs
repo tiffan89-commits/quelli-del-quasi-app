@@ -61,3 +61,29 @@ test('verdict and postcard read the chosen historical round instead of the lates
  const html=communityView(league,'seriea',String,String,null,past);assert.match(html,/Giornata 10/);assert.match(html,/1 punti/);assert.doesNotMatch(html,/9 punti/);
  const card=createVerdictCard(league,'seriea',null,null,'r10');assert.match(card,/Vecchio campione/);assert.match(card,/2 – 0/);assert.doesNotMatch(card,/Nuovo campione/);
 });
+
+test('Bar verdict honours the best positive net return independently of the points winner',()=>{
+ const members=[{uid:'p',name:'Punti'},{uid:'g',name:'Guadagno & C.'},{uid:'r',name:'Ritorno'},{uid:'t',name:'Pari'}];
+ const slips=[
+  {uid:'p',points:13.76,stake:10,prize:0},
+  {uid:'g',points:2.69,stake:100,prize:180.88},
+  {uid:'r',points:5,stake:150,prize:225},
+ ].map(s=>({...s,picks:{},pointsSettled:true,creditsSettled:true}));
+ const fmt=new Intl.NumberFormat('it-IT',{maximumFractionDigits:2}).format;
+ const esc=s=>String(s).replace(/&/g,'&amp;');
+ const render=(r,data)=>parseHTML(communityView({members,rounds:[r],community:{seriea:data}},'seriea',esc,fmt,null,r)).document;
+ const final={...past,publicSlips:slips};
+ const archive={history:[{id:past.id,players:slips}],recap:{round:'r11',winners:['r'],points:15}};
+ const view=render(final,archive);
+ assert.equal(view.querySelector('.verdict-points-label').textContent,'Vincitore ai punti');
+ assert.equal(view.querySelector('.verdict-winner').textContent,'Punti');
+ assert.equal(view.querySelector('.verdict-strategy h3').textContent,'Lo stratega di Wall Street');
+ assert.equal(view.querySelector('.verdict-strategy strong').textContent,'Guadagno & C.');
+ assert.equal(view.querySelector('.verdict-strategy span').textContent,'+80,88 cr netti');
+ const tied={...final,publicSlips:[...slips,{...slips[1],uid:'t',stake:14.12,prize:95}]};
+ assert.equal(render(tied).querySelector('.verdict-strategy h3').textContent,'Gli strateghi di Wall Street');
+ assert.equal(render(tied).querySelector('.verdict-strategy strong').textContent,'Guadagno & C. · Pari');
+ const refunds=slips.map(s=>({...s,prize:s.stake}));
+ assert.equal(render({...final,publicSlips:refunds}).querySelector('.verdict-strategy'),null);
+ assert.equal(render({...final,settled:false}).querySelector('.verdict-strategy'),null);
+});

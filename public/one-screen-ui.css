@@ -374,6 +374,13 @@ html.os-on main.os-root .president-panel .president-body{padding:2px 10px 10px}
 html.os-on main.os-root .verdict-content .community-grid{grid-template-columns:minmax(0,1fr)}
 html.os-on main.os-root .verdict-content .community-grid>.card{padding:8px 10px!important}
 html.os-on main.os-root .verdict-content .verdict-honours>summary{font-size:13px;font-weight:700}
+.verdict-points-label{margin:12px 0 0;color:var(--muted);font-size:13px}
+.verdict-points-label+.verdict-winner{margin-top:2px}
+.verdict-strategy{margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--lime) 8%,transparent)}
+.verdict-strategy h3{margin:0 0 5px;font:700 21px/1.05 'Barlow Condensed',sans-serif;color:var(--lime)}
+.verdict-strategy p{margin:3px 0;font-size:13px}
+.verdict-strategy p:first-of-type{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:3px 12px}
+.verdict-strategy p span{white-space:nowrap;font-weight:700;color:var(--lime)}
 .verdict-almost{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
 .verdict-almost h3{margin:0 0 4px;font-size:14px}
 .verdict-almost .almost-row{padding:4px 0}
