@@ -105,6 +105,28 @@ test('formation keeps the title out and the unavailable groups collapsed until o
   assert.equal(unavailable(),null);
  }finally{closeMatchPage();}
 });
+test('formation tabs jump straight to the selected team while swiping still selects the visible pitch',()=>{
+ const {document}=parseHTML('<html><body><div id="app"></div></body></html>');
+ const page=openMatchPage({document});
+ try{
+  const teams=['Sassuolo','Genoa'].map(team=>({team,formation:'3-4-3',players:[],bench:[]}));
+  mountFootballMatch(page,{home:'Sassuolo',away:'Genoa',status:'NS',lineups:{kind:'probable',teams}});
+  const slides=page.querySelector('.pitch-slides'),tabs=[...page.querySelectorAll('[data-pitch-tab]')];
+  Object.defineProperty(slides,'clientWidth',{value:360});
+  const scrolls=[];
+  slides.scrollTo=options=>{scrolls.push(options);slides.scrollLeft=options.left;};
+  const selected=()=>tabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.textContent;
+  tabs[1].click();
+  assert.equal(selected(),'Genoa');
+  assert.equal(slides.scrollLeft,360);
+  tabs[0].click();
+  assert.equal(selected(),'Sassuolo');
+  assert.deepEqual(scrolls,[{left:360,behavior:'instant'},{left:0,behavior:'instant'}]);
+  slides.scrollLeft=360;
+  slides.onscroll();
+  assert.equal(selected(),'Genoa');
+ }finally{closeMatchPage();}
+});
 test('home character links directly to the Quasi studio rather than account settings',()=>{const html=quasiBanner({},'Mister');assert.match(html,/data-open-quasi-studio/);assert.doesNotMatch(html,/data-page="profilo"/);});
 
 import {renderFantasyLineup} from '../public/src/lineup-pitch.mjs';

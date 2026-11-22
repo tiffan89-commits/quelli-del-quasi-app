@@ -119,7 +119,7 @@ export function renderLineup(data,{paged=false,details=null,detailsAvailable=tru
  if(paged)return pagedLineup(l,details!==null&&l.kind==='official'?'':title,notes,details,detailsAvailable,showExtras);
  return `<section class="lineup-section">${title?`<h3>${title}</h3>`:''}<div class="pitch-tabs" role="tablist" aria-label="Formazione da visualizzare">${l.teams.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-pitch-tab="${i}">${esc(t.team)}</button>`).join('')}</div><div class="pitch-slides">${l.teams.map(t=>`<section class="pitch-team" aria-label="Formazione ${esc(t.team)}"><div class="pitch-heading"><strong>${esc(t.team)}</strong><span>${esc(t.formation||'')}</span></div>${pitchField(t,l.kind)}${benchSections(t,l.kind)}${pitchExtras(t,l.kind)}</section>`).join('')}</div>${notes}</section>`;
 }
-export function bindLineupPitch(root,{onPage,autoHeight=true,fitViewport=true}={}){
+export function bindLineupPitch(root,{onPage,autoHeight=true,fitViewport=true,animateTabs=true}={}){
  root._pitchCleanup?.();
  const slides=root.querySelector('.pitch-slides');if(!slides)return;
  const tabs=[...root.querySelectorAll('[data-pitch-tab]')],teams=[...root.querySelectorAll('.pitch-team')];
@@ -156,8 +156,14 @@ export function bindLineupPitch(root,{onPage,autoHeight=true,fitViewport=true}={
   if(paged)fit();size();
  };
  const scheduleSize=()=>{scrolling=true;clearTimeout(settleTimer);settleTimer=setTimeout(settled,140);};
- const go=i=>{const target=Math.max(0,Math.min(i,last()));if(!details)select(target);scheduleSize();slides.scrollTo({left:target*slides.clientWidth,behavior:globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
- tabs.forEach(b=>b.onclick=()=>go(Number(b.dataset.pitchTab)));
+ const go=(i,animate=true)=>{
+  const target=Math.max(0,Math.min(i,last()));
+  const instant=!animate||globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if(!details)select(target);
+  scheduleSize();
+  slides.scrollTo({left:target*slides.clientWidth,behavior:instant?'instant':'smooth'});
+ };
+ tabs.forEach(b=>b.onclick=()=>go(Number(b.dataset.pitchTab),animateTabs));
  flips.forEach(button=>{
   const i=Number(button.closest('[data-pitch-team]').dataset.pitchTeam);
   const paint=()=>setPitchFlip(button,flipped.has(i));
