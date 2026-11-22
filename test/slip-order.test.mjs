@@ -5,6 +5,8 @@ import {orderSlipMatches,groupMatches} from '../public/match-layout.mjs';
 import {renderSlipV2} from '../public/src/v2/slip-v2.mjs';
 import {barSlipsView} from '../public/src/bar-slips.mjs';
 import {patchSlipResults} from '../public/src/slip-results.mjs';
+import {alignSerieASlipKickoffs} from '../public/src/slip-state.mjs';
+import {mergeLiveSnapshot} from '../public/src/live-channel.mjs';
 const ids=xs=>xs.map(x=>x.id);
 const domOrder=root=>[...root.querySelectorAll('[data-match-card],[data-result-row]')].map(x=>x.dataset.matchCard||x.dataset.resultRow);
 const fmt=String,esc=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
@@ -58,4 +60,40 @@ test('each Bar mini-slip uses the same order and independently promotes its live
  for(const list of lists)assert.deepEqual(domOrder(list),['early','middle','late']);
  r.matches[0].status='LIVE';r.matches[0].liveScore=[0,0];patchSlipResults(document,r,{},true);
  lists.forEach((list,i)=>{assert.deepEqual(domOrder(list),['late','early','middle']);for(const row of rows[i])assert.ok([...list.children].includes(row));});
+});
+
+test('the Bar ticket stays chronological across kickoff and full time even when the league has an outdated date',()=>{
+ const saturday=match('como','2026-11-21T14:00:00Z','FT');
+ const juventus=match('juventus','2026-11-23T19:45:00Z');
+ const bologna=match('bologna','2026-11-22T17:00:00Z');
+ const monza=match('monza','2026-11-23T17:30:00Z');
+ const r={...fixture('seriea'),number:12,matches:[monza,juventus,bologna,saturday]};
+ const official=[saturday,
+  {...juventus,kickoff:'2026-11-22T11:30:00Z'},
+  {...bologna,kickoff:'2026-11-22T14:00:00Z'},
+  {...monza,kickoff:'2026-11-23T19:45:00Z'}
+ ];
+ const state={leagues:[{id:'l',members:[],rounds:[r]}],calendar:{rounds:[{number:12,matches:official}]}};
+ alignSerieASlipKickoffs(r,state.calendar);
+ const {document}=parseHTML(renderSlipV2({round:r,barTicket:true,esc,fmt,date:String}));
+ const list=document.querySelector('.ticket-matches'),row=list.querySelector('[data-match-card="juventus"]');
+ const groups=()=>[...list.querySelectorAll('.ticket-day:not([hidden])')].map(x=>x.textContent);
+ assert.deepEqual(groups(),['SAB 21 NOV','DOM 22 NOV','LUN 23 NOV']);
+ assert.deepEqual(domOrder(list),['como','juventus','bologna','monza']);
+ assert.equal(row.querySelector('time').textContent,'12:30');
+ list.scrollTop=80;
+ let moves=0;
+ const insert=list.insertBefore.bind(list);list.insertBefore=(...args)=>{moves++;return insert(...args);};
+ for(const changes of [{status:'LIVE',liveScore:[4,0],clock:"90+3'"},{status:'FT',score:[4,0],liveScore:null,clock:null}]){
+  mergeLiveSnapshot(state,{league:'l',rounds:[{id:r.id,matches:[{id:'juventus',kickoff:'2026-11-23T19:45:00Z',...changes}]}],
+   calendar:[{...official[1],...changes}]});
+  patchSlipResults(document,r,{},false);
+  assert.deepEqual(domOrder(list),['como','juventus','bologna','monza']);
+  assert.deepEqual(groups(),['SAB 21 NOV','DOM 22 NOV','LUN 23 NOV']);
+  assert.equal(list.querySelector('[data-match-card="juventus"]'),row);
+  assert.equal(list.scrollTop,80);
+  assert.equal(row.querySelector('.inline-live')!==null,changes.status==='LIVE');
+ }
+ assert.equal(row.querySelector('.inline-score').textContent,'4 – 0');
+ assert.equal(moves,0);
 });

@@ -62,7 +62,8 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
   const sum = slipSummary(round, picks, stake, credits);
   if(partial)picks=sum.picks;
   const missingOdds=!pointsOnly&&(sum.missing>0||(round.matches||[]).some(m=>(openMatch===m.id?[...MAIN,...EXTRA]:MAIN).some(p=>!Number.isFinite(m.odds?.[p]))));
-  const rows = orderSlipMatches(round.matches || []).map(m => {
+  let previousDay;
+  const rows = orderSlipMatches(round.matches,{liveFirst:!barTicket||fanta}).map(m => {
     const extraOn=EXTRA.includes(picks[m.id]),open=openMatch===m.id,locked=editingEventLocked(round,m);
     const kickoff=m.officialKickoff||m.kickoff;
     const barTime=fanta&&!barTicket?null:barKickoff(m);
@@ -71,10 +72,12 @@ export function renderSlipV2({ round, picks = {}, stake = 10, credits = 500, ope
       barTime?`<time class="slip-match-kickoff${barTicket?' ticket-time':''}" datetime="${esc(barTime.kickoff)}"${barTime.label&&!hasFinalScore(m)?'':' hidden'}>${esc(barTicket?barTime.timeLabel:barTime.label)}</time>`:'';
     const live=m.status==='LIVE',status=fanta?(live?'In corso':hasFinalScore(m)?'':fantasyMeta?.(m)||(kickoff?date(kickoff):'')):'';
     if(barTicket){
+      const day=barTime.dayLabel||'DATA DA DEFINIRE',newDay=day!==previousDay;
+      previousDay=day;
       const pick=picks[m.id],price=extraOn?optionPrice(m,pick,locked||!ready,round).odd:null;
       const teams=teamLabel(m.home,{home:true,vs:m.away})+teamLabel(m.away,{home:false,vs:m.home});
       return `<div class="v2-match-row" data-ticket-picked="${!!pick}">
-        <h2 class="ticket-day">${esc(barTime.dayLabel||'DATA DA DEFINIRE')}</h2>
+        <h2 class="ticket-day"${newDay?'':' hidden'}>${esc(day)}</h2>
         <article class="v2-match ticket-match" data-match-card="${esc(m.id)}" data-result-score="${esc(JSON.stringify((live?m.liveScore:m.score)||null))}">
           <button type="button" class="v2-match-head match-link" data-detail="${esc(m.id)}" aria-label="${esc(barTime.matchLabel)}">
             <span class="slip-teams">${teams}</span><span class="slip-match-indicator">${timing}<span class="inline-result" data-inline-result aria-live="polite">${inlineResultView(m)}</span></span>

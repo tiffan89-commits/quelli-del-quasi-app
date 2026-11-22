@@ -22,11 +22,12 @@ export function inlineResultView(m){
 export function increasedScore(before,after){return Array.isArray(before)&&Array.isArray(after)&&after.some((n,i)=>Number.isInteger(n)&&n>before[i]);}
 function reorderSlipRows(root,round){
  const lists=[...(root.matches?.('[data-slip-match-list]')?[root]:[]),...root.querySelectorAll('[data-slip-match-list]')];
- const ordered=orderSlipMatches(round.matches),doc=root.ownerDocument||root,focused=doc.activeElement;
+ const doc=root.ownerDocument||root,focused=doc.activeElement;
  const rowId=el=>el.dataset.matchCard||el.dataset.resultRow||
   (el.classList.contains('v2-match-row')?el.querySelector('[data-match-card]')?.dataset.matchCard:null);
  for(const list of lists){
   const ticket=list.classList.contains('ticket-matches');
+  const ordered=orderSlipMatches(round.matches,{liveFirst:!ticket||list.closest('[data-slip-source]')?.dataset.slipSource==='fantacalcio'});
   const groups=new Map();
   if(ticket)for(const m of ordered){
    const day=barKickoff(m).dayLabel;

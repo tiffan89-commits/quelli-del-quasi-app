@@ -135,7 +135,7 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   const refresh=await refreshFutureCalendar({get:async()=>({response:[future]})},oddsOptions);
   assert.equal(refresh[0].id,fixtureId);
   assert.equal((await snapshot('match','rows')).football.calendar.rounds[0].matches[0].kickoff,newKickoff);
-  assert.equal((await state()).rounds[0].matches[0].kickoff,kickoff);
+  assert.equal((await state()).rounds[0].matches[0].kickoff,newKickoff);
   const native=(await db.query('SELECT kickoff,data FROM fanta.fixtures WHERE api_id=1550189')).rows[0];
   assert.equal(new Date(native.kickoff).toISOString(),newKickoff);
   assert.equal(native.data.fixture.date,newKickoff);

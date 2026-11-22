@@ -83,7 +83,7 @@ import {restoreRoundCalendarScroll} from './round-calendar.mjs';
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
-  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,
+  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,alignSerieASlipKickoffs,
   deadlineOf,
   isClosed,editingClosed,editingEventLocked,editablePicks,
   slipSummary,
@@ -326,7 +326,10 @@ function R() {
   const rounds = availableRounds();
   const round=rounds.find(r=>r.id===selectedRoundId)||defaultSlipRound(rounds,Date.now(),state.calendar);
   const league=L();
-  if(round)round.stakeReserve=slipCreditReserve(round,league.rounds,league,state.user?.id);
+  if(round){
+    alignSerieASlipKickoffs(round,state.calendar);
+    round.stakeReserve=slipCreditReserve(round,league.rounds,league,state.user?.id);
+  }
   return round;
 }
 function me() {
