@@ -6,6 +6,8 @@ import {parseHTML} from 'linkedom';
 import {shirtBack,goalkeeperShirt,GOALKEEPER_KITS} from '../public/src/fanta/maglie-portieri.mjs';
 import {renderLineup,renderFantasyLineup,shirtSurname} from '../public/src/lineup-pitch.mjs';
 import {playerVisual} from '../public/src/fanta/player-visual.mjs';
+import {renderStudio} from '../public/src/fanta/formazione-studio.mjs';
+import {draftFrom} from '../public/src/fanta/squadra.mjs';
 import {LEAGUE_COLORS,leagueAccent,linkedLeagueIdentity,leagueEmblem} from '../public/src/league-theme.mjs';
 import {updateLeagueProfile} from '../lib/community.mjs';
 
@@ -38,6 +40,27 @@ test('real and fantasy lineups show one drawn jersey per player, no portrait req
  assert.doesNotMatch(fantasy,/<img|player-photo|pitch-player-club/);assert.match(fantasy,/#ffffff/);
  assert.doesNotMatch(playerVisual({club:'Inter',role:'A',photoUrl:'/api/player-photo?id=1'}),/<img|player-photo/);
  assert.match(playerVisual({club:'Inter',role:'P'}),/fanta-shirt-gk/);
+});
+
+test('all player shirts shorten long given names and retain compound and established surnames',()=>{
+ const alajbegovic={id:'af:395559',name:'Kerim-Sam Alajbegović',shirtName:'Kerim-Sam Alajbegović',surname:'Alajbegović',role:'C',club:'Juventus',jersey:17};
+ for(const player of [alajbegovic,{name:alajbegovic.name}])assert.equal(shirtSurname(player),'Alajbegović');
+ assert.equal(shirtSurname({name:'Maximiliano De Rossi'}),'M. De Rossi');
+ assert.equal(shirtSurname({name:'Álexander De Zan'}),'Á. De Zan');
+ assert.equal(shirtSurname({name:'Brooke Norton-Cuffy'}),'Norton-Cuffy');
+ assert.equal(shirtSurname({name:'R. Floriani Mussolini',shirtName:'Floriani Mussolini',surname:'Floriani Mussolini'}),'Floriani Mussolini');
+ assert.equal(shirtSurname({name:'Débora García López',surname:'García López'}),'García López');
+ assert.equal(shirtSurname({name:'Douglas Luiz Soares de Paulo',shirtName:'Douglas Luiz',surname:'Soares de Paulo'}),'Douglas Luiz');
+ assert.equal(shirtSurname({name:'F. Terracciano',shirtName:'F. Terracciano',surname:'Terracciano'}),'F. Terracciano');
+ const lineup=renderLineup({lineups:{kind:'probable',teams:[{team:'Juventus',players:[alajbegovic]}]}});
+ const live=playerVisual(alajbegovic,{back:true,nameOnShirt:true});
+ const roster=[alajbegovic],draft=draftFrom(null,roster);
+ draft.slots.C0=alajbegovic.id;
+ const studio=renderStudio({data:{roster,round:{number:12},rules:{formations:['4-4-2']}},draft},{});
+ for(const markup of [lineup,live,studio]){
+  assert.match(markup,/>ALAJBEGOVIĆ<\/text>/);
+  assert.doesNotMatch(markup,/>KERIM-SAM/);
+ }
 });
 
 test('new crests are local vector assets; missing clubs never reference the old official images',async()=>{

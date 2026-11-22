@@ -22,6 +22,27 @@ export function playerSurname(player){
  const p=typeof player==='string'?{name:player}:player;
  return storedName(p)||normalizedPlayerLabel(p?.name).replace(/^(?:\p{L}\. )+|(?: \p{L}\.)+$/gu,'');
 }
+const shirtNameLimit=13;
+const surnameParticle=/^(?:da|das|de|dei|degli|del|della|den|der|di|do|dos|du|el|al|la|le|van|von|ten|ter)$/iu;
+const fitsShirt=name=>[...name.toUpperCase()].length<=shirtNameLimit;
+export function playerShirtName(p){
+ const name=playerSurname(p);
+ // An initial stored in the catalog can distinguish players with the same surname.
+ if(fitsShirt(name)||name===normalizedPlayerLabel(p?.knownAs)||/^\p{L}\. /u.test(normalizedPlayerLabel(p?.shirtName)))return name;
+ const family=normalizedPlayerLabel(p?.surname||p?.lastName||p?.lastname||p?.last_name);
+ const words=name.split(' '),lowerName=name.toLowerCase(),lowerFamily=family.toLowerCase();
+ if(lowerName===lowerFamily)return name;
+ // Use the family name only when it agrees with the catalog label. A legal
+ // surname can differ from the established sporting name.
+ let familyStart=words.length-1;
+ if(family&&lowerName.endsWith(' '+lowerFamily))familyStart=words.length-family.split(' ').length;
+ else while(familyStart>0&&surnameParticle.test(words[familyStart-1]))familyStart--;
+ if(familyStart===0)return name;
+ const surname=words.slice(familyStart).join(' ');
+ const initial=words[0].match(/^\p{L}\p{M}*/u)?.[0];
+ const abbreviated=initial?initial+'. '+surname:surname;
+ return fitsShirt(abbreviated)?abbreviated:surname;
+}
 export const playerJersey=p=>[
  p?.clubId&&p.verifiedJersey?.clubId===p.clubId&&(!p.season||p.season===p.verifiedJersey.season)?p.verifiedJersey.number:null,
  p?.jersey,p?.number,p?.seasonStats?.games?.number,

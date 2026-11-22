@@ -57,6 +57,22 @@ test('the catalog migration initializes all existing labels and provider upserts
  }finally{await db.close();}
 });
 
+test('the shirt label for Alajbegović is corrected for stored and new catalog records',async()=>{
+ const db=new PGlite();
+ try{
+  await db.exec("CREATE SCHEMA fanta; CREATE TABLE fanta.players(api_id int PRIMARY KEY, name text NOT NULL, data jsonb NOT NULL DEFAULT '{}');");
+  await db.exec(await readFile(new URL('../netlify/database/migrations/025_player_shirt_names.sql',import.meta.url),'utf8'));
+  await db.query('INSERT INTO fanta.players(api_id,name) VALUES (395559,$1),(47522,$2)',['Kerim-Sam Alajbegović','Douglas Luiz Soares de Paulo']);
+  await db.exec(await readFile(new URL('../netlify/database/migrations/026_alajbegovic_shirt_name.sql',import.meta.url),'utf8'));
+  const label=async()=>(await db.query('SELECT name,shirt_name FROM fanta.players WHERE api_id=395559')).rows[0];
+  assert.deepEqual(await label(),{name:'Kerim-Sam Alajbegović',shirt_name:'Alajbegović'});
+  await db.query('DELETE FROM fanta.players WHERE api_id=395559');
+  await db.query('INSERT INTO fanta.players(api_id,name) VALUES (395559,$1)',['K. Alajbegović']);
+  assert.deepEqual(await label(),{name:'K. Alajbegović',shirt_name:'Alajbegović'});
+  assert.equal((await db.query('SELECT shirt_name FROM fanta.players WHERE api_id=47522')).rows[0].shirt_name,'Douglas Luiz');
+ }finally{await db.close();}
+});
+
 test('restoring coordinates from raw official lineups cannot resurrect a duplicated number or substitute',()=>{
  const raw={teams:{home:{id:1,name:'Como'},away:{id:2,name:'Juventus'}},lineups:[1,2].map((id,i)=>({
   team:{id,name:i?'Juventus':'Como'},formation:'4-4-2',
