@@ -59,6 +59,7 @@ export function leagueDashboard(league,user,source,fantasyAvailable,esc,fmt,comp
   hero:{title:'Il tuo Quasi dice',quote:quote(user,league,last,open,now),background:quasiHomeBackdrop(user.avatar),art:quasiMascot(user.avatar,user.name),
    chips:`<span>${fmt(model.points)} pt${model.pointsRank?' · '+model.pointsRank+'°':''}</span><span>${fmt(model.credits)} cr</span>`},
   last:round?{title:round.title,action:`data-dashboard-slip="${esc(round.id)}"`,segments,value:last?sign(last.points,fmt)+' pt':null,valueClass:last?.points<0?'loss':last?.points>0?'gain':''}:null,
+  secondary:'<button type="button" class="bar-home-calendar" data-dashboard-calendar><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 10h16m-12 4h2m4 0h2m-8 3h2"/></svg><span>Calendario Serie A</span><i aria-hidden="true">›</i></button>',
   cta:{...cta,waiting:cta.disabled,action:cta.round?`data-dashboard-slip="${esc(cta.round.id)}"`:null}
  });
 }

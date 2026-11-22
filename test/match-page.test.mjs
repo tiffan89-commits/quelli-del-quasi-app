@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {parseHTML} from 'linkedom';
 import {openMatchPage,closeMatchPage} from '../public/src/match-page.mjs';
-import {mountFootballMatch} from '../public/src/live-match-view.mjs';
+import {mountFootballMatch,updateFootballMatch} from '../public/src/live-match-view.mjs';
 import {quasiBanner} from '../public/src/quasi-scene.mjs';
 
 function gesture(Event,target,from,to){
@@ -76,6 +76,26 @@ test('swiping below the score switches match tabs and leaves pitch swipes and pu
   page.scrollTop=0;
   gesture(Event,active(),[170,310],[175,440]);
   assert.equal(page.open,false);
+ }finally{closeMatchPage();}
+});
+test('formation keeps the title out and the unavailable groups collapsed until opened, including after a refresh',()=>{
+ const {document}=parseHTML('<html><body><div id="app"></div></body></html>');
+ const page=openMatchPage({document});
+ try{
+  const teams=['Juventus','Venezia'].map(team=>({team,formation:'3-5-2',players:[],bench:[],unavailable:[{name:'Rossi',status:'Infortunato'}]}));
+  const match={home:'Juventus',away:'Venezia',status:'NS',lineups:{kind:'probable',teams}};
+  mountFootballMatch(page,match);
+  const panel=page.querySelector('#live-match-formazioni');
+  assert.equal(panel.hidden,false);
+  assert.equal(panel.querySelector('.lineup-section>h3'),null);
+  assert.deepEqual([...panel.querySelectorAll('.pitch-tabs button')].map(button=>button.textContent),['Juventus','Venezia']);
+  const unavailable=()=>panel.querySelector('details.match-availability');
+  assert.equal(unavailable().hasAttribute('open'),false);
+  unavailable().setAttribute('open','');
+  updateFootballMatch(page,match,{refreshLineup:true});
+  assert.equal(unavailable().hasAttribute('open'),true);
+  updateFootballMatch(page,{status:'1H'});
+  assert.equal(unavailable(),null);
  }finally{closeMatchPage();}
 });
 test('home character links directly to the Quasi studio rather than account settings',()=>{const html=quasiBanner({},'Mister');assert.match(html,/data-open-quasi-studio/);assert.doesNotMatch(html,/data-page="profilo"/);});

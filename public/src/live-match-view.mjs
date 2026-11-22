@@ -124,8 +124,8 @@ function statistics(match){
  </div>`;
 }
 
-function matchLineup(match){
- return renderLineup(match,{paged:true,showExtras:false,playerDetails:true})+matchAvailability(match);
+function matchLineup(match,availabilityOpen=false){
+ return renderLineup(match,{paged:true,showExtras:false,showTitle:false,playerDetails:true})+matchAvailability(match,{open:availabilityOpen});
 }
 
 function regions(match){
@@ -140,7 +140,7 @@ function bindPitch(root,view){
   return;
  }
  view.pitchBound=true;
- bindLineupPitch(root,{fitViewport:false});
+ bindLineupPitch(root,{fitViewport:false,autoHeight:false});
 }
 
 function bindMatchTabSwipe(panel,step){
@@ -222,9 +222,9 @@ function bindPlayerTap(panel,view){
  },{passive:false});
 }
 
-export function mountFootballMatch(root,match){
+export function mountFootballMatch(root,match,{initialTab}={}){
  root._pitchCleanup?.();
- const selected=started(match)?'cronaca':'formazioni';
+ const selected=initialTab|| (started(match)?'cronaca':'formazioni');
  const parts=regions(match),view={match,parts,pitchBound:false};
  views.set(root,view);
  root.classList.add('live-match-page');
@@ -243,7 +243,7 @@ export function mountFootballMatch(root,match){
   </nav>
  </div>
  <section class="live-match-panel" id="live-match-cronaca" data-live-match-panel="cronaca" aria-label="Cronaca"${selected==='cronaca'?'':' hidden'}>${parts.chronology}</section>
- <section class="live-match-panel" id="live-match-statistiche" data-live-match-panel="statistiche" aria-label="Statistiche" hidden>${parts.statistics}</section>
+ <section class="live-match-panel" id="live-match-statistiche" data-live-match-panel="statistiche" aria-label="Statistiche"${selected==='statistiche'?'':' hidden'}>${parts.statistics}</section>
  <section class="live-match-panel" id="live-match-formazioni" data-live-match-panel="formazioni" aria-label="Formazioni"${selected==='formazioni'?'':' hidden'}>${matchLineup(match)}</section>
  <dialog class="live-player-dialog" aria-labelledby="live-player-name">
   <div class="live-player-dialog-body">
@@ -258,7 +258,13 @@ export function mountFootballMatch(root,match){
  root.querySelector('#close-modal').onclick=()=>root.close();
  view.sheet=root.querySelector('.live-player-dialog');
  bindPlayerStats(view);
- bindPlayerTap(root.querySelector('#live-match-formazioni'),view);
+ const formations=root.querySelector('#live-match-formazioni');
+ bindPlayerTap(formations,view);
+ formations.addEventListener('toggle',event=>{
+  if(formations.hidden||!event.target.matches?.('.match-availability'))return;
+  if(!event.target.hasAttribute('open'))root.scrollTop=0;
+  else if(!root.scrollTop)root.scrollTop=Math.max(0,Math.min(Math.floor(root.clientHeight/3),root.scrollHeight-root.clientHeight));
+ },true);
  const controls=[...root.querySelectorAll('[data-live-match-tab]')],panels=[...root.querySelectorAll('[data-live-match-panel]')];
  const select=target=>{
   for(const control of controls)control.setAttribute('aria-pressed',String(control.dataset.liveMatchTab===target));
@@ -296,10 +302,12 @@ export function updateFootballMatch(root,incoming,{refreshLineup=false}={}){
  if(refreshLineup||started(previous)!==started(match)){
   const panel=root.querySelector('[data-live-match-panel="formazioni"]'),active=root.ownerDocument.activeElement;
   const pressed=panel.contains(active)?active.getAttribute('data-pitch-tab'):null;
+  const availability=panel.querySelector('.match-availability'),wasOpen=availability?.hasAttribute('open'),scroll=root.scrollTop;
   root._pitchCleanup?.();
   view.pitchBound=false;
-  panel.innerHTML=matchLineup(match);
+  panel.innerHTML=matchLineup(match,wasOpen);
   if(!panel.hidden)bindPitch(root,view);
+  if(wasOpen&&!panel.hidden&&panel.querySelector('.match-availability[open]'))root.scrollTop=scroll;
   if(pressed!=null)panel.querySelector('[data-pitch-tab="'+pressed+'"]')?.focus({preventScroll:true});
  }
  view.match=match;

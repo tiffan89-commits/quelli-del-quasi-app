@@ -78,7 +78,8 @@ import {tickHomeCountdowns} from './home-social.mjs';
 import {openHomeStory} from './home-stories.mjs';
 import {mergeChatSummary,paintChatBadges} from './chat-badges.mjs';
 let requestedSlip=new URLSearchParams(location.search).get('slip'),requestedSlipRound=new URLSearchParams(location.search).get('round');
-import { calendarSections } from "./calendar-order.mjs";
+import {calendarMatchTab,serieACalendar} from './bar-calendar.mjs';
+import {restoreRoundCalendarScroll} from './round-calendar.mjs';
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
@@ -106,7 +107,6 @@ import {patchFantasyMatch} from './fantasy-live-detail.mjs';
 import {fantasyAccount,fantasyGroup,fantasyWalletKey} from './fantasy-accounts.mjs';
 let requestedChat=new URLSearchParams(location.search).get("chat");
 try{requestedChat??=sessionStorage.getItem("qdq:pending-chat");if(requestedChat)sessionStorage.setItem("qdq:pending-chat",requestedChat);}catch{}
-let calendarScope = "seriea";
 let editBaseSavedAt = null,
   editBaseFingerprint = null;
 import { groupMatches } from "/match-layout.mjs";
@@ -172,7 +172,7 @@ const fmt = (n) =>
     "Under / Over 2,5": ["Under 2.5", "Over 2.5"],
     "Goal / No Goal": ["Goal", "No Goal"],
   };
-function teamLabel(name,{vs,home,shirtAfter=false,fantasy=page==='calendario'?calendarScope==='fantacalcio':sourceScope==='fantacalcio'}={}) {
+function teamLabel(name,{vs,home,shirtAfter=false,fantasy=sourceScope==='fantacalcio'}={}) {
   if(!fantasy){
     const shirt=clubShirt(name,{vs,home}),text=`<span class="team-name">${esc(name)}</span>`;
     return `<span class="team-label">${shirtAfter?text+shirt:shirt+text}</span>`;
@@ -181,9 +181,6 @@ function teamLabel(name,{vs,home,shirtAfter=false,fantasy=page==='calendario'?ca
   const logo=team?.logo||team?.shirt;
   const icon=logo?`<img class="team-logo" data-deferred-src="${esc(logo)}" alt="" width="32" height="32" loading="lazy" onerror="this.hidden=true">`:`<span class="crest">${esc(name.slice(0,2))}</span>`;
   return `<span class="team-label" data-fantasy-team="${esc(name)}" data-fantasy-competition="${esc(competitionScope)}">${icon}<span>${esc(name)}</span></span>`;
-}
-function fixtureTeams(home,away,fantasy) {
-  return `<span class="fixture-teams">${teamLabel(home,{home:true,vs:away,fantasy})}<span class="fixture-separator muted">–</span>${teamLabel(away,{home:false,vs:home,fantasy})}</span>`;
 }
 function predictionFeedback(match, pick, closed) {
   const feedback = predictionStatus(match, pick, closed);
@@ -353,7 +350,9 @@ function me() {
   };
 }
 const barRoutePages={solleciti:'solleciti',seriea:'seriea',partecipanti:'partecipanti',oggi:'lega',schedina:'schedina',classifica:'classifiche',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',lega:'barleague'};
-const barPageFor=route=>route?.page==='join-code'?'join-league':isLeagueEntryPage(route?.page)?route.page:barRoutePages[route?.page]||'lega';
+const barPageFor=route=>route?.page==='calendario'||route?.page==='classifica'&&route.section==='calendario'?'calendario':
+ route?.page==='join-code'?'join-league':isLeagueEntryPage(route?.page)?route.page:barRoutePages[route?.page]||'lega';
+const barCalendar={openRound:null,calendarScroll:null};
 const deletedLeagues=new Set();
 let leagueRefreshQueued=false,leagueWorkspaceView=null,presidentOperation=null,presidentNative=null;
 let finishSnapshotRefresh=null,activeSnapshotRefresh=null;
@@ -517,7 +516,6 @@ async function refresh(reset = false) {
 }
 function hydrateDraft() {
   if (!fantasyAvailable()) {
-    calendarScope = "seriea";
     competitionScope = null;
   }
   if (sourceScope === "fantacalcio" && !competitionScope)
@@ -769,7 +767,7 @@ function render() {
                     : page === "lega"
                       ? settings(l, r)
                       : page === "calendario"
-                        ? calendarPage()
+                        ? classificationTabs('calendario')+`<div class="fanta-calendar-scroll bar-seriea-calendar" data-os-content data-os-flow>${serieACalendar(state.calendar,barCalendar)}</div>`
                         : settings(l, r);
   document.body.dataset.gameMode='bar';
   applyLeagueTheme(l,'bar');
@@ -1271,16 +1269,17 @@ function quasiPage(league){
 }
 function setBarRanking(metric){
  if(metric==='league'){if(page!=='seriea')void navigatePage('seriea');return;}
+ if(metric==='calendar'){if(page!=='calendario')void navigatePage('calendario');return;}
  const changed=tab!==metric;tab=metric;
- if(page==='seriea')void navigatePage('classifiche');else if(changed)render();
+ if(page!=='classifiche')void navigatePage('classifiche');else if(changed)render();
 }
 function stepBarRanking(direction){
- const order=['points','credits','league'];
- const active=page==='seriea'?'league':tab;
+ const order=['points','credits','league','calendar'];
+ const active=page==='calendario'?'calendar':page==='seriea'?'league':tab;
  const target=order[order.indexOf(active)+direction];
  if(target)setBarRanking(target);
 }
-function classificationTabs(active){return `<div class="classification-tabs" data-os-header role="group" aria-label="Classifiche">${[['classifiche','Del Bar'],['seriea','Campionato']].map(([target,title])=>`<button type="button" data-page="${target}" aria-pressed="${target===active}">${title}</button>`).join('')}</div>`;}
+function classificationTabs(active){return `<div class="classification-tabs" data-os-header role="group" aria-label="Classifica e calendario">${[['classifiche','Del Bar'],['seriea','Campionato'],['calendario','Calendario']].map(([target,title])=>`<button type="button" data-page="${target}" aria-pressed="${target===active}">${title}</button>`).join('')}</div>`;}
 function ranking(l){return playerRanking(l,'seriea',tab,state.user,esc,fmt);}
 function adminBudget() { return ""; }
 function profile({embedded=false}={}) {
@@ -1320,6 +1319,7 @@ function bindObjectives(){
 function bindDashboard() {
   const dashboard=$('#league-dashboard');
   if(dashboard)dashboard.onclick=e=>{
+    if(e.target.closest('[data-dashboard-calendar]')){void navigatePage('calendario');return;}
     const story=e.target.closest('[data-bar-story]');
     if(story){openHomeStory(story,{uid:state.user.id,mode:'bar',onAction:action=>openDashboardSlip(action.storySlip)});return;}
     const slip=e.target.closest('[data-dashboard-slip]');
@@ -1439,14 +1439,6 @@ function bindPresidentOperations(root,l){
   }catch(error){notify(error.message);}finally{button.disabled=false;}
  };
 }
-function calendarStatus(m) {
-  if(m.status==='LIVE')return 'LIVE · '+(m.liveScore?.join(' – ')||'—')+(m.clock?' · '+m.clock:'');
-  return m.status === "FT" && m.score
-    ? m.score.join(" – ")
-    : m.kickoff
-      ? date(m.kickoff)
-      : "Da disputare";
-}
 function openBarRules(){
   const view=openMatchPage({label:'Regolamento del Bar',swipeBack:'both'});
   view.classList.add('bar-rules-page');
@@ -1463,54 +1455,38 @@ function regulation(l){
   <article class="card"><h3>Risultati</h3><p>Live, punti e crediti diventano definitivi dopo la conferma dei risultati. Le quote mancanti sono indicate con ?. Le giornate già liquidate conservano il loro punteggio.</p></article>
  </div>`;
 }
-function calendarPage() {return serieACalendarPage();}
-
-function renderCalendarSections(rounds, draw) {
-  return calendarSections(rounds, state.calendar)
-    .map((section) =>
-      section.kind === "past"
-        ? '<details class="calendar-past"><summary>Giornate precedenti · ' +
-          section.rounds.length +
-          "</summary>" +
-          section.rounds.map((r) => draw(r, false)).join("") +
-          "</details>"
-        : '<section class="calendar-block"><h2>' +
-          section.label +
-          "</h2>" +
-          section.rounds
-            .map((r) => draw(r, section.kind === "current"))
-            .join("") +
-          "</section>",
-    )
-    .join("");
+function paintBarCalendar() {
+  const track=$('.bar-seriea-calendar');
+  if(track)patchRegion(track.firstElementChild,serieACalendar(state.calendar,barCalendar));
 }
-function serieACalendarPage() {
-  const c = state.calendar;
-  if (!c)
-    return '<div class="card">Calendario ufficiale disponibile nella versione Netlify.</div>';
-  return `<section class="hero"><div class="eyebrow">LEGA A · ${c.season}/${String(c.season + 1).slice(-2)}</div><h1>38 GIORNATE.<br><em>380 POSSIBILI SCUSE.</em></h1><p>Date, partite e risultati.</p></section>${renderCalendarSections(
-    c.rounds,
-    (r, focus) =>
-      `<details class="card" ${focus ? "open" : ""}><summary style="cursor:pointer;font:600 24px Barlow Condensed">Giornata ${r.number} <span class="muted tiny">· ${r.matches.every((m) => m.status === "FT" && m.score) ? "Conclusa" : r.date.split("-").reverse().join("/")}</span></summary>${groupMatches(
-        r.matches,
-      )
-        .map(
-          (day) =>
-            `<h3 class="day-heading">${esc(day.label)}</h3>${day.matches.map((m) => `<button class="row match-link full calendar-fixture" data-detail="${m.id}" style="border-bottom:1px solid var(--line);padding:12px 0"><span>${fixtureTeams(m.home, m.away)}</span><span class="${m.status === "FT" && m.score ? "green" : "muted"} tiny">${calendarStatus(m)}</span></button>`).join("")}`,
-        )
-        .join("")}</details>`,
-  )}`;
+function bindBarCalendar() {
+  const track=$('.bar-seriea-calendar');
+  if(!track)return;
+  restoreRoundCalendarScroll(track,barCalendar);
+  track.onclick=event=>{
+    const match=event.target.closest('[data-bar-calendar-match]');
+    if(match){void openMatch(match.dataset.barCalendarMatch,false,match,{fromCalendar:true});return;}
+    const header=event.target.closest('[data-bar-calendar-round]');
+    if(!header)return;
+    const number=Number(header.dataset.barCalendarRound);
+    barCalendar.openRound=header.getAttribute('aria-expanded')==='true'?-1:number;
+    paintBarCalendar();
+    const current=track.querySelector('[data-bar-calendar-round="'+number+'"]');
+    current?.focus({preventScroll:true});
+    current?.scrollIntoView({block:'nearest'});
+  };
 }
 function navigatePage(next) {
   if(next==='solleciti'&&L()?.admin!==state.user?.id)return;
   if(next==='admin'){if(page!=='admin')presidentNative=null;openPresidentOperation(null);return;}
   if(next===page)return;
   if(next==='quasi')quasiPane='mine';
+  if(next==='calendario'){barCalendar.openRound=null;barCalendar.calendarScroll=null;}
   presidentOperation=null;
   if(next!=='chat'&&chatOpen)closeLeagueChat();
   if(next==='schedina'){persistDraft();selectedRoundId=null;slipScope='mine';hydrateDraft();}
   sourceScope='seriea';
-  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',barleague:'lega'})[next]||next,league:L()?.id});
+  writeAppRoute({mode:'bar',page:({lega:'oggi',schedina:'schedina',classifiche:'classifica',calendario:'classifica',quasi:'quasi',profilo:'profilo',impostazioni:'impostazioni',regolamento:'regolamento',admin:'admin',barleague:'lega'})[next]||next,section:next==='calendario'?'calendario':null,league:L()?.id});
   if (next === "chat") { openLeagueChat(); return; }
   persistDraft();
   page = next;
@@ -1724,10 +1700,11 @@ function bind(l, r) {
     sourceScope=group?'fantacalcio':'seriea';competitionScope=group?.competitionKeys[0]||null;selectedRoundId=null;hydrateDraft();render();
   };
   document.querySelectorAll('[data-ranking-metric]').forEach(b=>b.onclick=()=>setBarRanking(b.dataset.rankingMetric));
-  if(['classifiche','seriea'].includes(page)){
+  if(['classifiche','seriea','calendario'].includes(page)){
    const main=$('#app main');
    if(main){bindSwipeBack(main,()=>stepBarRanking(1),'right');bindSwipeBack(main,()=>stepBarRanking(-1),'left');}
   }
+  if(page==='calendario')bindBarCalendar();
   if(page==='quasi'){
    document.querySelectorAll('[data-quasi-pane]').forEach(button=>button.onclick=()=>setQuasiPane(button.dataset.quasiPane));
    const main=$('#app main');
@@ -1955,7 +1932,7 @@ function updateSerieAMatchPage(dialog,match){
   dialog.dataset.lineupRevision=revision;
  }).catch(()=>{}).finally(()=>{if(active())delete dialog.dataset.pendingLineupRevision;});
 }
-async function openMatch(id, quiet = false, trigger) {
+async function openMatch(id, quiet = false, trigger, {fromCalendar=false}={}) {
   const fantasyRound = L()?.rounds.find(
     (r) => r.source === "fantacalcio" && r.matches.some((m) => m.id === id),
   );
@@ -2014,7 +1991,7 @@ async function openMatch(id, quiet = false, trigger) {
     if (!dialog.open || dialog.dataset.match !== id) return;
 
     const moveFocus=content.contains(document.activeElement);
-    mountFootballMatch(dialog,data);
+    mountFootballMatch(dialog,data,{initialTab:fromCalendar?calendarMatchTab(data):undefined});
     dialog.dataset.lineupRevision=data.lineups?.updatedAt||data.lineupRevision||'';
     const latest=matchRound.matches.find(m=>m.id===id);
     const newerScore=latest?.scoreUpdatedAt&&(!data.scoreUpdatedAt||Date.parse(latest.scoreUpdatedAt)>Date.parse(data.scoreUpdatedAt));
@@ -2099,21 +2076,6 @@ function bindNew(l, r) {
         rulesForm.elements.mode.value !== "classic";
       rulesForm.querySelector("[data-auto-points]").hidden =
         rulesForm.elements.mode.value === "classic";
-    };
-  document.querySelectorAll("[data-calendar-source]").forEach(
-    (b) =>
-      (b.onclick = () => {
-        calendarScope = b.dataset.calendarSource;
-        render();
-      }),
-  );
-  if ($("#calendar-competition"))
-    $("#calendar-competition").onchange = (e) => {
-      persistDraft();
-      competitionScope = e.target.value;
-      selectedRoundId = null;
-      hydrateDraft();
-      render();
     };
   document.querySelectorAll("[data-source]").forEach(
     (b) =>
@@ -2455,11 +2417,7 @@ function applyLive(data){
     const template=document.createElement('template');template.innerHTML=ranking(L());
     const current=$('main .card'),fresh=template.content.querySelector('.card');if(current&&fresh)patchRegion(current,fresh.outerHTML);
   }
-  for(const row of document.querySelectorAll('.calendar-fixture[data-detail]')){
-    const m=matches.find(m=>m.id===row.dataset.detail),score=row.lastElementChild;if(!m||!score)continue;
-    const text=calendarStatus(m);if(score.textContent!==text)score.textContent=text;
-    score.classList.toggle('green',m.status==='FT'&&!!m.score);
-  }
+  if(page==='calendario')paintBarCalendar();
   const dialog=$('#match-page-root');if(dialog?.open){
     const m=matches.find(m=>m.id===dialog.dataset.match);if(m){
       const fantasyRound=L().rounds.find(r=>sourceOf(r)==='fantacalcio'&&r.matches.some(x=>x.id===m.id));
