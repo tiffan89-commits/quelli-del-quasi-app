@@ -92,7 +92,14 @@ test('formation keeps the title out and the unavailable groups collapsed until o
   const unavailable=()=>panel.querySelector('details.match-availability');
   assert.equal(unavailable().hasAttribute('open'),false);
   unavailable().setAttribute('open','');
-  updateFootballMatch(page,match,{refreshLineup:true});
+  const header=page.querySelector('#close-modal'),tabs=page.querySelector('.live-match-tabs');
+  page._pitchPage=1;
+  page._pitchFlips=new Set([1]);
+  updateFootballMatch(page,{lineups:{kind:'official',teams}},{refreshLineup:true});
+  assert.equal(page.querySelector('#close-modal'),header);
+  assert.equal(page.querySelector('.live-match-tabs'),tabs);
+  assert.equal(panel.querySelector('[data-pitch-tab="1"]').getAttribute('aria-selected'),'true');
+  assert.equal(page._pitchFlips.has(1),true);
   assert.equal(unavailable().hasAttribute('open'),true);
   updateFootballMatch(page,{status:'1H'});
   assert.equal(unavailable(),null);

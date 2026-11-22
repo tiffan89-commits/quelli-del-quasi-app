@@ -1919,18 +1919,37 @@ async function matchSnapshot(match,round=null){
  if(!detailPending.has(key))detailPending.set(key,api('match?'+params).then(data=>{detailCache.set(key,{data,revision,at:Date.now()});if(state.user?.id===key.split(':')[0])displayCache('bar:'+state.user.id).set(key,{data,revision,at:Date.now()});if(detailCache.size>60)detailCache.delete(detailCache.keys().next().value);return data;}).finally(()=>detailPending.delete(key)));
  return {...match,...await detailPending.get(key)};
 }
+const pendingSerieALineups=new WeakMap();
+function refreshSerieALineup(dialog,id,revision){
+ if(!dialog.classList.contains('live-match-page')||!liveChannel.requestLineup)return;
+ const shown=dialog.dataset.lineupRevision;
+ if(revision&&(revision===shown||Date.parse(revision)<Date.parse(shown)))return;
+ const previous=pendingSerieALineups.get(dialog);
+ if(previous?.id===id&&previous.revision===revision)return;
+ const request={id,revision};
+ pendingSerieALineups.set(dialog,request);
+ void liveChannel.requestLineup(id,revision).then(fresh=>{
+  if(!fresh?.lineups||!dialog.open||dialog.dataset.match!==id||pendingSerieALineups.get(dialog)!==request)return;
+  const updated=fresh.lineupRevision,shown=dialog.dataset.lineupRevision;
+  if(!updated||updated===shown||Date.parse(updated)<Date.parse(shown)||Date.parse(updated)<Date.parse(revision))return;
+  updateFootballMatch(dialog,fresh,{refreshLineup:true});
+  dialog.dataset.lineupRevision=updated;
+ }).catch(()=>{}).finally(()=>{if(pendingSerieALineups.get(dialog)===request)pendingSerieALineups.delete(dialog);});
+}
 function updateSerieAMatchPage(dialog,match){
  if(!dialog.classList.contains('live-match-page'))return;
  updateFootballMatch(dialog,match);
- const revision=match.lineupRevision;
- if(!revision||revision===dialog.dataset.lineupRevision||revision===dialog.dataset.pendingLineupRevision)return;
- dialog.dataset.pendingLineupRevision=revision;
- const active=()=>dialog.open&&dialog.dataset.match===match.id&&dialog.dataset.pendingLineupRevision===revision;
- void matchSnapshot(match).then(fresh=>{
-  if(!active())return;
-  updateFootballMatch(dialog,fresh,{refreshLineup:true});
-  dialog.dataset.lineupRevision=revision;
- }).catch(()=>{}).finally(()=>{if(active())delete dialog.dataset.pendingLineupRevision;});
+ if(match.lineupRevision)refreshSerieALineup(dialog,match.id,match.lineupRevision);
+}
+function applySavedSerieALineups(lineups){
+ const rounds=[...(state.calendar?.rounds||[]),...(L()?.rounds||[])];
+ const updates=new Map(lineups.map(({id,revision})=>[id,revision]));
+ for(const round of rounds)for(const match of round.matches){
+  const revision=updates.get(match.id);
+  if(revision&&!(Date.parse(revision)<Date.parse(match.lineupRevision)))match.lineupRevision=revision;
+ }
+ const dialog=$('#match-page-root'),revision=updates.get(dialog?.dataset.match);
+ if(dialog?.open&&revision)refreshSerieALineup(dialog,dialog.dataset.match,revision);
 }
 async function openMatch(id, quiet = false, trigger, {fromCalendar=false}={}) {
   const fantasyRound = L()?.rounds.find(
@@ -1992,11 +2011,12 @@ async function openMatch(id, quiet = false, trigger, {fromCalendar=false}={}) {
 
     const moveFocus=content.contains(document.activeElement);
     mountFootballMatch(dialog,data,{initialTab:fromCalendar?calendarMatchTab(data):undefined});
-    dialog.dataset.lineupRevision=data.lineups?.updatedAt||data.lineupRevision||'';
+    dialog.dataset.lineupRevision=data.lineups?.updatedAt||'';
     const latest=matchRound.matches.find(m=>m.id===id);
     const newerScore=latest?.scoreUpdatedAt&&(!data.scoreUpdatedAt||Date.parse(latest.scoreUpdatedAt)>Date.parse(data.scoreUpdatedAt));
-    const newerLineup=latest?.lineupRevision&&latest.lineupRevision!==baseData.lineupRevision&&latest.lineupRevision!==dialog.dataset.lineupRevision;
+    const newerLineup=latest?.lineupRevision&&latest.lineupRevision!==dialog.dataset.lineupRevision;
     if(newerScore||newerLineup)updateSerieAMatchPage(dialog,latest);
+    if(!newerLineup&&data.lineups?.kind!=='official'&&Date.parse(data.kickoff)<=Date.now()+3600000)refreshSerieALineup(dialog,id);
     if(moveFocus)dialog.querySelector('#close-modal').focus({preventScroll:true});
     if (quiet) dialog.scrollTop = scroll;
   } catch (e) {
@@ -2471,7 +2491,7 @@ document.addEventListener('click',e=>{const operation=e.target.closest('[data-pr
 let liveScoresRevision=null,sportsFeedBlockedUntil=0;
 const liveChannel=createSportsPush({
   context:()=>!preferredFanta()&&state.user&&!state.user.demo&&state.user.emailVerified&&L()?{mode:'bar',league:L().id}:null,
-  apply:applyLive,status:showLiveStatus,
+  apply:applyLive,applyLineups:applySavedSerieALineups,status:showLiveStatus,
 });
 liveChannel.start();
 
