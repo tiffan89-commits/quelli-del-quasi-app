@@ -31,3 +31,25 @@ test('Serie A calendar opens the current round, shows live scores and minutes, a
  assert.equal(calendarMatchTab(matches[1]),'formazioni');
  assert.equal(calendarMatchTab(matches[2]),'formazioni');
 });
+
+test('Serie A calendar groups fixtures by Rome date and gives unscheduled matches one round reference date',()=>{
+ const matches=[
+  match('later','NS',{kickoff:'2026-11-28T14:00:00Z'}),
+  match('friday','NS',{kickoff:'2026-11-27T19:45:00Z'}),
+  match('after-midnight','NS',{kickoff:'2026-11-27T23:15:00Z'}),
+  match('unknown','NS',{kickoff:null}),
+  match('official-only','NS',{kickoff:null,officialKickoff:'2026-11-28T17:00:00Z'}),
+  match('postponed','PST',{kickoff:null})
+ ];
+ const calendar={season:2026,rounds:[{number:13,date:'2026-11-29',matches}]};
+ const document=parseHTML(serieACalendar(calendar,{now,openRound:13})).document;
+ const list=[...document.querySelectorAll('.fanta-cal-round li')];
+ assert.deepEqual(list.map(li=>(li.querySelector('.fanta-cal-score')??li).textContent.trim()),[
+  'ven 27 nov 2026','20:45','sab 28 nov 2026','00:15','15:00','18:00','Data del turno · dom 29 nov 2026','','Rinviata'
+ ]);
+ assert.deepEqual([...document.querySelectorAll('.ticket-day time')].map(el=>el.getAttribute('datetime')),[
+  '2026-11-27','2026-11-28','2026-11-29'
+ ]);
+ assert.equal(document.querySelector('[data-bar-calendar-match="friday"] time').getAttribute('datetime'),'2026-11-27T19:45:00Z');
+ assert.equal(serieACalendar(calendar,{now,openRound:13}).includes('Da definire'),false);
+});
