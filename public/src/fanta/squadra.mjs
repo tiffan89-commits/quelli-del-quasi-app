@@ -207,22 +207,26 @@ function playerList(data, d, filter, locked) {
   </section>`;
 }
 
-function deadlineCard(data, draft, sq, now) {
+function deadlineCard(data, now) {
   const r = data.round;
-  if (r.locked) return `<div class="fanta-deadline is-locked"><b>Giornata ${r.number} iniziata</b><span>${data.lineup?"La formazione è bloccata: la vedi qui sotto come l'hai salvata.":'Formazione non schierata: 0 fantapunti e 0 gol.'}</span></div>`;
+  if (r.locked) {
+    const title=`Giornata ${r.number}${r.state==='calcolata'?' conclusa':r.started===false?'':' in corso'}`;
+    const detail=data.lineup?'Formazione schierata':r.started===false?'Formazioni non ancora aperte.':'Formazione non schierata. 0 fantapunti e 0 gol.';
+    return `<div class="fanta-deadline is-locked"><b>${title}</b><span>${detail}</span></div>`;
+  }
   const left = countdown(r.deadline, now);
-  const state = sq.dirty ? '<span class="v2-state is-warn">Modifiche da salvare</span>'
-    : data.lineup ? `<span class="v2-state is-ok">Salvata ${esc(timeAgo(data.lineup.savedAt, now))} · la vede tutta la lega</span>`
+  const state = data.lineup ? `<span class="v2-state is-ok">Salvata ${esc(timeAgo(data.lineup.savedAt, now))} · la vede tutta la lega</span>`
     : '<span class="v2-state is-todo">Non ancora schierata</span>';
   return `<div class="fanta-deadline"><div><b>Giornata ${r.number}</b>${state}</div>
     <div class="dash-clock"><span>Chiude tra</span><strong data-countdown="${esc(r.deadline)}">${left || 'chiusa'}</strong></div></div>`;
 }
 
 function formationView(data, sq, now) {
-  const d=draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster),byId=new Map(data.roster.map(p=>[p.id,p]));
+  const players=[...data.roster,...(data.lineupPlayers||[])];
+  const d=draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},players),byId=new Map(players.map(p=>[p.id,p]));
   const studio=data.round.locked?'':'<button type="button" class="fanta-studio-open" data-studio="open">'+(sq.dirty?'Riprendi lo studio formazione →':data.lineup?'Modifica nello studio formazione →':'Apri lo studio formazione →')+'</button>';
-  const note=sq.dirty?'<p class="fanta-note is-info">Hai modifiche nello studio ancora da salvare. Qui vedi la formazione salvata.</p>':'';
-  return studio+deadlineCard(data,d,{...sq,dirty:false},now)+note+renderPitchFlip(savedPitch(d,byId),savedBench(d,byId),'Panchina',!!sq.benchFlipped);
+  const note=sq.dirty&&!data.round.locked?'<p class="fanta-note is-info">Hai modifiche nello studio ancora da salvare. Qui vedi la formazione salvata.</p>':'';
+  return studio+deadlineCard(data,now)+note+renderPitchFlip(savedPitch(d,byId),savedBench(d,byId),'Panchina',!!sq.benchFlipped);
 }
 
 export function rosterView(data, d, actions) {

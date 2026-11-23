@@ -7,7 +7,7 @@ import {comparisonView} from './comparison.mjs';
 import {tableResults} from './calculated-results.mjs';
 import {COMPETITION_TYPES,cupTables,sizeLocked,readyRosters} from './competitions.mjs';
 const team=t=>({id:t.id,name:t.name,manager:t.manager,color:t.color,branding:t.branding||{}});
-import {currentRound,lineupRound,lineupWindow} from './round-selection.mjs';
+import {currentRound,lineupRound,lineupWindow,teamLineupRound} from './round-selection.mjs';
 export {currentRound} from './round-selection.mjs';
 export function roundState(s,r,uid,now=Date.now()){
  if(r.data?.archivedWithoutResults)return 'archiviata';
@@ -57,18 +57,22 @@ export function leagueView(s,uid,now=Date.now(),{calendar=true}={}){
  return {league,isAdmin:admin,standingsProvisional:!!s.competition?.data?.summary?.provisional,competition:s.competition,competitions:(s.competitions||[]).map(c=>({...c,typeLabel:COMPETITION_TYPES[c.kind]})),sizeLocked:sizeLocked(s),readyToStart:readyRosters(s),groups:s.competition?.data?.summary?.groups||cupTables(s),importReview:admin?s.importReview||[]:[],members:s.teams.map(t=>({team:team(t),human:!!t.userId,isAdmin:t.userId===s.league.adminUid,isMe:t.userId===uid,joinedAt:t.joinedAt})),standings:(s.competition?.data?.summary?.standings||standings(s.teams.map(team),resultRows(s))).map(row=>({...row,team:team(s.teams.find(t=>t.id===row.team.id)||row.team)})),calendar:{current:r?.number||1,last:s.rounds.at(-1)?.number||0,rounds:calendar?s.rounds.map(x=>{const v=roundView(s,x,uid,now);return {...v.round,matchups:v.matchups};}):[]},
   rules:{...s.rules,scoring:[['Gol','+3'],['Assist','+1'],['Ammonizione','−0,5'],['Espulsione','−1'],['Autogol','−3'],['Gol subito (P)','−1'],['Rigore parato','+3'],['Rigore sbagliato','−3']],vote:'Voto statistico spiegato, basato sulla prestazione. Bonus e malus compongono il fantavoto.',modifier:{rule:'Portiere e tre migliori difensori, almeno quattro difensori',bands:[['meno di 6','0'],['6–6,49','+1'],['6,5–6,99','+2'],['da 7','+3']]},goals:'Un gol a 66 punti, poi uno ogni 6.',lineup:{formations:s.rules.formations,bench:'Senza limite',subs:'Senza limite, solo nello stesso ruolo. Il modulo resta invariato.',missing:'La formazione non schierata vale 0 fantapunti e 0 gol.'},table:'Punti, fantapunti, scontri diretti; infine spareggio se previsto.'},auction:{...s.auction,singlePlayerAvailable:singlePlayerAvailable(s),computerTeamsAvailable:computerTeamsAvailable(s),computerTeamsActive:computerTeamsActive(s),typeLabel:AUCTION_TYPES[s.auction.type]||'',types:AUCTION_TYPES,teams:auctionTeams(s)}};
 }
-export function teamView(s,uid,now=Date.now(),teamId){
- const t=s.teams.find(t=>teamId?t.id===teamId:t.userId===uid);if(!t)throw Object.assign(Error('Squadra non trovata'),{status:404});const r=lineupRound(s,now),lineup=r?savedLineup(s,t,r.number):null,previous=s.lineups.filter(l=>l.team_id===t.id&&l.round<r?.number&&!l.inherited_from).at(-1);
+export function teamView(s,uid,now=Date.now(),teamId,selection=teamLineupRound(s,now)){
+ const t=s.teams.find(t=>teamId?t.id===teamId:t.userId===uid);if(!t)throw Object.assign(Error('Squadra non trovata'),{status:404});
+ const {round:r,...phase}=selection,lineup=r?savedLineup(s,t,r.number):null,previous=s.lineups.filter(l=>l.team_id===t.id&&l.round<r?.number&&!l.inherited_from).at(-1);
  const publicLineup=l=>l?{formation:l.formation,starters:l.starters,bench:l.bench,savedAt:l.saved_at,round:l.round,needsRepair:!!l.source_data?.needsRepair,autoCoach:!!l.source_data?.autoCoach}:null;
  const imported=(!t.roster.length&&(lineup||previous)?.source_data?.players)||[],roster=t.roster.length?t.roster:imported,readOnly=imported.length>0;
  const importedNames=readOnly?new Map((s.players||[]).map(p=>[p.id,p.shirtName])):null;
- const window=lineupWindow(s,r,now);
+ const rosterIds=new Set(roster.map(p=>p.id));
+ const savedIds=new Set(phase.started&&lineup?[...lineup.starters,...lineup.bench].filter(id=>!rosterIds.has(id)):[]);
+ const pastPlayers=savedIds.size?[...(lineup?.source_data?.players||[]),...(s.players||[])].filter(p=>savedIds.delete(p.id)):[];
  const calendar=s.matchups.filter(m=>m.home_id===t.id||m.away_id===t.id).map(m=>{const round=s.rounds.find(x=>x.number===m.round),result=s.results.find(x=>x.matchup_id===m.id);return {id:m.id,round:m.round,kickoff:round?.deadline,official:!!(result?.official||round?.official),home:{team:team(s.teams.find(x=>x.id===m.home_id)),points:result?.data.home.points??null,goals:result?.data.home.goals??null},away:{team:team(s.teams.find(x=>x.id===m.away_id)),points:result?.data.away.points??null,goals:result?.data.away.goals??null}};});
- return {team:team(t),teamNameDeadline:s.teamNameDeadline??null,canManageRoster:s.league.adminUid===uid,rosterLocked:['running','scheduled'].includes(s.auction.status),canEdit:t.userId===uid,calendar,calendarCurrent:currentRound(s,now)?.number??r?.number,imported:readOnly,budget:{total:s.rules.budget,spent:readOnly?null:teamBudget(t,s.rules).spent,unrefunded:teamBudget(t,s.rules).unrefunded},round:{number:r?.number||1,state:r?roundState(s,r,uid,now):'da-schierare',deadline:window.deadline,locked:t.userId!==uid||readOnly||!window.open},rules:s.rules,roster:roster.map(p=>{
+ const displayPlayer=p=>{
   const {fixture:f,status}=lineupAvailability(p,s.fixtures,r?.seriea_round);
   const shirtName=importedNames?.get(p.id)??p.shirtName;
   return {...p,shirtName,name:playerDisplayName({...p,shirtName}),season:s.league.season,jersey:playerJersey({...p,season:s.league.season}),play:probabilityFor({...p,status},s.probables,r?.seriea_round),next:{opponent:f?.data?.teams?.[f.home_id===p.clubId?'away':'home']?.name||'',home:f?.home_id===p.clubId,kickoff:f?.kickoff||'',round:r?.number||1},stats:{played:null,avgVote:null,avgFanta:null,goals:0,assists:0,...p.stats,...s.presenceMinutes?.[p.id],teamMatches:s.fixtures.filter(f=>(f.home_id===p.clubId||f.away_id===p.clubId)&&['1H','HT','2H','ET','P','BT','LIVE','FT','AET','PEN'].includes(f.status)&&Date.parse(f.kickoff)<=now).length||p.matches},status};
- }),lineup:publicLineup(lineup),previous:publicLineup(previous)};
+ };
+ return {team:team(t),teamNameDeadline:s.teamNameDeadline??null,canManageRoster:s.league.adminUid===uid,rosterLocked:['running','scheduled'].includes(s.auction.status),canEdit:t.userId===uid,calendar,calendarCurrent:currentRound(s,now)?.number??r?.number,imported:readOnly,budget:{total:s.rules.budget,spent:readOnly?null:teamBudget(t,s.rules).spent,unrefunded:teamBudget(t,s.rules).unrefunded},round:{...phase,state:phase.official?'calcolata':phase.started?'in-corso':lineup?'schierata':'da-schierare',locked:t.userId!==uid||readOnly||!phase.open},rules:s.rules,roster:roster.map(displayPlayer),...(pastPlayers.length?{lineupPlayers:pastPlayers.map(displayPlayer)}:{}),lineup:publicLineup(lineup),previous:publicLineup(previous)};
 }
 export function lineupReminder(s,uid,round,now=Date.now()){
  if(s.league.adminUid!==uid||!round||round.official||s.competition?.status==='draft'||!(Date.parse(round.deadline)>now))return null;

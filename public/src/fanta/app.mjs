@@ -303,16 +303,22 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   }
 
   // ----- Squadra -----
+  let teamRequest=0;
   async function loadTeam({keepView=false}={}) {
-    const sq = ui.squadra;
+    const sq=ui.squadra,id=league()?.id,competition=ui.competitionId,revision=++teamRequest;
+    const stale=()=>destroyed||suspended||league()?.id!==id||competition!==ui.competitionId||revision!==teamRequest;
     const previous=sq.data;if(!keepView)sq.data = null; render();
     try {
-      const data = await api.team(league()?.id);
-      const keepDraft=keepView&&sq.dirty&&previous?.team.id===data.team.id&&previous?.round.number===data.round.number;
-      if(previous?.team.id!==data.team.id||previous?.round.number!==data.round.number)sq.benchFlipped=false;
+      const data=await api.team(id);
+      if(stale())return;
+      const changed=previous?.team.id!==data.team.id||previous?.round.number!==data.round.number;
+      const keepDraft=keepView&&sq.dirty&&!changed&&!data.round.locked;
+      if(changed)sq.benchFlipped=false;
+      if(ui.studio&&(changed||data.round.locked))closeLineupStudio();
       sq.data = data;sq.loadedAt=Date.now();
       if(!keepDraft)setDraft(draftFrom(data.lineup || { formation: data.previous?.formation || '4-4-2' }, data.roster), { keepMoved: false });
     } catch {
+      if(stale())return;
       if(keepView&&sq.data)sq.error='Aggiornamento non disponibile. La tua bozza è conservata.';else ui.error = 'Non riusciamo a leggere la tua squadra.';
     }
     render();
@@ -932,14 +938,23 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   }
   on(root,'change',e=>{if(e.target.id==='ranking-metric'){ui.lega.metric=e.target.value;render();}if(e.target.matches('[data-competition-switch]'))void switchCompetition(e.target.value);});
 
-  // Durante la giornata in corso rilegge sfida e risultati ogni minuto (stesso ritmo del canale live del Bar).
+  // Lo stesso canale aggiorna voti e risultati del live e l'apertura delle formazioni.
   const sportsStream=createSportsPush({
-    context:()=>{if(demo||destroyed||suspended||ui.mode!=='fanta')return null;if(ui.tab==='schedine'){const d=slips.context(slipContext());return d.league?{mode:'bar',league:d.league.id}:null;}if(ui.tab==='oggi'&&ui.home?.round?.state==='in-corso'){
+    context:()=>{if(demo||destroyed||suspended||ui.mode!=='fanta')return null;
+    if(ui.tab==='squadra'&&ui.squadra.data&&league()&&api.auctionSocket!==false)return {mode:'fanta-lineup',league:league().id,competition:ui.competitionId||ui.home?.competition?.id};
+    if(ui.tab==='schedine'){const d=slips.context(slipContext());return d.league?{mode:'bar',league:d.league.id}:null;}if(ui.tab==='oggi'&&ui.home?.round?.state==='in-corso'){
       const matchup=ui.home.match?.id||ui.home.match?.matchupId||(matchStories.key===storyKey()?matchStories.liveMatchup:null);
       if(matchup)return {mode:'fanta',league:league()?.id,competition:ui.home.competition?.id,round:ui.home.round.number,matchup};
     }return ui.tab==='giornata'&&ui.roundNumber&&ui.matchupId&&league()&&!ui.round?.round.official&&ui.round?.round.state!=='archiviata'?{mode:'fanta',league:league().id,competition:ui.competitionId||ui.home?.competition?.id||ui.lega.data?.competition?.id,round:Number(ui.roundNumber),matchup:ui.matchupId}:null;},
     apply:data=>{
       if(destroyed||suspended)return;
+      if(data.lineupRound&&ui.tab==='squadra'){
+        const round=ui.squadra.data?.round;
+        if(round&&['number','deadline','open','started','official'].some(key=>round[key]!==data.lineupRound[key])){
+          api.invalidateReads?.();void loadTeam({keepView:true});
+        }
+        return;
+      }
       if(data.round){
         if(ui.tab==='oggi'&&ui.home?.round?.state==='in-corso'&&data.round.round.number===ui.home.round.number&&data.matchup){
           if(data.round.round.state!=='in-corso'){api.invalidateReads?.();void load();return;}

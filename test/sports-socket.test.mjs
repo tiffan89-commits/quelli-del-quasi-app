@@ -30,6 +30,30 @@ test('sports client uses push only, drops stale contexts, and never creates an H
  sockets[0].fire('sports:update',{context:c,revision:'1',data:{score:1}});sockets[0].fire('sports:update',{context:c,revision:'1',data:{score:1}});assert.equal(applied.length,1);c={mode:'bar',league:'two'};await stream.wake();sockets[0].fire('sports:update',{context:{mode:'bar',league:'one'},revision:'2',data:{score:99}});assert.equal(applied.length,1);sockets[1].fire('sports:update',{context:c,revision:'2',data:{score:2}});assert.equal(applied[1].score,2);stream.stop();
 });
 
+test('Squadra receives the next formation window after the committed Serie A update',async()=>{
+ const server=http.createServer(),io=new Server(server,{transports:['websocket']});
+ const previous={number:3,deadline:'2026-11-21T14:00:00Z',started:true,open:false,official:false};
+ const next={number:4,deadline:'2026-11-27T19:45:00Z',started:false,open:true,official:false};
+ let status=previous,reads=0;
+ const hub=attachSportsSocket(io,{identify:async id=>({id,expires:Date.now()+60000}),store:{async teamLineupWatch(league,competition){
+  assert.equal(league,'l');assert.equal(competition,'main');reads++;
+  return {members:['u1','u2'],lineupRound:status};
+ }}});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const open=id=>client('http://127.0.0.1:'+server.address().port+'/sports',{transports:['websocket'],auth:{mode:'fanta-lineup',league:'l',competition:'main'},extraHeaders:{cookie:'sid='+id},reconnection:false});
+ const members=['u1','u2'].map(open),outsider=open('outsider');
+ try{
+  const [a,b]=await Promise.all([...members.map(s=>once(s,'sports:update')),once(outsider,'disconnect')]);
+  assert.deepEqual([a.data,b.data],[{lineupRound:previous},{lineupRound:previous}]);
+  assert.equal(reads,1);
+  const updates=members.map(s=>once(s,'sports:update'));
+  status=next;
+  await hub.refresh('bar');
+  assert.deepEqual((await Promise.all(updates)).map(m=>m.data),[{lineupRound:next},{lineupRound:next}]);
+  assert.equal(reads,2);
+ }finally{[...members,outsider].forEach(s=>s.disconnect());await hub.close();await new Promise(resolve=>io.close(resolve));}
+});
+
 test('committed results wake all viewers immediately without per-device reads or waiting a minute',async()=>{
  const server=http.createServer(),io=new Server(server,{transports:['websocket']}),s={league:{id:'l'},rules:{},teams:[{id:'a',name:'A',roster:[],userId:'u1'},{id:'b',name:'B',roster:[],userId:'u2'}],rounds:[{number:1,seriea_round:1,deadline:'2026-01-01'}],matchups:[{id:'m',round:1,home_id:'a',away_id:'b'}],players:[],fixtures:[],lineups:[],votes:[],results:[]};let reads=0;
  const hub=attachSportsSocket(io,{identify:async token=>({id:token,expires:Date.now()+60000}),store:{league:async(uid,id,fn)=>{reads++;return fn(s);}},intervalMs:60000});

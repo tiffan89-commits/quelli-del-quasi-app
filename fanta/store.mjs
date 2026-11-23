@@ -12,8 +12,9 @@ import {resolveLeagueBindings} from './player-identities.mjs';
 import {createHash} from 'node:crypto';
 import {DEFAULT_RULES,fail} from './rules.mjs';
 import {teamBudget} from './auction.mjs';
-import {currentRound,currentRoundNumberSQL} from './round-selection.mjs';
+import {currentRound,currentRoundNumberSQL,teamLineupRound} from './round-selection.mjs';
 const iso=x=>x instanceof Date?x.toISOString():x;
+const selectCompetition=param=>`SELECT c.* FROM fanta.competitions c WHERE c.league_id=l.id AND (${param}::text IS NULL OR c.id=${param}) ORDER BY CASE WHEN c.id=l.id||':main' THEN 0 ELSE 1 END,c.created_at,c.id LIMIT 1`;
 // A team's name is shared by every competition in the league.
 const FIRST_TEAM_KICKOFF=`(SELECT min(coalesce(
  (SELECT min(f.kickoff) FROM fanta.fixtures f WHERE f.season=l.season AND f.round=coalesce(first_round.seriea_round,c.start_round)),
@@ -46,7 +47,7 @@ function leagueReadSQL(roundOnly){
  (SELECT coalesce(jsonb_agg(v),'[]') FROM (SELECT DISTINCT ON(v.player_id) v.player_id,CASE WHEN $6::boolean THEN v.data ELSE jsonb_build_object('status',v.data->'status','vote',v.data->'vote','fantavote',v.data->'fantavote','events',v.data->'events','needsReview',v.data->'needsReview') END AS data,v.official FROM fanta.votes v JOIN fanta.fixtures f ON f.id=v.fixture_id WHERE f.season=l.season AND (NOT EXISTS(SELECT 1 FROM fanta.jobs WHERE id='votes:active-model') OR v.model_key=(SELECT data->>'key' FROM fanta.jobs WHERE id='votes:active-model')) AND f.round=(SELECT seriea_round FROM fanta.rounds r WHERE r.league_id=l.id AND r.competition_id=selected.id AND r.number=${currentRoundNumberSQL} LIMIT 1) ORDER BY v.player_id,v.id DESC) v) AS votes,
  (SELECT coalesce(jsonb_agg(i.data),'[]') FROM fanta.import_issues i WHERE i.league_id=l.id) AS review,
  (SELECT coalesce(jsonb_agg(b),'[]') FROM fanta.player_bindings b WHERE b.league_id=l.id) AS bindings
- FROM fanta.leagues l JOIN LATERAL(SELECT c.* FROM fanta.competitions c WHERE c.league_id=l.id AND ($4::text IS NULL OR c.id=$4) ORDER BY CASE WHEN c.id=l.id||':main' THEN 0 ELSE 1 END,c.created_at,c.id LIMIT 1) selected ON true WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`;
+ FROM fanta.leagues l JOIN LATERAL(${selectCompetition('$4')}) selected ON true WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`;
 }
 const READ_LEAGUE_SQL=leagueReadSQL(false),READ_ROUND_SQL=leagueReadSQL(true);
 function readState(l){
@@ -183,6 +184,17 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
     WHERE league_id=$1 AND id=$2`,[id,orderId,new Date(now).toISOString(),uid]);
    return rosterEditorView(state);
   })),
+  async teamLineupWatch(id,competition,now){return use(async c=>{
+   const {rows:[league]}=await c.query(`SELECT l.season,l.source_key,
+    ARRAY(SELECT t.user_id FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id IS NOT NULL) AS members,
+    (SELECT coalesce(jsonb_agg(jsonb_build_object('number',r.number,'seriea_round',r.seriea_round,'deadline',r.deadline,'official',r.official,
+     'data',jsonb_build_object('archivedWithoutResults',r.data->'archivedWithoutResults'))),'[]') FROM fanta.rounds r WHERE r.league_id=l.id AND r.competition_id=selected.id) AS rounds
+    FROM fanta.leagues l JOIN LATERAL(${selectCompetition('$2')}) selected ON true WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL`,[id,competition||null]);
+   if(!league)return null;
+   const submissionWindows=await readSerieARoundWindows(c,{season:league.season});
+   const {round,...lineupRound}=teamLineupRound({...league,submissionWindows},now);
+   return {sourceKey:league.source_key,members:league.members,lineupRound};
+  });},
   async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,roundOnly=false,teamIdentity=false,calculation=false,submissionWindows=false}={}){return use(async c=>{
    if(!write&&!auction&&!market){
     const scope=roundOnly&&!!number;

@@ -20,3 +20,15 @@ export function lineupWindow(state,round,now){
  if(!round||round.official||round.data?.archivedWithoutResults)return {deadline:round?.deadline??null,started:!!round?.official,open:false};
  return serieASubmissionWindow(state.submissionWindows??new Map(),round.seriea_round,round.deadline,now);
 }
+
+export function teamLineupRound(state,now=Date.now()){
+ const rounds=state.rounds.filter(r=>!r.data?.archivedWithoutResults).sort((a,b)=>a.number-b.number);
+ let played=null,upcoming=null;
+ for(const round of rounds){
+  const {deadline,open,started}=lineupWindow(state,round,now);
+  const phase={round,number:round.number,deadline,open,started,official:!!round.official};
+  if(started){played=phase;upcoming=null;}
+  else upcoming??=phase;
+ }
+ return (upcoming?.open?upcoming:played||upcoming)??{round:null,number:1,deadline:null,open:false,started:false,official:false};
+}
