@@ -14,7 +14,7 @@ export function studioChoices(tab,ownedIds=[],character='neutral'){
  const base=AVATAR_OPTIONS[tab]?.values||[['none',tab==='headwear'?'Senza copricapo':'Quasi fenomeno']];
  const free=tab==='outfit'&&character==='female'?[...base].sort(([a],[b])=>Number(wardrobeForFemale.has(b))-Number(wardrobeForFemale.has(a))):base;
  const standard=free.map(([value,label])=>({key:tab==='headwear'?'rewardHat':tab==='title'?'rewardTitle':tab,value,label}));
- const unlocked=ownedIds.map(rewardById).filter(r=>r?.type===rewardType[tab]).map(r=>({key:slotFor[tab],value:r.id,label:r.name,reward:r}));
+ const unlocked=ownedIds.map(rewardById).filter(r=>r?.type===rewardType[tab]).map(r=>({key:slotFor[tab],value:r.id,label:r.shortName,reward:r}));
  return [...(tab==='color'?[{key:'originalColor',value:'original',label:'Colore originale'}]:[]),...standard,...unlocked];
 }
 export function applyStudioChoice(draft,choice){

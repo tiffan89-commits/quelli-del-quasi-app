@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import {BASE_ROOMS,ROOM_REWARDS,canonicalRoomRewardId,roomById,roomAsset} from '../public/src/locker-rooms.mjs';
 import {AVATAR_OPTIONS,avatarSvg,normalizeAvatar} from '../public/src/avatar.mjs';
 import {REWARD_CATALOG} from '../public/src/reward-catalog.mjs';
-import {studioChoices,applyStudioChoice} from '../public/src/quasi-studio.mjs';
+import {STUDIO_TABS,studioChoices,applyStudioChoice} from '../public/src/quasi-studio.mjs';
 import {rosterView} from '../public/src/quasi-roster.mjs';
 import {syncRoundRewards,ownedRewardIds} from '../lib/progression.mjs';
 import {emptyState} from '../lib/db.mjs';
@@ -17,6 +17,18 @@ test('all forty rooms have separate packaged art; every legacy ID maps once to a
 test('studio shows free choices and only owned cosmetics; choosing base clears that reward slot',()=>{
  const choices=studioChoices('room',['room-100']);assert.equal(choices.length,11);assert.ok(choices.some(c=>c.value==='room-100'));assert.equal(studioChoices('room').length,10);
  const next=applyStudioChoice({rewardRoom:'room-100',rewardHat:'king-crown'},choices[0]);assert.equal(next.rewardRoom,'none');assert.equal(next.rewardHat,'king-crown');assert.equal(next.room,'base-room-01');
+});
+test('every studio tile has a distinct caption of at most two words in its category',()=>{
+ const ids=REWARD_CATALOG.map(reward=>reward.id);
+ for(const [category] of STUDIO_TABS){
+  const choices=studioChoices(category,ids),labels=new Set();
+  for(const {label,value} of choices){
+   assert.match(label??'',/^\S+(?: \S+)?$/,`${category}: ${value}`);
+   assert.equal(labels.has(label),false,`${category}: ${label}`);
+   labels.add(label);
+  }
+ }
+ assert.ok(studioChoices('outfit',ids).some(choice=>choice.label==='Quadretti blu'));
 });
 test('outfit colors recolor the fabric and pattern while retaining the unlocked garment and its original option',()=>{
  const kit=REWARD_CATALOG.find(r=>r.type==='outfit'&&r.motif===5&&r.color==='#5289b9');

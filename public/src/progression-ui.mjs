@@ -34,7 +34,7 @@ export function bindRewards(user,esc,onEquip){
   if(!root.open||grid.firstElementChild)return;
   const rewards=ownedRewards(user),rows=[];
   for(let i=0;i<rewards.length;i+=3){
-   rows.push(`<div class="reward-tile-row">${rewards.slice(i,i+3).map(reward=>`<button type="button" class="reward-tile" data-equip-reward="${esc(reward.id)}" aria-label="Indossa ${esc(reward.name)}"><span class="reward-tile-art" aria-hidden="true">${rewardImage(reward)}</span><span>${esc(reward.name)}</span></button>`).join('')}</div>`);
+   rows.push(`<div class="reward-tile-row">${rewards.slice(i,i+3).map(reward=>`<button type="button" class="reward-tile" data-equip-reward="${esc(reward.id)}" aria-label="Indossa ${esc(reward.shortName)}"><span class="reward-tile-art" aria-hidden="true">${rewardImage(reward)}</span><span>${esc(reward.shortName)}</span></button>`).join('')}</div>`);
   }
   grid.innerHTML=rows.join('');
  });
