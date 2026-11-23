@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.48.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.0...v0.48.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* conferma uscita dallo Studio e accorcia i colori ([#151](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/151)) ([3c1b670](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/3c1b670329f80fb37fe888f9b4e6b4c727faee54))
+
 ## [0.48.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.47.0...v0.48.0) (2026-11-23)
 
 
