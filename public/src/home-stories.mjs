@@ -3,6 +3,7 @@ import {esc} from './fanta/formato.mjs';
 
 const icons={
  winner:'<path d="M8 3h8v7a4 4 0 0 1-8 0zM8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 14v6m-4 1h8"/>',
+ 'winner-credits':'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
  results:'<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6m-6 4h6m-6 4h4"/>',
  rewards:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12m0-12C5 9 6 2 9 4c1 .7 3 4 3 4Zm0 0c7 1 6-6 3-4-1 .7-3 4-3 4Z"/>',
  crossings:'<path d="m3 17 6-6 4 4 7-8m-6 0h6v6"/>',

@@ -5,6 +5,7 @@ import {routeForTab} from '../public/src/v2/tabs.mjs';
 import {currentSlipRound} from '../public/src/slip-state.mjs';
 import {findBarSlip} from '../public/src/fanta/bar-slip.mjs';
 import {renderHome,homeTeam} from '../public/src/fanta/home.mjs';
+import {playableFantaSlip} from '../public/src/fanta/schedine.mjs';
 import {renderLega} from '../public/src/fanta/lega.mjs';
 import {fantasyMatchView} from '../public/src/bar-fanta-match.mjs';
 import {patchFantasyMatch} from '../public/src/fantasy-live-detail.mjs';
@@ -57,8 +58,28 @@ test('social Fanta home shows personal match stories, form, credits and a single
  assert.equal(doc.querySelectorAll('.bar-home-segments i').length,5);assert.equal(doc.querySelectorAll('.bar-home-segments .is-pending').length,2);
  assert.match(doc.querySelector('.home-last-footer').textContent,/480 cr schedina · 47 cr asta/);
  const saved=view({...home,lineup:{savedAt:'2026-11-19T08:00Z'},storyData:{}});
- assert.match(saved.querySelector('.bar-home-cta').textContent,/✓ Formazione · Giornata 5/);
+ assert.match(saved.querySelector('.bar-home-cta').textContent,/Modifica formazione · Giornata 5/);
  assert.equal(saved.querySelector('#fanta-story-market,#fanta-story-top'),null);
+});
+test('Fanta home links the open lineup and slip beside an older live round, using the saved state and exact destination',()=>{
+ const now=Date.parse('2026-11-19T08:00Z'),deadline='2026-11-20T16:00Z';
+ const ticket={...round,id:'open-slip',number:9,closed:false,kickoff:deadline,matches:[{...match,status:'NS',liveScore:null,kickoff:deadline}]};
+ const data={league:{},uid:'me',eligible:[ticket]};
+ const home={league:{id:'native'},me:{teamId:'me',teamName:'Casa'},round:{number:8,state:'in-corso'},
+  nextLineup:{round:9,deadline,open:true},playableSlip:playableFantaSlip(data,true,now)};
+ const view=h=>parseHTML(renderHome(h,now)).document;
+ const doc=view(home);
+ assert.match(doc.querySelector('.bar-home-cta').textContent,/Giornata 8 live/);
+ const lineup=doc.querySelector('[data-go="formazione"]'),slip=doc.querySelector('[data-go="schedine"]');
+ assert.match(lineup.textContent,/Schiera la formazione/);assert.equal(lineup.dataset.round,'9');
+ assert.match(slip.textContent,/Compila la schedina/);assert.equal(slip.dataset.round,'open-slip');
+ const saved=view({...home,nextLineup:{...home.nextLineup,savedAt:deadline},playableSlip:{...ticket,slip:{savedAt:deadline}}});
+ assert.match(saved.querySelector('[data-go="formazione"]').textContent,/Modifica formazione/);
+ assert.match(saved.querySelector('[data-go="schedine"]').textContent,/Modifica schedina/);
+ assert.equal(view({...home,nextLineup:{...home.nextLineup,open:false}}).querySelector('[data-go="formazione"]'),null);
+ assert.equal(playableFantaSlip(data,false,now),null);
+ assert.equal(playableFantaSlip({...data,eligible:[{...ticket,waitingForOpen:true}]},true,now),null);
+ assert.equal(playableFantaSlip(data,true,Date.parse(deadline)),null);
 });
 test('Fanta calendar renders in ascending order and opens the current round in the vertical track',()=>{
  const round=(number,state)=>({number,state,matchups:[]});

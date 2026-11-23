@@ -1505,6 +1505,7 @@ function nativeSlipServices(){return {
  league:{load:loadLeagueWorkspace,remove:removeLeagueParticipant,onRemoved:refreshMembershipAfterWrite},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
+ refreshSnapshot:()=>refresh(),
  save:async(payload,{onAcknowledged}={})=>{let result;try{result=await api('slip',payload);onAcknowledged?.();}catch(error){if(error.status===409){const next=await api('state?lite=1&ledger=0');if(Array.isArray(next?.leagues)){state=next;markPublicSlipChoices();}}throw error;}if(applyAcknowledgedSlip(result)){markPublicSlipChoices();return;}const next=Array.isArray(result?.state?.leagues)?result.state:Array.isArray(result?.leagues)?result:await api('state?lite=1&ledger=0');if(!Array.isArray(next?.leagues))throw Error('Schedina inviata. Ricarica per verificarne lo stato.');state=next;markPublicSlipChoices();},
  refresh:async id=>{if(!sportsWindowActive(state.calendar?.rounds||[]))return false;const before=JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);const data=await api('live?'+new URLSearchParams({league:id}));mergeLiveSnapshot(state,data);return before!==JSON.stringify(state.leagues.find(l=>l.id===id)?.rounds);}
 };}
@@ -2135,20 +2136,17 @@ function bindNew(l, r) {
       hydrateDraft();
       render();
     };
-  if ($("#share-verdict"))
-    $("#share-verdict").onclick = () => {
+  document.querySelectorAll('[data-verdict-card]').forEach(button=>{
+    button.onclick = () => {
+      const category=button.dataset.verdictCard;
       const d=openMatchPage({kind:'postcard',label:'Cartolina del Bar',swipeBack:'both'});
       const fit=()=>{
-        const card=d.querySelector('.verdict-postcard'),portrait=d.querySelector('.postcard-quasi');
-        if(!card||!portrait)return;
         const nav=document.querySelector('.v2-tabbar')?.getBoundingClientRect();
         const bottom=nav?.top>window.innerHeight/2?nav.top:window.innerHeight;
         d.style.setProperty('--postcard-height',Math.floor(bottom-d.getBoundingClientRect().top)+'px');
-        const width=Math.floor(portrait.clientWidth+(bottom-card.getBoundingClientRect().bottom-10)*.8);
-        d.style.setProperty('--postcard-quasi-width',Math.max(76,Math.min(220,width))+'px');
       };
       const show=uid=>{
-        d.innerHTML='<div class="verdict-page-toolbar">'+backButton('id="close-modal"','Torna al verdetto')+'</div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id);
+        d.innerHTML='<div class="verdict-page-toolbar">'+backButton('id="close-modal"','Torna al verdetto')+'</div>'+createVerdictCard(l,sourceScope,competitionScope,uid,r?.id,{category});
         d.querySelector('#close-modal').onclick=()=>d.close();
         d.querySelectorAll('[data-verdict-player]').forEach(b=>b.onclick=()=>show(b.dataset.verdictPlayer));
         fit();
@@ -2157,6 +2155,7 @@ function bindNew(l, r) {
       d.addEventListener('close',()=>window.removeEventListener('resize',fit),{once:true});
       show();
     };
+  });
   bindChoices(r);
   if ($("#stake"))
     $("#stake").oninput = (e) => {

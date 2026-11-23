@@ -27,7 +27,11 @@ export function quasiScene(value,name,{compact=false,eager=false}={}){
 }
 const equippedRoom=a=>a.rewardRoom!=='none'?a.rewardRoom:a.room;
 export function quasiHomeBackdrop(value){const room=equippedRoom(normalizeAvatar(value));return `<img class="bar-home-room" src="${roomAsset(room,'hero')}" width="640" height="800" alt="" aria-hidden="true" decoding="async">`;}
-export function quasiMascot(value,name){return `<button type="button" class="bar-home-mascot" data-open-quasi-studio aria-label="Modifica il tuo Quasi, ${esc(name)}">${quasiArt(normalizeAvatar(value))}<span class="home-edit-mark" aria-hidden="true">✎</span></button>`;}
+export function quasiMascot(value,name,{editable=true}={}){
+ const art=quasiArt(normalizeAvatar(value));
+ if(!editable)return `<div class="postcard-quasi">${art}<strong class="postcard-name">${esc(name)}</strong></div>`;
+ return `<button type="button" class="bar-home-mascot" data-open-quasi-studio aria-label="Modifica il tuo Quasi, ${esc(name)}">${art}<span class="home-edit-mark" aria-hidden="true">✎</span></button>`;
+}
 export function quasiBanner(value,name,{welcome=false}={}){
  const a=normalizeAvatar(value),room=equippedRoom(a);
  return `<button type="button" class="dash-scene" data-open-quasi-studio aria-label="Modifica il tuo Quasi, ${esc(name)}"><img class="dash-scene-room" src="${roomAsset(room,'hero')}" srcset="${roomMedia(room)?.hero.width!==roomMedia(room)?.full.width?roomAsset(room,'hero')+' '+roomMedia(room).hero.width+'w, ':''}${roomAsset(room)} ${roomMedia(room)?.full.width||640}w" sizes="(min-width:900px) 1180px, calc(100vw - 36px)" width="640" height="800" fetchpriority="high" alt="" loading="eager" decoding="async"><span class="dash-scene-shade"></span><span class="dash-scene-person">${quasiArt(a)}</span>${welcome?'<span class="quasi-welcome-edit"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 16 11-11a2.8 2.8 0 0 1 4 4L8 20l-5 1 1-5Zm9-9 4 4"/></svg></span>':'<span class="dash-scene-edit">Il mio Quasi ✎</span>'}</button>`;

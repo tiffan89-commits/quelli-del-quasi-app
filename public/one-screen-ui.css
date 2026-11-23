@@ -374,18 +374,28 @@ html.os-on main.os-root .president-panel .president-body{padding:2px 10px 10px}
 html.os-on main.os-root .verdict-content .community-grid{grid-template-columns:minmax(0,1fr)}
 html.os-on main.os-root .verdict-content .community-grid>.card{padding:8px 10px!important}
 html.os-on main.os-root .verdict-content .verdict-honours>summary{font-size:13px;font-weight:700}
-.verdict-points-label{margin:12px 0 0;color:var(--muted);font-size:13px}
-.verdict-points-label+.verdict-winner{margin-top:2px}
-.verdict-strategy{margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--lime) 8%,transparent)}
-.verdict-strategy h3{margin:0 0 5px;font:700 21px/1.05 'Barlow Condensed',sans-serif;color:var(--lime)}
-.verdict-strategy p{margin:3px 0;font-size:13px}
-.verdict-strategy p:first-of-type{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:3px 12px}
-.verdict-strategy p span{white-space:nowrap;font-weight:700;color:var(--lime)}
-.verdict-almost{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
-.verdict-almost h3{margin:0 0 4px;font-size:14px}
-.verdict-almost .almost-row{padding:4px 0}
-.verdict-almost .almost-row strong{margin-right:8px}
-.verdict-almost .almost-row p{margin:2px 0;font-size:12px}
+.verdict-participants{margin:0 0 10px;color:var(--muted);font-size:13px}
+.verdict-awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr));gap:8px}
+.verdict-award,.verdict-postcard{--verdict-accent:#ffd087}
+[data-verdict-award="credits"]{--verdict-accent:#8be6bb}
+.verdict-award{
+ display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;padding:11px;
+ border:1px solid color-mix(in srgb,var(--verdict-accent) 49%,var(--panel));border-radius:13px;
+ background:linear-gradient(152deg,color-mix(in srgb,var(--verdict-accent) 17%,var(--panel)),var(--panel) 88%);
+}
+.verdict-award h3,.verdict-almost h3{margin:0;font:700 clamp(20px,5vw,25px)/1.05 'Barlow Condensed',sans-serif}
+.verdict-award h3,.verdict-award-value{color:var(--verdict-accent)}
+.verdict-award .verdict-award-names{margin:1px 0;font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.verdict-award .verdict-award-value{font:700 25px/1 'Barlow Condensed',sans-serif}
+.verdict-award-value small{font-size:.61em;white-space:nowrap}
+.verdict-award .verdict-award-note{margin:1px 0 3px;color:var(--muted);font-size:11px;line-height:1.25}
+.verdict-award button{margin-top:auto;min-height:34px;padding:3px 7px;font-size:11px;white-space:nowrap}
+.verdict-almost{margin-block:10px;padding:11px;border:1px solid color-mix(in srgb,#ffad93 45%,var(--panel));border-radius:13px;background:color-mix(in srgb,#ffad93 9%,var(--panel))}
+.verdict-almost h3{color:#ffb8a2}
+.verdict-almost .almost-row{padding:7px 0 0;margin-top:7px}
+.almost-row-heading{display:flex;flex-wrap:wrap;gap:3px 10px;align-items:baseline;justify-content:space-between}
+.almost-row-heading span{color:#ffb8a2;font-weight:700;font-size:12px}
+.verdict-almost .almost-row p{margin:4px 0;font-size:12px}
 html.os-on main.os-root .verdict-content .verdict-honours{padding:7px 10px;margin-block:5px}
 .os-drill-target .community-grid{display:block!important}
 .os-track.os-drill .os-drill-parent.community-grid{display:block!important}
@@ -409,34 +419,43 @@ body.match-page-active main.match-page.verdict-page{
 }
 .verdict-page-toolbar{display:flex;justify-content:flex-start;margin-bottom:4px}
 .verdict-page-toolbar .secondary{min-height:34px;padding:4px 9px}
-.verdict-page .verdict-postcard{padding:8px 12px;text-align:center}
-.verdict-page .verdict-postcard h2{font-size:23px;margin:2px 0}
-.verdict-page .verdict-postcard>p{margin:2px 0;font-size:12px}
-.verdict-page .postcard-winner{margin:5px auto}
-.verdict-page .postcard-quasi{width:min(65vw,var(--postcard-quasi-width,140px))}
-.verdict-page .postcard-quasi .quasi-scene-caption{display:none}
-.verdict-page .postcard-quasi .quasi-scene-person{inset:9% 8% 7%}
-.verdict-page .postcard-winner h3{font-size:23px;margin:2px 0}
-.verdict-page .postcard-quip{font-size:11px;line-height:1.2}
-.verdict-page .postcard-bets{grid-template-columns:repeat(5,minmax(0,1fr))!important}
-.verdict-page .postcard-bets .bar-bet{min-height:32px;padding:3px}
-.verdict-page .postcard-bets .bar-teams{font-size:8px}
-.verdict-page .postcard-totals{padding:5px 0;font-size:12px}
-.verdict-page .verdict-postcard>small{display:none}
-.verdict-page .verdict-postcard>.v2-chips{flex-wrap:nowrap;overflow:auto;scrollbar-width:none}
+.verdict-page>.verdict-postcard{max-width:500px;margin-inline:auto}
+.verdict-postcard{
+ display:grid;gap:8px;min-width:0;padding:0;background:none;border-radius:0;
+}
+.verdict-postcard .postcard-winner{
+ position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr) minmax(76px,34%);
+ align-items:stretch;gap:4px;min-width:0;width:100%;max-width:none;margin:0;text-align:start;overflow:hidden;
+ border:1px solid var(--line);border-radius:14px;background:var(--panel);
+}
+.postcard-winner::after{
+ content:"";position:absolute;inset:0;z-index:-1;
+ background:linear-gradient(90deg,#0c1815f2 7%,#0c1815e0 52%,#0c181545);
+}
+.postcard-winner .postcard-copy{display:grid;align-content:center;gap:4px;min-width:0;padding:9px 0 9px 10px;overflow-wrap:anywhere}
+.postcard-winner .postcard-copy h2{margin:0;font:700 clamp(21px,5.4vw,29px)/1 'Barlow Condensed',sans-serif;color:var(--verdict-accent)}
+.postcard-winner .postcard-context{margin:0;color:var(--white);font-size:11px}
+.postcard-winner .postcard-score{margin:0;text-align:start;color:var(--verdict-accent);font-size:17px;line-height:1.14}
+.postcard-score small{color:var(--white);font-size:11px;font-weight:600;white-space:nowrap}
+.postcard-winner .postcard-quip{margin:0;color:var(--white);font-size:11px;line-height:1.28}
+.verdict-postcard .postcard-quasi{display:grid;grid-template-rows:minmax(0,1fr) auto;justify-items:center;min-width:0;position:relative;width:auto;margin:0;padding:4px}
+.postcard-quasi .quasi-avatar{width:100%;height:clamp(61px,13dvh,101px);object-fit:contain;object-position:bottom;align-self:end;filter:drop-shadow(0 4px 5px #0008)}
+.postcard-quasi .postcard-name{z-index:1;width:100%;padding:3px;border-radius:6px;background:#0c1815ed;color:var(--white);text-align:center;font-size:clamp(9px,2.5vw,12px);line-height:1.1;overflow-wrap:anywhere}
+.verdict-postcard .postcard-bets{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px}
+.verdict-postcard .postcard-bets .bar-bet{min-width:0;min-height:37px;padding:3px 0;gap:1px}
+.verdict-postcard .postcard-bets .bar-teams{font-size:clamp(7px,2.13vw,10px);letter-spacing:0}
+.verdict-postcard .postcard-bets .bar-teams i{margin:0}
+.verdict-postcard .postcard-bets .bar-bet strong{font-size:16px}
+.verdict-postcard .bar-stub-head{letter-spacing:.04em;text-transform:uppercase}
+.verdict-postcard .bar-stub-head span:last-child{font-size:11px;white-space:nowrap}
+.verdict-postcard .postcard-totals{padding:1px 2px;align-items:center;font-size:12px}
+.verdict-postcard .postcard-totals small{color:var(--muted)}
+.verdict-postcard .postcard-totals b{display:inline}
+.verdict-page .verdict-postcard>.v2-chips{margin:0;flex-wrap:nowrap;overflow:auto;scrollbar-width:none}
 @media(max-height:730px){
  .verdict-page .verdict-page-toolbar .secondary{min-height:28px;padding-block:3px}
- .verdict-page .verdict-postcard{padding:4px 9px}
- .verdict-page .verdict-postcard h2,.verdict-page .postcard-winner h3{font-size:19px;line-height:1.1}
- .verdict-page .postcard-winner{margin:3px auto}
- .verdict-page .verdict-postcard>.v2-chips{margin:2px 0;gap:3px}
+ .verdict-page .verdict-postcard>.v2-chips{gap:3px}
  .verdict-page .verdict-postcard>.v2-chips>.v2-chip{min-height:25px;padding:3px 7px;font-size:10px}
- .verdict-page .bar-stub{padding:5px}
- .verdict-page .bar-stub-head{padding-bottom:3px;margin-bottom:4px}
- .verdict-page .postcard-bets .bar-bet{gap:1px;padding:2px}
- .verdict-page .postcard-bets .bar-bet strong{font-size:16px}
- .verdict-page .postcard-totals{padding-block:3px}
- .verdict-page .postcard-totals b{display:inline}
 }
 
 html.os-on main.os-root .fanta-home-compact{display:block!important}

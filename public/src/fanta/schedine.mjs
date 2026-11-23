@@ -1,4 +1,4 @@
-import {slipCreditReserve,slipStakeLimit} from '../../slip-events.mjs';
+import {eventDeadline,slipCreditReserve,slipStakeLimit} from '../../slip-events.mjs';
 import {fantasyMatchHeadline} from '../bar-fanta-match.mjs';
 import {createSportsPush} from '../sports-push.mjs';
 import {openMatchPage} from '../match-page.mjs';
@@ -21,6 +21,13 @@ export function fantaSlipContext(snapshot,leagueId,competitionId){
  const league=leagueId?snapshot?.leagues?.find(l=>l.nativeFantaLink?.leagueId===leagueId):undefined;
  const rounds=(league?.rounds||[]).filter(r=>r.nativeFanta&&r.nativeFanta.leagueId===leagueId&&(!competitionId||r.nativeFanta.competitionId===competitionId)&&!r.archived);
  return {league,rounds,uid:snapshot?.user?.id,calendar:snapshot?.calendar};
+}
+export function playableFantaSlip({league,eligible,uid},enabled,now=Date.now()){
+ if(!league||!uid||enabled===false||league.fantaSlipsEnabled===false)return null;
+ const round=eligible.find(round=>!editingClosed(round,now)&&roundAvailability(round,now)==='aperta');
+ if(!round)return null;
+ const deadline=round.eventBetting?Math.max(...round.matches.filter(m=>!editingEventLocked(round,m,now)&&['1','X','2'].some(k=>Number.isFinite(m.odds?.[k])&&m.odds[k]>1)).map(m=>eventDeadline(round,m))):Date.parse(round.deadline||round.kickoff);
+ return {...round,homeDeadline:Number.isFinite(deadline)?new Date(deadline).toISOString():null};
 }
 const date=value=>new Date(value).toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 const fmt=n=>pts(n,Number.isInteger(Number(n))?0:2);

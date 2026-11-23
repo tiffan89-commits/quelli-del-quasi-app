@@ -48,12 +48,12 @@ test('a newly settled Bar round shows the same winning postcards to members who 
  mergeLiveSnapshot({leagues:[league]},{league:'l',rounds:[{id:'new',closed:true,settled:true,matches:[],publicSlips:members.slice(0,2).map(m=>({uid:m.uid,points:5,pointsSettled:true,stake:10,prize:20,picks:{m:'1'}}))}]});
  const story=render('c');
  assert.equal(story.innerHTML,render('a').innerHTML);
- assert.match(story.innerHTML,/Vincitori di giornata/);
+ assert.match(story.innerHTML,/Vincitori ai punti/);
  assert.match(story.innerHTML,/1\/1 prese/);
- assert.deepEqual([...story.content.querySelectorAll('.postcard-winner h3')].map(el=>el.textContent),['Anna','Bruno']);
+ assert.deepEqual([...story.content.querySelectorAll('.postcard-name')].map(el=>el.textContent),['Anna','Bruno']);
  assert.equal(story.content.querySelector('[data-verdict-player]'),null);
  current.publicSlips[1].points=3;
- assert.match(render('c').innerHTML,/Vincitore di giornata/);
+ assert.match(render('c').innerHTML,/Vincitore ai punti/);
  assert.doesNotMatch(render('c').innerHTML,/Bruno|Carla|Giornata 9/);
 });
 
