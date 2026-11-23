@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.48.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.1...v0.48.2) (2026-11-23)
+
+
+### Bug Fixes
+
+* evidenzia i vincitori del Bar e aggiunge i collegamenti Fanta ([#153](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/153)) ([fcfdebb](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/fcfdebbf053697b355efc2e1795bc0dd7f9ec4d1))
+
 ## [0.48.1](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.0...v0.48.1) (2026-11-23)
 
 
