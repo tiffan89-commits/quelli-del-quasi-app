@@ -4,6 +4,7 @@ import {rewardById,REWARD_SLOTS,REWARD_CATALOG} from './reward-catalog.mjs';
 import {roomAsset} from './locker-rooms.mjs';
 import {BACK_ICON} from './back-navigation.mjs';
 import {bindSwipeBack} from './match-page.mjs';
+import {askConfirmation} from './site-confirm.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const STUDIO_TABS=[['character','Personaggio','◉'],['body','Fisico','↔'],['skin','Incarnato','●'],['hair','Capelli','⌁'],['beard','Barba','⌄'],['outfit','Abiti','♧'],['color','Colore abiti','◐'],['accessory','Portafortuna','✧'],['headwear','Copricapi','♛'],['title','Titoli','✦'],['room','Spogliatoi','⌂']];
 const slotFor={outfit:'rewardOutfit',color:'rewardColor',accessory:'rewardCharm',headwear:'rewardHat',title:'rewardTitle',room:'rewardRoom'};
@@ -15,7 +16,7 @@ export function studioChoices(tab,ownedIds=[],character='neutral'){
  const free=tab==='outfit'&&character==='female'?[...base].sort(([a],[b])=>Number(wardrobeForFemale.has(b))-Number(wardrobeForFemale.has(a))):base;
  const standard=free.map(([value,label])=>({key:tab==='headwear'?'rewardHat':tab==='title'?'rewardTitle':tab,value,label}));
  const unlocked=ownedIds.map(rewardById).filter(r=>r?.type===rewardType[tab]).map(r=>({key:slotFor[tab],value:r.id,label:r.shortName,reward:r}));
- return [...(tab==='color'?[{key:'originalColor',value:'original',label:'Colore originale'}]:[]),...standard,...unlocked];
+ return [...(tab==='color'?[{key:'originalColor',value:'original',label:'Originale'}]:[]),...standard,...unlocked];
 }
 export function applyStudioChoice(draft,choice){
  if(choice.key==='originalColor')return normalizeAvatar({...draft,color:DEFAULT_AVATAR.color,rewardColor:'none',customOutfitColor:false});
@@ -34,7 +35,7 @@ export function applyStudioChoice(draft,choice){
 export function openQuasiStudio({user,api,onSaved,initialReward}){
  if(document.querySelector('.quasi-studio'))return;
  const owned=[...new Set((user.rewards||[]).flatMap(a=>a.ids))];let draft=normalizeAvatar(user.avatar,owned),original=JSON.stringify(draft),tab='outfit',limit=24,saving=false;
- let nickname=user.name,nicknameEditing=false;
+ let nickname=user.name,nicknameEditing=false,confirmingExit=false;
  const reward=owned.includes(initialReward)?rewardById(initialReward):null;
  if(reward){draft=applyStudioChoice(draft,{key:REWARD_SLOTS[reward.type],value:reward.id});tab=Object.keys(rewardType).find(k=>rewardType[k]===reward.type)||tab;}
  const dialog=document.createElement('dialog');dialog.className='quasi-studio';dialog.setAttribute('aria-label','Modifica il tuo Quasi');
@@ -42,7 +43,20 @@ export function openQuasiStudio({user,api,onSaved,initialReward}){
  document.body.append(dialog);document.documentElement.classList.add('studio-active');
  const status=dialog.querySelector('.studio-status'),options=dialog.querySelector('.studio-options');
  const close=()=>{if(saving)return;dialog.close();dialog.remove();document.documentElement.classList.remove('studio-active');document.querySelector('[data-quasi-edit]')?.focus({preventScroll:true});};
- const attemptClose=()=>{if(saving)return;if(JSON.stringify(draft)===original&&nickname===user.name){close();return;}status.innerHTML='Modifiche non salvate. <button type="button" data-continue>Resta qui</button><button type="button" data-discard>Esci senza salvare</button>';status.querySelector('[data-discard]').onclick=close;status.querySelector('[data-continue]').onclick=()=>status.textContent='';};
+ const attemptClose=async()=>{
+  if(saving||confirmingExit)return;
+  if(JSON.stringify(draft)===original&&nickname===user.name){close();return;}
+  confirmingExit=true;
+  try{
+   if(await askConfirmation({
+    title:'Uscire dallo Studio?',
+    message:'Le modifiche al tuo Quasi andranno perse.',
+    cancelLabel:'Resta qui',
+    confirmLabel:'Esci senza salvare',
+    danger:true,
+   }))close();
+  }finally{confirmingExit=false;}
+ };
  const preview=({focus=false}={})=>{
   const region=dialog.querySelector('.studio-preview');
   region.innerHTML=quasiScene(draft,nickname,{eager:true});
@@ -80,7 +94,8 @@ export function openQuasiStudio({user,api,onSaved,initialReward}){
   options.dataset.studioCategory=tab;
   const rewardIndex=reward?choices.findIndex(c=>c.reward?.id===reward.id):-1;
   if(rewardIndex>0)choices.unshift(...choices.splice(rewardIndex,1));
-  options.innerHTML=choices.slice(0,limit).map((c,i)=>`<button type="button" class="studio-choice ${tab==='room'?'studio-room-choice':''} ${tab==='title'?'studio-title-tile':''}" data-studio-choice="${i}" aria-label="${esc(c.label)}" aria-pressed="${selected(c)}">${art(c)}<small>${esc(c.label)}</small>${c.reward?'<span class="studio-earned" aria-label="Premio conquistato">✦</span>':''}</button>`).join('')+(choices.length>limit?'<button type="button" class="studio-choice studio-more">Altre anteprime +</button>':'');
+  const accessibleLabel=c=>c.key==='originalColor'?'Colore originale':c.reward?.colorTone?c.label+' '+c.reward.colorTone:c.label;
+  options.innerHTML=choices.slice(0,limit).map((c,i)=>`<button type="button" class="studio-choice ${tab==='room'?'studio-room-choice':''} ${tab==='title'?'studio-title-tile':''}" data-studio-choice="${i}" aria-label="${esc(accessibleLabel(c))}" aria-pressed="${selected(c)}">${art(c)}<small>${esc(c.label)}</small>${c.reward?'<span class="studio-earned" aria-label="Premio conquistato">✦</span>':''}</button>`).join('')+(choices.length>limit?'<button type="button" class="studio-choice studio-more">Altre anteprime +</button>':'');
   options.querySelectorAll('[data-studio-choice]').forEach(b=>b.onclick=()=>{if(saving)return;draft=applyStudioChoice(draft,choices[Number(b.dataset.studioChoice)]);preview();status.textContent='';options.querySelectorAll('[data-studio-choice]').forEach(x=>x.setAttribute('aria-pressed',String(selected(choices[Number(x.dataset.studioChoice)]))));});
   const more=options.querySelector('.studio-more');if(more)more.onclick=()=>{limit+=24;renderOptions(true);};options.scrollLeft=preserve?previous:0;
  };

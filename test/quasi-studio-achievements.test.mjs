@@ -18,14 +18,15 @@ test('studio shows free choices and only owned cosmetics; choosing base clears t
  const choices=studioChoices('room',['room-100']);assert.equal(choices.length,11);assert.ok(choices.some(c=>c.value==='room-100'));assert.equal(studioChoices('room').length,10);
  const next=applyStudioChoice({rewardRoom:'room-100',rewardHat:'king-crown'},choices[0]);assert.equal(next.rewardRoom,'none');assert.equal(next.rewardHat,'king-crown');assert.equal(next.room,'base-room-01');
 });
-test('every studio tile has a distinct caption of at most two words in its category',()=>{
+test('studio names fit in two words, and color names use one word with distinct swatches',()=>{
  const ids=REWARD_CATALOG.map(reward=>reward.id);
  for(const [category] of STUDIO_TABS){
   const choices=studioChoices(category,ids),labels=new Set();
-  for(const {label,value} of choices){
-   assert.match(label??'',/^\S+(?: \S+)?$/,`${category}: ${value}`);
-   assert.equal(labels.has(label),false,`${category}: ${label}`);
-   labels.add(label);
+  for(const {label,value,reward} of choices){
+   assert.match(label??'',category==='color'?/^\S+$/:/^\S+(?: \S+)?$/,`${category}: ${value}`);
+   const identity=category==='color'?`${label} ${reward?.color??value}`:label;
+   assert.equal(labels.has(identity),false,`${category}: ${identity}`);
+   labels.add(identity);
   }
  }
  assert.ok(studioChoices('outfit',ids).some(choice=>choice.label==='Quadretti blu'));
