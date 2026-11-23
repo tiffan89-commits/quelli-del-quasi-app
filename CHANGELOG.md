@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.47.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.46.0...v0.47.0) (2026-11-23)
+
+
+### Features
+
+* migliora Rosa e Formazione nella scheda Squadra ([#147](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/147)) ([78e4974](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/78e4974e74a6304cfa2638e9e8cb2e863712492b))
+
 ## [0.46.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.45.4...v0.46.0) (2026-11-22)
 
 
