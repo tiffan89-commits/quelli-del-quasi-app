@@ -1,21 +1,33 @@
-import {AVATAR_OPTIONS,normalizeAvatar,avatarSvg} from './avatar.mjs';
+import {AVATAR_OPTIONS,DEFAULT_AVATAR,normalizeAvatar,avatarSvg} from './avatar.mjs';
 import {quasiScene} from './quasi-scene.mjs';
 import {rewardById,REWARD_SLOTS,REWARD_CATALOG} from './reward-catalog.mjs';
 import {roomAsset} from './locker-rooms.mjs';
 import {BACK_ICON} from './back-navigation.mjs';
 import {bindSwipeBack} from './match-page.mjs';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export const STUDIO_TABS=[['character','Personaggio','◉'],['body','Fisico','↔'],['skin','Incarnato','●'],['hair','Capelli','⌁'],['beard','Barba','⌄'],['outfit','Abiti','♧'],['color','Colori','◐'],['accessory','Portafortuna','✧'],['headwear','Copricapi','♛'],['title','Titoli','✦'],['room','Spogliatoi','⌂']];
+export const STUDIO_TABS=[['character','Personaggio','◉'],['body','Fisico','↔'],['skin','Incarnato','●'],['hair','Capelli','⌁'],['beard','Barba','⌄'],['outfit','Abiti','♧'],['color','Colore abiti','◐'],['accessory','Portafortuna','✧'],['headwear','Copricapi','♛'],['title','Titoli','✦'],['room','Spogliatoi','⌂']];
 const slotFor={outfit:'rewardOutfit',color:'rewardColor',accessory:'rewardCharm',headwear:'rewardHat',title:'rewardTitle',room:'rewardRoom'};
 const rewardType={outfit:'outfit',color:'color',accessory:'charm',headwear:'headwear',title:'title',room:'room'};
-export function studioChoices(tab,ownedIds=[]){
- const free=AVATAR_OPTIONS[tab]?.values||[['none',tab==='headwear'?'Senza copricapo':'Quasi fenomeno']];
- return [...free.map(([value,label])=>({key:tab==='headwear'?'rewardHat':tab==='title'?'rewardTitle':tab,value,label})),...ownedIds.map(rewardById).filter(r=>r?.type===rewardType[tab]).map(r=>({key:slotFor[tab],value:r.id,label:r.name,reward:r}))];
+const profileLooks={neutral:{hair:'wave',beard:'none',outfit:'jersey'},male:{hair:'fade',beard:'stubble',outfit:'jersey'},female:{hair:'bob',beard:'none',outfit:'tennis-dress'}};
+const wardrobeForFemale=new Set(['pleated-skirt','denim-skirt','tennis-dress','summer-dress','wrap-dress']);
+export function studioChoices(tab,ownedIds=[],character='neutral'){
+ const base=AVATAR_OPTIONS[tab]?.values||[['none',tab==='headwear'?'Senza copricapo':'Quasi fenomeno']];
+ const free=tab==='outfit'&&character==='female'?[...base].sort(([a],[b])=>Number(wardrobeForFemale.has(b))-Number(wardrobeForFemale.has(a))):base;
+ const standard=free.map(([value,label])=>({key:tab==='headwear'?'rewardHat':tab==='title'?'rewardTitle':tab,value,label}));
+ const unlocked=ownedIds.map(rewardById).filter(r=>r?.type===rewardType[tab]).map(r=>({key:slotFor[tab],value:r.id,label:r.shortName,reward:r}));
+ return [...(tab==='color'?[{key:'originalColor',value:'original',label:'Colore originale'}]:[]),...standard,...unlocked];
 }
 export function applyStudioChoice(draft,choice){
+ if(choice.key==='originalColor')return normalizeAvatar({...draft,color:DEFAULT_AVATAR.color,rewardColor:'none',customOutfitColor:false});
  const next={...draft,[choice.key]:choice.value};
  if(slotFor[choice.key])next[slotFor[choice.key]]='none';
- if(choice.key==='outfit'||choice.key==='rewardOutfit')next.rewardColor='none';
+ if(choice.key==='color'||choice.key==='rewardColor')next.customOutfitColor=choice.key==='color';
+ if(choice.key==='character'&&choice.value!==draft.character&&Object.hasOwn(profileLooks,choice.value)){
+  const before=Object.hasOwn(profileLooks,draft.character)?profileLooks[draft.character]:profileLooks.neutral;
+  const after=profileLooks[choice.value];
+  for(const key of ['hair','beard'])if((draft[key]??DEFAULT_AVATAR[key])===before[key])next[key]=after[key];
+  if((draft.rewardOutfit??'none')==='none'&&(draft.outfit??DEFAULT_AVATAR.outfit)===before.outfit)next.outfit=after.outfit;
+ }
  if(choice.key==='rewardCharm'&&choice.value!=='none')next.accessory='none';
  return normalizeAvatar(next);
 }
@@ -45,17 +57,48 @@ export function openQuasiStudio({user,api,onSaved,initialReward}){
    if(focus){input.focus();input.select();}
   }
  };
- const selected=c=>draft[c.key]===c.value&&(!slotFor[c.key]||draft[slotFor[c.key]]==='none');
- const art=c=>{if(tab==='room')return `<img data-deferred-src="${roomAsset(c.value)}" alt="" loading="lazy" decoding="async">`;if(tab==='color')return `<span class="studio-swatch" style="background:${c.reward?.color||c.value}"></span>`;if(tab==='title')return '<span class="studio-title-choice">'+esc(c.label)+'</span>';const config=applyStudioChoice(draft,c);let svg=avatarSvg(config);if(['character','skin','hair','beard','headwear'].includes(tab))svg=svg.replace('viewBox="0 0 280 350"','viewBox="72 0 136 166"');return '<span class="studio-choice-art" aria-hidden="true">'+svg+'</span>';};
+ const originalColor=()=>draft.rewardColor==='none'&&!draft.customOutfitColor&&(draft.rewardOutfit!=='none'||draft.color===DEFAULT_AVATAR.color);
+ const selected=c=>{
+  if(c.key==='originalColor')return originalColor();
+  if(c.key==='color'&&originalColor())return false;
+  return draft[c.key]===c.value&&(!slotFor[c.key]||draft[slotFor[c.key]]==='none');
+ };
+ const art=c=>{
+  if(tab==='room')return `<img data-deferred-src="${roomAsset(c.value)}" alt="" loading="lazy" decoding="async">`;
+  if(tab==='color'&&c.key!=='originalColor')return `<span class="studio-swatch" style="background:${c.reward?.color||c.value}"></span>`;
+  if(tab==='title')return '<span class="studio-title-choice">'+esc(c.label)+'</span>';
+  const config=applyStudioChoice(draft,c);
+  if(['character','skin','hair','beard'].includes(tab))config.rewardHat='none';
+  if(tab==='character')Object.assign(config,profileLooks[c.value],{rewardOutfit:'none',rewardCharm:'none',accessory:'none'});
+  let svg=avatarSvg(config);
+  if(['skin','hair','beard','headwear'].includes(tab))svg=svg.replace('viewBox="0 0 280 350"','viewBox="64 0 152 200"');
+  if(tab==='character')svg=svg.replace('viewBox="0 0 280 350"','viewBox="46 22 188 328"');
+  return '<span class="studio-choice-art" aria-hidden="true">'+svg+'</span>';
+ };
  const renderOptions=(preserve=false)=>{
-  const previous=options.scrollLeft,choices=studioChoices(tab,owned);
+  const previous=options.scrollLeft,choices=studioChoices(tab,owned,draft.character);
+  options.dataset.studioCategory=tab;
   const rewardIndex=reward?choices.findIndex(c=>c.reward?.id===reward.id):-1;
   if(rewardIndex>0)choices.unshift(...choices.splice(rewardIndex,1));
   options.innerHTML=choices.slice(0,limit).map((c,i)=>`<button type="button" class="studio-choice ${tab==='room'?'studio-room-choice':''} ${tab==='title'?'studio-title-tile':''}" data-studio-choice="${i}" aria-label="${esc(c.label)}" aria-pressed="${selected(c)}">${art(c)}<small>${esc(c.label)}</small>${c.reward?'<span class="studio-earned" aria-label="Premio conquistato">✦</span>':''}</button>`).join('')+(choices.length>limit?'<button type="button" class="studio-choice studio-more">Altre anteprime +</button>':'');
   options.querySelectorAll('[data-studio-choice]').forEach(b=>b.onclick=()=>{if(saving)return;draft=applyStudioChoice(draft,choices[Number(b.dataset.studioChoice)]);preview();status.textContent='';options.querySelectorAll('[data-studio-choice]').forEach(x=>x.setAttribute('aria-pressed',String(selected(choices[Number(x.dataset.studioChoice)]))));});
   const more=options.querySelector('.studio-more');if(more)more.onclick=()=>{limit+=24;renderOptions(true);};options.scrollLeft=preserve?previous:0;
  };
- const renderCategory=()=>{dialog.querySelectorAll('[data-studio-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.studioTab===tab)));const hint=dialog.querySelector('.studio-hint');if(hint){const type=rewardType[tab];hint.textContent=type?'Premi '+(owned.map(rewardById).filter(r=>r?.type===type).length)+' / '+REWARD_CATALOG.filter(r=>r.type===type).length+' · nuovi a ogni giornata giocata':'Scorri le anteprime ↔';}const sub=dialog.querySelector('.studio-suboptions');sub.innerHTML=tab==='hair'?AVATAR_OPTIONS.hairColor.values.map(([color,label])=>`<button type="button" class="studio-hair-color" aria-label="Capelli ${label}" aria-pressed="${draft.hairColor===color}" data-hair-color="${color}" style="--swatch:${color}"></button>`).join(''):'';sub.hidden=tab!=='hair';sub.querySelectorAll('[data-hair-color]').forEach(b=>b.onclick=()=>{draft.hairColor=b.dataset.hairColor;preview();renderCategory();});renderOptions();};
+ const renderCategory=(preserve=false)=>{
+  dialog.querySelectorAll('[data-studio-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.studioTab===tab)));
+  const hint=dialog.querySelector('.studio-hint'),type=rewardType[tab];
+  hint.textContent=type?'Premi '+(owned.map(rewardById).filter(r=>r?.type===type).length)+' / '+REWARD_CATALOG.filter(r=>r.type===type).length+' · nuovi a ogni giornata giocata':'Scorri le anteprime ↔';
+  const sub=dialog.querySelector('.studio-suboptions');
+  sub.innerHTML=tab==='hair'?AVATAR_OPTIONS.hairColor.values.map(([color,label])=>
+   `<button type="button" class="studio-hair-color" aria-label="Capelli ${label}" aria-pressed="${draft.hairColor===color}" data-hair-color="${color}" style="--swatch:${color}"></button>`).join('')
+   :tab==='color'?'<p class="studio-color-note">La tinta si applica anche agli abiti sbloccati.</p>':'';
+  sub.hidden=tab!=='hair'&&tab!=='color';
+  sub.querySelectorAll('[data-hair-color]').forEach(b=>b.onclick=()=>{
+   draft.hairColor=b.dataset.hairColor;
+   preview();renderCategory(true);
+  });
+  renderOptions(preserve);
+ };
  dialog.querySelectorAll('[data-studio-tab]').forEach(b=>b.onclick=()=>{if(saving)return;tab=b.dataset.studioTab;limit=24;renderCategory();b.scrollIntoView({block:'nearest',inline:'nearest'});});
  dialog.querySelector('.studio-back').onclick=attemptClose;dialog.addEventListener('cancel',e=>{e.preventDefault();attemptClose();});
  bindSwipeBack(dialog.querySelector('.studio-header'),attemptClose,'both');

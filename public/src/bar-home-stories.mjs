@@ -50,7 +50,7 @@ export function renderBarStories({league,user,round,history,fmt,esc}){
   stories.push({id:'results',label:round.title,title:round.title,body:stats+`<button type="button" class="secondary" data-story-slip="${esc(round.id)}">Risultati e schedina <span aria-hidden="true">→</span></button>`});
  }
  const rewards=(history?.awards||[]).map(rewardById).filter(Boolean);
- if(rewards.length)stories.push({id:'rewards',label:'Bottino',title:'Il bottino della giornata',body:`<ul class="bar-story-rewards">${rewards.map(reward=>`<li>${rewardMark(reward)}<b>${esc(reward.name)}</b></li>`).join('')}</ul>`});
+ if(rewards.length)stories.push({id:'rewards',label:'Bottino',title:'Il bottino della giornata',body:`<ul class="bar-story-rewards">${rewards.map(reward=>`<li>${rewardMark(reward)}<b>${esc(reward.shortName)}</b></li>`).join('')}</ul>`});
  const {ahead,behind}=crossingsFor(league,user.id,round,history);
  if(ahead.length||behind.length)stories.push({id:'crossings',label:'Sorpassi',title:'Sorpassi in classifica',body:[['Hai superato',ahead],['Ti hanno superato',behind]].filter(([,names])=>names.length).map(([heading,names])=>`<section><h3>${heading}</h3><ul>${names.map(name=>`<li>${esc(name)}</li>`).join('')}</ul></section>`).join('')});
  return renderHomeStories({mode:'bar',uid:user.id,scope:league.id+':'+(round?.id||''),stories});
