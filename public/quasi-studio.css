@@ -7,6 +7,8 @@ html.studio-active,html.studio-active body{overflow:hidden!important;overscroll-
 @media(max-height:650px){.studio-header{height:calc(49px + env(safe-area-inset-top,0px))}.studio-dock{height:220px;min-height:200px}.studio-tabs,.studio-tabs button{height:49px;min-height:49px}.studio-tabs button b{font-size:18px}.studio-preview{padding-top:5px}.studio-status{height:29px;font-size:10px}.studio-options{grid-auto-columns:80px;gap:6px;padding-top:7px}.studio-preview .quasi-scene-caption>span{font-size:9px;padding:5px}.studio-preview .quasi-scene-caption strong{font-size:15px}}
 @media(min-width:900px){.studio-tabs{justify-content:center}.studio-options{max-width:1200px;width:100%;margin:auto;grid-auto-columns:106px}.studio-dock{height:285px}.studio-preview .quasi-scene{max-width:420px}.quasi-studio .studio-header h1{text-align:center}}
 .studio-suboptions[hidden]{display:none}
+.studio-color-note{align-self:center;margin:0;color:#b8c8b2;font-size:11px;text-align:center}
+.studio-options[data-studio-category="character"]{grid-template-rows:minmax(0,1fr);grid-auto-columns:clamp(86px,27vw,138px)}
 .quasi-studio .studio-tabs{order:0;flex:0 0 60px;margin:0;width:auto;max-width:none;align-self:stretch}.quasi-studio .studio-tabs button{flex:0 0 78px}.quasi-studio .studio-options{order:1}.quasi-studio .studio-suboptions{order:0}.quasi-studio .studio-hint{order:2}@media(max-height:650px){.quasi-studio .studio-tabs{flex-basis:49px}}
 
 .reward-room-thumb>img{width:100%;height:100%;object-fit:cover;aspect-ratio:4/5}
