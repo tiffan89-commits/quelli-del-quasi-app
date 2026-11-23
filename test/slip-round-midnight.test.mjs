@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
+import {parseHTML} from 'linkedom';
 import {currentSlipRound,defaultSlipRound,selectableSlipRounds,nextSlipPreview,slipSummary,slipRoundLastDay,isClosed} from '../public/src/slip-state.mjs';
 const rounds=[{id:'old',number:9,kickoff:'2026-10-23T18:45Z',settled:true,matches:[{kickoff:'2026-10-26T19:45Z',status:'FT'}]},{id:'current',number:10,kickoff:'2026-10-31T14:00Z',settled:true,closed:true,matches:[{kickoff:'2026-10-31T14:00Z',status:'FT'},{kickoff:'2026-11-02T19:45Z',status:'FT',finishedAt:'2026-11-02T21:50Z'}]},{id:'next',number:11,kickoff:'2026-11-06T19:45Z',matches:[{kickoff:'2026-11-06T19:45Z',status:'NS'}]}];
 test('current sporting day advances at midnight, but every completed slip stays in the dropdown',()=>{
@@ -28,8 +29,9 @@ test('every slip subsection defaults to the same open round and hides future rou
 });
 test('verdict does not label the previous winners as the new matchday result',async()=>{
  const {communityView}=await import('../public/src/community.mjs');const league={members:[{uid:'u',name:'Mister'}],community:{seriea:{recap:{round:'current',title:'Giornata 10',winners:['u'],points:8,participants:1,almost:[]},history:[],honours:[]}}};
- const old=communityView(league,'seriea',String,String,null,{...rounds[1],title:'Giornata 10'});assert.match(old,/Mister/);assert.match(old,/8 punti/);
- const next=communityView(league,'seriea',String,String,null,{...rounds[2],title:'Giornata 11',closed:true});assert.match(next,/Giornata 11 · in corso/);assert.doesNotMatch(next,/8 punti/);
+ const old=parseHTML(communityView(league,'seriea',String,String,null,{...rounds[1],title:'Giornata 10'})).document;
+ assert.equal(old.querySelector('.verdict-award-names').textContent,'Mister');assert.equal(old.querySelector('.verdict-award-value').textContent,'8 punti');
+ const next=communityView(league,'seriea',String,String,null,{...rounds[2],title:'Giornata 11',closed:true});assert.match(next,/Giornata 11 · in corso/);assert.doesNotMatch(next,/verdict-award/);
 });
 
 test('pilot preview uses just the first upcoming unpriced round and cannot save',()=>{
