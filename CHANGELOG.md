@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.48.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.47.0...v0.48.0) (2026-11-23)
+
+
+### Features
+
+* amplia il guardaroba del Quasi e colora gli abiti ([#149](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/149)) ([7a40da4](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/7a40da44416e7ab33b3361ec197c59a0d33ee2ee))
+
 ## [0.47.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.46.0...v0.47.0) (2026-11-23)
 
 
