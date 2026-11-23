@@ -29,7 +29,7 @@ import {restoreRoundCalendarScroll} from '../round-calendar.mjs';
 import {openHomeStory} from '../home-stories.mjs';
 import {tickHomeCountdowns} from '../home-social.mjs';
 import { renderGiornata, renderPlayerSheet, findPlayer } from './giornata.mjs';
-import { renderSquadra, renderTeamRoster, renderPickSheet, renderBenchSheet, draftFrom, lineupOf, sameLineup, withFormation, assign, unassign, benchAdd, benchRemove, benchMove, missingOf, canDropOn, dropOn, quickAdd, benchAll, TEAM_CALENDAR_PAGE } from './squadra.mjs';
+import { renderSquadra, renderRosterTab, renderTeamRoster, renderPickSheet, renderBenchSheet, draftFrom, lineupOf, sameLineup, withFormation, assign, unassign, benchAdd, benchRemove, benchMove, missingOf, canDropOn, dropOn, quickAdd, benchAll, TEAM_CALENDAR_PAGE } from './squadra.mjs';
 import {bindLineupPitch,setPitchFlip} from '../lineup-pitch.mjs';
 import { enableDrag } from './trascina.mjs';
 import { renderAsta, renderListoneSheet, renderListoneRows, renderAssignConfirm, tickAuction, auctionAudio, bidState, bidAmount } from './asta.mjs';
@@ -400,6 +400,14 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if (!data) return false;
     if (d.pitchFlip) {sq.benchFlipped=!sq.benchFlipped;setPitchFlip(event.target.closest('[data-pitch-flip]'),sq.benchFlipped);return true;}
     if(d.sqSub){switchTeamSection(d.sqSub);return true;}
+    if(d.sqRosterRole||'sqRosterSort' in d){
+      if(d.sqRosterRole)sq.rosterRole=d.sqRosterRole;
+      else sq.rosterSort=sq.rosterSort==='desc'?'asc':sq.rosterSort==='asc'?null:'desc';
+      const browser=root.querySelector('.fanta-roster-browser');
+      patchRegion(browser,renderRosterTab(data,sq));
+      browser.querySelector('.fanta-roster-scroll').scrollTop=0;
+      return true;
+    }
     if ('sqCalendarMore' in d || 'sqCalendarPrevious' in d) {
       const visible=new Set([...root.querySelectorAll('.fanta-team-calendar [data-go="giornata"]')].map(row=>row.dataset.mu));
       const direction='sqCalendarPrevious' in d?'earlier':'later';
@@ -543,6 +551,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     const paneScroll=[...root.querySelectorAll('.auction-pane')].map(el=>el.scrollTop);
     const slipList=root.querySelector('.fanta-native-slips .ticket-matches');
     const slipRound=slipList?.closest('[data-slip-round]')?.dataset.slipRound,slipScroll=slipList?.scrollTop;
+    const roster=root.querySelector('.fanta-roster-browser'),rosterScroll=roster?.querySelector('.fanta-roster-scroll').scrollTop;
     const wizardScroll=root.querySelector('.auction-wizard-fields')?.scrollTop;
     const oldStudio=root.querySelector('.fanta-live-studio'),railLeft=oldStudio?.querySelector('.fanta-mu-rail')?.scrollLeft??null;
     oldStudio?._pitchCleanup?.();
@@ -612,6 +621,10 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(ui.tab==='schedine'&&slipScroll){
       const ticket=root.querySelector('.fanta-native-slips .bar-ticket');
       if(ticket?.dataset.slipRound===slipRound)ticket.querySelector('.ticket-matches').scrollTop=slipScroll;
+    }
+    if(ui.tab==='squadra'&&rosterScroll){
+      const current=root.querySelector('.fanta-roster-browser');
+      if(current?.dataset.rosterTeam===roster.dataset.rosterTeam)current.querySelector('.fanta-roster-scroll').scrollTop=rosterScroll;
     }
     rosterEditor.sync();
     if (ui.tab === 'asta') {tickAuction(root, auctionStream?.offset()??ui.asta.offset,auctionSound.alert);showAuctionConnection();}
@@ -1346,7 +1359,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   function handle(e) {
     if(e.target.closest('.fanta-native-slips'))return;
     const el = e.target.closest('[data-team-claim],[data-demo-scenario],[data-releases-confirm],[data-release-toggle],[data-release-undo],[data-releases-done],[data-pilot-pick],[data-pilot-claim],[data-competition-open],[data-team-roster],[data-mode],[data-tab],[data-go],[data-action],[data-league],[data-round],[data-matchup],[data-side],[data-player],[data-view],'
-      + '[data-pick-role],[data-studio],[data-st-bench-panel],[data-st-role],[data-st-slot],[data-st-player],[data-st-clear],[data-sq-sub],[data-sq-calendar-more],[data-sq-calendar-previous],[data-sq-filter],.fanta-team-formation [data-pitch-flip],[data-formation],[data-slot],[data-pick],[data-unpick],[data-bench-add],[data-bench-pick],[data-bench-remove],[data-lineup],[data-list-add],'
+      + '[data-pick-role],[data-studio],[data-st-bench-panel],[data-st-role],[data-st-slot],[data-st-player],[data-st-clear],[data-sq-sub],[data-sq-calendar-more],[data-sq-calendar-previous],[data-sq-filter],[data-sq-roster-role],[data-sq-roster-sort],.fanta-team-formation [data-pitch-flip],[data-formation],[data-slot],[data-pick],[data-unpick],[data-bench-add],[data-bench-pick],[data-bench-remove],[data-lineup],[data-list-add],'
       + '[data-lega-sub],[data-lega-round],[data-lega-invite],[data-auction-manage],[data-auction-exit],[data-auction-exit-confirm],[data-auction-close-confirm],[data-auction-lobby-start],[data-auction-panel],[data-auction-wizard-back],[data-auction-order],'
       + '[data-asta-mode],[data-asta-cancel],[data-asta-close],[data-asta-draw],[data-m-role],[data-m-table],[data-m-clear],[data-m-team],[data-m-confirm],[data-m-undo],'
       + '[data-bid-step],[data-asta-pass],[data-asta-listone],[data-asta-role],[data-asta-pick],[data-asta-amount],[data-asta-call]');

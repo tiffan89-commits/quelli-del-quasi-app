@@ -208,7 +208,7 @@ export function startOneScreen(doc = globalThis.document) {
    if (!typing() || !height) {
     const inset = bottomInset();
     const top = main.getBoundingClientRect().top;
-    const space = main.matches('.fanta-team-formation,.fanta-calendar-scroll') ? 0 : win.innerWidth >= 760 ? 18 : DOTS_SPACE;
+    const space = main.matches('.fanta-team-formation,.fanta-calendar-scroll,.fanta-team-roster') ? 0 : win.innerWidth >= 760 ? 18 : DOTS_SPACE;
     const footer = host !== main ? [...host.querySelectorAll(':scope>#live-channel-status,[data-os-footer]')].reduce((sum,el)=>{
      if(!shown(el))return sum;
      const style=win.getComputedStyle(el);
