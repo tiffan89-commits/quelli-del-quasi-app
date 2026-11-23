@@ -346,6 +346,31 @@ body:has(#open-chat.chat-fab:not([hidden])) .fanta-team-formation .pitch-flip-bu
 .fanta-roster-stats small{font-size:9px;color:var(--muted)}
 .fanta-roster-price{text-align:right;font:700 16px 'Barlow Condensed',sans-serif;color:var(--fanta-gold)}
 .fanta-roster-price small{font:500 9px 'DM Sans',sans-serif;margin-left:2px;color:var(--muted)}
+.fanta-team-roster{height:var(--os-h,calc(100dvh - 230px));min-height:0}
+.fanta-roster-browser{display:flex;flex-direction:column;gap:7px;height:100%;min-height:0}
+.fanta-roster-roles{display:flex;flex-wrap:wrap;gap:3px;flex:none}
+.fanta-roster-roles .v2-chip[data-sq-roster-role]{flex:1 0 auto;min-width:0;min-height:36px;margin:0;padding:4px clamp(3px,1.08vw,9px);font-size:clamp(10px,3.1vw,13px);white-space:nowrap}
+.fanta-roster-roles .v2-chip[aria-pressed="true"]{color:var(--bg,#10211a);background:var(--lime);border-color:var(--lime)}
+.fanta-roster-scroll{flex:1;min-height:0;overflow:hidden auto;overscroll-behavior:contain;touch-action:pan-y pinch-zoom;scrollbar-width:thin;padding-bottom:8px}
+.fanta-roster-table{width:100%;table-layout:fixed;border-spacing:0;text-align:left}
+.fanta-roster-table thead th{position:sticky;z-index:1;top:0;height:36px;background:var(--panel);border-bottom:1px solid var(--line);color:var(--muted);font-size:11px;text-align:center}
+.fanta-roster-table thead th:first-child{text-align:left;padding-left:8px;border-radius:9px 0 0 0}
+.fanta-roster-table thead th:last-child{border-radius:0 9px 0 0}
+.fanta-roster-table thead th:nth-child(2),.fanta-roster-table thead th:nth-child(3){width:clamp(40px,11vw,64px)}
+.fanta-roster-table thead th:nth-child(n+4){width:clamp(28px,9vw,48px)}
+.fanta-roster-table abbr{text-decoration:none}
+.fanta-roster-table thead button{width:100%;min-width:0;min-height:36px;padding:0 2px;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;font-weight:700;white-space:nowrap}
+.fanta-roster-table thead [aria-sort]:not([aria-sort="none"]){color:var(--lime)}
+.fanta-roster-table tbody :is(td,th){border-bottom:1px solid var(--line)}
+.fanta-roster-table tbody td{padding:4px 1px;text-align:center;font:700 16px/1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fanta-roster-table tbody .fanta-roster-cost{color:var(--fanta-gold)}
+.fanta-roster-table .fanta-roster-group th{padding:10px 5px 4px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.fanta-roster-group span{margin-left:4px;color:var(--fanta-gold)}
+.fanta-roster-player{display:flex;align-items:center;gap:6px;min-width:0;padding:7px 4px 7px 1px}
+.fanta-roster-player>span:last-child{min-width:0;overflow-wrap:anywhere}
+.fanta-roster-player b{display:block;font-size:13px;line-height:1.2}
+.fanta-roster-player small{display:block;color:var(--muted);font-size:10.5px;font-weight:400;line-height:1.25}
+.fanta-roster-table tbody .fanta-roster-empty{padding:16px 6px;color:var(--muted);font:400 13px 'DM Sans',sans-serif;text-align:left}
 
 .fanta-pick-list{display:grid;gap:2px;margin-top:8px}
 .fanta-pick-group{margin:14px 2px 4px;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}

@@ -207,22 +207,26 @@ function playerList(data, d, filter, locked) {
   </section>`;
 }
 
-function deadlineCard(data, draft, sq, now) {
+function deadlineCard(data, now) {
   const r = data.round;
-  if (r.locked) return `<div class="fanta-deadline is-locked"><b>Giornata ${r.number} iniziata</b><span>${data.lineup?"La formazione è bloccata: la vedi qui sotto come l'hai salvata.":'Formazione non schierata: 0 fantapunti e 0 gol.'}</span></div>`;
+  if (r.locked) {
+    const title=`Giornata ${r.number}${r.state==='calcolata'?' conclusa':r.started===false?'':' in corso'}`;
+    const detail=data.lineup?'Formazione schierata':r.started===false?'Formazioni non ancora aperte.':'Formazione non schierata. 0 fantapunti e 0 gol.';
+    return `<div class="fanta-deadline is-locked"><b>${title}</b><span>${detail}</span></div>`;
+  }
   const left = countdown(r.deadline, now);
-  const state = sq.dirty ? '<span class="v2-state is-warn">Modifiche da salvare</span>'
-    : data.lineup ? `<span class="v2-state is-ok">Salvata ${esc(timeAgo(data.lineup.savedAt, now))} · la vede tutta la lega</span>`
+  const state = data.lineup ? `<span class="v2-state is-ok">Salvata ${esc(timeAgo(data.lineup.savedAt, now))} · la vede tutta la lega</span>`
     : '<span class="v2-state is-todo">Non ancora schierata</span>';
   return `<div class="fanta-deadline"><div><b>Giornata ${r.number}</b>${state}</div>
     <div class="dash-clock"><span>Chiude tra</span><strong data-countdown="${esc(r.deadline)}">${left || 'chiusa'}</strong></div></div>`;
 }
 
 function formationView(data, sq, now) {
-  const d=draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster),byId=new Map(data.roster.map(p=>[p.id,p]));
+  const players=[...data.roster,...(data.lineupPlayers||[])];
+  const d=draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},players),byId=new Map(players.map(p=>[p.id,p]));
   const studio=data.round.locked?'':'<button type="button" class="fanta-studio-open" data-studio="open">'+(sq.dirty?'Riprendi lo studio formazione →':data.lineup?'Modifica nello studio formazione →':'Apri lo studio formazione →')+'</button>';
-  const note=sq.dirty?'<p class="fanta-note is-info">Hai modifiche nello studio ancora da salvare. Qui vedi la formazione salvata.</p>':'';
-  return studio+deadlineCard(data,d,{...sq,dirty:false},now)+note+renderPitchFlip(savedPitch(d,byId),savedBench(d,byId),'Panchina',!!sq.benchFlipped);
+  const note=sq.dirty&&!data.round.locked?'<p class="fanta-note is-info">Hai modifiche nello studio ancora da salvare. Qui vedi la formazione salvata.</p>':'';
+  return studio+deadlineCard(data,now)+note+renderPitchFlip(savedPitch(d,byId),savedBench(d,byId),'Panchina',!!sq.benchFlipped);
 }
 
 export function rosterView(data, d, actions) {
@@ -243,6 +247,43 @@ export function rosterView(data, d, actions) {
           <span class="fanta-roster-stats"><b>${p.stats.played??'–'}</b><small>Pr</small></span>
           <span class="fanta-roster-price">${p.price}<small>cr</small></span>`}
         </div>`).join('')}</section>`).join('')}
+  </div>`;
+}
+
+export function renderRosterTab(data,{rosterRole='tutti',rosterSort}={}){
+  const roles=Object.entries(ROLE_PLURAL), all=rosterRole==='tutti';
+  const draft=draftFrom(data.lineup,data.roster),starters=new Set(Object.values(draft.slots)),bench=new Set(draft.bench);
+  const players=data.roster.filter(p=>all||p.role===rosterRole);
+  const sort=rosterSort==='asc'?'ascending':rosterSort==='desc'?'descending':'none';
+  const sortable=sort!=='none';
+  if(sortable)players.sort((a,b)=>{
+    const fm=p=>Number.isFinite(p.stats?.avgFanta)?p.stats.avgFanta:null;
+    const av=fm(a),bv=fm(b);
+    if(av===null||bv===null)return Number(av===null)-Number(bv===null);
+    return (av-bv)*(rosterSort==='asc'?1:-1);
+  });
+  const groups=all&&!sortable?roles.map(([role,label])=>[label,players.filter(p=>p.role===role)]):[[null,players]];
+  const row=p=>{
+    const where=starters.has(p.id)?'In campo':bench.has(p.id)?'In panchina':null;
+    const subtitle=[all&&sortable?ROLE_NAMES[p.role]:null,p.club,p.next?.opponent?nextLabel(p.next):null,where].filter(Boolean).join(' · ');
+    return `<tr>
+      <th scope="row"><div class="fanta-roster-player"><span class="fanta-mini-shirt">${playerVisual(p)}</span><span>
+        <b>${esc(p.name)} ${statusBadge(p.status)}</b><small>${esc(subtitle)}</small>
+        ${p.status?.type&&p.status.type!=='ok'&&p.status.note?`<small class="fanta-st-note">${esc(p.status.note)}</small>`:''}
+      </span></div></th>
+      <td>${avg(p.stats?.avgFanta)}</td><td>${avg(p.stats?.avgVote)}</td><td>${esc(p.stats?.played??'–')}</td><td class="fanta-roster-cost">${esc(p.price??'–')}</td>
+    </tr>`;
+  };
+  return `<div class="fanta-roster-browser" data-roster-team="${esc(data.team.id)}">
+    <div class="fanta-roster-roles" role="group" aria-label="Filtra la rosa per ruolo">${[['tutti','Tutti'],...roles].map(([role,label])=>
+      `<button type="button" class="v2-chip" id="rosa-ruolo-${role}" data-sq-roster-role="${role}" aria-pressed="${rosterRole===role}">${label}</button>`).join('')}</div>
+    <div class="fanta-roster-scroll" tabindex="0" role="region" aria-label="Elenco calciatori della rosa">
+      <table class="fanta-roster-table">
+        <thead><tr><th scope="col">Calciatore</th><th scope="col" aria-sort="${sort}"><button type="button" id="rosa-ordina-fm" data-sq-roster-sort aria-label="Ordina per fantamedia" title="Ordina per fantamedia">FM <span aria-hidden="true">${sort==='ascending'?'↑':sort==='descending'?'↓':'↕'}</span></button></th><th scope="col"><abbr title="Media voto">MV</abbr></th><th scope="col"><abbr title="Presenze">Pr</abbr></th><th scope="col"><abbr title="Prezzo pagato in crediti">Cr</abbr></th></tr></thead>
+        ${groups.filter(([,list])=>list.length).map(([label,list])=>`<tbody>${label?`<tr class="fanta-roster-group"><th scope="rowgroup" colspan="5">${label} <span>${list.length}</span></th></tr>`:''}${list.map(row).join('')}</tbody>`).join('')}
+        ${players.length?'':'<tbody><tr><td class="fanta-roster-empty" colspan="5">Nessun calciatore per questo ruolo.</td></tr></tbody>'}
+      </table>
+    </div>
   </div>`;
 }
 
@@ -281,7 +322,7 @@ export function renderSquadra(sq, now = Date.now()) {
       <button type="button" role="tab" class="v2-chip${sq.sub === 'rosa' ? ' is-active' : ''}" data-sq-sub="rosa" aria-selected="${sq.sub === 'rosa'}">Rosa</button>
       <button type="button" role="tab" class="v2-chip${sq.sub === 'calendario' ? ' is-active' : ''}" data-sq-sub="calendario" aria-selected="${sq.sub === 'calendario'}">Calendario e risultati</button>
     </div>
-    <div data-os-content ${sq.sub==='formazione'?'class="fanta-team-formation" data-os-flow':''}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarRange):sq.sub === 'rosa' ? rosterView(data, draftFrom(data.lineup||{formation:data.previous?.formation||'4-4-2'},data.roster)) : formationView(data, sq, now)}</div>
+    <div data-os-content ${sq.sub==='rosa'?'class="fanta-team-roster" data-os-flow':sq.sub==='formazione'?'class="fanta-team-formation" data-os-flow':''}>${sq.sub === 'calendario'?renderTeamCalendar(data,sq.calendarRange):sq.sub === 'rosa' ? renderRosterTab(data,sq) : formationView(data, sq, now)}</div>
   </div>`;
 }
 

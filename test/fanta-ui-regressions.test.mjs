@@ -4,6 +4,27 @@ import {renderLega} from '../public/src/fanta/lega.mjs';
 import {renderHome} from '../public/src/fanta/home.mjs';
 import {homeFor} from '../public/src/fanta/dati-finti.mjs';
 import {rosterView} from '../public/src/quasi-roster.mjs';
+import {renderSquadra} from '../public/src/fanta/squadra.mjs';
+
+test('Squadra Rosa keeps all roles, filters the list and sorts by fantamedia with missing grades last',()=>{
+ const make=(id,name,role,avgFanta)=>({id,name,role,club:'Roma',price:8,stats:{avgFanta}});
+ const data={team:{id:'squadra',name:'Squadra'},budget:{spent:32,total:500},roster:[
+  make('a','Difensore Alfa','D',6.9),make('b','Portiere Beta','P',7.1),
+  make('c','Difensore Gamma','D',null),make('d','Difensore Delta','D',5.2),
+ ]};
+ const render=options=>parseHTML(renderSquadra({data,sub:'rosa',...options})).document;
+ const names=doc=>[...doc.querySelectorAll('tbody th[scope="row"] b')].map(el=>el.textContent.trim());
+ const original=render();
+ assert.ok(original.querySelector('.fanta-team-roster[data-os-flow] .fanta-roster-scroll'));
+ assert.equal(original.querySelectorAll('[data-sq-roster-role]').length,5);
+ assert.deepEqual(names(original),['Portiere Beta','Difensore Alfa','Difensore Gamma','Difensore Delta']);
+ const byRole=render({rosterRole:'D',rosterSort:'asc'});
+ assert.equal(byRole.querySelector('[data-sq-roster-role][aria-pressed="true"]').textContent,'Difensori');
+ assert.equal(byRole.querySelector('th[aria-sort]').getAttribute('aria-sort'),'ascending');
+ assert.deepEqual(names(byRole),['Difensore Delta','Difensore Alfa','Difensore Gamma']);
+ assert.deepEqual(names(render({rosterSort:'desc'})),['Portiere Beta','Difensore Alfa','Difensore Delta','Difensore Gamma']);
+ assert.match(render({rosterRole:'A'}).querySelector('.fanta-roster-empty').textContent,/Nessun calciatore/);
+});
 
 test('missing form is shown with five neutral segments and gallery names are separate from character artwork',()=>{
  const h=homeFor('lega-quasi','da-schierare');h.me.form=[];assert.equal(parseHTML(renderHome(h)).document.querySelectorAll('.bar-home-segments .is-pending').length,5);

@@ -40,11 +40,13 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
   if(!lineupReads.has(key))lineupReads.set(key,Promise.resolve().then(()=>readLineup(id)).finally(()=>lineupReads.delete(key)));
   return lineupReads.get(key);
  }
- ns.use(async(s,next)=>{try{const c=s.handshake.auth||{},token=sid(s.request);if(!['bar','fanta'].includes(c.mode)||typeof c.league!=='string'||!c.league||c.league.length>200||c.competition&&String(c.competition).length>200||c.mode==='fanta'&&(!Number.isInteger(c.round)||c.round<1||c.round>100))throw Error('Contesto non valido');const user=await identify(token);s.data={user,token,context:c};next();}catch{next(Error('Accedi alla lega per seguire la diretta.'));}});
+ ns.use(async(s,next)=>{try{const c=s.handshake.auth||{},token=sid(s.request);if(!['bar','fanta','fanta-lineup'].includes(c.mode)||typeof c.league!=='string'||!c.league||c.league.length>200||c.competition&&(typeof c.competition!=='string'||c.competition.length>200)||c.mode==='fanta'&&(!Number.isInteger(c.round)||c.round<1||c.round>100))throw Error('Contesto non valido');const user=await identify(token);s.data={user,token,context:c};next();}catch{next(Error('Accedi alla lega per seguire la diretta.'));}});
  async function load(room){
   try{
    const peer=[...room.sockets].find(s=>s.connected);if(!peer)return;
-   const c=room.context,state=c.mode==='bar'?await read(s=>s,{kind:'live',league:c.league,fresh:true}):await store.league(peer.data.user.id,c.league,s=>s,{number:c.round,competition:c.competition,catalog:false,detailedVotes:true,roundOnly:true});
+   const c=room.context;
+   const state=c.mode==='fanta-lineup'?await store.teamLineupWatch(c.league,c.competition,now())
+    :c.mode==='bar'?await read(s=>s,{kind:'live',league:c.league,fresh:true}):await store.league(peer.data.user.id,c.league,s=>s,{number:c.round,competition:c.competition,catalog:false,detailedVotes:true,roundOnly:true});
    if(closed||!room.sockets.size)return;
    room.state=state;room.loadedAt=now();for(const s of room.sockets)send(s,room);
   }catch{for(const s of room.sockets)s.emit('sports:unavailable');}
@@ -64,12 +66,17 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
  }
  function send(s,room){try{const c=s.data.context;if(s.data.user.expires<=now())throw Error('Sessione scaduta');let data;
   if(c.mode==='bar')data=liveSnapshot(room.state,userFor(room.state,s.data.token),c.league);
+  else if(c.mode==='fanta-lineup'){
+   const {user}=s.data,state=room.state;
+   if(!state?.members.includes(user.id)||state.sourceKey&&user.username?.toLowerCase()!=='frankwood')throw Error('Lega non accessibile');
+   data={lineupRound:state.lineupRound};
+  }
   else{if(!room.state.teams.some(t=>t.userId===s.data.user.id)||room.state.league.sourceKey&&s.data.user.username!=='frankwood')throw Error('Lega non accessibile');const r=room.state.rounds.find(r=>r.number===c.round);if(!r)throw Error('Giornata assente');const matchup=matchupView(room.state,r,c.matchup,s.data.user.id,room.loadedAt);data={round:roundView(room.state,r,s.data.user.id,room.loadedAt,false,matchup),matchup};}
   // The snapshot timestamp changes on every poll, even when the score and votes are identical.
   const stable=data.round?.round?{...data,round:{...data.round,round:{...data.round.round,updatedAt:null}}}:data;
   const version=digest(stable);if(version===s.data.sent)return;s.data.sent=version;s.emit('sports:update',{context:c,revision:version,data,at:room.loadedAt});
  }catch{s.disconnect(true);}}
- ns.on('connection',s=>{const c=s.data.context,key=JSON.stringify([c.mode,c.league,c.competition||null,c.round||null]);let room=rooms.get(key);if(!room){room={context:c,sockets:new Set(),state:null,timer:null,loading:null};rooms.set(key,room);}room.sockets.add(s);
+ ns.on('connection',s=>{const c=s.data.context,key=JSON.stringify([c.mode,c.league,c.competition||null,c.mode==='fanta-lineup'?null:c.round||null]);let room=rooms.get(key);if(!room){room={context:c,sockets:new Set(),state:null,timer:null,loading:null};rooms.set(key,room);}room.sockets.add(s);
   if(c.mode==='bar')s.on('sports:lineup',async(payload,reply)=>{
    if(typeof reply!=='function')return;
    const {id,revision}=payload||{};
@@ -90,5 +97,5 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
    if(s.connected&&s.data.user.expires>now())s.emit('sports:lineup-saved',lineups);
   }
  }
- return {refresh:scope=>refresh([...rooms.values()].filter(room=>!scope||room.context.mode===scope),true),lineupsSaved,stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
+ return {refresh:scope=>refresh([...rooms.values()].filter(room=>!scope||room.context.mode===scope||scope==='bar'&&room.context.mode==='fanta-lineup'),true),lineupsSaved,stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
 }
