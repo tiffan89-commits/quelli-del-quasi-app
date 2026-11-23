@@ -58,7 +58,8 @@ test('Fanta subsections preserve old selection, re-entry resets to open and unkn
 });
 test('verdict and postcard read the chosen historical round instead of the latest winner',()=>{
  const league={name:'Bar',members:[{uid:'u',name:'Vecchio campione'},{uid:'v',name:'Nuovo campione'}],rounds:[{...past,publicSlips:[{uid:'u',picks:{m10:'1'},stake:10,prize:20}]}],community:{seriea:{recap:{round:'r11',winners:['v'],points:9},history:[{id:'r10',players:[{uid:'u',points:1,wrong:0,correct:1,total:1,picks:{m10:'1'},stake:10}]}],honours:[]}}};
- const html=communityView(league,'seriea',String,String,null,past);assert.match(html,/Giornata 10/);assert.match(html,/1 punti/);assert.doesNotMatch(html,/9 punti/);
+ const html=communityView(league,'seriea',String,String,null,past),view=parseHTML(html).document;
+ assert.match(html,/Giornata 10/);assert.equal(view.querySelector('.verdict-award-value').textContent,'1 punto');
  const card=createVerdictCard(league,'seriea',null,null,'r10');assert.match(card,/Vecchio campione/);assert.match(card,/2 – 0/);assert.doesNotMatch(card,/Nuovo campione/);
 });
 
@@ -75,15 +76,22 @@ test('Bar verdict honours the best positive net return independently of the poin
  const final={...past,publicSlips:slips};
  const archive={history:[{id:past.id,players:slips}],recap:{round:'r11',winners:['r'],points:15}};
  const view=render(final,archive);
- assert.equal(view.querySelector('.verdict-points-label').textContent,'Vincitore ai punti');
- assert.equal(view.querySelector('.verdict-winner').textContent,'Punti');
- assert.equal(view.querySelector('.verdict-strategy h3').textContent,'Lo stratega di Wall Street');
- assert.equal(view.querySelector('.verdict-strategy strong').textContent,'Guadagno & C.');
- assert.equal(view.querySelector('.verdict-strategy span').textContent,'+80,88 cr netti');
+ const points=view.querySelector('[data-verdict-award="points"]'),credits=view.querySelector('[data-verdict-award="credits"]');
+ assert.equal(points.querySelector('h3').textContent,'Vincitore ai punti');
+ assert.equal(credits.querySelector('h3').textContent,'Vincitore ai crediti');
+ assert.equal(points.querySelector('.verdict-award-names').textContent,'Punti');
+ assert.equal(credits.querySelector('.verdict-award-names').textContent,'Guadagno & C.');
+ assert.equal(credits.querySelector('.verdict-award-value').textContent,'+80,88 cr netti');
+ assert.match(credits.querySelector('.verdict-award-note').textContent,/Lo stratega di Wall Street/);
+ assert.deepEqual([...view.querySelectorAll('[data-verdict-card]')].map(button=>button.dataset.verdictCard),['points','credits']);
+ const postcard=parseHTML(createVerdictCard({members,rounds:[final],community:{seriea:archive}},'seriea',null,null,past.id,{category:'credits'})).document;
+ assert.equal(postcard.querySelector('.postcard-name').textContent,'Guadagno & C.');
+ assert.doesNotMatch(postcard.querySelector('.postcard-copy').textContent,/Guadagno/);
+ assert.match(postcard.querySelector('.postcard-score').textContent,/\+80,88 cr netti/);
  const tied={...final,publicSlips:[...slips,{...slips[1],uid:'t',stake:14.12,prize:95}]};
- assert.equal(render(tied).querySelector('.verdict-strategy h3').textContent,'Gli strateghi di Wall Street');
- assert.equal(render(tied).querySelector('.verdict-strategy strong').textContent,'Guadagno & C. · Pari');
+ assert.equal(render(tied).querySelector('[data-verdict-award="credits"] h3').textContent,'Vincitori ai crediti');
+ assert.equal(render(tied).querySelector('[data-verdict-award="credits"] .verdict-award-names').textContent,'Guadagno & C. · Pari');
  const refunds=slips.map(s=>({...s,prize:s.stake}));
- assert.equal(render({...final,publicSlips:refunds}).querySelector('.verdict-strategy'),null);
- assert.equal(render({...final,settled:false}).querySelector('.verdict-strategy'),null);
+ assert.equal(render({...final,publicSlips:refunds}).querySelector('[data-verdict-award="credits"]'),null);
+ assert.equal(render({...final,settled:false}).querySelector('[data-verdict-award="credits"]'),null);
 });

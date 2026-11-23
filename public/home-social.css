@@ -320,6 +320,7 @@ body[data-game-mode]:has(.bar-home-social,.fanta-home) #pwa-install-card { displ
 }
 .bar-story-trigger.story-rewards { --story-accent:#ffab91; }
 .bar-story-trigger.story-winner { --story-accent:#ffcf83; }
+.bar-story-trigger.story-winner-credits { --story-accent:#8be6bb; }
 .bar-story-trigger.story-crossings { --story-accent:#78e0ba; }
 .bar-story-ring {
   display:grid; place-items:center; width:clamp(66px,17.7vw,78px); aspect-ratio:1; border-radius:50%; padding:3px;
@@ -368,6 +369,13 @@ body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); colo
 .bar-home-cta>span:first-child { min-width:0; }
 .bar-home-cta>span:last-child { flex:none; white-space:nowrap; }
 .bar-home-cta:not(:disabled):active { transform:scale(.98); }
+.bar-home-quick-action {
+  display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:47px;
+  padding:8px 14px; text-align:start; border-radius:15px; font-weight:700;
+  border:1px solid color-mix(in srgb,var(--mode-accent) 43%,var(--line)); background:var(--panel);
+}
+.bar-home-quick-action>span:last-child { flex:none; color:var(--mode-accent); white-space:nowrap; }
+.bar-home-quick-action:disabled>span:last-child { color:var(--muted); }
 
 .bar-story-dialog[open] {
   position:fixed; inset:0; width:100%; max-width:none; height:100dvh; max-height:none; padding:0; margin:0;
@@ -376,6 +384,7 @@ body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); colo
 .bar-story-dialog[data-story-kind="rewards"],.bar-story-dialog[data-story-kind="market"] { --story-accent:#ffab91; }
 .bar-story-dialog[data-story-kind="crossings"] { --story-accent:#78e0ba; }
 .bar-story-dialog:is([data-story-kind="top"],[data-story-kind="winner"]) { --story-accent:#ffcf83; }
+.bar-story-dialog[data-story-kind="winner-credits"] { --story-accent:#8be6bb; }
 .bar-story-dialog[data-story-kind="opponent"] { --story-accent:#8bd3ff; }
 .bar-story-frame {
   display:flex; flex-direction:column; width:min(100%,680px); height:100%; margin:auto;
@@ -405,11 +414,9 @@ body[data-game-mode] #app .bar-home-cta:disabled { background:var(--panel); colo
 }
 .bar-story-copy h2 { font:700 clamp(32px,8vw,52px)/1 'Barlow Condensed',sans-serif; margin:0 0 14px; overflow-wrap:anywhere; }
 .bar-story-copy h3 { color:var(--story-accent); text-align:start; margin:10px 0 4px; }
-.bar-story-dialog[data-story-kind="winner"] .bar-story-copy { padding:clamp(8px,2vw,16px); }
-.bar-story-copy .verdict-postcard h2 { font-size:clamp(20px,5vw,27px); margin:3px 0; }
-.bar-story-copy .postcard-winner h3 { text-align:center; font-size:clamp(25px,6vw,36px); overflow-wrap:anywhere; }
-.bar-story-copy .postcard-quasi { width:min(100%,140px); }
-.bar-story-copy .postcard-totals { padding-block:8px; font-size:12px; }
+.bar-story-dialog:is([data-story-kind="winner"],[data-story-kind="winner-credits"]) .bar-story-pages { grid-template-columns:clamp(25px,7vw,44px) minmax(0,1fr) clamp(25px,7vw,44px); }
+.bar-story-dialog:is([data-story-kind="winner"],[data-story-kind="winner-credits"]) .bar-story-copy { padding:clamp(6px,2vw,12px); }
+.bar-story-copy:has(.verdict-postcard)>h2 { font-size:clamp(25px,7.5vw,40px); margin:0 0 8px; }
 .bar-story-copy .verdict-postcard+.verdict-postcard { margin-top:12px; }
 .bar-story-copy > button { margin-top:8px; max-width:100%; }
 .bar-story-copy .home-story-score { display:grid; gap:4px; align-items:center; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); font-size:13px; overflow-wrap:anywhere; }

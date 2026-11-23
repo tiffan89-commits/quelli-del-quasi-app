@@ -1,5 +1,5 @@
 import {esc,pts,countdown,OUTCOME} from './formato.mjs';
-import {socialHome} from '../home-social.mjs';
+import {homeAction,socialHome} from '../home-social.mjs';
 import {homeReminderBanner} from '../president-reminders.mjs';
 import {renderHomeStories} from '../home-stories.mjs';
 import {teamLogo} from './team-logo.mjs';
@@ -68,11 +68,18 @@ export function renderHome(h,now=Date.now()){
   return {state:formStates[result]||'pending',label:OUTCOME[result]||'Da giocare'};
  });
  const balances=[number(h.balances?.slip)?credits.format(h.balances.slip)+' cr schedina':'',number(h.balances?.auction)?credits.format(h.balances.auction)+' cr asta':''].filter(Boolean);
- const cta=h.openingLineup?{label:'Apertura formazione…',disabled:true,busy:true}:
-  h.competition?.status==='draft'?{label:'Vedi la competizione',action:'data-go="competizioni"'}:
+ const draft=h.competition?.status==='draft';
+ const lineup=!draft&&(h.openingLineup?{label:'Apertura formazione…',disabled:true,busy:true}:
+  open?{label:(hasLineup?'Modifica formazione':'Schiera la formazione')+' · Giornata '+next.round,warning:!hasLineup,deadline:next.deadline,action:`data-go="formazione" data-round="${esc(next.round)}"`}:null);
+ const cta=draft?{label:'Vedi la competizione',action:'data-go="competizioni"'}:
   live?{label:'Giornata '+round.number+' live'+(number(liveOwn?.points)?' · '+fp(liveOwn.points)+' parziali':''),action:roundAction(round.number,h.match?.id||h.match?.matchupId||h.storyData?.liveMatchup)}:
-  open?{label:(hasLineup?'✓ Formazione':'Schiera la formazione')+' · Giornata '+next.round,warning:!hasLineup,deadline:next.deadline,action:'data-go="formazione"'}:
+  lineup||
   {label:'Prossima giornata',disabled:true,waiting:true,deadline:[h.nextLineup?.deadline,round.firstKickoff].find(time=>Date.parse(time)>now)};
+ const slip=!draft&&h.playableSlip;
+ const secondary=(live&&lineup?homeAction(lineup,now,{quick:true}):'')+(slip?homeAction({
+  label:(slip.slip?'Modifica schedina':'Compila la schedina')+' · Giornata '+slip.number,
+  warning:!slip.slip,deadline:slip.homeDeadline,action:`data-go="schedine" data-round="${esc(slip.id)}"`,
+ },now,{quick:true}):'');
  return socialHome({mode:'fanta',now,reminder:homeReminderBanner('fanta',h.reminder),stories:renderFantaStories(h),hero:{
   title:h.me.teamName+(h.league.season?' · '+h.league.season:''),quote,
   chips:`<span>${esc(h.me.position)}° · ${pts(h.me.points)} pt</span><span>${pts(h.me.fantapoints)} fp</span>`,
@@ -83,7 +90,7 @@ export function renderHome(h,now=Date.now()){
   action:last?roundAction(last.round,last.matchupId):'data-go="squadra"',
   segments,segmentLabel:'Ultime cinque',
   footer:`<span class="home-last-footer"><span>Ultime cinque</span><span>${balances.join(' · ')}</span></span>`
- }:null,cta});
+ }:null,cta,secondary});
 }
 
 export function renderFantaStories(h){
