@@ -15,9 +15,9 @@ const shortMotifs={
  title:['Filosofo','Ministro','Profeta','Analista','Oracolo','Contabile','Poeta','Mago','Stratega','Direttore'],
  charm:['Cornetto','Quadrifoglio','Pallone','Tazzina','Ferro','Schedina','Fischietto','Moneta','Scarpino','Matita'],
  outfit:['Diagonale','Curva','Giacca','Stellata','Recupero','Quadretti','Zigzag','Sciarpa','Campetto','Grembiule'],
- color:['profondo','ombra','scuro','fumé','classico','tenue','chiaro','luminoso','vivo','acceso'],
  headwear:['Corona','Alloro','Berretto','Visiera','Basco','Cappello','Fascia','Cilindro','Diadema','Coppola'],
 };
+const colorTones=['profondo','ombra','scuro','fumé','classico','tenue','chiaro','luminoso','vivo','acceso'];
 const shortTitles=['gelido','notturno','ospite','deciso','smarrito','sfortunato','mancino','riserva','bagnato','audace','invisibile','ultrà','festaiolo','prudente','elegante','letale','tardivo','distinto','disperato','improvvisato'];
 export const REWARD_SLOTS={title:'rewardTitle',charm:'rewardCharm',outfit:'rewardOutfit',color:'rewardColor',headwear:'rewardHat',room:'rewardRoom'};
 export const REWARD_TYPES={title:'Titoli',charm:'Portafortuna',outfit:'Abbigliamento',color:'Colori',headwear:'Corone e copricapi',room:'Spogliatoi'};
@@ -25,9 +25,9 @@ export function stableHash(text){let h=2166136261;for(const c of String(text)){h
 const shade=(hex,n)=>'#'+hex.slice(1).match(/../g).map(v=>Math.max(0,Math.min(255,parseInt(v,16)+n)).toString(16).padStart(2,'0')).join('');
 export const REWARD_CATALOG=Object.entries(types).flatMap(([type,motifs],t)=>motifs.flatMap((name,motif)=>palettes.map(([palette,color],edition)=>{
  const n=t*200+motif*20+edition,rarity=n%20<10?'common':n%20<16?'rare':n%20<19?'epic':'legendary';
- const style=shortMotifs[type][motif],tone=colorNames[edition];
- const shortName=type==='color' ? tone[0].toUpperCase()+tone.slice(1)+' '+style : style+' '+(type==='title'?shortTitles[edition]:tone);
- return {id:'quasi-'+String(n+1).padStart(4,'0'),type,motif,color:type==='color'?shade(color,(motif-4)*4):color,secondary:shade(color,-45),name:type==='title'?name+' '+epithets[edition]:name+' · '+palette,shortName,rarity};
+ const tone=colorNames[edition],isColor=type==='color';
+ const shortName=isColor ? tone[0].toUpperCase()+tone.slice(1) : shortMotifs[type][motif]+' '+(type==='title'?shortTitles[edition]:tone);
+ return {id:'quasi-'+String(n+1).padStart(4,'0'),type,motif,color:isColor?shade(color,(motif-4)*4):color,secondary:shade(color,-45),name:type==='title'?name+' '+epithets[edition]:name+' · '+palette,shortName,rarity,...(isColor?{colorTone:colorTones[motif]}:{})};
 })));
 REWARD_CATALOG.push({id:'king-crown',type:'headwear',motif:10,color:'#edc25f',secondary:'#aa7135',name:'Corona · King del betting',shortName:'Corona regale',rarity:'legendary'},{id:'king-title',type:'title',motif:0,color:'#edc25f',name:'King del betting',shortName:'Re assoluto',rarity:'legendary'},{id:'almost-title',type:'title',motif:0,color:'#b6c4cf',name:'Sua Quasità · un errore dalla gloria',shortName:'Sua Quasità',rarity:'epic'});
 REWARD_CATALOG.push(...ROOM_REWARDS,...ACHIEVEMENTS.map(a=>a.reward));
