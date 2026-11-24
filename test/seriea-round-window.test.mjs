@@ -40,7 +40,7 @@ test('the official first kickoff controls the Fanta deadline and a running previ
    VALUES('fanta-lucas-a',$1,1,'t1',$2,$3,$4,'2026-11-22')`,[competition,previous.formation,JSON.stringify(previous.starters),JSON.stringify(previous.bench)]);
   await fixture.db.query('DELETE FROM fanta.rosters WHERE team_id=$1 AND player_id=$2',['t1',released]);
   const bar={id:'bar-gravidi-test',members:[{uid:'u1',credits:500,points:0}]};
-  const slipRound={id:'virtual-round',league:bar.id,season:2026,number:2,serieARound:2,source:'fantacalcio',nativeFanta:{leagueId:'fanta-lucas-a',competitionId:competition},kickoff:sunday,virtualBookmaker:true,competitionKey:'fanta',rules:{mode:'classic',correct:1,wrong:-1},matches:[{id:'virtual-match',kickoff:sunday,status:'NS',odds:{1:2,X:3,2:4}}],slips:[]};
+  const slipRound={id:'virtual-round',league:bar.id,season:2026,number:2,serieARound:2,source:'fantacalcio',nativeFanta:{leagueId:'fanta-lucas-a',competitionId:competition},kickoff:sunday,virtualBookmaker:true,competitionKey:'fanta',rules:{mode:'classic',correct:1,wrong:-1},matches:[{id:'virtual-match',kickoff:null,status:'NS',odds:{1:2,X:3,2:4}}],slips:[]};
   await fixture.db.query("UPDATE fanta_state SET payload=payload||jsonb_build_object('leagues',$1::jsonb,'rounds',$2::jsonb) WHERE id=1",[JSON.stringify([bar]),JSON.stringify([slipRound])]);
   await fixture.db.query("UPDATE fanta_state SET payload=jsonb_set(payload,'{sessions,0,expires}',to_jsonb($1::bigint)) WHERE id=1",[Date.parse(sunday)]);
   await fixture.db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key) VALUES($1,'fanta-lucas-a',$2,'fanta')",[bar.id,competition]);

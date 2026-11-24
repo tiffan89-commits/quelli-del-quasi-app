@@ -28,7 +28,7 @@ export function alignSerieASlipKickoffs(round,calendar){
  const byId=new Map(official.matches.map(m=>[m.id,m]));
  for(const match of round.matches||[]){
   const source=byId.get(match.id);
-  const kickoff=source?.kickoff||source?.officialKickoff;
+  const kickoff=source?.officialKickoff||source?.kickoff;
   if(Number.isFinite(Date.parse(kickoff)))match.kickoff=match.officialKickoff=kickoff;
  }
 }

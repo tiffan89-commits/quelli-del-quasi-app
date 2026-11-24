@@ -13,6 +13,42 @@ import {changeBarStorage} from '../runtime/bar-storage.mjs';
 import {storedOdds} from '../fanta/statistical-votes/repository.mjs';
 import {runMatchCache} from '../lib/match-cache.mjs';
 
+test('Bar slip uses each official kickoff when league copies are missing their dates',async()=>{
+ const db=new PGlite();
+ const early='2026-11-27T19:45:00.000Z',late='2026-11-28T14:00:00.000Z';
+ const fixtures=Array.from({length:10},(_,i)=>({id:'seriea:2026:13:'+(i+1),home:'Casa '+i,away:'Ospite '+i,
+  status:'NS',kickoff:i?late:early,officialKickoff:i?late:early,odds:{1:2}}));
+ const previous=fixtures.map((m,i)=>({...m,id:'seriea:2026:12:'+(i+1),
+  kickoff:'2026-11-23T19:45:00.000Z',officialKickoff:'2026-11-23T19:45:00.000Z',status:'FT'}));
+ const round={id:'next',league:'league',number:13,season:2026,source:'seriea',kickoff:early,slips:[],
+  matches:fixtures.map(m=>({...m,kickoff:null,officialKickoff:null}))};
+ const token='test-session',state={
+  users:[{id:'user',name:'Test',emailVerified:true}],sessions:[{uid:'user',token:sha(token),expires:Date.parse(late)+3600000}],
+  leagues:[{id:'league',members:[{uid:'user',credits:500,points:0}]}],rounds:[round],ledger:[],
+  football:{calendar:{season:2026,rounds:[{number:12,matches:previous},{number:13,matches:fixtures}]}},
+ };
+ const connect=async()=>({
+  query:(sql,args)=>sql.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[]}):db.query(sql,args),release(){},
+ });
+ const save=(sportsStorage,instant,id,stake=5)=>saveBarSlip(token,{league:round.league,round:round.id,stake,picks:{[id]:'1'}},
+  {connect,sportsStorage,now:()=>instant});
+ const [first,second]=fixtures;
+ try{
+  await db.exec('CREATE SCHEMA fanta; CREATE TABLE fanta_state(id int PRIMARY KEY,payload jsonb)');
+  await db.query('INSERT INTO fanta_state VALUES(1,$1)',[state]);
+  for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views']){
+   await db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
+  }
+  for(const mode of ['rows','snapshot']){
+   await assert.rejects(save(mode,Date.parse(early),first.id),/pronostico.*chiuso/);
+   const saved=await save(mode,Date.parse(early),second.id);
+   assert.equal(saved.receipt.slip.acceptedOdds[second.id],2);
+   assert.equal(saved.receipt.member.credits,495);
+   await assert.rejects(save(mode,Date.parse(late),second.id,6),/Giornata chiusa/);
+  }
+ }finally{await db.close();}
+});
+
 test('replaying a final settles once and resumes interrupted rewards on row storage',async()=>{
  const db=new PGlite();
  const kickoff='2026-11-08T19:45:00.000Z';
