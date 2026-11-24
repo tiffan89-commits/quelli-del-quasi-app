@@ -186,6 +186,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
   })),
   async teamLineupWatch(id,competition,now){return use(async c=>{
    const {rows:[league]}=await c.query(`SELECT l.season,l.source_key,
+    (SELECT data->>'revision' FROM fanta.jobs WHERE id='availability:current:'||l.season::text) AS availability_revision,
     ARRAY(SELECT t.user_id FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id IS NOT NULL) AS members,
     (SELECT coalesce(jsonb_agg(jsonb_build_object('number',r.number,'seriea_round',r.seriea_round,'deadline',r.deadline,'official',r.official,
      'data',jsonb_build_object('archivedWithoutResults',r.data->'archivedWithoutResults'))),'[]') FROM fanta.rounds r WHERE r.league_id=l.id AND r.competition_id=selected.id) AS rounds
@@ -193,7 +194,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
    if(!league)return null;
    const submissionWindows=await readSerieARoundWindows(c,{season:league.season});
    const {round,...lineupRound}=teamLineupRound({...league,submissionWindows},now);
-   return {sourceKey:league.source_key,members:league.members,lineupRound};
+   return {sourceKey:league.source_key,members:league.members,lineupRound:{...lineupRound,availabilityRevision:league.availability_revision}};
   });},
   async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,roundOnly=false,teamIdentity=false,calculation=false,submissionWindows=false}={}){return use(async c=>{
    if(!write&&!auction&&!market){

@@ -73,7 +73,6 @@ function reserveTile(p,index,{blocked,tab}) {
   return `<article class="fs-reserve" data-st-reserve-role="${esc(p.role)}" data-drop="bench:${index}" aria-label="${esc(surname(p))}, riserva ${index+1}" ${tab==='tutti'||p.role===tab?'':'hidden'}>
     <button type="button" class="fs-tile${p.status?.type==='injured'||p.status?.type==='suspended'?' is-out':''}" data-st-player="${esc(p.id)}" data-drag-id="${esc(p.id)}" data-drag-from="bench" aria-label="Schiera ${esc(p.name)}" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" ${blocked?'disabled':''}>
       <span class="fs-shirt" title="${esc(p.name)}">${studioShirt(p)}</span>${playBadge(p)}
-      <strong class="fs-reserve-name">${esc(surname(p))}</strong>
       ${playerFooter(p)}
       <em class="fanta-role is-${p.role}">${p.role}</em>
     </button>
@@ -90,6 +89,13 @@ export function flipStudio(studio,benchOpen){
   }
   studio.querySelector('[data-st-bench-panel="open"]').hidden=benchOpen;
   studio.querySelector('.fs-flip-button[data-st-bench-panel="close"]').hidden=!benchOpen;
+}
+
+export function animateStudioFlip(studio,benchOpen){
+  if(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return;
+  studio?.querySelector('.fs-face:not([inert])')?.animate?.([
+    {transform:`rotateY(${benchOpen?65:-65}deg)`},{transform:'rotateY(0deg)'},
+  ],{duration:220,easing:'ease-out'});
 }
 
 export function filterStudioBench(studio,role){

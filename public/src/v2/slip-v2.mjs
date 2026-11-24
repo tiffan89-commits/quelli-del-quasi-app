@@ -35,8 +35,7 @@ function optionPrice(m,p,closed,round){
 function option(m, p, picks, closed, esc, fmt, pointsOnly,round,barTicket=false) {
   const on = picks[m.id] === p;
   const {odd,saved,rules}=optionPrice(m,p,closed,round);
-  const estimated=m.oddsEstimated?.[p]&&(!barTicket||sourceOf(round)==='fantacalcio');
-  const quote=Number.isFinite(odd)?(barTicket?ticketQuote.format(odd):fmt(odd))+(estimated?'*':''):null;
+  const quote=Number.isFinite(odd)?(barTicket?ticketQuote.format(odd):fmt(odd)):null;
   let label=quote?'Quota '+quote:'Quota in arrivo', points='';
   if(pointsOnly){
     const terms=(closed&&saved?.pointTerms?.[m.id])||m.pointOffers?.[p]||pointTerms(m,p,{mode:'weighted',scoring:'difficulty-v2',correct:1,wrong:-1,...rules});
