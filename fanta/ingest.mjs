@@ -95,7 +95,7 @@ export async function dailyCatalog({connect=connection,provider=fantaProvider(),
      CASE WHEN fanta.players.club_id=EXCLUDED.club_id AND fanta.players.data#>>'{status,fixtureId}'=EXCLUDED.data#>>'{status,fixtureId}'
       AND (EXISTS(SELECT 1 FROM fanta.jobs WHERE id=$7 AND data->>'checkedAt'>=$8)
        OR coalesce(EXCLUDED.data#>>'{status,type}','ok')='ok'
-          AND fanta.players.data#>>'{status,source}' IN ('cards','news')) THEN 'status' END
+          AND fanta.players.data#>>'{status,source}' IN ('cards','news','recent-fixture')) THEN 'status' END
     ],NULL))`,[p.id,p.apiId,p.clubId,p.name,p.role,JSON.stringify(p),availabilityJobId(season),new Date(stamp-3600000).toISOString()]);
   for(const f of fixtures.response){const round=Number(f.league.round?.match(/(\d+)$/)?.[1]);if(!round||round>38)continue;await c.query('INSERT INTO fanta.fixtures(id,api_id,season,round,kickoff,status,home_id,away_id,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(id) DO UPDATE SET kickoff=EXCLUDED.kickoff WHERE fanta.fixtures.frozen_at IS NULL',['af:'+f.fixture.id,f.fixture.id,season,round,f.fixture.date,f.fixture.status.short,'af:'+f.teams.home.id,'af:'+f.teams.away.id,JSON.stringify(f)]);}
   const stats=(await c.query('SELECT data FROM fanta.player_stats')).rows.map(x=>x.data),baseline=calibrateBaselines(stats,{asOf:new Date(now()).toISOString()});await c.query('INSERT INTO fanta.baselines(id,model,data) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[hashInput(baseline),MODEL,JSON.stringify(baseline)]);
