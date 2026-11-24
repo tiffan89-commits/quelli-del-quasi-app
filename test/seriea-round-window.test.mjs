@@ -8,12 +8,29 @@ import {renderSquadra} from '../public/src/fanta/squadra.mjs';
 import {syncConfirmedDeadlines} from '../lib/operations/round-deadlines.mjs';
 import {saveBarSlip} from '../lib/bar-slip-save.mjs';
 import {attentionOf,fantaHomeStatus} from '../public/src/v2/league-switcher.mjs';
-import {slipWaitingForPrevious} from '../public/src/slip-state.mjs';
+import {alignSlipSchedule,slipWaitingForPrevious} from '../public/src/slip-state.mjs';
+import {eventLocked} from '../public/slip-events.mjs';
 
 const friday='2026-11-27T20:45:00+01:00',sunday='2026-11-29T18:30:00+01:00',duringPrevious=Date.parse('2026-11-23T21:30:00+01:00');
 const match=(number,i,kickoff,status)=>({id:`seriea:2026:${number}:${i+1}`,officialKickoff:kickoff,kickoff,status,odds:{1:2,X:3,2:4}});
 const current=Array.from({length:10},(_,i)=>match(1,i,'2026-11-23T20:45:00+01:00',i===9?'LIVE':'FT'));
 const upcoming=Array.from({length:10},(_,i)=>match(2,i,i===7?friday:sunday,'NS'));
+
+test('authoritative dates repair stale views before opening and Fanta closes at the first kickoff',()=>{
+ const previous={number:1,matches:current.map(m=>({...m,status:'FT'}))};
+ const calendar={rounds:[previous,{number:2,matches:upcoming}]};
+ const old='2026-11-20T20:45:00+01:00';
+ const bar={number:2,deadline:old,matches:upcoming.map(m=>({...m,kickoff:old,officialKickoff:null}))};
+ const fanta={number:1,serieARound:2,source:'fantacalcio',nativeFanta:{},deadline:sunday,matches:[{id:'virtual',kickoff:sunday}]};
+ for(const round of [bar,fanta]){
+  alignSlipSchedule(round,calendar);
+  assert.equal(round.deadline,new Date(friday).toISOString());
+  assert.equal(slipWaitingForPrevious(round,calendar.rounds,duringPrevious),false);
+  assert.equal(slipWaitingForPrevious(round,[{...previous,matches:previous.matches.slice(0,9)}],duringPrevious),true);
+ }
+ assert.equal(eventLocked(fanta,fanta.matches[0],Date.parse(friday)),true);
+ assert.equal(eventLocked(bar,bar.matches[0],Date.parse(friday)),false);
+});
 
 test('a saved Bar slip has no badge while the next round waits for the previous final whistle',()=>{
  const first={number:1,eventBetting:true,kickoff:current[0].kickoff,slip:{picks:{}},matches:current};
@@ -40,7 +57,7 @@ test('the official first kickoff controls the Fanta deadline and a running previ
    VALUES('fanta-lucas-a',$1,1,'t1',$2,$3,$4,'2026-11-22')`,[competition,previous.formation,JSON.stringify(previous.starters),JSON.stringify(previous.bench)]);
   await fixture.db.query('DELETE FROM fanta.rosters WHERE team_id=$1 AND player_id=$2',['t1',released]);
   const bar={id:'bar-gravidi-test',members:[{uid:'u1',credits:500,points:0}]};
-  const slipRound={id:'virtual-round',league:bar.id,season:2026,number:2,serieARound:2,source:'fantacalcio',nativeFanta:{leagueId:'fanta-lucas-a',competitionId:competition},kickoff:sunday,virtualBookmaker:true,competitionKey:'fanta',rules:{mode:'classic',correct:1,wrong:-1},matches:[{id:'virtual-match',kickoff:sunday,status:'NS',odds:{1:2,X:3,2:4}}],slips:[]};
+  const slipRound={id:'virtual-round',league:bar.id,season:2026,number:2,serieARound:2,source:'fantacalcio',nativeFanta:{leagueId:'fanta-lucas-a',competitionId:competition},kickoff:sunday,virtualBookmaker:true,competitionKey:'fanta',rules:{mode:'classic',correct:1,wrong:-1},matches:[{id:'virtual-match',kickoff:null,status:'NS',odds:{1:2,X:3,2:4}}],slips:[]};
   await fixture.db.query("UPDATE fanta_state SET payload=payload||jsonb_build_object('leagues',$1::jsonb,'rounds',$2::jsonb) WHERE id=1",[JSON.stringify([bar]),JSON.stringify([slipRound])]);
   await fixture.db.query("UPDATE fanta_state SET payload=jsonb_set(payload,'{sessions,0,expires}',to_jsonb($1::bigint)) WHERE id=1",[Date.parse(sunday)]);
   await fixture.db.query("INSERT INTO fanta.bar_links(bar_league_id,fanta_league_id,competition_id,competition_key) VALUES($1,'fanta-lucas-a',$2,'fanta')",[bar.id,competition]);

@@ -15,11 +15,15 @@ const byRound=(a,b)=>(Number(a.number)-Number(b.number))||((Date.parse(deadlineO
 export const sourceOf = (round) => round?.source === 'fantacalcio' || round?.provider === 'Leghe Fantacalcio' ? 'fantacalcio' : 'seriea';
 export const deadlineOf = (round) => round?.deadline || round?.kickoff;
 const finishedSerieAStatuses=new Set(['FT','AET','PEN','PST','CANC','ABD','AWD','WO']);
+const inactiveSerieAStatuses=new Set(['PST','CANC','ABD','AWD','WO']);
+const canonicalFixture=m=>/^seriea:\d{4}:\d+:\d+$/.test(m?.id||'');
 export function slipWaitingForPrevious(round,calendarRounds,now=Date.now()){
  const number=Number(sourceOf(round)==='fantacalcio'?round.serieARound:round.number);
  if(!Number.isInteger(number)||number<=1||Date.parse(deadlineOf(round))<=now)return false;
  const previous=calendarRounds?.find(r=>Number(r.number)===number-1);
- return !!previous?.matches?.length&&!previous.matches.every(m=>m.void||finishedSerieAStatuses.has(m.status)||Array.isArray(m.score)&&m.status!=='LIVE');
+ const matches=previous?.matches||[];
+ if(matches.some(canonicalFixture))return new Set(matches.map(m=>m.id)).size!==10||!matches.every(m=>finishedSerieAStatuses.has(m.status));
+ return !!matches.length&&!matches.every(m=>m.void||finishedSerieAStatuses.has(m.status)||Array.isArray(m.score)&&m.status!=='LIVE');
 }
 export function alignSerieASlipKickoffs(round,calendar){
  if(!round||sourceOf(round)!=='seriea')return;
@@ -28,9 +32,26 @@ export function alignSerieASlipKickoffs(round,calendar){
  const byId=new Map(official.matches.map(m=>[m.id,m]));
  for(const match of round.matches||[]){
   const source=byId.get(match.id);
-  const kickoff=source?.kickoff||source?.officialKickoff;
+  if(canonicalFixture(source)){
+   match.kickoff=match.officialKickoff=Number.isFinite(Date.parse(source.officialKickoff))?source.officialKickoff:null;
+   continue;
+  }
+  const kickoff=source?.officialKickoff||source?.kickoff;
   if(Number.isFinite(Date.parse(kickoff)))match.kickoff=match.officialKickoff=kickoff;
  }
+}
+export function alignSlipSchedule(round,calendar){
+ if(!round||round.archived||round.settled)return;
+ const fanta=sourceOf(round)==='fantacalcio';
+ if(!fanta)alignSerieASlipKickoffs(round,calendar);
+ else if(!round.nativeFanta)return;
+ const number=Number(fanta?round.serieARound:round.number);
+ const official=calendar?.rounds?.find(r=>Number(r.number)===number)?.matches||[];
+ if(official.length!==10||!official.every(canonicalFixture))return;
+ const kickoffs=official.filter(m=>!inactiveSerieAStatuses.has(m.status)).map(m=>Date.parse(m.officialKickoff));
+ if(!kickoffs.length||kickoffs.some(t=>!Number.isFinite(t)))return;
+ round.kickoff=round.deadline=new Date(Math.min(...kickoffs)).toISOString();
+ if(fanta)round.matches=(round.matches||[]).map(m=>({...m,kickoff:round.deadline}));
 }
 const dayFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Rome'});
 export const slipRomeDay=(now=Date.now())=>dayFormatter.format(new Date(now));

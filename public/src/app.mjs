@@ -83,7 +83,7 @@ import {restoreRoundCalendarScroll} from './round-calendar.mjs';
 import { playerRanking, fantasyTableView } from "./bar-fanta-rankings.mjs";
 import {
   sourceOf,
-  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,alignSerieASlipKickoffs,slipWaitingForPrevious,
+  roundAvailability,currentSlipRound,defaultSlipRound,selectableSlipRounds,currentPublicSlipRound,selectablePublicSlipRounds,slipRomeDay,alignSlipSchedule,slipWaitingForPrevious,
   deadlineOf,
   isClosed,editingClosed,editingEventLocked,editablePicks,
   slipSummary,
@@ -320,7 +320,10 @@ const publicSlipView=()=>slipScope==='bar'||slipScope==='community';
 function availableRounds() {
  const all=(L()?.rounds||[]).filter(r=>!r.archived&&sourceOf(r)===sourceScope&&(sourceScope!=='fantacalcio'||!competitionScope||r.competitionKey===competitionScope));
  const now=Date.now();
- for(const round of all)round.waitingForOpen=slipWaitingForPrevious(round,state.calendar?.rounds,now);
+ for(const round of all){
+  alignSlipSchedule(round,state.calendar);
+  round.waitingForOpen=slipWaitingForPrevious(round,state.calendar?.rounds,now);
+ }
  return selectableSlipRounds(all,now,state.calendar).sort((a,b)=>(Number(a.number)-Number(b.number))||Date.parse(a.kickoff)-Date.parse(b.kickoff));
 }
 
@@ -329,7 +332,6 @@ function R() {
   const round=rounds.find(r=>r.id===selectedRoundId)||defaultSlipRound(rounds,Date.now(),state.calendar);
   const league=L();
   if(round){
-    alignSerieASlipKickoffs(round,state.calendar);
     round.stakeReserve=slipCreditReserve(round,league.rounds,league,state.user?.id);
   }
   return round;

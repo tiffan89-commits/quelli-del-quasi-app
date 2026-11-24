@@ -14,7 +14,11 @@ export const currentRoundNumberSQL=`coalesce($3::int,
  (SELECT r.number FROM fanta.rounds r WHERE r.league_id=l.id AND r.competition_id=selected.id AND NOT (r.data @> '{"archivedWithoutResults":true}') ORDER BY r.deadline DESC,r.number DESC LIMIT 1))`;
 
 // Editing a future lineup is independent of final verification of prior results.
-export function lineupRound(s,now=Date.now()){return [...s.rounds].filter(r=>!r.official&&Date.parse(r.deadline)>now).sort((a,b)=>Date.parse(a.deadline)-Date.parse(b.deadline)||a.number-b.number)[0]||currentRound(s,now);}
+export function lineupRound(s,now=Date.now()){
+ return s.rounds.map(round=>({round,...lineupWindow(s,round,now)}))
+  .filter(item=>!item.started&&Date.parse(item.deadline)>now&&!item.round.data?.archivedWithoutResults)
+  .sort((a,b)=>Date.parse(a.deadline)-Date.parse(b.deadline)||a.round.number-b.round.number)[0]?.round||currentRound(s,now);
+}
 
 export function lineupWindow(state,round,now){
  if(!round||round.official||round.data?.archivedWithoutResults)return {deadline:round?.deadline??null,started:!!round?.official,open:false};
