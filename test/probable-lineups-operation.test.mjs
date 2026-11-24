@@ -21,12 +21,14 @@ test('recent injuries bridge an empty match feed, but suspensions and recovered 
  const injuries=[row(1,'Hamstring Injury'),row(2,'Yellow Cards'),row(3,'Personal Reasons')];
  const check=(forecasts=[],reports=injuries)=>collectAvailability([next],players,reports,forecasts,{recentFixtures:[prior]});
  const first=check();
- assert.deepEqual(first.map(p=>p.status.type),['injured','ok','ok']);
+ assert.deepEqual(first.map(p=>p.status.type),['doubtful','ok','ok']);
  assert.equal(first[0].status.fixtureId,next.id);
  assert.equal(first[0].status.sourceFixtureId,prior.id);
  const official={apiFootballId:20,lineups:{kind:'official',teams:[{players:[],bench:[{apiId:1}]}]}};
  assert.equal(check([official])[0].status.type,'ok');
  assert.equal(check([],[...injuries,{fixture:{id:20},team:{id:1},player:{id:1,type:'Questionable',reason:'Knock'}}])[0].status.type,'doubtful');
+ players[0].status={type:'injured',source:'news',fixtureId:next.id};
+ assert.equal(check()[0].status.source,'news');
 });
 
 test('scheduled slots tolerate dispatcher jitter without repeating a check in the same slot',()=>{

@@ -61,18 +61,18 @@ export function collectAvailability(fixtures,players,injuries,forecasts,{cards=[
    }
   }
  }
- for(const {id,sourceFixtureId} of carrying){
-  const player=updates.get(id);
-  if(player.status.type!=='ok'||officialSelections.has(player.status.fixtureId+':'+id))continue;
-  player.status={...player.status,type:'injured',source:'recent-fixture',sourceFixtureId,
-   note:'Infortunio segnalato nell’ultima partita. Rientro da confermare.'};
- }
  for(const player of players){
   const update=updates.get(Number(player.api_id)),prior=player.status;
   if(!update||prior?.fixtureId!==update.status.fixtureId)continue;
   if(prior.source==='cards'&&availabilityPriority[prior.type]>availabilityPriority[update.status.type]||
    update.status.type==='ok'&&(preservePrior||prior.source==='news')&&prior.type!=='ok'&&
     !officialSelections.has(update.status.fixtureId+':'+player.api_id))update.status=prior;
+ }
+ for(const {id,sourceFixtureId} of carrying){
+  const player=updates.get(id);
+  if(player.status.type!=='ok'||officialSelections.has(player.status.fixtureId+':'+id))continue;
+  player.status={...player.status,type:'doubtful',source:'recent-fixture',sourceFixtureId,
+   note:'Infortunio segnalato nell’ultima partita. Rientro da confermare.'};
  }
  return [...updates.values()];
 }
