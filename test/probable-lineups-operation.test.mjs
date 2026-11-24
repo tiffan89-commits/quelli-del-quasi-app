@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {runProbableLineups} from '../lib/operations/probable-lineups.mjs';
-import {refreshPlayerAvailability} from '../fanta/player-availability.mjs';
+import {collectAvailability,refreshPlayerAvailability} from '../fanta/player-availability.mjs';
 import {lineupAvailability,probabilityFor} from '../fanta/play-probabilities.mjs';
 import {probableLineupsDue} from '../lib/lineups.mjs';
 
@@ -12,6 +12,24 @@ const lineupRow=(side)=>`<tr data-panel-${side}="true">${Array.from({length:11},
 const skyPage=`<title>Probabili formazioni</title><span class="ftbl__team__name">Como</span><span class="ftbl__team__name">Cagliari</span>
  <span class="ftbl__team-formation-number">4-4-2</span><span class="ftbl__team-formation-number">4-4-2</span>
  <h2>Titolari</h2>${lineupRow('left')}${lineupRow('right')}`;
+
+test('recent injuries bridge an empty match feed, but suspensions and recovered players do not carry',()=>{
+ const prior={id:'af:10',api_id:10,home_id:'af:1',away_id:'af:2'};
+ const next={...prior,id:'af:20',api_id:20};
+ const players=[1,2,3].map(id=>({id:'af:'+id,api_id:id,club_id:'af:1'}));
+ const row=(id,reason)=>({fixture:{id:10},team:{id:1},player:{id,type:'Missing Fixture',reason}});
+ const injuries=[row(1,'Hamstring Injury'),row(2,'Yellow Cards'),row(3,'Personal Reasons')];
+ const check=(forecasts=[],reports=injuries)=>collectAvailability([next],players,reports,forecasts,{recentFixtures:[prior]});
+ const first=check();
+ assert.deepEqual(first.map(p=>p.status.type),['doubtful','ok','ok']);
+ assert.equal(first[0].status.fixtureId,next.id);
+ assert.equal(first[0].status.sourceFixtureId,prior.id);
+ const official={apiFootballId:20,lineups:{kind:'official',teams:[{players:[],bench:[{apiId:1}]}]}};
+ assert.equal(check([official])[0].status.type,'ok');
+ assert.equal(check([],[...injuries,{fixture:{id:20},team:{id:1},player:{id:1,type:'Questionable',reason:'Knock'}}])[0].status.type,'doubtful');
+ players[0].status={type:'injured',source:'news',fixtureId:next.id};
+ assert.equal(check()[0].status.source,'news');
+});
 
 test('scheduled slots tolerate dispatcher jitter without repeating a check in the same slot',()=>{
  const slot=Date.parse(kickoff)-3600000;
@@ -63,6 +81,14 @@ test('availability refresh reconciles fixture-specific feed rows and editorial a
   await refreshPlayerAvailability([{...match,lineups:null}],{connect,provider:{get:async()=>({response:[]})},now:now+7200000,season:2026});
   rows=await read();
   assert.deepEqual(rows.map(p=>p.status.type),['ok','ok','ok']);
+  const recent='2026-11-09T14:00:00.000Z';
+  await db.query("INSERT INTO fanta.fixtures VALUES ('af:320',320,2026,$1,'af:11','af:23')",[recent]);
+  await refreshPlayerAvailability([{...match,lineups:null}],{connect,season:2026,now:now+10800000,
+   recentFixtures:[{apiId:320,kickoff:recent,status:'FT'}],provider:{get:async path=>{
+    assert.equal(path,'injuries?ids=321-320');
+    return {response:[{player:{id:1,type:'Missing Fixture',reason:'Hamstring Injury'},team:{id:11},fixture:{id:320}}]};
+   }}});
+  assert.equal((await read())[0].status.sourceFixtureId,'af:320');
  }finally{await db.close();}
 });
 
