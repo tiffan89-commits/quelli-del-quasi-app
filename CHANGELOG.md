@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.48.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.2...v0.48.3) (2026-11-24)
+
+
+### Bug Fixes
+
+* aggiorna disponibilità e quote all’apertura della giornata ([#155](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/155)) ([106eea5](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/106eea5f2be809a18da5a8fe718aed3295a4f1b2))
+
 ## [0.48.2](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.1...v0.48.2) (2026-11-23)
 
 
