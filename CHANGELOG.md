@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.48.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.3...v0.48.4) (2026-11-24)
+
+
+### Bug Fixes
+
+* allinea il gioco al calendario ufficiale di Serie A ([#157](https://github.com/tiffan89-commits/quelli-del-quasi-app/issues/157)) ([7494d2a](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/7494d2aa06505bb6dd562f9d1758552564df1cda))
+
 ## [0.48.3](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.2...v0.48.3) (2026-11-24)
 
 
