@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.48.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.4...v0.48.5) (2026-11-24)
+
+
+### Bug Fixes
+
+* conserva le segnalazioni mediche tra le giornate ([20b0b3e](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/20b0b3ed85f3a25befc8b902417792c8d25a15ce))
+
 ## [0.48.4](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.3...v0.48.4) (2026-11-24)
 
 
