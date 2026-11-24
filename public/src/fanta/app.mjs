@@ -13,7 +13,7 @@ import {linkedInvite} from './league-invite.mjs';
 import {watchAuction,auctionClockOffset} from './auction-watch.mjs';
 import {createAuctionSocket} from './auction-socket.mjs';
 import {withHomeVotes} from './home-votes.mjs';
-import {filterStudioBench,flipStudio,renderStudio,studioTap,studioDraft} from './formazione-studio.mjs';
+import {animateStudioFlip,filterStudioBench,flipStudio,renderStudio,studioTap,studioDraft} from './formazione-studio.mjs';
 import {bestLineup,nextEmptySlot} from './squadra.mjs';
 import {readAppRoute,writeAppRoute} from '../routes.mjs';
 import {createFantaSlips,playableFantaSlip} from './schedine.mjs';
@@ -339,6 +339,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     if(openingHomeLineup||ui.squadra.saving)return;
     const id=league()?.id,tab=ui.tab;openingHomeLineup=true;render();
     try{
+      api.invalidateReads?.();
       let data=await api.team(id);
       if((expectedRound&&data.round.number!==expectedRound)||(ui.home?.nextLineup&&data.round.number!==ui.home.nextLineup.round)||data.round.locked&&(ui.home?.nextLineup||['da-schierare','schierata'].includes(ui.home?.round?.state))){api.invalidateReads?.();data=await api.team(id);}
       if(destroyed||suspended||league()?.id!==id||ui.tab!==tab)return;
@@ -884,11 +885,7 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
     const studioScroll=['.fs-grid','.fs-blist','.fs-tabs','.fs-bench-row','.fs-formations'].map(selector=>{const el=sheetRoot.querySelector(selector);return {selector,left:el?.scrollLeft||0,top:el?.scrollTop||0,list:el?.dataset.stList};});
     sheetRoot.hidden = !html;
     sheetRoot.innerHTML = html;
-    if(ui.studio&&wasBench!==undefined&&wasBench!==!!ui.studio.benchOpen&&!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches){
-      sheetRoot.querySelector('.fs-faces')?.animate?.([
-        {transform:`rotateY(${wasBench?180:0}deg)`},{transform:`rotateY(${ui.studio.benchOpen?180:0}deg)`},
-      ],{duration:260,easing:'ease'});
-    }
+    if(ui.studio&&wasBench!==undefined&&wasBench!==!!ui.studio.benchOpen)animateStudioFlip(sheetRoot,ui.studio.benchOpen);
     const playerDialog=sheetRoot.querySelector('.live-player-sheet');
     if(playerDialog){
       if(typeof playerDialog.showModal==='function')playerDialog.showModal();
@@ -957,6 +954,14 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
   }
   on(root,'change',e=>{if(e.target.id==='ranking-metric'){ui.lega.metric=e.target.value;render();}if(e.target.matches('[data-competition-switch]'))void switchCompetition(e.target.value);});
 
+  const availabilityRevisions=new Map();
+  function changedAvailability(phase){
+    const key=league()?.id;
+    if(!key||!phase.availabilityRevision)return false;
+    const known=availabilityRevisions.get(key);
+    availabilityRevisions.set(key,phase.availabilityRevision);
+    return known!==phase.availabilityRevision;
+  }
   // Lo stesso canale aggiorna voti e risultati del live e l'apertura delle formazioni.
   const sportsStream=createSportsPush({
     context:()=>{if(demo||destroyed||suspended||ui.mode!=='fanta')return null;
@@ -969,7 +974,8 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       if(destroyed||suspended)return;
       if(data.lineupRound&&ui.tab==='squadra'){
         const round=ui.squadra.data?.round;
-        if(round&&['number','deadline','open','started','official'].some(key=>round[key]!==data.lineupRound[key])){
+        const availabilityChanged=changedAvailability(data.lineupRound);
+        if(round&&(round.open&&availabilityChanged||['number','deadline','open','started','official'].some(key=>round[key]!==data.lineupRound[key]))){
           api.invalidateReads?.();void loadTeam({keepView:true});
         }
         return;
@@ -1013,6 +1019,9 @@ export function mountFanta(root, { api, bootstrap = null, demo = false, barLeagu
       ?{mode:'fanta-lineup',league:league().id,competition:ui.home.competition?.id}:null,
     apply:({lineupRound:phase})=>{
       if(!phase||!ui.home||ui.tab!=='oggi')return;
+      if(changedAvailability(phase)&&ui.studio&&phase.open){
+        api.invalidateReads?.();void loadTeam({keepView:true});
+      }
       const next=ui.home.nextLineup||(['da-schierare','schierata'].includes(ui.home.round.state)
         ?{round:ui.home.round.number,deadline:ui.home.round.deadline,savedAt:ui.home.lineup?.savedAt}:null);
       if(phase.number===next?.round&&(next.open!==phase.open||next.deadline!==phase.deadline)){

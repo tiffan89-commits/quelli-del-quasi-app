@@ -1072,7 +1072,7 @@ function choicesView(x, r) {
                 (r.pointsOnly
                   ? "1 punto"
                   : Number.isFinite(x.odds?.[p])
-                    ? fmt(x.odds[p]) + (x.oddsEstimated?.[p] ? " · stima" : "")
+                    ? fmt(x.odds[p])
                     : "in arrivo") +
                 "</span>" +
                 (r.pointsOnly && ((r.slip?.picks?.[x.id] === p
@@ -2425,9 +2425,16 @@ function showLiveStatus(value){
 }
 function applyLive(data){
   if(L()?.id!==data.league)return;
+  const slipPage=page==='schedina'&&!preferredFanta();
+  const selectorState=()=>JSON.stringify(availableRounds().map(round=>[round.id,roundAvailability(round)]));
+  const previous=slipPage?{id:R()?.id,options:selectorState()}:null;
   mergeLiveSnapshot(state,data);
   if(preferredFanta())return;
   const round=R();
+  if(previous&&!busy&&!draftConflict&&(round?.id!==previous.id||selectorState()!==previous.options)){
+    if(round?.id!==previous.id)hydrateDraft();
+    render();
+  }
   if(round&&editingClosed(round))document.querySelectorAll("#save-slip,#stake,[data-stake-step],[data-ticket-stake]").forEach(e=>e.disabled=true);
   if(round){
     if($('.bar-ticket')&&!busy&&!offline&&!draftConflict)refreshBarTicket?.();

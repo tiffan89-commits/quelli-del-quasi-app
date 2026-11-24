@@ -37,7 +37,7 @@ test('availability refresh reconciles fixture-specific feed rows and editorial a
     ('af:2',2,'af:22','Other Player','{}'),
     ('af:3',3,'af:11','Doubtful Player','{}');`);
   const provider={get:async path=>{
-   assert.equal(path,'injuries?league=135&season=2026');
+   assert.equal(path,'injuries?fixture=321');
    return {response:[
     {player:{id:1,type:'Questionable',reason:'Thigh Injury'},fixture:{id:321}},
     {player:{id:3,type:'Questionable',reason:'Knock'},fixture:{id:321}},
