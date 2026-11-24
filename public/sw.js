@@ -1,4 +1,4 @@
-const CACHE = "quellidelquasi-shell-v0.48.2"; // x-release-please-version
+const CACHE = "quellidelquasi-shell-v0.48.3"; // x-release-please-version
 const MEDIA_CACHE=CACHE+"-media-v1";
 const MEDIA_LIMIT=120;
 const mediaPath=/^\/assets\/(?:rooms-v2|optimized|icons|teams)\/.+\.(?:webp|avif|png|jpe?g|svg)$/i;
