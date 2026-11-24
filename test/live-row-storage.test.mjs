@@ -12,6 +12,7 @@ import {refreshFutureCalendar} from '../lib/operations/future-calendar.mjs';
 import {changeBarStorage} from '../runtime/bar-storage.mjs';
 import {storedOdds} from '../fanta/statistical-votes/repository.mjs';
 import {runMatchCache} from '../lib/match-cache.mjs';
+import {syncStoredSchedule} from '../lib/operations/stored-schedule.mjs';
 
 test('Bar slip uses each official kickoff when league copies are missing their dates',async()=>{
  const db=new PGlite();
@@ -36,7 +37,7 @@ test('Bar slip uses each official kickoff when league copies are missing their d
  try{
   await db.exec('CREATE SCHEMA fanta; CREATE TABLE fanta_state(id int PRIMARY KEY,payload jsonb)');
   await db.query('INSERT INTO fanta_state VALUES(1,$1)',[state]);
-  for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views']){
+  for(const name of ['017_live_storage_backfill','018_live_storage_accounts','019_live_storage_read_views','020_live_storage_round_cache','021_live_storage_league_order']){
    await db.exec(await readFile(new URL('../netlify/database/migrations/'+name+'.sql',import.meta.url),'utf8'));
   }
   for(const mode of ['rows','snapshot']){
@@ -46,6 +47,18 @@ test('Bar slip uses each official kickoff when league copies are missing their d
    assert.equal(saved.receipt.member.credits,495);
    await assert.rejects(save(mode,Date.parse(late),second.id,6),/Giornata chiusa/);
   }
+  for(const mode of ['rows','snapshot']){
+   const options={connect,sportsStorage:mode,season:2026,now:Date.parse(early)-60000};
+   const synced=await syncStoredSchedule(options);
+   assert.equal(synced.fixtures.length,10);
+   assert.ok(synced.metrics.barMatches>0);
+   assert.equal(synced.fixtures.find(m=>m.id===second.id).kickoff,late);
+   assert.equal((await syncStoredSchedule(options)).metrics.barMatches,0);
+  }
+  const repaired=(await readBarRows(db)).rounds[0];
+  assert.equal(repaired.matches[0].officialKickoff,early);
+  assert.equal(repaired.matches[1].officialKickoff,late);
+  assert.equal(repaired.slips[0].acceptedOdds[second.id],2);
  }finally{await db.close();}
 });
 
@@ -54,7 +67,7 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
  const kickoff='2026-11-08T19:45:00.000Z';
  const fixtureId='seriea:2026:11:2',roundId='round-11',leagueId='league',userId='user';
  const rules={mode:'classic',correct:1,wrong:-1};
- const match={id:fixtureId,home:'Fiorentina',away:'Juventus',status:'NS',score:null,kickoff,odds:{1:2.5},frozen:{}};
+ const match={id:fixtureId,home:'Fiorentina',away:'Juventus',status:'NS',score:null,kickoff,officialKickoff:kickoff,odds:{1:2.5},frozen:{}};
  const token='synthetic-session',input={league:leagueId,round:roundId,stake:10,picks:{[fixtureId]:'1'},baseSavedAt:null};
  const original={
   users:[{id:userId,name:'Test',emailVerified:true}],

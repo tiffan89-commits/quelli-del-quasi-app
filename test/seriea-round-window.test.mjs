@@ -8,12 +8,29 @@ import {renderSquadra} from '../public/src/fanta/squadra.mjs';
 import {syncConfirmedDeadlines} from '../lib/operations/round-deadlines.mjs';
 import {saveBarSlip} from '../lib/bar-slip-save.mjs';
 import {attentionOf,fantaHomeStatus} from '../public/src/v2/league-switcher.mjs';
-import {slipWaitingForPrevious} from '../public/src/slip-state.mjs';
+import {alignSlipSchedule,slipWaitingForPrevious} from '../public/src/slip-state.mjs';
+import {eventLocked} from '../public/slip-events.mjs';
 
 const friday='2026-11-27T20:45:00+01:00',sunday='2026-11-29T18:30:00+01:00',duringPrevious=Date.parse('2026-11-23T21:30:00+01:00');
 const match=(number,i,kickoff,status)=>({id:`seriea:2026:${number}:${i+1}`,officialKickoff:kickoff,kickoff,status,odds:{1:2,X:3,2:4}});
 const current=Array.from({length:10},(_,i)=>match(1,i,'2026-11-23T20:45:00+01:00',i===9?'LIVE':'FT'));
 const upcoming=Array.from({length:10},(_,i)=>match(2,i,i===7?friday:sunday,'NS'));
+
+test('authoritative dates repair stale views before opening and Fanta closes at the first kickoff',()=>{
+ const previous={number:1,matches:current.map(m=>({...m,status:'FT'}))};
+ const calendar={rounds:[previous,{number:2,matches:upcoming}]};
+ const old='2026-11-20T20:45:00+01:00';
+ const bar={number:2,deadline:old,matches:upcoming.map(m=>({...m,kickoff:old,officialKickoff:null}))};
+ const fanta={number:1,serieARound:2,source:'fantacalcio',nativeFanta:{},deadline:sunday,matches:[{id:'virtual',kickoff:sunday}]};
+ for(const round of [bar,fanta]){
+  alignSlipSchedule(round,calendar);
+  assert.equal(round.deadline,new Date(friday).toISOString());
+  assert.equal(slipWaitingForPrevious(round,calendar.rounds,duringPrevious),false);
+  assert.equal(slipWaitingForPrevious(round,[{...previous,matches:previous.matches.slice(0,9)}],duringPrevious),true);
+ }
+ assert.equal(eventLocked(fanta,fanta.matches[0],Date.parse(friday)),true);
+ assert.equal(eventLocked(bar,bar.matches[0],Date.parse(friday)),false);
+});
 
 test('a saved Bar slip has no badge while the next round waits for the previous final whistle',()=>{
  const first={number:1,eventBetting:true,kickoff:current[0].kickoff,slip:{picks:{}},matches:current};

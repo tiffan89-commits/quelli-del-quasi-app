@@ -16,6 +16,20 @@ test('lineup quality runs daily at 05:20 Rome including the clock change and is 
  assert.equal(refreshPlan(claim.plan,[],{now:date(slot.at)+3600000}).jobs.find(j=>j.operation==='audit-lineup-quality'&&j.status==='queued').at,'2026-10-26T04:20:00.000Z');
 });
 test('outside the useful windows the dispatcher never calls database/provider/worker; the calendar is initialized once',async()=>{const now=date('2026-10-25T02:00Z'),bootstrap=newPlan(calendar([{}]),{now}),store=memory();let network=0;const report=await dispatchDue({store,bootstrap,now,fetcher:()=>network++,env:{}});assert.equal(report.claimed,0);assert.equal(report.dbOperations,0);assert.equal(report.providerCalls,0);assert.equal(network,0);assert.ok(await store.getWithMetadata('calendar'));const a=await store.getWithMetadata('calendar');await dispatchDue({store,bootstrap,now,fetcher:()=>network++});assert.equal((await store.getWithMetadata('calendar')).etag,a.etag);});
+test('stored official dates retime existing jobs, with one periodic reconciliation and recovery after downtime',async()=>{
+ const hour=3600000,now=date(start)-28*hour,store=memory(),bootstrap=newPlan(calendar([{}]),{now});
+ const fetcher=async()=>({ok:true});
+ await dispatchDue({store,bootstrap,now,fetcher,env:{URL:'https://example.test',MAIL_ENCRYPTION_KEY:'test'},syncOfficialSchedule:true});
+ const {data:claimed}=await store.getWithMetadata('calendar');
+ const job=claimed.jobs.find(j=>j.kind==='schedule-sync');
+ assert.equal(job.status,'running');
+ const kickoff=new Date(date(start)+hour).toISOString();
+ const done=completeWork(claimed,job,{ok:true,fixtures:[{id:'m0',kickoff}]},{now});
+ assert.equal(done.jobs.filter(j=>j.kind==='schedule-sync').length,1);
+ assert.equal(date(done.jobs.find(j=>j.kind==='schedule-sync').at),now+6*hour);
+ assert.equal(done.jobs.filter(j=>j.kind==='reminder-push'&&j.status==='queued').at(0).at,new Date(date(kickoff)-24*hour).toISOString());
+ assert.ok(claimWork(done,{now:now+7*hour}).jobs.some(j=>j.kind==='schedule-sync'));
+});
 test('simultaneous matches produce one shared minute job, even if the dispatch is duplicated',()=>{const now=date(start),p=newPlan(calendar([{},{}]),{now}),a=claimWork(p,{now,nonce:'a'});assert.equal(a.jobs.filter(j=>j.kind==='live').length,1);assert.deepEqual(a.jobs[0].fixtureIds,['m0','m1']);assert.equal(claimWork(a.plan,{now,nonce:'b'}).jobs.length,0);});
 test('final status suspends live immediately, does not assume an end at ninety minutes, and creates a single next-morning verification',()=>{let now=date(start),p=newPlan(calendar([{},{}]),{now});p=refreshPlan(p,[{id:'m0',status:'LIVE'},{id:'m1',status:'LIVE'}],{now});assert.equal(dueWork(p,{now:now+110*60000}).live.length,2);now+=120*60000;p=refreshPlan(p,[{id:'m0',status:'FT'},{id:'m1',status:'FT'}],{now});assert.equal(dueWork(p,{now}).live.length,0);const jobs=p.jobs.filter(j=>j.kind==='morning');assert.equal(jobs.length,1);assert.equal(jobs[0].at,'2026-11-02T06:00:00.000Z');assert.equal(refreshPlan(p,[],{now}).jobs.filter(j=>j.kind==='morning').length,1);const claimed=claimWork(p,{now:date(jobs[0].at),nonce:'verify'}),job=claimed.jobs.find(j=>j.kind==='morning'),done=completeWork(claimed.plan,job,{ok:true},{now:date(job.at)});assert.equal(claimWork(done,{now:date(job.at)+60000}).jobs.length,0);});
 test('postponed games remain pending without keeping polling alive; a rescheduled recovery gets only its own verification',()=>{let now=date(start),p=newPlan(calendar([{},{}]),{now});p=refreshPlan(p,[{id:'m0',status:'FT'},{id:'m1',status:'PST'}],{now});const j=p.jobs.find(j=>j.kind==='morning'),c=claimWork(p,{now:date(j.at),nonce:'one'}),done=completeWork(c.plan,c.jobs.find(x=>x.id===j.id),{ok:true},{now:date(j.at)});assert.deepEqual(dueWork(done,{now:now+3*86400000}).live,[]);const resumed=refreshPlan(done,[{id:'m1',status:'LIVE',kickoff:'2026-11-04T17:00:00Z'}],{now:date('2026-11-04T17:00Z')}),final=refreshPlan(resumed,[{id:'m1',status:'FT'}],{now:date('2026-11-04T19:00Z')}),next=final.jobs.filter(x=>x.kind==='morning'&&x.status==='queued');assert.equal(next.length,1);assert.deepEqual(next[0].fixtureIds,['m1']);});
