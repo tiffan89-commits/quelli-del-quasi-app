@@ -33,7 +33,8 @@ export function alignSerieASlipKickoffs(round,calendar){
  for(const match of round.matches||[]){
   const source=byId.get(match.id);
   if(canonicalFixture(source)){
-   match.kickoff=match.officialKickoff=Number.isFinite(Date.parse(source.officialKickoff))?source.officialKickoff:null;
+   const kickoff=source.officialKickoff===undefined?match.officialKickoff:source.officialKickoff;
+   match.kickoff=match.officialKickoff=Number.isFinite(Date.parse(kickoff))?kickoff:null;
    continue;
   }
   const kickoff=source?.officialKickoff||source?.kickoff;
