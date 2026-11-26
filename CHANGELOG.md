@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.48.6](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.5...v0.48.6) (2026-11-26)
+
+
+### Bug Fixes
+
+* apri la schedina al primo caricamento ([9bfa518](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/9bfa518f3702d5b54f6028b8faa71e7e322f9236))
+
 ## [0.48.5](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.4...v0.48.5) (2026-11-24)
 
 
