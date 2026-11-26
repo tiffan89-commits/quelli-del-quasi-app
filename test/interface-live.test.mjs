@@ -106,6 +106,8 @@ test("live results render inside the slip, calendar remains clickable, standings
   // This view tests an actual running slip, not an unopened future fixture.
   const activeRound=state.leagues[0].rounds[0];
   activeRound.kickoff=new Date(Date.now()-3600000).toISOString();
+  const activeCalendar=state.calendar.rounds.find(round=>round.number===activeRound.number);
+  for(const match of activeCalendar.matches)match.kickoff=match.officialKickoff=activeRound.kickoff;
   for(const match of activeRound.matches){match.kickoff=activeRound.kickoff;match.odds={1:2,X:3,2:4};}
   let html = "",workerMessage,barTab;const publicEvents=new Map();let blockRequests=false,requestCount=0,fantaEntries=0;const pendingRequests=[];
   const app = {
