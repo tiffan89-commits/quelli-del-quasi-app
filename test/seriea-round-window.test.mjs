@@ -6,15 +6,38 @@ import {sqlFantaStore} from '../fanta/store.mjs';
 import {homeView,teamView} from '../fanta/views.mjs';
 import {renderSquadra} from '../public/src/fanta/squadra.mjs';
 import {syncConfirmedDeadlines} from '../lib/operations/round-deadlines.mjs';
+import {calendarView} from '../lib/calendar.mjs';
 import {saveBarSlip} from '../lib/bar-slip-save.mjs';
 import {attentionOf,fantaHomeStatus} from '../public/src/v2/league-switcher.mjs';
-import {alignSlipSchedule,slipWaitingForPrevious} from '../public/src/slip-state.mjs';
+import {alignSlipSchedule,defaultSlipRound,roundAvailability,slipSummary,slipWaitingForPrevious} from '../public/src/slip-state.mjs';
+import {mergeLiveSnapshot} from '../public/src/live-channel.mjs';
 import {eventLocked} from '../public/slip-events.mjs';
 
 const friday='2026-11-27T20:45:00+01:00',sunday='2026-11-29T18:30:00+01:00',duringPrevious=Date.parse('2026-11-23T21:30:00+01:00');
 const match=(number,i,kickoff,status)=>({id:`seriea:2026:${number}:${i+1}`,officialKickoff:kickoff,kickoff,status,odds:{1:2,X:3,2:4}});
 const current=Array.from({length:10},(_,i)=>match(1,i,'2026-11-23T20:45:00+01:00',i===9?'LIVE':'FT'));
 const upcoming=Array.from({length:10},(_,i)=>match(2,i,i===7?friday:sunday,'NS'));
+
+test('the login calendar opens the priced Bar slip before Socket.IO and keeps unconfirmed fixtures locked',()=>{
+ const source={season:2026,rounds:[
+  {number:1,matches:current.map(m=>({...m,status:'FT'}))},
+  {number:2,matches:upcoming.map((m,i)=>i===0?{...m,officialKickoff:null}:m)},
+ ]};
+ const calendar=calendarView({football:{calendar:structuredClone(source)}});
+ const round={id:'next',number:2,deadline:friday,eventBetting:true,matches:structuredClone(upcoming)};
+ alignSlipSchedule(round,calendar);
+ round.waitingForOpen=slipWaitingForPrevious(round,calendar.rounds,duringPrevious);
+ assert.equal(defaultSlipRound([round],duringPrevious,calendar),round);
+ assert.equal(roundAvailability(round,duringPrevious),'aperta');
+ assert.equal(slipSummary(round,{[upcoming[7].id]:'1'},5,500,duringPrevious).canSave,true);
+ assert.equal(eventLocked(round,round.matches[0],duringPrevious),true);
+ assert.equal(eventLocked(round,round.matches[7],Date.parse(friday)),true);
+ const league={id:'l',rounds:[round],members:[]};
+ const changed={id:upcoming[7].id,kickoff:friday,officialKickoff:null};
+ mergeLiveSnapshot({calendar,leagues:[league]},{league:league.id,calendar:[changed]});
+ assert.equal(round.matches[7].kickoff,null);
+ assert.equal(eventLocked(round,round.matches[7],duringPrevious),true);
+});
 
 test('authoritative dates repair stale views before opening and Fanta closes at the first kickoff',()=>{
  const previous={number:1,matches:current.map(m=>({...m,status:'FT'}))};

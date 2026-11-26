@@ -165,11 +165,13 @@ export function mergeLiveSnapshot(state,data) {
   }
   const update=(incoming,canonical=false)=>{
     for(const m of byId.get(incoming.id)||[]){
-      const {events,eventsAt,statistics,penalties,playerStats,kickoff,lineupRevision,...fields}=incoming;
+      const {events,eventsAt,statistics,penalties,playerStats,kickoff,officialKickoff,lineupRevision,...fields}=incoming;
       if(lineupRevision&&!(Date.parse(lineupRevision)<Date.parse(m.lineupRevision)))m.lineupRevision=lineupRevision;
-      if(canonical&&kickoff)m.kickoff=m.officialKickoff=kickoff;
+      if(canonical&&/^seriea:\d{4}:\d+:\d+$/.test(incoming.id)&&officialKickoff!==undefined){
+        m.kickoff=m.officialKickoff=officialKickoff;
+      }else if(canonical&&(officialKickoff||kickoff))m.kickoff=m.officialKickoff=officialKickoff||kickoff;
       if(incoming.scoreUpdatedAt&&m.scoreUpdatedAt&&Date.parse(incoming.scoreUpdatedAt)<Date.parse(m.scoreUpdatedAt))continue;
-      Object.assign(m,fields);if(kickoff)m.kickoff=kickoff;
+      Object.assign(m,fields);if(!canonical&&kickoff)m.kickoff=kickoff;
       if(events){m.details={...m.details,events,updatedAt:eventsAt};if(eventsAt)m.detailRevision=eventsAt;}
       for(const [key,value]of Object.entries({statistics,penalties,playerStats}))if(value!==undefined)m.details={...m.details,[key]:value};
     }

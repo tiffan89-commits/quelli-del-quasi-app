@@ -121,7 +121,10 @@ test('replaying a final settles once and resumes interrupted rewards on row stor
   }
   const loginSnapshot=(storage,sessionToken)=>snapshot('game',storage,{tokenHash:sha(sessionToken)});
   assert.deepEqual(await loginSnapshot('rows','unknown'),await loginSnapshot('snapshot','unknown'));
-  assert.deepEqual((await loginSnapshot('rows',token)).leagues.map(l=>l.id),[leagueId]);
+  const rowLogin=await loginSnapshot('rows',token),documentLogin=await loginSnapshot('snapshot',token);
+  assert.deepEqual(rowLogin.leagues.map(l=>l.id),[leagueId]);
+  assert.deepEqual(rowLogin.rounds,documentLogin.rounds);
+  assert.deepEqual(rowLogin.football.calendar,documentLogin.football.calendar);
   const saved=await saveBarSlip(token,input,{connect,sportsStorage:'rows',now:()=>Date.parse('2026-11-08T19:00:00Z')});
   assert.equal(saved.receipt.member.credits,490);
   assert.equal((await state()).rounds[0].slips[0].acceptedOdds[fixtureId],2.5);
