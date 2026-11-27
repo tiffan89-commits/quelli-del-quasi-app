@@ -268,6 +268,13 @@
 
 Le modifiche seguono [Keep a Changelog](https://keepachangelog.com/it/1.1.0/) e [Semantic Versioning](https://semver.org/lang/it/).
 
+## [0.49.0](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.6...v0.49.0) (2026-11-27)
+
+
+### Features
+
+* gestisci accesso a Bar, Fanta e schedine ([1fc014b](https://github.com/tiffan89-commits/quelli-del-quasi-app/commit/1fc014b9a3854d884d382a80a978083e6e8a2142))
+
 ## [0.48.6](https://github.com/tiffan89-commits/quelli-del-quasi-app/compare/v0.48.5...v0.48.6) (2026-11-26)
 
 
