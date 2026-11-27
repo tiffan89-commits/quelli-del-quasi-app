@@ -383,19 +383,21 @@ html.os-on main.os-root .verdict-content .verdict-honours>summary{font-size:13px
  border:1px solid color-mix(in srgb,var(--verdict-accent) 49%,var(--panel));border-radius:13px;
  background:linear-gradient(152deg,color-mix(in srgb,var(--verdict-accent) 17%,var(--panel)),var(--panel) 88%);
 }
-.verdict-award h3,.verdict-almost h3{margin:0;font:700 clamp(20px,5vw,25px)/1.05 'Barlow Condensed',sans-serif}
+.verdict-award h3,.verdict-almost h3,.verdict-surprise h3{margin:0;font:700 clamp(20px,5vw,25px)/1.05 'Barlow Condensed',sans-serif}
 .verdict-award h3,.verdict-award-value{color:var(--verdict-accent)}
 .verdict-award .verdict-award-names{margin:1px 0;font-size:14px;font-weight:700;overflow-wrap:anywhere}
 .verdict-award .verdict-award-value{font:700 25px/1 'Barlow Condensed',sans-serif}
 .verdict-award-value small{font-size:.61em;white-space:nowrap}
 .verdict-award .verdict-award-note{margin:1px 0 3px;color:var(--muted);font-size:11px;line-height:1.25}
 .verdict-award button{margin-top:auto;min-height:34px;padding:3px 7px;font-size:11px;white-space:nowrap}
-.verdict-almost{margin-block:10px;padding:11px;border:1px solid color-mix(in srgb,#ffad93 45%,var(--panel));border-radius:13px;background:color-mix(in srgb,#ffad93 9%,var(--panel))}
-.verdict-almost h3{color:#ffb8a2}
-.verdict-almost .almost-row{padding:7px 0 0;margin-top:7px}
+.verdict-almost{--verdict-accent:#ffb8a2}
+.verdict-surprise{--verdict-accent:#9dd7fa}
+:is(.verdict-almost,.verdict-surprise){margin-block:10px;padding:11px;border:1px solid color-mix(in srgb,var(--verdict-accent) 45%,var(--panel));border-radius:13px;background:color-mix(in srgb,var(--verdict-accent) 9%,var(--panel))}
+:is(.verdict-almost,.verdict-surprise) h3{color:var(--verdict-accent)}
+:is(.verdict-almost,.verdict-surprise) .almost-row{padding:7px 0 0;margin-top:7px}
 .almost-row-heading{display:flex;flex-wrap:wrap;gap:3px 10px;align-items:baseline;justify-content:space-between}
-.almost-row-heading span{color:#ffb8a2;font-weight:700;font-size:12px}
-.verdict-almost .almost-row p{margin:4px 0;font-size:12px}
+.almost-row-heading span{color:var(--verdict-accent);font-weight:700;font-size:12px}
+:is(.verdict-almost,.verdict-surprise) .almost-row p{margin:4px 0;font-size:12px}
 html.os-on main.os-root .verdict-content .verdict-honours{padding:7px 10px;margin-block:5px}
 .os-drill-target .community-grid{display:block!important}
 .os-track.os-drill .os-drill-parent.community-grid{display:block!important}
@@ -572,6 +574,12 @@ body[data-game-mode] .quasi-select-menu [role=option]{min-height:44px;padding:11
 .account-toggle:not([hidden]){display:flex;min-height:34px;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
 .account-toggle+.account-toggle{border-top:1px solid var(--line)}
 .account-toggle .fanta-switch{flex:none}
+.league-game-access{padding:14px}
+.league-game-access h2{margin:0 0 8px}
+.league-game-access .account-toggle{min-height:44px;font-size:inherit}
+.league-game-access-sub{border-top:1px solid var(--line);padding-inline-start:16px}
+.league-game-access-status:empty{display:none}
+.bar-story-crossings+.bar-story-crossings{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .account-alerts #enable-device-alerts{margin:4px 0}
 .fanta-team-calendar .fanta-calendar-more{display:block;margin:4px auto;min-height:32px;padding:4px 14px}
 .fanta-team-calendar .fanta-team-fixture.is-current{border:2px solid var(--league-accent,var(--lime))}

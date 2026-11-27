@@ -77,7 +77,7 @@ export function renderHome(h,now=Date.now()){
   {label:'Prossima giornata',disabled:true,waiting:true,deadline:[h.nextLineup?.deadline,round.firstKickoff].find(time=>Date.parse(time)>now)};
  const slip=!draft&&h.playableSlip;
  const secondary=(live&&lineup?homeAction(lineup,now,{quick:true}):'')+(slip?homeAction({
-  label:(slip.slip?'Modifica schedina':'Compila la schedina')+' · Giornata '+slip.number,
+  label:(slip.slip?'Modifica schedina del Fanta':'Inserisci schedina del Fanta')+' · Giornata '+slip.number,
   warning:!slip.slip,deadline:slip.homeDeadline,action:`data-go="schedine" data-round="${esc(slip.id)}"`,
  },now,{quick:true}):'');
  return socialHome({mode:'fanta',now,reminder:homeReminderBanner('fanta',h.reminder),stories:renderFantaStories(h),hero:{

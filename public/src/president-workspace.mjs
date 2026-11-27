@@ -5,6 +5,7 @@ import {backButton} from './back-navigation.mjs';
 const barOperations=[
  ['identita','Modifica identità della lega','shield'],
  ['regole','Modifica regole del Bar','rules'],
+ ['accesso-gioco','Accesso a Bar, Fanta e schedine','rules'],
  ['invita','Invita per nickname o email','invite'],
  ['whatsapp','Invita con WhatsApp','whatsapp'],
  ['richieste','Gestisci richieste di ingresso','inbox'],
@@ -20,7 +21,7 @@ const fantaOperations=[
  ['dimensione','Cambia dimensione della lega','expand','competizioni'],
  ['crea-competizione','Crea una competizione','competition','competizioni'],
  ['avvia-competizione','Avvia una competizione','play','competizioni'],
- ['schedine-fanta','Imposta le schedine Fanta','rules','competizioni'],
+ ['schedine-fanta','Accesso a Bar, Fanta e schedine','rules','competizioni'],
  ['associa','Associa un account a una squadra','link','presidente'],
  ['rose','Correggi le rose','lineup','presidente'],
  ['importazione','Controlla le rose importate','search','presidente'],
@@ -43,10 +44,11 @@ export function presidentWorkspace({tool,body='',buttons='',back}){
 }
 
 export function presidentOperationButtons({bar=null,fanta=null,mode='bar',demo=false,hasTrades=false,hasIdentity=false}={}){
- const available=bar?new Set(['identita','regole','rimuovi','riammetti',...(bar.code?['whatsapp']:[]),...(!demo?['invita','richieste','elimina']:[]),...(bar.fantaCreation?.status&&bar.fantaCreation.status!=='ready'?['preparazione']:!bar.nativeFantaLink&&!fanta?['attiva']:[])]):new Set(hasIdentity?['identita','rimuovi']:['rimuovi']);
+ const available=bar?new Set(['identita','regole','rimuovi','riammetti',...(bar.code?['whatsapp']:[]),...(!demo?['accesso-gioco','invita','richieste','elimina']:[]),...(bar.fantaCreation?.status&&bar.fantaCreation.status!=='ready'?['preparazione']:!bar.nativeFantaLink&&!fanta?['attiva']:[])]):new Set(hasIdentity?['identita','rimuovi']:['rimuovi']);
  const barButtons=barOperations.filter(([key])=>available.has(key)).map(([key])=>
   [key,mode==='bar'?`data-president-operation="${key}"`:`data-go="presidente" data-president-tool="${key}"`]);
  const nativeButtons=fanta?fantaOperations.filter(([key])=>{
+  if(key==='schedine-fanta'&&bar&&!demo)return false;
   if(key==='scambi')return hasTrades;
   if(key==='associa')return !['pilot','random'].includes(fanta.kind);
   if(['asta','dimensione','crea-competizione','avvia-competizione'].includes(key))return fanta.kind!=='pilot';

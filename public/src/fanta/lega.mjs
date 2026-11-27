@@ -88,7 +88,7 @@ export function renderLega(l, ui = {}, now = Date.now()) {
   if (!l) return '<div class="fanta-loading" role="status">Carichiamo la lega…</div>';
   const pilot=l.league.kind==='pilot',group=ui.group||'classifica';
   if(group==='lega')return leagueWorkspace({id:l.league.id,mode:'fanta',fallback:fantaLeagueFallback(l,ui.bar||ui.invite,ui.viewer)});
-  if(group==='competizioni'&&ui.adminTool&&l.isAdmin)return presidentWorkspace({tool:ui.adminTool,body:renderCompetitionManagement(l,ui.adminTool),back:ui.adminBack});
+  if(group==='competizioni'&&ui.adminTool&&l.isAdmin)return presidentWorkspace({tool:ui.adminTool,body:renderCompetitionManagement(l,ui.adminTool,ui.accessBar),back:ui.adminBack});
   if(group==='regolamento'||group==='competizioni'){
    const title=group==='regolamento'?'Regolamento del Fanta':'Competizioni';
    return `<header class="participants-heading" data-os-header>${backButton('data-go="lega"','Torna alla lega')}<h1>${title}</h1></header>

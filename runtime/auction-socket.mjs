@@ -8,6 +8,8 @@ import {queueAuctionOpened} from '../fanta/notifications.mjs';
 import {dispatchFanta} from '../fanta/jobs.mjs';
 import {sportsIdentities} from './sports-socket.mjs';
 import {LAMPO} from '../public/src/auction-formats.mjs';
+import {nativeFantaAccessible} from '../public/src/league-game-access.mjs';
+import {fantaAccessSql} from '../lib/league-game-access.mjs';
 
 export function socketAuctionView(state,uid,stamp){
  const data=auctionView(state,uid,stamp),player=p=>p?Object.fromEntries(['id','name','role','club','price','value','fm','played','ownerTeam'].filter(k=>p[k]!==undefined).map(k=>[k,p[k]])):p;
@@ -61,7 +63,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
     SELECT m.uid,l.id,coalesce(a.data->>'status'='running',false) AS running
     FROM membership m JOIN fanta.leagues l ON l.id=m.league_id
     LEFT JOIN fanta.auctions a ON a.league_id=l.id
-    WHERE l.rules->>'disabledAt' IS NULL AND (l.source_key IS NULL OR m.uid=ANY($2::text[]))`,[uids,legacy])).rows;}finally{c.release();}
+    WHERE l.rules->>'disabledAt' IS NULL AND ${fantaAccessSql('l','m.uid')} AND (l.source_key IS NULL OR m.uid=ANY($2::text[]))`,[uids,legacy])).rows;}finally{c.release();}
  }
  index.use(async(socket,next)=>{try{
   const token=sid(socket.request.headers.cookie),user=token&&await store.identity(token);
@@ -78,10 +80,10 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   if(!previous||previous.size!==running.size||[...running].some(id=>!previous.has(id)))socket.emit('auction:index',[...running]);
  }
  index.on('connection',socket=>{socket.join('user:'+socket.data.user.id);syncIndex(socket,socket.data.membership);delete socket.data.membership;});
- function indexChange(league,running){
+ function indexChange(league,running,except){
   for(const id of index.adapter.rooms.get('league:'+league)||[]){
    const socket=index.sockets.get(id),status=socket?.data.running;
-   if(!status||status.has(league)===running)continue;
+   if(!status||socket.data.user.id===except||status.has(league)===running)continue;
    if(running)status.add(league);else status.delete(league);
    socket.emit('auction:index-change',{league,running});
   }
@@ -104,7 +106,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
   for(const socket of room.sockets)if(socket.connected&&(!socket.data.passive||socket.data.inAuction))socket.emit('auction:presence',ids);
  }
  function send(socket,room,stamp){
-  const state=room.state;if(!state?.teams.some(t=>t.userId===socket.data.user.id)){socket.disconnect(true);return;}
+  const state=room.state;if(!state?.teams.some(t=>t.userId===socket.data.user.id)||!nativeFantaAccessible(state.league,socket.data.user.id)){socket.disconnect(true);return;}
   if(socket.data.passive&&!socket.data.inAuction){
    const {status,mode,type,startsAt}=state.auction,key=JSON.stringify([status,mode,type,startsAt]);
    if(key!==socket.data.auctionStatus){socket.data.auctionStatus=key;socket.emit('auction:status',{league:room.league,data:{status,mode,type,startsAt}});}
@@ -222,7 +224,7 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  const notify=(id,deleted)=>void changed(id,deleted).catch(()=>{});
  const stopListening=subscribe?await subscribe(notify):await listenAuctionChanges(notify,{onUnavailable:()=>{listenerReady=false;for(const socket of io.sockets.sockets.values())socket.emit('auction:unavailable');},onReady:()=>{listenerReady=true;for(const room of rooms.values())void refresh(room);}});
  // Timers run on the server even when no participant has a page open.
- const c=await store.connect();try{const active=(await c.query("SELECT DISTINCT a.league_id,(SELECT user_id FROM fanta.teams WHERE league_id=a.league_id AND user_id IS NOT NULL ORDER BY id LIMIT 1) AS uid FROM fanta.auctions a JOIN fanta.leagues l ON l.id=a.league_id WHERE a.data->>'status' IN('scheduled','running') AND l.rules->>'disabledAt' IS NULL")).rows;for(const row of active)if(row.uid)void refresh(roomFor(row.league_id,row.uid));}finally{c.release();}
+ const c=await store.connect();try{const active=(await c.query("SELECT DISTINCT a.league_id,(SELECT user_id FROM fanta.teams WHERE league_id=a.league_id AND user_id IS NOT NULL ORDER BY (user_id=l.admin_uid) DESC,id LIMIT 1) AS uid FROM fanta.auctions a JOIN fanta.leagues l ON l.id=a.league_id WHERE a.data->>'status' IN('scheduled','running') AND l.rules->>'disabledAt' IS NULL")).rows;for(const row of active)if(row.uid)void refresh(roomFor(row.league_id,row.uid));}finally{c.release();}
  let checking=false;const authTimer=setInterval(async()=>{if(checking||closed)return;checking=true;try{
   for(const socket of io.sockets.sockets.values())try{await authorize(socket.data.token,socket.data.league);}catch{socket.disconnect(true);}
   if(index.sockets.size)try{
@@ -235,7 +237,12 @@ export async function attachAuctionSocket(httpServer,{store=sqlFantaStore(),orig
  function chatUpdate({league,changed,recipients}){
   for(const {uid,...summary} of recipients)index.to('user:'+uid).emit('chat:update',{league,changed,...summary});
  }
- function leagueUpdate({recipients,...event}){
+ function leagueUpdate({recipients,nativeAdminUid,...event}){
+  if(event.change==='game-access'&&event.key==='fantaEnabled'&&!event.enabled){
+   const room=rooms.get(event.fantaLeague);
+   if(room){room.uid=nativeAdminUid;for(const socket of room.sockets)if(socket.data.user.id!==nativeAdminUid)socket.disconnect(true);}
+   indexChange(event.fantaLeague,false,nativeAdminUid);
+  }
   if(recipients.length)index.to([...new Set(recipients)].map(uid=>'user:'+uid)).emit('league:update',event);
  }
  return {io,changed,chatUpdate,leagueUpdate,stats:()=>[...rooms.values()].map(r=>({league:r.league,version:r.state?.auction.version,devices:r.sockets.size,acknowledged:[...r.sockets].filter(s=>(!s.data.passive||s.data.inAuction)&&s.data.acked>=r.state?.auction.version).length})),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);await stopListening?.();await new Promise(resolve=>io.close(resolve));}};

@@ -1,4 +1,5 @@
 import {barStorageRoot} from '../lib/storage-mode.mjs';
+import {fantaAccessSql} from '../lib/league-game-access.mjs';
 import {readSerieARoundWindows} from '../lib/seriea-round-window.mjs';
 import {saveLineup} from './lineup-save.mjs';
 import {activateCompletedLeague} from './competition-activation.mjs';
@@ -47,14 +48,14 @@ function leagueReadSQL(roundOnly){
  (SELECT coalesce(jsonb_agg(v),'[]') FROM (SELECT DISTINCT ON(v.player_id) v.player_id,CASE WHEN $6::boolean THEN v.data ELSE jsonb_build_object('status',v.data->'status','vote',v.data->'vote','fantavote',v.data->'fantavote','events',v.data->'events','needsReview',v.data->'needsReview') END AS data,v.official FROM fanta.votes v JOIN fanta.fixtures f ON f.id=v.fixture_id WHERE f.season=l.season AND (NOT EXISTS(SELECT 1 FROM fanta.jobs WHERE id='votes:active-model') OR v.model_key=(SELECT data->>'key' FROM fanta.jobs WHERE id='votes:active-model')) AND f.round=(SELECT seriea_round FROM fanta.rounds r WHERE r.league_id=l.id AND r.competition_id=selected.id AND r.number=${currentRoundNumberSQL} LIMIT 1) ORDER BY v.player_id,v.id DESC) v) AS votes,
  (SELECT coalesce(jsonb_agg(i.data),'[]') FROM fanta.import_issues i WHERE i.league_id=l.id) AS review,
  (SELECT coalesce(jsonb_agg(b),'[]') FROM fanta.player_bindings b WHERE b.league_id=l.id) AS bindings
- FROM fanta.leagues l JOIN LATERAL(${selectCompetition('$4')}) selected ON true WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`;
+ FROM fanta.leagues l JOIN LATERAL(${selectCompetition('$4')}) selected ON true WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND ${fantaAccessSql('l','$2')} AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`;
 }
 const READ_LEAGUE_SQL=leagueReadSQL(false),READ_ROUND_SQL=leagueReadSQL(true);
 function readState(l){
  const teams=l.teams.map(t=>({id:t.id,name:t.name,manager:t.manager,color:t.color,branding:t.branding||{},creditAdjustment:t.credit_adjustment||0,coachName:t.coach_name,userId:t.user_id,joinedAt:t.joined_at,roster:[]})),byId=new Map(l.players.map(p=>[p.id,p]));
  for(const r of l.rosters)teams.find(t=>t.id===r.team_id)?.roster.push({...byId.get(r.player_id),price:r.price});
  applyEntries(teams,byId,l.entries||[]);
- return {voteModel:l.vote_model_key,teamNameDeadline:iso(l.team_name_deadline),league:{id:l.id,name:l.name,season:l.season,kind:l.kind,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,branding:l.rules?.leagueIdentity,maxMembers:l.max_members,inviteCode:l.invite_code},competition:l.competition,competitions:l.competitions,rules:{...DEFAULT_RULES,...l.rules,benchMax:null},teams,players:l.players,auction:{status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null,...l.auction},rounds:l.rounds,matchups:l.matchups,results:l.results,references:l.references,lineups:l.lineups,fixtures:l.fixtures,votes:l.votes,importReview:l.review};
+ return {voteModel:l.vote_model_key,teamNameDeadline:iso(l.team_name_deadline),league:{id:l.id,name:l.name,season:l.season,kind:l.kind,accessEnabled:l.rules?.accessEnabled!==false,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,branding:l.rules?.leagueIdentity,maxMembers:l.max_members,inviteCode:l.invite_code},competition:l.competition,competitions:l.competitions,rules:{...DEFAULT_RULES,...l.rules,benchMax:null},teams,players:l.players,auction:{status:'none',mode:'live',version:1,log:[],order:[],lot:null,table:null,...l.auction},rounds:l.rounds,matchups:l.matchups,results:l.results,references:l.references,lineups:l.lineups,fixtures:l.fixtures,votes:l.votes,importReview:l.review};
 }
 function applyEntries(teams,byId,entries){for(const t of teams){const own=entries.filter(e=>e.team_id===t.id);if(!own.length)continue;const extra=t.roster.filter(p=>!own.some(e=>e.player_id===p.id));t.roster=[...own.map(e=>({...byId.get(e.player_id),id:e.player_id||e.source_id,name:e.name,role:e.role,club:byId.get(e.player_id)?.club||e.data.club||'',price:e.price,unmapped:!e.player_id})),...extra];}}
 
@@ -110,14 +111,14 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
  const use=async fn=>{const c=await connect();try{return await fn(c);}finally{c.release();}};
  return {
   auctionStatusForSession:(token,league)=>use(async c=>{
-   const row=(await c.query(`WITH actor AS (${AUTH_SQL}) SELECT coalesce(a.data->>'status','none') AS status,coalesce(a.version,1) AS version,a.data->>'mode' AS mode,a.data->>'type' AS type,a.data->>'startsAt' AS "startsAt" FROM actor u JOIN fanta.teams t ON t.user_id=u.id JOIN fanta.leagues l ON l.id=t.league_id LEFT JOIN fanta.auctions a ON a.league_id=l.id WHERE l.id=$3 AND u.verified AND NOT coalesce(u.demo,false) AND NOT coalesce(u.admin_only,false) AND l.rules->>'disabledAt' IS NULL AND (l.source_key IS NULL OR lower(u.username)='frankwood') LIMIT 1`,[createHash('sha256').update(token||'').digest('hex'),Date.now(),league])).rows[0];
+   const row=(await c.query(`WITH actor AS (${AUTH_SQL}) SELECT coalesce(a.data->>'status','none') AS status,coalesce(a.version,1) AS version,a.data->>'mode' AS mode,a.data->>'type' AS type,a.data->>'startsAt' AS "startsAt" FROM actor u JOIN fanta.teams t ON t.user_id=u.id JOIN fanta.leagues l ON l.id=t.league_id LEFT JOIN fanta.auctions a ON a.league_id=l.id WHERE l.id=$3 AND u.verified AND NOT coalesce(u.demo,false) AND NOT coalesce(u.admin_only,false) AND l.rules->>'disabledAt' IS NULL AND ${fantaAccessSql('l','u.id')} AND (l.source_key IS NULL OR lower(u.username)='frankwood') LIMIT 1`,[createHash('sha256').update(token||'').digest('hex'),Date.now(),league])).rows[0];
    if(!row)fail('Lega non accessibile',403);return row;
   }),
   identity:token=>use(async c=>(await c.query(AUTH_SQL,[createHash('sha256').update(token||'').digest('hex'),Date.now()])).rows[0]||null),
   logo:(uid,league,team)=>use(async c=>(await c.query('SELECT a.data,a.mime,a.digest FROM fanta.team_logos a JOIN fanta.teams t ON t.id=a.team_id WHERE t.id=$3 AND t.league_id=$2 AND EXISTS(SELECT 1 FROM fanta.teams own WHERE own.league_id=$2 AND own.user_id=$1)',[uid,league,team])).rows[0]||null),
   leagues:uid=>use(async c=>(await c.query(`SELECT l.*,t.id AS team_id,t.name AS team_name,
     EXISTS(SELECT 1 FROM fanta.bar_links b WHERE b.fanta_league_id=l.id AND b.active) AS linked
-    FROM fanta.leagues l JOIN fanta.teams t ON t.league_id=l.id AND t.user_id=$1 WHERE l.rules->>'disabledAt' IS NULL ORDER BY l.id`,[uid])).rows.map(x=>({id:x.id,name:x.name,season:x.season+'/'+String(x.season+1).slice(-2),role:x.admin_uid===uid?'admin':'member',accent:x.accent,branding:x.rules?.leagueIdentity,linked:x.linked,teamName:x.team_name,teamId:x.team_id,kind:x.kind,sourceKey:x.source_key,slipsEnabled:x.slips_enabled!==false}))),
+    FROM fanta.leagues l JOIN fanta.teams t ON t.league_id=l.id AND t.user_id=$1 WHERE l.rules->>'disabledAt' IS NULL ORDER BY l.id`,[uid])).rows.map(x=>({id:x.id,name:x.name,season:x.season+'/'+String(x.season+1).slice(-2),role:x.admin_uid===uid?'admin':'member',accessEnabled:x.rules?.accessEnabled!==false,accent:x.accent,branding:x.rules?.leagueIdentity,linked:x.linked,teamName:x.team_name,teamId:x.team_id,kind:x.kind,sourceKey:x.source_key,slipsEnabled:x.slips_enabled!==false}))),
   saveLeagueIdentity:(uid,id,{name,accent,branding})=>use(async c=>{
    const {rows}=await c.query(`UPDATE fanta.leagues l SET name=$3,accent=$4,rules=jsonb_set(rules,'{leagueIdentity}',$5::jsonb)
      WHERE l.id=$1 AND l.admin_uid=$2 AND l.rules->>'disabledAt' IS NULL
@@ -185,7 +186,7 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
    return rosterEditorView(state);
   })),
   async teamLineupWatch(id,competition,now){return use(async c=>{
-   const {rows:[league]}=await c.query(`SELECT l.season,l.source_key,
+   const {rows:[league]}=await c.query(`SELECT l.season,l.source_key,l.admin_uid,l.rules->>'accessEnabled' IS DISTINCT FROM 'false' AS access_enabled,
     (SELECT data->>'revision' FROM fanta.jobs WHERE id='availability:current:'||l.season::text) AS availability_revision,
     ARRAY(SELECT t.user_id FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id IS NOT NULL) AS members,
     (SELECT coalesce(jsonb_agg(jsonb_build_object('number',r.number,'seriea_round',r.seriea_round,'deadline',r.deadline,'official',r.official,
@@ -194,21 +195,21 @@ export function sqlFantaStore({connect=connection,readCache=connect===connection
    if(!league)return null;
    const submissionWindows=await readSerieARoundWindows(c,{season:league.season});
    const {round,...lineupRound}=teamLineupRound({...league,submissionWindows},now);
-   return {sourceKey:league.source_key,members:league.members,lineupRound:{...lineupRound,availabilityRevision:league.availability_revision}};
+   return {sourceKey:league.source_key,members:league.members,accessEnabled:league.access_enabled,adminUid:league.admin_uid,lineupRound:{...lineupRound,availabilityRevision:league.availability_revision}};
   });},
   async league(uid,id,fn,{write=false,auction=false,market=false,number,competition,catalog=true,detailedVotes=true,roundOnly=false,teamIdentity=false,calculation=false,submissionWindows=false}={}){return use(async c=>{
    if(!write&&!auction&&!market){
     const scope=roundOnly&&!!number;
     const load=async()=>(await c.query(scope?READ_ROUND_SQL:READ_LEAGUE_SQL,[id,uid,number?Number(number):null,competition||null,catalog,detailedVotes])).rows[0];let l;
-    if(readCache){const access=(await c.query(`SELECT l.admin_uid,r.revision::text AS revision FROM fanta.leagues l CROSS JOIN fanta.cache_revision r WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND r.id=1 AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`,[id,uid])).rows[0];if(!access)fail('Lega non accessibile',403);l=await readCache.read(JSON.stringify([scope?'fanta-round-v1':'fanta-read-v3',id,number||null,competition||null,catalog,detailedVotes]),access.revision,load,{ttl:60000});}
+    if(readCache){const access=(await c.query(`SELECT l.admin_uid,r.revision::text AS revision FROM fanta.leagues l CROSS JOIN fanta.cache_revision r WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND ${fantaAccessSql('l','$2')} AND r.id=1 AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)`,[id,uid])).rows[0];if(!access)fail('Lega non accessibile',403);l=await readCache.read(JSON.stringify([scope?'fanta-round-v1':'fanta-read-v3',id,number||null,competition||null,catalog,detailedVotes]),access.revision,load,{ttl:60000});}
     else l=await load();if(!l)fail('Lega non accessibile',403);const s=resolveLeagueBindings({...readState(l),bindings:l.bindings||[]});if(s.league.adminUid!==uid)s.importReview=[];
     if(submissionWindows)s.submissionWindows=await readSerieARoundWindows(c,{season:s.league.season});
     return fn(s,c);
    }
    await c.query('BEGIN');try{
-    const l=(await c.query(`SELECT l.* FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)${write?' FOR UPDATE':market?' FOR SHARE':''}`,[id,uid])).rows[0];if(!l)fail('Lega non accessibile',403);
+    const l=(await c.query(`SELECT l.* FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND ${fantaAccessSql('l','$2')} AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2)${write?' FOR UPDATE':market?' FOR SHARE':''}`,[id,uid])).rows[0];if(!l)fail('Lega non accessibile',403);
     const teamNameDeadline=teamIdentity?iso((await c.query(`SELECT ${FIRST_TEAM_KICKOFF} FROM fanta.leagues l WHERE l.id=$1`,[id])).rows[0].team_name_deadline):null;
-    const league={id:l.id,name:l.name,season:l.season,kind:l.kind,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,maxMembers:l.max_members,inviteCode:l.invite_code};
+    const league={id:l.id,name:l.name,season:l.season,kind:l.kind,accessEnabled:l.rules?.accessEnabled!==false,slipsEnabled:l.slips_enabled!==false,pilotNumber:l.pilot_number,autoLineupsFrom:l.auto_lineups_from,adminUid:l.admin_uid,accent:l.accent,maxMembers:l.max_members,inviteCode:l.invite_code};
     const rules={...DEFAULT_RULES,...l.rules,benchMax:null};
     const competitions=market?[]:(await c.query('SELECT * FROM fanta.competitions WHERE league_id=$1 ORDER BY created_at,id',[id])).rows,selected=competitions.find(x=>x.id===(competition||id+':main'))||(!competition?competitions[0]:null);if(!selected&&!market)fail('Competizione non accessibile',403);
     const teams=(await c.query('SELECT * FROM fanta.teams WHERE league_id=$1 ORDER BY id'+(market&&write?' FOR UPDATE':''),[id])).rows.map(t=>({id:t.id,name:t.name,manager:t.manager,color:t.color,branding:t.branding||{},creditAdjustment:t.credit_adjustment||0,coachName:t.coach_name,userId:t.user_id,joinedAt:iso(t.joined_at),roster:[]}));

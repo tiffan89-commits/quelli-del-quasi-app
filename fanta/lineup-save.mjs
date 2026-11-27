@@ -1,5 +1,6 @@
 import {DEFAULT_RULES,fail,validateLineup} from './rules.mjs';
 import {readSerieARoundWindows,serieASubmissionWindow} from '../lib/seriea-round-window.mjs';
+import {fantaAccessSql} from '../lib/league-game-access.mjs';
 
 // The league lock is shared with roster/auction mutations. Saving a lineup does
 // not need other teams, the full player catalogue, fixtures or historical votes.
@@ -7,7 +8,7 @@ export async function saveLineup(c,uid,id,input,{competition,now=Date.now,userna
  await c.query('BEGIN');
  try{
   await c.query("SELECT set_config('lock_timeout','4s',true),set_config('statement_timeout','8s',true),set_config('idle_in_transaction_session_timeout','12s',true)");
-  const data=(await c.query(`WITH locked AS(SELECT l.id,l.rules,l.season,l.source_key FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2) FOR UPDATE),
+  const data=(await c.query(`WITH locked AS(SELECT l.id,l.rules,l.season,l.source_key FROM fanta.leagues l WHERE l.id=$1 AND l.rules->>'disabledAt' IS NULL AND ${fantaAccessSql('l','$2')} AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=l.id AND t.user_id=$2) FOR UPDATE),
    selected AS(SELECT c.id FROM fanta.competitions c JOIN locked l ON l.id=c.league_id WHERE ($3::text IS NULL OR c.id=$3) ORDER BY CASE WHEN c.id=$1||':main' THEN 0 ELSE 1 END,c.created_at,c.id LIMIT 1)
    SELECT t.id AS team_id,l.rules,l.season,l.source_key,selected.id AS competition_id,
    (SELECT row_to_json(r) FROM fanta.rounds r WHERE r.competition_id=selected.id AND r.number=$4 FOR UPDATE) AS round,

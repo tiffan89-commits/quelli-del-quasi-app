@@ -72,10 +72,10 @@ test('Fanta home links the open lineup and slip beside an older live round, usin
  assert.match(doc.querySelector('.bar-home-cta').textContent,/Giornata 8 live/);
  const lineup=doc.querySelector('[data-go="formazione"]'),slip=doc.querySelector('[data-go="schedine"]');
  assert.match(lineup.textContent,/Schiera la formazione/);assert.equal(lineup.dataset.round,'9');
- assert.match(slip.textContent,/Compila la schedina/);assert.equal(slip.dataset.round,'open-slip');
+ assert.match(slip.textContent,/Inserisci schedina del Fanta/);assert.equal(slip.dataset.round,'open-slip');
  const saved=view({...home,nextLineup:{...home.nextLineup,savedAt:deadline},playableSlip:{...ticket,slip:{savedAt:deadline}}});
  assert.match(saved.querySelector('[data-go="formazione"]').textContent,/Modifica formazione/);
- assert.match(saved.querySelector('[data-go="schedine"]').textContent,/Modifica schedina/);
+ assert.match(saved.querySelector('[data-go="schedine"]').textContent,/Modifica schedina del Fanta/);
  assert.equal(view({...home,nextLineup:{...home.nextLineup,open:false}}).querySelector('[data-go="formazione"]'),null);
  assert.equal(playableFantaSlip(data,false,now),null);
  assert.equal(playableFantaSlip({...data,eligible:[{...ticket,waitingForOpen:true}]},true,now),null);
@@ -114,4 +114,19 @@ test('DB-only minute snapshot carries fantasy points and revisions without downl
   assert.deepEqual(m.liveScore,[1,0]);assert.deepEqual(m.fantasyPoints,[70,60]);assert.equal(m.detailRevision,'r1');
   assert.equal(m.details,undefined);assert.equal(m.lineups,undefined);assert.equal(JSON.stringify(view).includes('Punta'),false);
  }finally{await f.close();}
+});
+import {crossingsFor} from '../public/src/bar-home-stories.mjs';
+
+test('Bar crossings calculate points separately from net credits, including committed stakes',()=>{
+ const round={id:'r1',kickoff:'2026-11-21T17:00Z'};
+ const league={members:[
+  {uid:'u',name:'Io',points:10,credits:495,committedCredits:25},
+  {uid:'p',name:'Punti',points:12,credits:470},
+  {uid:'c',name:'Crediti',points:8,credits:490,committedCredits:20},
+ ],community:{seriea:{history:[{id:round.id,players:[
+  {uid:'u',points:4,prize:35,stake:15},{uid:'p',points:9,prize:0,stake:10},{uid:'c',points:3,prize:5,stake:10},
+ ]}]}}};
+ const history={pointsTotal:10,capital:520};
+ assert.deepEqual(crossingsFor(league,'u',round,history),{ahead:[],behind:['Punti']});
+ assert.deepEqual(crossingsFor(league,'u',round,history,'credits'),{ahead:['Crediti'],behind:[]});
 });

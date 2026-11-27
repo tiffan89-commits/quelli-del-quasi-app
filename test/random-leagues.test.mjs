@@ -4,6 +4,10 @@ import fs from 'node:fs/promises';
 import {fixtureDb} from './fanta/helpers.mjs';
 import {queueRandom,runRandomCreation,claimRandom,setSlips} from '../fanta/random-leagues.mjs';
 import {balancedRandomRosters} from '../fanta/auto-coach.mjs';
+import {membershipTransaction} from '../lib/db.mjs';
+import {updateLeagueGameAccess} from '../lib/league-game-access.mjs';
+import {visibleBarRounds} from '../lib/bar-fanta-access.mjs';
+import {sqlFantaStore} from '../fanta/store.mjs';
 const migration=()=>fs.readFile(new URL('../netlify/database/migrations/012_random_leagues.sql',import.meta.url),'utf8');
 test('random: creation snapshot, idempotency, real rosters, concurrent claims and admin switch',async()=>{
  const f=await fixtureDb();try{
@@ -26,6 +30,24 @@ test('random: creation snapshot, idempotency, real rosters, concurrent claims an
  assert.equal((await claimRandom(user,league,{connect:f.connect})).team.id,claims[0].team.id);
  await assert.rejects(()=>setSlips(other,league,false,{connect:f.connect}),/presidente/);
  await setSlips(user,league,false,{connect:f.connect});assert.equal((await f.db.query('SELECT slips_enabled FROM fanta.leagues WHERE id=$1',[league])).rows[0].slips_enabled,false);
+ const settings=(actor,key,enabled)=>membershipTransaction((state,c)=>updateLeagueGameAccess(c,state,actor,{barId:'bar-test',key,enabled}),{connect:f.connect});
+ const native=sqlFantaStore({connect:f.connect});
+ await assert.rejects(()=>settings(other,'barEnabled',false),/presidente/);
+ assert.equal((await settings(user,'barEnabled',false)).data.settings.barEnabled,false);
+ await settings(user,'fantaEnabled',false);
+ await assert.rejects(native.league(other.id,league,s=>s),/Lega non accessibile/);
+ await assert.rejects(native.saveLineup(other.id,league,{round:1}),/Lega non accessibile/);
+ assert.equal(await native.league(user.id,league,s=>s.league.id),league);
+ await settings(user,'fantaEnabled',true);
+ assert.equal(await native.league(other.id,league,s=>s.league.id),league);
+ const readBar=async()=>(await f.db.query("SELECT payload->'leagues'->0 AS data FROM fanta_state WHERE id=1")).rows[0].data;
+ const rounds=[{id:'bar',league:'bar-test',source:'seriea'},{id:'fanta',league:'bar-test',source:'fantacalcio',nativeFanta:{leagueId:league}}];
+ assert.deepEqual(visibleBarRounds({rounds},await readBar(),other),[]);
+ const events=[];await setSlips(user,league,true,{connect:f.connect,onUpdate:event=>events.push(event)});
+ assert.deepEqual(visibleBarRounds({rounds},await readBar(),other).map(r=>r.id),['fanta']);
+ assert.deepEqual(visibleBarRounds({rounds},await readBar(),user).map(r=>r.id),['bar','fanta']);
+ assert.equal(events[0].key,'fantaSlipsEnabled');
+ assert.equal(events[0].enabled,true);
  assert.equal((await runRandomCreation(j.id,{connect:f.connect})).reused,true);
  }finally{await f.close();}
 });

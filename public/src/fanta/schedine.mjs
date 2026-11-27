@@ -93,10 +93,10 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   return `<section class="fanta-block" data-slip-detail>${fantasyMatchHeadline(m,name=>'<span class="team-label">'+teamLogo((name===m.home?m.homeTeam:m.awayTeam)||teamResolver?.(name)||{name},{eager:true})+'<span>'+esc(name)+'</span></span>','data-fanta-slip-detail-close')}<p data-fantasy-points ${m.fantasyPoints?.some(Number.isFinite)?'':'hidden'}>${m.fantasyPoints?.some(Number.isFinite)?'Fantapunti: '+m.fantasyPoints.map(fmt).join(' – '):''}</p>${m.details?.teams?renderFantasyLineup(m.details,{paged:true,showExtras:false}):`<p role="status">${esc(cached?.error||'Carichiamo le formazioni…')}</p>`}</section>`;
  }
 
- const signature=data=>JSON.stringify([scope,sub,data.round?.id,editingClosed(data.round,now()),data.round?.eventBetting?data.round.matches.map(m=>[editingEventLocked(data.round,m,now()),m.kickoff||m.officialKickoff]):null,data.eligible.map(r=>r.id)]);
+ const signature=(data,enabled)=>JSON.stringify([scope,sub,enabled,data.league?.fantaSlipsEnabled,data.round?.id,editingClosed(data.round,now()),data.round?.eventBetting?data.round.matches.map(m=>[editingEventLocked(data.round,m,now()),m.kickoff||m.officialKickoff]):null,data.eligible.map(r=>r.id)]);
  function render(context){
   const data=current(context),{league,round,uid}=data;
-  lastView=signature(data);
+  lastView=signature(data,context.enabled);
   if(context.enabled===false||league?.fantaSlipsEnabled===false)return '<section class="fanta-block"><h1>Le schedine sono in pausa.</h1><p class="fanta-note">Il presidente ha disattivato le schedine per questa lega.</p></section>';
   if(!league||!uid)return '<section class="fanta-block"><h1>Schedina del Fanta</h1><p class="fanta-note">Le schedine saranno disponibili quando la tua squadra sarà collegata alla lega.</p></section>';
   const tabs=`<div class="fanta-slip-tabs" data-os-header role="group" aria-label="Schedine"><button type="button" data-fanta-slip-sub="mine" aria-pressed="${sub==='mine'}">La mia schedina</button><button type="button" data-fanta-slip-sub="league" aria-pressed="${sub==='league'}">Le altre schedine</button></div>`;
@@ -157,5 +157,5 @@ export function createFantaSlips({services,redraw,loadMatchup,teamResolver,stora
   patchSlipResults(root,data.round,d.picks,isClosed(data.round,now()));
  }
  function ranking(context,metric='points'){const data=current(context);return data.league?playerRanking(data.league,'fantacalcio',metric,{id:data.uid},esc,fmt,data.round?.competitionKey).replace(/<section class="round-heading">[\s\S]*?<\/section>/,'<p class="fanta-note">Punti e crediti delle schedine del Fanta.</p>'):'<section class="fanta-block"><h2>Classifica schedine</h2><p>La classifica arriva con il calendario della lega.</p></section>';}
- return {render,bind,ranking,context:current,enter:()=>{selection=null;sub='mine';detail=null;expanded=null;message='';},tick:context=>{const data=current(context);const page=globalThis.document?.getElementById('match-page-root'),match=data.round?.matches?.find(m=>m.id===detail);if(page?.open&&match&&page.dataset.match===match.id&&!detailCache.get(scope+':'+data.round.id+':'+match.id)?.data)patchFantasyMatch(page,match);if(lastView!==signature(data))redraw();else tickSlipEventClocks();}};
+ return {render,bind,ranking,context:current,enter:()=>{selection=null;sub='mine';detail=null;expanded=null;message='';},tick:context=>{const data=current(context);const page=globalThis.document?.getElementById('match-page-root'),match=data.round?.matches?.find(m=>m.id===detail);if(page?.open&&match&&page.dataset.match===match.id&&!detailCache.get(scope+':'+data.round.id+':'+match.id)?.data)patchFantasyMatch(page,match);if(lastView!==signature(data,context.enabled))redraw();else tickSlipEventClocks();}};
 }

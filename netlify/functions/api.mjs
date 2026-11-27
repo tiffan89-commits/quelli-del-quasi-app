@@ -1,6 +1,9 @@
 import {objectiveReceipt} from '../../lib/day-objectives.mjs';
 import {enrichStoredMatch} from '../../lib/lineup-presence.mjs';
 import {saveBarSlip} from '../../lib/bar-slip-save.mjs';
+import {canReadLeagueRound} from '../../lib/bar-fanta-access.mjs';
+import {fantaAccessSql,updateLeagueGameAccess} from '../../lib/league-game-access.mjs';
+import {barAccessible} from '../../public/src/league-game-access.mjs';
 import {createLeaguePair} from '../../fanta/league-creation.mjs';
 import {addLeagueMember,leagueAccessAction,leagueAccessInbox,leagueDirectory,updateNickname} from '../../lib/league-access.mjs';
 import {readLeagueParticipants} from '../../lib/league-participants.mjs';
@@ -164,7 +167,7 @@ export function createApi({
         .at(-1);
     const authRoute=activityRoute.startsWith('social-')||['register','login','logout','admin-login','admin-verify','forgot-password','resend-verification','activate','reset-password','set-email','change-password'].includes(activityRoute);
     const accessMutation=['league-access-request','league-access-invite','league-access-respond'].includes(activityRoute);
-    const membershipRoute=accessMutation||['create','join','member-remove','member-restore','league-profile'].includes(activityRoute);
+    const membershipRoute=accessMutation||['create','join','member-remove','member-restore','league-profile','league-game-access'].includes(activityRoute);
     const profileRoute=['profile','profile-avatar','profile-reminders','profile-email-reminders','support','fantacalcio-waitlist'].includes(activityRoute);
     const deliverAccount=async jobId=>deliverMail!==deliverPendingMail?deliverMail({jobId,transactionFn:authTransact,env}):dispatchMail(jobId,{env});
     let accountRequest=null;
@@ -316,6 +319,7 @@ export function createApi({
           const u=userFor(s,token);if(!u||(!u.demo&&!u.emailVerified)||u.adminOnly)fail('Accedi con il tuo account di gioco',401);
           const l=s.leagues.find(l=>l.id===url.searchParams.get('league')&&l.members.some(m=>m.uid===u.id));if(!l)fail('Lega non accessibile',403);
           const r=s.rounds.find(r=>r.league===l.id&&r.id===url.searchParams.get('round'));if(!r)fail('Giornata non trovata',404);
+          if(!canReadLeagueRound(r,l,u.id))fail('Schedina non accessibile.',403);
           const keys=["id","status","score","liveScore","clock","phase","officialConfirmed","void","clockUpdatedAt","scoreUpdatedAt"];
           return {league:l.id,round:r.id,matches:r.matches.map(m=>Object.fromEntries(keys.map(k=>[k,m[k]??null])))};
         },{kind:'results',league:url.searchParams.get('league'),competition:url.searchParams.get('round')});return reply(data);
@@ -323,7 +327,7 @@ export function createApi({
       if(route==='match'&&req.method==='GET'){
         const data=await read(s=>{const u=userFor(s,token);if(!u||(!u.demo&&!u.emailVerified)||u.adminOnly)fail('Accedi con il tuo account di gioco',401);
           const id=url.searchParams.get('id'),league=url.searchParams.get('league');let m;
-          if(league){const l=s.leagues.find(l=>l.id===league&&l.members.some(m=>m.uid===u.id));if(!l)fail('Lega non accessibile',403);const r=s.rounds.find(r=>r.league===l.id&&r.id===url.searchParams.get('round'));m=r?.matches.find(m=>m.id===id);}
+          if(league){const l=s.leagues.find(l=>l.id===league&&l.members.some(m=>m.uid===u.id));if(!l)fail('Lega non accessibile',403);const r=s.rounds.find(r=>r.league===l.id&&r.id===url.searchParams.get('round'));if(r&&!canReadLeagueRound(r,l,u.id))fail('Schedina non accessibile.',403);m=r?.matches.find(m=>m.id===id);}
           else m=s.football.calendar?.rounds.flatMap(r=>r.matches).find(m=>m.id===id);
           if(!m)fail('Partita non trovata',404);
           const keys=['id','home','away','status','score','liveScore','clock','phase','clockUpdatedAt','scoreUpdatedAt','lineups','officialConfirmed','details','fantasyPoints','odds','oddsModel'];return {...Object.fromEntries(keys.map(k=>[k,m[k]??null])),fantasy:!!league};
@@ -377,6 +381,7 @@ export function createApi({
             (x) => x.id === leagueId && x.members.some((m) => m.uid === u.id),
           );
           if (!l) fail("Lega non accessibile", 403);
+          if(!barAccessible(l,u.id))fail('Il Bar è in pausa per questa lega.',403);
           const r = s.rounds.find((x) => x.id === roundId && x.league === l.id);
           if (!r || !roundClosed(r))
             fail("Analisi disponibile dopo la chiusura della giornata", 403);
@@ -667,12 +672,14 @@ export function createApi({
           (x) => x.id === p.league && x.members.some((m) => m.uid === u.id),
         );
         if (!l) fail("Lega non accessibile", 403);
+        if(route==='league-game-access')return updateLeagueGameAccess(c,s,u,{barId:l.id,key:p.key,enabled:p.enabled});
         if(route==='league-delete')return {data:await deleteOwnedLeague(s,c,u,l,p.phrase),leagueUpdate:{league:l.id,change:'deleted',recipients:l.members.map(m=>m.uid)}};
         const r = s.rounds.find((x) => x.id === p.round && x.league === l.id);
         if (route === "slip") {if(r?.source==='fantacalcio'){
           if(!r.nativeFanta||l.fantaSlipsEnabled===false)fail('Questa schedina Fanta non è abilitata.',403);
-          if(!c||(await c.query(`SELECT 1 FROM fanta.leagues fl JOIN fanta.bar_links b ON b.fanta_league_id=fl.id WHERE fl.id=$1 AND b.bar_league_id=$2 AND b.active AND fl.source_key IS NULL AND fl.slips_enabled AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=fl.id AND t.user_id=$3)`,[r.nativeFanta.leagueId,l.id,u.id])).rows.length!==1)fail('Devi allenare una squadra di questa lega Fanta',403);
-        }const previousPortrait=r?.slips?.find(x=>x.uid===u.id)?.portrait;placeSlip(s,l,r,u,p);if(r.source!=='fantacalcio'){const slip=r.slips.find(x=>x.uid===u.id);slip.portrait=describeSavedSlip(r,slip,{name:u.name,previous:previousPortrait});}syncRoundRewards(s);
+          if(!c||(await c.query(`SELECT 1 FROM fanta.leagues fl JOIN fanta.bar_links b ON b.fanta_league_id=fl.id WHERE fl.id=$1 AND b.bar_league_id=$2 AND b.active AND fl.source_key IS NULL AND fl.slips_enabled AND ${fantaAccessSql('fl','$3')} AND EXISTS(SELECT 1 FROM fanta.teams t WHERE t.league_id=fl.id AND t.user_id=$3)`,[r.nativeFanta.leagueId,l.id,u.id])).rows.length!==1)fail('Questa schedina Fanta non è accessibile.',403);
+        }else if(!barAccessible(l,u.id))fail('Il Bar è in pausa per questa lega.',403);
+        const previousPortrait=r?.slips?.find(x=>x.uid===u.id)?.portrait;placeSlip(s,l,r,u,p);if(r.source!=='fantacalcio'){const slip=r.slips.find(x=>x.uid===u.id);slip.portrait=describeSavedSlip(r,slip,{name:u.name,previous:previousPortrait});}syncRoundRewards(s);
           const member=l.members.find(m=>m.uid===u.id);
           return {data:{ok:true,receipt:{...objectiveReceipt(s,l,r,u.id),uid:u.id,league:l.id,round:r.id,slip:r.slips.find(x=>x.uid===u.id),user:{avatar:normalizeAvatar(u.avatar,ownedRewardIds(s,u.id)),rewards:s.playerRewards?.[u.id]||[]},fantasyRanking:fantasyRanking(s,l),member:{...accountTotals(s,l,member),credits:member.credits,initial:member.initial,points:member.points,...(member.fantasyWallets?{fantasyWallets:member.fantasyWallets}:{}),...(member.fantasyWallet?{fantasyWallet:member.fantasyWallet}:{})},ledger:s.ledger.filter(x=>x.league===l.id&&x.uid===u.id).slice(-100).reverse()}}};
         }
