@@ -1,10 +1,26 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {newPlan,refreshPlan,dueWork,claimWork,completeWork,nextRomeMorning,mergeUpcomingFixtures} from '../lib/operations/calendar.mjs';
 import {runOperation} from '../lib/operations/workflows.mjs';
-import {dispatchDue,mutatePlan,operationTicket,readOperationTicket} from '../lib/operations/store.mjs';
+import {dispatchDue,mutatePlan,operationTicket,readOperationTicket,releaseFailedLiveJob} from '../lib/operations/store.mjs';
 const date=x=>Date.parse(x),start='2026-11-01T17:00:00Z';
 function calendar(matches){return [{number:10,matches:matches.map((m,i)=>({id:'m'+i,apiFootballId:100+i,home:'Home',away:'Away',officialKickoff:start,kickoff:start,status:'NS',...m}))}];}
 const memory=()=>{let data=null,version=0;return {getWithMetadata:async()=>data?{data:structuredClone(data),etag:String(version)}:null,setJSON:async(k,next,options)=>{if(options.onlyIfNew&&data||options.onlyIfMatch&&options.onlyIfMatch!==String(version))return {modified:false};data=structuredClone(next);return {modified:true,etag:String(++version)};}};}
+test('a failed local kickoff releases its own lease and lets the next minute resume the live job',async()=>{
+ const now=date(start),store=memory(),plan=newPlan(calendar([{}]),{now});
+ const first=claimWork(plan,{now,nonce:'first'}),job=first.jobs.find(j=>j.kind==='live');
+ await mutatePlan(()=>first.plan,{store,bootstrap:plan});
+ await releaseFailedLiveJob({...job,nonce:'wrong'},{store,now});
+ assert.equal((await store.getWithMetadata('calendar')).data.live.status,'running');
+ await releaseFailedLiveJob(job,{store,now});
+ const {data:failed}=await store.getWithMetadata('calendar');
+ assert.equal(failed.live.error,'local-live-execution-failed');
+ assert.ok(!claimWork(failed,{now,nonce:'same-minute'}).jobs.some(j=>j.kind==='live'));
+ const retry=claimWork(failed,{now:now+60000,nonce:'next'});
+ assert.deepEqual(retry.jobs.filter(j=>j.kind==='live').map(j=>j.fixtureIds),[['m0']]);
+ await mutatePlan(()=>retry.plan,{store});
+ await releaseFailedLiveJob(job,{store,now:now+60001});
+ assert.equal((await store.getWithMetadata('calendar')).data.live.nonce,'next');
+});
 test('Rome 07:00 verification respects both daylight-saving transitions',()=>{assert.equal(nextRomeMorning('2026-10-24T21:30:00Z'),'2026-10-25T06:00:00.000Z');assert.equal(nextRomeMorning('2026-03-28T21:30:00Z'),'2026-03-29T05:00:00.000Z');assert.throws(()=>nextRomeMorning('invalid'));});
 test('lineup quality runs daily at 05:20 Rome including the clock change and is claimed once',()=>{
  const now=date('2026-10-24T06:00Z'),plan=newPlan([],{now});
