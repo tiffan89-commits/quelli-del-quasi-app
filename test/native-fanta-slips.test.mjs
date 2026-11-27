@@ -36,6 +36,14 @@ test('closed native slip uses saved choices and colours, keeps public slips priv
 test('only rounds belonging to the selected native league and competition are returned',()=>{
  const f=fixture();assert.deepEqual(fantaSlipContext(f.snapshot,'a','coppa').rounds.map(r=>r.id),['a-coppa']);assert.equal(fantaSlipContext(f.snapshot,'absent','camp').league,undefined);
 });
+test('Fanta slips return immediately when the enabled replacement snapshot arrives',()=>{
+ const f=fixture(),league=f.snapshot.leagues[0],rounds=league.rounds;
+ league.fantaSlipsEnabled=false;league.rounds=[];f.setNow(now);
+ assert.match(f.root.textContent,/schedine sono in pausa/i);
+ f.snapshot.leagues[0]={...league,fantaSlipsEnabled:true,rounds};f.setNow(now);
+ assert.ok(f.root.querySelector('[data-pick][data-value="1"]'));
+ assert.doesNotMatch(f.root.textContent,/schedine sono in pausa/i);
+});
 test('Studio Live keeps the saved starters on the pitch and marks only the actual fantasy replacement',()=>{
  const players=[
   {id:'bisseck',name:'Bisseck',role:'D',status:'sv'},

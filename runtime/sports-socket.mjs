@@ -8,6 +8,7 @@ import {enrichLineupPortraits} from '../lib/player-media.mjs';
 import {sqlPlayerStore} from '../lib/player-store.mjs';
 import {sqlFantaStore} from '../fanta/store.mjs';
 import {roundView,matchupView} from '../fanta/views.mjs';
+import {nativeFantaAccessible,barAccessible} from '../public/src/league-game-access.mjs';
 const digest=data=>createHash('sha256').update(JSON.stringify(data)).digest('hex');
 const sid=req=>String(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('sid='))?.slice(4)||'';
 const serieAMatchId=id=>typeof id==='string'&&/^seriea:\d{4}:\d{1,2}:\d{1,2}$/.test(id);
@@ -68,10 +69,10 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
   if(c.mode==='bar')data=liveSnapshot(room.state,userFor(room.state,s.data.token),c.league);
   else if(c.mode==='fanta-lineup'){
    const {user}=s.data,state=room.state;
-   if(!state?.members.includes(user.id)||state.sourceKey&&user.username?.toLowerCase()!=='frankwood')throw Error('Lega non accessibile');
+   if(!state?.members.includes(user.id)||!nativeFantaAccessible(state,user.id)||state.sourceKey&&user.username?.toLowerCase()!=='frankwood')throw Error('Lega non accessibile');
    data={lineupRound:state.lineupRound};
   }
-  else{if(!room.state.teams.some(t=>t.userId===s.data.user.id)||room.state.league.sourceKey&&s.data.user.username!=='frankwood')throw Error('Lega non accessibile');const r=room.state.rounds.find(r=>r.number===c.round);if(!r)throw Error('Giornata assente');const matchup=matchupView(room.state,r,c.matchup,s.data.user.id,room.loadedAt);data={round:roundView(room.state,r,s.data.user.id,room.loadedAt,false,matchup),matchup};}
+  else{if(!room.state.teams.some(t=>t.userId===s.data.user.id)||!nativeFantaAccessible(room.state.league,s.data.user.id)||room.state.league.sourceKey&&s.data.user.username!=='frankwood')throw Error('Lega non accessibile');const r=room.state.rounds.find(r=>r.number===c.round);if(!r)throw Error('Giornata assente');const matchup=matchupView(room.state,r,c.matchup,s.data.user.id,room.loadedAt);data={round:roundView(room.state,r,s.data.user.id,room.loadedAt,false,matchup),matchup};}
   // The snapshot timestamp changes on every poll, even when the score and votes are identical.
   const stable=data.round?.round?{...data,round:{...data.round,round:{...data.round.round,updatedAt:null}}}:data;
   const version=digest(stable);if(version===s.data.sent)return;s.data.sent=version;s.emit('sports:update',{context:c,revision:version,data,at:room.loadedAt});
@@ -81,7 +82,7 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
    if(typeof reply!=='function')return;
    const {id,revision}=payload||{};
    if(!serieAMatchId(id)||revision!=null&&(typeof revision!=='string'||revision.length>32||!Number.isFinite(Date.parse(revision)))
-    ||s.data.user.expires<=now()||!room.state?.leagues?.some(l=>l.id===c.league&&l.members.some(m=>m.uid===s.data.user.id))){
+    ||s.data.user.expires<=now()||!room.state?.leagues?.some(l=>l.id===c.league&&barAccessible(l,s.data.user.id)&&l.members.some(m=>m.uid===s.data.user.id))){
     reply(null);return;
    }
    try{reply(await matchLineup(id,revision));}catch{reply(null);}
@@ -97,5 +98,13 @@ export function attachSportsSocket(io,{identify=sportsIdentity,read=readSnapshot
    if(s.connected&&s.data.user.expires>now())s.emit('sports:lineup-saved',lineups);
   }
  }
- return {refresh:scope=>refresh([...rooms.values()].filter(room=>!scope||room.context.mode===scope||scope==='bar'&&room.context.mode==='fanta-lineup'),true),lineupsSaved,stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
+ function leagueAccessChanged({league,fantaLeague,nativeAdminUid,key,enabled}){
+  const affected=[...rooms.values()].filter(r=>r.context.mode==='bar'?r.context.league===league:r.context.league===fantaLeague&&key==='fantaEnabled');
+  if(key==='fantaEnabled'&&!enabled)for(const room of affected)if(room.context.mode!=='bar'){
+   for(const socket of room.sockets)if(socket.data.user.id!==nativeAdminUid)socket.disconnect(true);
+  }
+  for(const room of affected)room.state=null;
+  return refresh(affected,true);
+ }
+ return {refresh:scope=>refresh([...rooms.values()].filter(room=>!scope||room.context.mode===scope||scope==='bar'&&room.context.mode==='fanta-lineup'),true),leagueAccessChanged,lineupsSaved,stats:()=>({rooms:rooms.size,clients:ns.sockets.size}),async close(){closed=true;clearInterval(authTimer);for(const r of rooms.values())clearTimeout(r.timer);ns.disconnectSockets(true);rooms.clear();pending.clear();await draining;}};
 }

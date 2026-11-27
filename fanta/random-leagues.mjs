@@ -1,6 +1,7 @@
 import {barMembershipRoot} from '../lib/storage-mode.mjs';
 import {randomUUID,randomInt} from 'node:crypto';
-import {connection} from '../lib/db.mjs';
+import {connection,membershipTransaction} from '../lib/db.mjs';
+import {fantaAccessSql,updateLeagueGameAccess} from '../lib/league-game-access.mjs';
 import {DEFAULT_RULES,fail} from './rules.mjs';
 import {DEFAULT_RULES as BAR_RULES} from '../lib/game.mjs';
 import {pilotCatalog,withPilotTransaction} from './pilot.mjs';
@@ -73,7 +74,7 @@ export async function runRandomCreation(jobId,{connect=connection,env=process.en
 }
 export async function claimRandom(user,leagueId,{connect=connection,random=randomInt,teamId=null}={}){
  if(teamId!==null&&(typeof teamId!=='string'||!teamId||teamId.length>200))fail('Scegli una squadra valida');
- return withPilotTransaction(async c=>{await c.query(`SELECT id FROM ${barMembershipRoot()} WHERE id=1 FOR UPDATE`);const row=(await c.query(`SELECT l.*,b.bar_league_id FROM fanta.leagues l JOIN fanta.bar_links b ON b.fanta_league_id=l.id AND b.active WHERE l.id=$1 AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL`,[leagueId])).rows[0];if(!row)fail('Lega non disponibile',404);
+ return withPilotTransaction(async c=>{await c.query(`SELECT id FROM ${barMembershipRoot()} WHERE id=1 FOR UPDATE`);const row=(await c.query(`SELECT l.*,b.bar_league_id FROM fanta.leagues l JOIN fanta.bar_links b ON b.fanta_league_id=l.id AND b.active WHERE l.id=$1 AND l.source_key IS NULL AND l.rules->>'disabledAt' IS NULL AND ${fantaAccessSql('l','$2')}`,[leagueId,user.id])).rows[0];if(!row)fail('Lega non disponibile',404);
   const member=(await c.query(`SELECT m AS member,l->'members' AS members,l->'removedMembers' AS removed FROM ${barMembershipRoot()}
    CROSS JOIN LATERAL jsonb_array_elements(payload->'leagues') l CROSS JOIN LATERAL jsonb_array_elements(l->'members') m
    WHERE l->>'id'=$1 AND m->>'uid'=$2 AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(coalesce(l->'removedMembers','[]')) gone WHERE gone->>'uid'=$2)`,[row.bar_league_id,user.id])).rows[0];
@@ -90,7 +91,8 @@ export async function claimRandom(user,leagueId,{connect=connection,random=rando
   await ensureBar(c,row,{barId:row.bar_league_id});return {league:{id:leagueId},team:{id:pick.id,name:pick.name}};
  },{connect});
 }
-export async function setSlips(user,leagueId,enabled,{connect=connection}={}){if(typeof enabled!=='boolean')fail('Impostazione non valida');return withPilotTransaction(async c=>{
- const l=(await c.query('UPDATE fanta.leagues SET slips_enabled=$3 WHERE id=$1 AND admin_uid=$2 RETURNING id',[leagueId,user.id,enabled])).rows[0];if(!l)fail('Serve il presidente Fanta',403);
- await c.query(`UPDATE ${barMembershipRoot()} SET payload=jsonb_set(payload,'{leagues}',(SELECT jsonb_agg(CASE WHEN l#>>'{nativeFantaLink,leagueId}'=$1 THEN l||jsonb_build_object('fantaSlipsEnabled',$2::boolean) ELSE l END) FROM jsonb_array_elements(payload->'leagues') l)) WHERE id=1`,[leagueId,enabled]);return {enabled};
- },{connect});}
+export async function setSlips(user,leagueId,enabled,{connect=connection,onUpdate}={}){
+ const result=await membershipTransaction((state,c)=>updateLeagueGameAccess(c,state,user,{nativeId:leagueId,key:'fantaSlipsEnabled',enabled}),{connect});
+ onUpdate?.(result.leagueUpdate);
+ return {enabled:result.data.enabled};
+}

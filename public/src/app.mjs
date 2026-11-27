@@ -5,6 +5,7 @@ import {withMembershipProgress} from './membership-progress.mjs';
 import {bindSiteValidation} from './site-validation.mjs';
 import {askConfirmation} from './site-confirm.mjs';
 import {presidentWorkspace,presidentOperationButtons} from './president-workspace.mjs';
+import {barAccessible,bindLeagueGameAccess,leagueGameAccessForm} from './league-game-access.mjs';
 import {barReminder,bindPresidentReminders,renderPresidentReminders} from './president-reminders.mjs';
 import {settingsFooter,presidentEntry,presidentPanel,bindPresidentPanel} from './president-panel.mjs';
 import {createSportsPush} from './sports-push.mjs';
@@ -363,6 +364,38 @@ const barCalendar={openRound:null,calendarScroll:null};
 const deletedLeagues=new Set();
 let leagueRefreshQueued=false,leagueWorkspaceView=null,presidentOperation=null,presidentNative=null;
 let finishSnapshotRefresh=null,activeSnapshotRefresh=null;
+let gameAccessRefresh=null,gameAccessRefreshPending=false;
+function applyLeagueGameAccess({league,fantaLeague,key,enabled}){
+  if(!['barEnabled','fantaEnabled','fantaSlipsEnabled'].includes(key)||typeof enabled!=='boolean')return;
+  let changed=false;
+  state.leagues=state.leagues.map(l=>{
+    if(l.id!==league&&!(key!=='barEnabled'&&fantaLeague&&l.nativeFantaLink?.leagueId===fantaLeague))return l;
+    if((l[key]!==false)===enabled)return l;
+    changed=true;return {...l,[key]:enabled};
+  });
+  if(changed){
+    refreshFantaMembership(state.leagues,[]);
+    if(!preferredFanta()&&L()?.id===league){
+      if(page==='admin'&&presidentOperation==='accesso-gioco'){
+        const input=$(`[data-league-game-access] input[name="${key}"]`);if(input)input.checked=enabled;
+      }else render();
+    }
+    gameAccessRefreshPending=true;
+    if(!gameAccessRefresh)gameAccessRefresh=(async()=>{
+      while(gameAccessRefreshPending){
+        gameAccessRefreshPending=false;
+        while(activeSnapshotRefresh)await activeSnapshotRefresh;
+        if(await refresh())refreshFantaMembership(state.leagues,[]);
+      }
+      if(!preferredFanta()&&!(page==='admin'&&presidentOperation==='accesso-gioco'))render();
+    })().finally(()=>{gameAccessRefresh=null;});
+  }
+  return gameAccessRefresh;
+}
+async function saveLeagueGameAccess(league,{key,enabled}){
+  const result=await api('league-game-access',{league:league.id,key,enabled});
+  await applyLeagueGameAccess({league:league.id,fantaLeague:league.nativeFantaLink?.leagueId,key,enabled:result.enabled});
+}
 function loadLeagueWorkspace(id,mode){return requestJson('/api/league-participants?'+new URLSearchParams({league:id,mode}),{credentials:'same-origin'});}
 function removeLeagueParticipant({bar,uid}){return api('member-remove',{league:bar.id,uid});}
 function resetLeagueView(id=null){
@@ -451,7 +484,9 @@ async function refresh(reset = false) {
     const leagueListChanged=state.leagues.length!==previousLeagues.length||state.leagues.some(l=>!leagueKeys.has(l.id));
     const identities=new Map(previousLeagues.map(l=>[l.id,leagueIdentityKey(l)]));
     const changedIdentity=state.leagues.filter(l=>identities.get(l.id)!==leagueIdentityKey(l));
+    const accessChanged=state.leagues.some(l=>{const previous=previousLeagues.find(item=>item.id===l.id);return previous&&['barEnabled','fantaEnabled','fantaSlipsEnabled'].some(key=>(previous[key]!==false)!==(l[key]!==false));});
     if(changedMembers.length||leagueListChanged||changedIdentity.length)refreshFantaMembership(state.leagues,changedMembers.map(l=>l.nativeFantaLink?.leagueId).filter(Boolean),leagueListChanged);
+    else if(accessChanged)refreshFantaMembership(state.leagues,[]);
     if(!preferredFanta()&&changedIdentity.some(l=>l.id===L()?.id))paintLeagueIdentity(L(),'bar');
     if (state.user && state.user.id !== previousUser && page !== "schedina") sourceScope = 'seriea';
     const openRequestedChat=!!requestedChat&&!!state.user?.emailVerified&&openChatNotification(requestedChat);
@@ -486,6 +521,7 @@ async function refresh(reset = false) {
       state.user?.id !== previousUser ||
       state.user?.emailVerified !== previousVerified ||
       lostFanta ||
+      accessChanged&&!preferredFanta() ||
       (leagueListChanged&&!preferredFanta()&&!editing&&!isLeagueEntryPage(page)) ||
       (changedMembers.some(l=>l.id===L()?.id)&&!preferredFanta()&&!editing&&['admin','barleague','lega','quasi','classifiche'].includes(page)) ||
       (!previousLeague && !!L()) ||
@@ -755,6 +791,8 @@ function render() {
       ? profile()
       : page === "impostazioni"
         ? presidentPanel({mode:'bar',title:'Impostazioni',open:presidentGroup,back:l?'data-bar-page="barleague"':'data-page="lega"',footer:settingsFooter(),groups:accountGroups()})
+        : l&&!barAccessible(l,state.user.id)&&!['barleague','partecipanti','admin'].includes(page)
+        ? '<section class="card empty" data-os-flow><h1>Il Bar è in pausa</h1><p>Il presidente ha disattivato il Bar per questa lega.</p></section>'
         : page === "seriea"
         ? classificationTabs('seriea')+serieATable()
         : page === "altri"
@@ -1402,6 +1440,7 @@ function leagueAdmin(l){
  const bodies={
   identita:()=>brandingForm(l),
   regole:()=>barRulesForm(l),
+  'accesso-gioco':()=>leagueGameAccessForm(l,{fanta:!!l.nativeFantaLink?.leagueId}),
   invita:()=>'<form class="card league-administration-form" data-president-invite><label class="field">Nickname o email<input name="identity" required maxlength="254" autocomplete="off" autocapitalize="none"></label><button class="primary">Invia invito</button><p role="status"></p></form>',
   whatsapp:()=>l.code?whatsappInvite(l,esc):'',
   richieste:()=>'<div data-president-requests><p role="status">Caricamento…</p></div>',
@@ -1424,6 +1463,7 @@ function bindPresidentOperations(root,l){
   }).catch(()=>{if(presidentNative===target)presidentNative=null;});
  }
  const invite=root.querySelector('[data-president-invite]');
+ bindLeagueGameAccess(root.querySelector('[data-league-game-access]'),settings=>saveLeagueGameAccess(l,settings),notify);
  if(invite)invite.onsubmit=async e=>{
   e.preventDefault();const b=invite.querySelector('button'),status=invite.querySelector('[role=status]');
   if(b.disabled)return;b.disabled=true;status.textContent='';
@@ -1504,7 +1544,7 @@ function navigatePage(next) {
 }
 function nativeSlipServices(){return {
  account:{groups:accountGroups,bind:(onChanged,barLeague)=>bindAccount(onChanged,{manageFanta:false,barLeague})},
- league:{load:loadLeagueWorkspace,remove:removeLeagueParticipant,onRemoved:refreshMembershipAfterWrite},
+ league:{load:loadLeagueWorkspace,remove:removeLeagueParticipant,onRemoved:refreshMembershipAfterWrite,saveGameAccess:saveLeagueGameAccess},
  applyLive:data=>mergeLiveSnapshot(state,data),
  snapshot:()=>state,
  refreshSnapshot:()=>refresh(),
@@ -2486,6 +2526,7 @@ document.addEventListener('quasi:chat-reconnect',refreshLeagueMembers);
 document.addEventListener('quasi:league-update',e=>{
  const {change,league}=e.detail||{};
  if(typeof league!=='string'||!state.user)return;
+ if(change==='game-access'){void applyLeagueGameAccess(e.detail);return;}
  if(change==='deleted')removeDeletedLeague(league);
  if(change==='identity'&&state.leagues.some(l=>l.id===league))refreshLeagueMembers();
  if(change==='members'||change==='deleted'){

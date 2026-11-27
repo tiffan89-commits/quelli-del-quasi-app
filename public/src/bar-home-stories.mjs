@@ -5,18 +5,20 @@ import {createVerdictCard,creditLeaders,recapForRound,verdictWinnerTitle} from '
 import {sourceOf} from './slip-state.mjs';
 
 const score=(value,fmt)=>(value>0?'+':'')+fmt(value);
-const points=value=>Math.round(value*100);
-export function crossingsFor(league,uid,round,history){
+const hundredths=value=>Math.round(value*100);
+export function crossingsFor(league,uid,round,history,metric='points'){
  const members=league.members||[],mine=members.find(member=>member.uid===uid);
  const settled=league.community?.seriea?.history?.find(item=>item.id===round?.id);
- const ownTotal=history?.pointsTotal;
- if(!mine||!settled?.players||!Number.isFinite(mine.points)||!Number.isFinite(ownTotal)||points(mine.points)!==points(ownTotal))return {ahead:[],behind:[]};
- const earned=new Map(settled.players.map(player=>[player.uid,player.points]));
- const old=points(mine.points)-points(earned.get(uid)||0),current=points(mine.points);
+ const credits=metric==='credits';
+ const total=member=>credits?(member?.capital??(member?.credits+(member?.committedCredits||0))):member?.points;
+ const ownTotal=credits?history?.capital:history?.pointsTotal;
+ if(!mine||!settled?.players||!Number.isFinite(total(mine))||!Number.isFinite(ownTotal)||hundredths(total(mine))!==hundredths(ownTotal))return {ahead:[],behind:[]};
+ const earned=new Map(settled.players.map(player=>[player.uid,credits?(player.prize||0)-(player.stake||0):player.points]));
+ const current=hundredths(total(mine)),old=current-hundredths(earned.get(uid)||0);
  const ahead=[],behind=[];
  for(const member of members){
-  if(member.uid===uid||!Number.isFinite(member.points)||member.joinedAt&&Date.parse(member.joinedAt)>Date.parse(round.kickoff))continue;
-  const after=points(member.points),before=after-points(earned.get(member.uid)||0);
+  if(member.uid===uid||!Number.isFinite(total(member))||member.joinedAt&&Date.parse(member.joinedAt)>Date.parse(round.kickoff))continue;
+  const after=hundredths(total(member)),before=after-hundredths(earned.get(member.uid)||0);
   if(after<current&&before>=old)ahead.push(member.name);
   if(after>current&&before<=old)behind.push(member.name);
  }
@@ -57,7 +59,9 @@ export function renderBarStories({league,user,round,history,fmt,esc}){
  }
  const rewards=(history?.awards||[]).map(rewardById).filter(Boolean);
  if(rewards.length)stories.push({id:'rewards',label:'Bottino',title:'Il bottino della giornata',body:`<ul class="bar-story-rewards">${rewards.map(reward=>`<li>${rewardMark(reward)}<b>${esc(reward.shortName)}</b></li>`).join('')}</ul>`});
- const {ahead,behind}=crossingsFor(league,user.id,round,history);
- if(ahead.length||behind.length)stories.push({id:'crossings',label:'Sorpassi',title:'Sorpassi in classifica',body:[['Hai superato',ahead],['Ti hanno superato',behind]].filter(([,names])=>names.length).map(([heading,names])=>`<section><h3>${heading}</h3><ul>${names.map(name=>`<li>${esc(name)}</li>`).join('')}</ul></section>`).join('')});
+ const crossings=[['Punti',crossingsFor(league,user.id,round,history)],['Crediti',crossingsFor(league,user.id,round,history,'credits')]];
+ if(crossings.some(([,x])=>x.ahead.length||x.behind.length))stories.push({id:'crossings',label:'Sorpassi',title:'Sorpassi in classifica',
+  body:crossings.map(([metric,{ahead,behind}])=>`<section class="bar-story-crossings"><h3>${metric}</h3>${
+   [['Hai superato',ahead],['Ti hanno superato',behind]].filter(([,names])=>names.length).map(([heading,names])=>`<div><strong>${heading}</strong><ul>${names.map(name=>`<li>${esc(name)}</li>`).join('')}</ul></div>`).join('')||'<p>Nessun sorpasso.</p>'}</section>`).join('')});
  return renderHomeStories({mode:'bar',uid:user.id,scope:league.id+':'+(round?.id||''),stories});
 }

@@ -20,6 +20,9 @@ import {competitionAction} from './competitions.mjs';
 import {teamChoices} from './team-choices.mjs';
 import {entryStatus,claimEntry} from './acquisition.mjs';
 import {nativeLeagueBranding,updateLeagueProfile} from '../lib/league-profile.mjs';
+import {membershipTransaction} from '../lib/db.mjs';
+import {updateLeagueGameAccess} from '../lib/league-game-access.mjs';
+import {nativeFantaAccessible} from '../public/src/league-game-access.mjs';
 import {sendAdminSubmissionReminder,submissionReminderMessage,validateSubmissionChannel} from '../lib/submission-reminders.mjs';
 export const betaUser=(u,env=process.env)=>!!u&&u.verified&&!u.demo&&!u.admin_only&&String(env.FANTA_BETA_USERS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(u.username?.toLowerCase());
 const betaLeagues=env=>String(env.FANTA_BETA_LEAGUES||'fanta-lucas-a').split(',').map(x=>x.trim());
@@ -42,7 +45,7 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(route==='pilot/teams')fail('Entra nel Bar della tua lega per scegliere una squadra',410);
    if(route==='bootstrap'&&request.method==='GET'){
     const leagues=allowed,requested=url.searchParams.get('league'),needsChoice=!leagues.length||requested&&!leagues.some(l=>l.id===requested),choices=needsChoice&&store.connect?await teamChoices(u.id,{connect:store.connect}):[],choice=choices.find(l=>l.id===requested)||(!leagues.length?choices[0]:null),selected=choice?null:leagues.find(l=>l.id===requested)||leagues[0];
-    const initial=selected?await store.league(u.id,selected.id,s=>{const r=currentRound(s,now());if(url.searchParams.get('lite')==='1')return {home:homeView(s,u.id,now())};const mine=s.teams.find(t=>t.userId===u.id)?.id,m=r&&s.matchups.find(m=>m.round===r.number&&(m.home_id===mine||m.away_id===mine));return {home:homeView(s,u.id,now()),team:teamView(s,u.id,now()),league:leagueView(s,u.id,now()),round:r?roundView(s,r,u.id,now()):null,matchup:m?matchupView(s,r,m.id,u.id,now()):null};},{competition:url.searchParams.get('competition'),catalog:false,detailedVotes:url.searchParams.get('lite')!=='1',submissionWindows:true}):{};
+    const initial=selected&&nativeFantaAccessible(selected,u.id)?await store.league(u.id,selected.id,s=>{const r=currentRound(s,now());if(url.searchParams.get('lite')==='1')return {home:homeView(s,u.id,now())};const mine=s.teams.find(t=>t.userId===u.id)?.id,m=r&&s.matchups.find(m=>m.round===r.number&&(m.home_id===mine||m.away_id===mine));return {home:homeView(s,u.id,now()),team:teamView(s,u.id,now()),league:leagueView(s,u.id,now()),round:r?roundView(s,r,u.id,now()):null,matchup:m?matchupView(s,r,m.id,u.id,now()):null};},{competition:url.searchParams.get('competition'),catalog:false,detailedVotes:url.searchParams.get('lite')!=='1',submissionWindows:true}):{};
     if(initial.home)initial.home=await withFinalVerification(initial.home,{now:now()});return reply({me:await me(),leagues,teamChoices:choices,choiceLeagueId:choice?.id||null,...initial});
    }
    let p={};if(request.method==='POST'){const body=await request.text();if(body.length>(route==='team/logo'?350000:['roster/batch','roster/check'].includes(route)?262144:16384))fail('Richiesta troppo grande',413);try{p=JSON.parse(body);if(!p||typeof p!=='object'||Array.isArray(p))throw Error();}catch{fail('Richiesta non valida');}}
@@ -55,9 +58,16 @@ export function createFantaApi({store=sqlFantaStore(),env=process.env,now=Date.n
    if(route==='random/create'&&request.method==='POST'){const job=await queueRandom(u,p,{connect:store.connect});try{await dispatchFanta('random:'+job.id,env);}catch{return reply({...job,dispatchPending:true},202);}return reply(job,202);}
    if(route==='random/retry'&&request.method==='POST'){const jobs=await randomStatus(u,{connect:store.connect}),job=jobs.find(j=>j.id===p.job);if(!job||!['queued','failed'].includes(job.status))fail('Lavoro non disponibile',409);await dispatchFanta('random:'+job.id,env);return reply({ok:true},202);}
    if(route==='random/claim'&&request.method==='POST')return reply(await claimRandom(u,p.league,{connect:store.connect}));
-   if(route==='league/slips'&&request.method==='POST'){if(!allowed.some(l=>l.id===p.league))fail('Lega non accessibile',403);return reply(await setSlips(u,p.league,p.enabled,{connect:store.connect}));}
+   if(route==='league/slips'&&request.method==='POST'){if(!allowed.some(l=>l.id===p.league))fail('Lega non accessibile',403);return reply(await setSlips(u,p.league,p.enabled,{connect:store.connect,onUpdate:context.leagueUpdate}));}
    if(route==='leagues'&&request.method==='GET')return reply(allowed);
-   const id=request.method==='GET'?url.searchParams.get('league'):p.league;if(!allowed.some(l=>l.id===id))fail('Lega non accessibile',403);
+   const id=request.method==='GET'?url.searchParams.get('league'):p.league,available=allowed.find(l=>l.id===id);
+   if(!available)fail('Lega non accessibile',403);
+   if(route==='league/game-access'&&request.method==='POST'){
+    const result=await membershipTransaction((state,c)=>updateLeagueGameAccess(c,state,u,{nativeId:id,key:p.key,enabled:p.enabled}),{connect:store.connect});
+    context.leagueUpdate?.(result.leagueUpdate);
+    return reply(result.data);
+   }
+   if(!nativeFantaAccessible(available,u.id))fail('Il Fanta è in pausa per questa lega.',403);
    if(route==='roster/editor'&&request.method==='GET')return reply(await store.rosterEditor(u.id,id));
    if(route==='roster/players'&&request.method==='GET')return reply(await store.rosterPlayers(u.id,id));
    if(route==='roster/check'&&request.method==='POST')return reply(await store.checkRosterBatch(u.id,id,rosterBatch(p)));
