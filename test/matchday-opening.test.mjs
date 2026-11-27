@@ -33,7 +33,8 @@ test('the opening job runs after the last final, survives a retry, and schedules
  assert.ok(!claimWork(complete,{now:Date.parse(start)}).jobs.some(j=>j.kind==='round-opening'));
 });
 
-test('estimates favour the team in form and preserve book prices, then the socket opens the priced slip',()=>{
+test('estimates favour the team in form and preserve book prices, then the socket opens the priced slip',t=>{
+ t.mock.timers.enable({apis:['Date'],now});
  const fixture={id:'next',home:'Como',away:'Parma',kickoff:start,status:'NS'};
  const history=Array.from({length:5},(_,i)=>({...fixture,kickoff:new Date(now-(i+1)*86400000).toISOString(),score:[3,0]}));
  const model=estimateSerieAOdds([fixture],history,now).get(fixture.id);
