@@ -1,6 +1,6 @@
 import {enqueueJob} from './queue.mjs';
 import {mailTicket,readMailTicket} from '../lib/account-mail.mjs';
-import {operationTicket,readOperationTicket} from '../lib/operations/store.mjs';
+import {operationTicket,readOperationTicket,releaseFailedLiveJob} from '../lib/operations/store.mjs';
 import {jobTicket,validJobTicket} from '../fanta/jobs.mjs';
 import {footballRefreshTicket,validFootballRefreshTicket} from '../lib/api-football-refresh.mjs';
 import {matchCacheTicket,validMatchCacheTicket} from '../lib/match-cache.mjs';
@@ -28,7 +28,15 @@ export function installInternalDispatch({env=process.env,enqueue=enqueueJob,netw
 }
 export async function executeJob({name,payload}){
  const entry=entries[name];if(!entry)throw Error('Unknown worker');
- const module=await import('../netlify/functions/'+name+'.mjs');
- const response=await module.default(new Request(new URL('/.netlify/functions/'+name,process.env.PUBLIC_ORIGIN),{method:'POST',headers:{[entry.header]:entry.sign(payload)}}));
- if(response instanceof Response){const text=await response.text();let body;try{body=JSON.parse(text);}catch{body=text;}const report=redact({status:response.status,body});console.info('LOCAL_JOB_RESPONSE',JSON.stringify(report));if(response.status>=400)throw Object.assign(Error('Background HTTP failure'),{code:'HTTP_'+response.status});return report;}
+ try{
+  const module=await import('../netlify/functions/'+name+'.mjs');
+  const response=await module.default(new Request(new URL('/.netlify/functions/'+name,process.env.PUBLIC_ORIGIN),{method:'POST',headers:{[entry.header]:entry.sign(payload)}}));
+  if(response instanceof Response){const text=await response.text();let body;try{body=JSON.parse(text);}catch{body=text;}const report=redact({status:response.status,body});console.info('LOCAL_JOB_RESPONSE',JSON.stringify(report));if(response.status>=400)throw Object.assign(Error('Background HTTP failure'),{code:'HTTP_'+response.status});return report;}
+ }catch(error){
+  if(name==='operational-worker-background'&&payload.id?.startsWith('live:')){
+   console.error('LOCAL_LIVE_JOB_FAILED',JSON.stringify({id:payload.id,code:error.code||error.name,syscall:error.syscall}));
+   try{await releaseFailedLiveJob(payload);}catch(recovery){console.error('LOCAL_LIVE_LEASE_RELEASE_FAILED',recovery.code||recovery.name);}
+  }
+  throw error;
+ }
 }

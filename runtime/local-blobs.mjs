@@ -3,23 +3,31 @@ import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 export const stateRoot=()=>path.resolve(process.env.SELFHOST_DATA_DIR||'.selfhost-data');
 export const digest=v=>createHash('sha256').update(v).digest('hex');
-export async function readJson(file){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT')return null;throw e;}}
+export async function retryLocalFile(action,{platform=process.platform,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))}={}){
+ const delays=platform==='win32'?[15,40,90,180,350]:[];
+ for(const delay of delays)try{return await action();}catch(error){
+  if(!['EPERM','EACCES','EBUSY'].includes(error.code))throw error;
+  await sleep(delay);
+ }
+ return action();
+}
+export async function readJson(file){try{return JSON.parse(await retryLocalFile(()=>fs.readFile(file,'utf8')));}catch(e){if(e.code==='ENOENT')return null;throw e;}}
 export async function atomicJson(file,value){
  await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});
  const temp=file+'.'+randomUUID()+'.tmp';let handle;
- try{handle=await fs.open(temp,'wx',0o600);await handle.writeFile(JSON.stringify(value));await handle.sync();await handle.close();handle=null;await fs.rename(temp,file);}
- finally{await handle?.close();await fs.unlink(temp).catch(e=>{if(e.code!=='ENOENT')throw e;});}
+ try{handle=await retryLocalFile(()=>fs.open(temp,'wx',0o600));await handle.writeFile(JSON.stringify(value));await handle.sync();await handle.close();handle=null;await retryLocalFile(()=>fs.rename(temp,file));}
+ finally{await handle?.close();await retryLocalFile(()=>fs.unlink(temp)).catch(e=>{if(e.code!=='ENOENT')throw e;});}
 }
 export async function withFileLock(file,fn){
  await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});const lock=file+'.lock';
  for(let i=0;i<200;i++){
-  try{await fs.mkdir(lock);break;}catch(e){
+  try{await retryLocalFile(()=>fs.mkdir(lock));break;}catch(e){
    if(e.code!=='EEXIST')throw e;
    const stat=await fs.stat(lock).catch(()=>null);if(stat&&Date.now()-stat.mtimeMs>120000)await fs.rmdir(lock).catch(()=>{});
    if(i===199)throw Error('Local storage lock busy');await new Promise(r=>setTimeout(r,10));
   }
  }
- try{return await fn();}finally{await fs.rmdir(lock).catch(e=>{if(e.code!=='ENOENT')throw e;});}
+ try{return await fn();}finally{await retryLocalFile(()=>fs.rmdir(lock)).catch(e=>{if(e.code!=='ENOENT')throw e;});}
 }
 export function getStore({name,dataDir=stateRoot()}={}){
  if(!/^[a-zA-Z0-9_-]{1,150}$/.test(name||''))throw Error('Invalid local store name');

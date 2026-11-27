@@ -3,6 +3,9 @@ import {attachSportsSocket,sportsIdentities} from '../runtime/sports-socket.mjs'
 import {createHash} from 'node:crypto';
 import {EventEmitter} from 'node:events';
 import {listenSportsSaved,notifySportsSaved} from '../runtime/sports-notifications.mjs';
+import {parseHTML} from 'linkedom';
+import {mergeLiveSnapshot} from '../public/src/live-channel.mjs';
+import {patchSlipResults} from '../public/src/slip-results.mjs';
 const once=(s,event)=>new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('Missing '+event)),3000);s.once(event,v=>{clearTimeout(t);resolve(v);});});
 test('session revalidation is a single SQL projection for all viewers and observes revocation',async()=>{
  const f=await fixtureDb();try{let queries=0;const connect=async()=>{const c=await f.connect();return {...c,query:(...args)=>{queries++;return c.query(...args);}};};const users=await sportsIdentities(['token1','token2','invalid'],{connect});assert.equal(queries,1);assert.equal(users.size,2);assert.equal(users.get('token1').id,'u1');assert.deepEqual(Object.keys(users.get('token1')).sort(),['expires','id','username']);await f.db.query("UPDATE fanta_state SET payload=jsonb_set(payload,'{sessions}','[]')");assert.equal((await sportsIdentities(['token1','token2'],{connect})).size,0);}finally{await f.close();}
@@ -131,6 +134,9 @@ test('a Bar kickoff committed during an in-flight snapshot is pushed immediately
  const state={users:[{id:uid,emailVerified:true}],
   sessions:[{uid,token:createHash('sha256').update(uid).digest('hex'),expires:Date.now()+60000}],
   leagues:[{id:'l',members:[{uid,credits:100}]}],rounds:[],football:{calendar:{rounds:[{matches:[match]}]}}};
+ const {document}=parseHTML(`<main><article data-match-card="${id}"><span data-inline-result></span></article><input id="stake" value="12"></main>`);
+ const page=document.querySelector('main'),row=page.querySelector('article'),stake=page.querySelector('#stake');
+ const ticket={matches:[{...match}]},clientState={leagues:[{id:'l',members:[],rounds:[ticket]}]};
  let reads=0;
  const {promise:firstRead,resolve:reading}=Promise.withResolvers();
  const {promise:resume,resolve:finish}=Promise.withResolvers();
@@ -152,7 +158,8 @@ test('a Bar kickoff committed during an in-flight snapshot is pushed immediately
  try{
   const notified=new Promise((resolve,reject)=>{
    const timeout=setTimeout(()=>reject(Error('Kickoff not received over Socket.IO')),3000);
-   peer.on('sports:update',({data})=>{const update=data.calendar[0];if(update.status==='LIVE'){clearTimeout(timeout);resolve(update);}});
+   peer.on('sports:update',({data})=>{mergeLiveSnapshot(clientState,data);patchSlipResults(page,ticket,{},false);
+    const update=data.calendar[0];if(update.status==='LIVE'){clearTimeout(timeout);resolve(update);}});
   });
   await firstRead;
   Object.assign(match,{status:'LIVE',liveScore:[0,0],clock:"1'"});
@@ -163,6 +170,11 @@ test('a Bar kickoff committed during an in-flight snapshot is pushed immediately
   const update=await notified;
   assert.deepEqual(update.liveScore,[0,0]);
   assert.equal(update.clock,"1'");
+  assert.equal(document.querySelector('main'),page);
+  assert.equal(page.querySelector('article'),row);
+  assert.equal(page.querySelector('#stake'),stake);
+  assert.equal(stake.value,'12');
+  assert.match(row.textContent,/LIVE.*0 – 0.*1'/);
   assert.equal(reads,2);
  }finally{finish();peer.disconnect();await listener.close();await hub.close();await new Promise(resolve=>io.close(resolve));}
 });
